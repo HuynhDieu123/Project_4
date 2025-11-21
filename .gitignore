@@ -1,0 +1,15 @@
+# B? các th? m?c build/dist c?a T?T C? module
+**/build/
+**/dist/
+
+# B? config riêng c?a NetBeans (máy ai n?y xài)
+**/nbproject/private/
+
+# File t?m/biên d?ch
+*.class
+*.log
+
+# File ?óng gói
+*.war
+*.ear
+*.jar
