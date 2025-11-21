@@ -1,0 +1,74 @@
+<ui:composition template="/WEB-INF/templates/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:f="http://xmlns.jcp.org/jsf/core">
+
+    <f:metadata>
+        <f:viewAction action="#{catalogBean.resetHome}"/>
+    </f:metadata>
+
+    <ui:define name="title">Home – BookStore</ui:define>
+
+    <ui:define name="content">
+
+        <section class="hero hero-animated">
+            <div class="hero-inner">
+                <h1 class="hero-title">
+                   New books every day — <span class="highlight">Sale to 50%</span>
+                </h1>
+                <p class="hero-subtitle">
+                   Fast delivery within 2 hours • 100% genuine books • Exclusive gift combo this month
+                </p>
+                <div class="hero-cta">
+                    <h:link outcome="catalog" styleClass="btn btn-primary btn-lg">Explore Now</h:link>
+                    <h:link outcome="catalog" styleClass="btn btn-ghost btn-lg">See Best-sellers</h:link>
+                </div>
+            </div>
+
+            <div class="hero-ticker">
+                <div class="track">
+                    <span>Free shipping from 199k</span>
+                    <span>Golden hour deal −40%</span>
+                    <span>Buy 2 get 1 free (selected)</span>
+                    <span>New student voucher −20%</span>
+                    <span>Bookmark gift + book cover</span>
+
+                    <span>Free shipping from 199k</span>
+                    <span>Golden hour deal −40%</span>
+                    <span>Buy 2 get 1 free (selected)</span>
+                    <span>New student voucher −20%</span>
+                    <span>Bookmark gift + book cover</span>
+                </div>
+            </div>
+        </section>
+
+
+
+        <h3 class="section-title">All Books</h3>
+
+        <div class="grid grid-5">
+            <ui:repeat value="#{catalogBean.homeBooks}" var="b">
+                <article class="card">
+                    <h:link outcome="book">
+                        <f:param name="slug" value="#{b.slug}"/>
+
+                        <ui:fragment rendered="#{not empty b.imageUrl}">
+                            <img class="thumb" src="#{request.contextPath}#{b.imageUrl}" alt="#{b.title}"/>
+                        </ui:fragment>
+
+                        <ui:fragment rendered="#{empty b.imageUrl}">
+                            <div class="thumb placeholder">#{b.title}</div>
+                        </ui:fragment>
+                    </h:link>
+
+                    <div class="body">
+                        <div class="title"><h:outputText value="#{b.title}"/></div>
+                        <div class="meta"><h:outputText value="#{b.authorId.name}"/></div>
+                        <div class="price"><h:outputText value="#{b.price}"/> đ</div>
+                    </div>
+                </article>
+            </ui:repeat>
+        </div>
+    </ui:define>
+</ui:composition>
