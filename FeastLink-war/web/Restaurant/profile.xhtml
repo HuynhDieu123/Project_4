@@ -1,0 +1,144 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html">
+    <h:head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FeastLink - Restaurant Profile</title>
+
+    <!-- Font + Tailwind -->
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#0B1120",
+                        secondary: "#D4AF37",
+                        background: "#F9FAFB",
+                        textMain: "#111827",
+                        textSub: "#6B7280",
+                        borderColor: "#E5E7EB"
+                    },
+                    fontFamily: {
+                        display: ["Plus Jakarta Sans", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</h:head>
+
+<h:body styleClass="font-display bg-background text-textMain">
+    <div class="min-h-screen flex bg-background">
+
+        <!-- Sidebar đơn giản -->
+        <aside class="w-64 bg-white border-r border-borderColor p-6">
+            <h2 class="text-xl font-extrabold text-primary mb-6">FeastLink</h2>
+            <nav class="space-y-2 text-sm">
+                <a href="dashboard.xhtml"
+                   class="block px-4 py-2 rounded-lg hover:bg-gray-100">Dashboard</a>
+                <a href="profile.xhtml"
+                   class="block px-4 py-2 rounded-lg bg-primary text-white font-semibold">
+                    Restaurant Profile
+                </a>
+                <a href="menu-packages.xhtml"
+                   class="block px-4 py-2 rounded-lg hover:bg-gray-100">Menu &amp; Packages</a>
+                <a href="capacity.xhtml"
+                   class="block px-4 py-2 rounded-lg hover:bg-gray-100">Capacity &amp; Availability</a>
+            </nav>
+        </aside>
+
+        <!-- Nội dung chính -->
+        <main class="flex-1 p-10">
+            <h1 class="text-2xl font-bold text-primary mb-6">
+                Restaurant Profile Management
+            </h1>
+
+            <h:form styleClass="space-y-6 max-w-4xl">
+
+                <!-- Basic info -->
+                <div class="bg-white rounded-xl border border-borderColor p-6 space-y-4">
+                    <h2 class="text-lg font-semibold text-textMain mb-2">Basic Information</h2>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Restaurant Name</label>
+                        <h:inputText value="#{restaurantProfileBean.name}"
+                                     styleClass="w-full border border-borderColor rounded-lg px-3 py-2" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Description</label>
+                        <h:inputTextarea value="#{restaurantProfileBean.description}"
+                                         rows="3"
+                                         styleClass="w-full border border-borderColor rounded-lg px-3 py-2" />
+                    </div>
+                </div>
+
+                <!-- Contact & address -->
+                <div class="bg-white rounded-xl border border-borderColor p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Phone</label>
+                        <h:inputText value="#{restaurantProfileBean.phone}"
+                                     styleClass="w-full border border-borderColor rounded-lg px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Email</label>
+                        <h:inputText value="#{restaurantProfileBean.email}"
+                                     styleClass="w-full border border-borderColor rounded-lg px-3 py-2" />
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium mb-1">Address</label>
+                        <h:inputText value="#{restaurantProfileBean.address}"
+                                     styleClass="w-full border border-borderColor rounded-lg px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Contact Person</label>
+                        <h:inputText value="#{restaurantProfileBean.contactPerson}"
+                                     styleClass="w-full border border-borderColor rounded-lg px-3 py-2" />
+                    </div>
+                </div>
+
+                <!-- Policies -->
+                <div class="bg-white rounded-xl border border-borderColor p-6 space-y-4">
+                    <h2 class="text-lg font-semibold text-textMain mb-2">Booking Policy</h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">
+                                Minimum guests
+                            </label>
+                            <h:inputText value="#{restaurantProfileBean.minGuests}"
+                                         styleClass="w-full border border-borderColor rounded-lg px-3 py-2" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">
+                                Minimum days before event
+                            </label>
+                            <h:inputText value="#{restaurantProfileBean.minDaysBeforeBooking}"
+                                         styleClass="w-full border border-borderColor rounded-lg px-3 py-2" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Cancellation Policy</label>
+                        <h:inputTextarea value="#{restaurantProfileBean.cancelPolicy}"
+                                         rows="3"
+                                         styleClass="w-full border border-borderColor rounded-lg px-3 py-2" />
+                    </div>
+                </div>
+
+                <!-- Save button -->
+                <div class="flex justify-end">
+                    <h:commandButton value="Save Changes"
+                                     action="#{restaurantProfileBean.saveProfile}"
+                                     styleClass="px-6 py-2 rounded-lg bg-secondary text-white font-semibold hover:opacity-90" />
+                </div>
+            </h:form>
+        </main>
+    </div>
+</h:body>
+</html>
