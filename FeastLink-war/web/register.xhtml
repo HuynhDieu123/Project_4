@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+<h:head>
+    <title>FeastLink – Create account</title>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" type="text/css"
+          href="#{request.contextPath}/css/auth.css" />
+</h:head>
+
+<h:body>
+    <div class="auth-shell">
+
+        <!-- LEFT visual -->
+        <div class="auth-left">
+            <div class="auth-left-overlay"></div>
+            <div class="auth-left-content">
+
+                <h:graphicImage library="images"
+                                name="feastlink-logo.png"
+                                styleClass="auth-logo-mark" />
+
+                <div class="auth-left-badge">PREMIUM BANQUET VISUAL</div>
+                <div class="auth-left-logo">Feast<span>Link</span></div>
+                <div class="auth-left-tagline">
+                    Premium Banquet &amp; Catering Booking
+                </div>
+                <p class="auth-left-sub">
+                    Curated venues, cinematic lighting and signature menus –
+                    design the perfect celebration in just a few clicks.
+                </p>
+            </div>
+        </div>
+
+        <!-- RIGHT register card -->
+        <div class="auth-right">
+            <div class="auth-card">
+                <h:form id="registerForm">
+
+                    <div style="display:flex; justify-content:center; margin-bottom:10px;">
+                        <h:graphicImage library="images"
+                                        name="feastlink-logo.png"
+                                        style="width:38px; height:auto; border-radius:999px;" />
+                    </div>
+
+                    <div class="auth-title">
+                        Create your <span>FeastLink</span> Account
+                    </div>
+                    <div class="auth-subtitle">
+                        Join our premium network and save your favourite venues, menus and events.
+                    </div>
+
+                    <div style="margin-top:10px;font-size:12px;">
+                        <h:messages globalOnly="true"
+                                    layout="list"
+                                    infoClass="msg-info"
+                                    errorClass="msg-error"
+                                    warnClass="msg-warn" />
+                    </div>
+
+                    <div class="auth-form-grid">
+
+                        <!-- Full name -->
+                        <div>
+                            <label class="auth-label" for="fullName">Full Name</label>
+                            <h:inputText id="fullName"
+                                         value="#{registerBean.fullName}"
+                                         required="true"
+                                         requiredMessage="Please enter your full name."
+                                         styleClass="auth-input"
+                                         maxlength="120">
+                                <f:passThroughAttribute name="placeholder"
+                                                        value="Full Name" />
+                            </h:inputText>
+                            <h:message for="fullName" styleClass="msg-error" />
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label class="auth-label" for="email">Email Address</label>
+                            <h:inputText id="email"
+                                         value="#{registerBean.email}"
+                                         required="true"
+                                         requiredMessage="Please enter your email."
+                                         styleClass="auth-input"
+                                         maxlength="160">
+                                <f:passThroughAttribute name="placeholder"
+                                                        value="Email Address" />
+                            </h:inputText>
+                            <h:message for="email" styleClass="msg-error" />
+                        </div>
+
+                        <!-- Phone -->
+                        <div>
+                            <label class="auth-label" for="phone">Phone Number</label>
+                            <h:inputText id="phone"
+                                         value="#{registerBean.phone}"
+                                         required="true"
+                                         requiredMessage="Please enter your phone number."
+                                         styleClass="auth-input"
+                                         maxlength="20">
+                                <f:passThroughAttribute name="placeholder"
+                                                        value="Phone Number" />
+                            </h:inputText>
+                            <h:message for="phone" styleClass="msg-error" />
+                        </div>
+
+                        <!-- Password -->
+                        <div>
+                            <label class="auth-label" for="password">Password</label>
+                            <div class="password-field">
+                                <h:inputSecret id="password"
+                                               value="#{registerBean.password}"
+                                               required="true"
+                                               requiredMessage="Please enter a password."
+                                               styleClass="auth-input"
+                                               maxlength="100">
+                                    <f:passThroughAttribute name="placeholder"
+                                                            value="Password" />
+                                </h:inputSecret>
+                                <span class="password-toggle"
+                                      data-target="registerForm:password"
+                                      title="Show/Hide password">&#128065;</span>
+                            </div>
+                            <h:message for="password" styleClass="msg-error" />
+
+                            <div class="password-meter">
+                                <div class="password-meter-fill" id="pwStrengthFill"></div>
+                            </div>
+                            <div id="pwStrengthLabel"
+                                 style="margin-top:4px;font-size:11px;color:#d1d5db;">
+                                Password strength: Weak
+                            </div>
+                        </div>
+
+                        <!-- Confirm password -->
+                        <div>
+                            <label class="auth-label" for="confirmPassword">Confirm Password</label>
+                            <div class="password-field">
+                                <h:inputSecret id="confirmPassword"
+                                               value="#{registerBean.confirmPassword}"
+                                               required="true"
+                                               requiredMessage="Please confirm your password."
+                                               styleClass="auth-input"
+                                               maxlength="100">
+                                    <f:passThroughAttribute name="placeholder"
+                                                            value="Confirm Password" />
+                                </h:inputSecret>
+                                <span class="password-toggle"
+                                      data-target="registerForm:confirmPassword"
+                                      title="Show/Hide password">&#128065;</span>
+                            </div>
+                            <h:message for="confirmPassword" styleClass="msg-error" />
+                        </div>
+
+                    </div>
+
+                    <div class="auth-footer" style="text-align:left;margin-top:10px;">
+                        <span style="font-size:12px;">
+                            By creating an account, you agree to our
+                            <span style="text-decoration:underline;">Terms of Service</span>
+                            and
+                            <span style="text-decoration:underline;">Privacy Policy</span>.
+                        </span>
+                    </div>
+
+                    <h:commandButton value="Create account"
+                                     action="#{registerBean.register}"
+                                     styleClass="btn-primary" />
+
+                    <div class="auth-footer">
+                        Already have an account?
+                        <h:link outcome="login"
+                                styleClass="auth-link"
+                                value="Sign in" />
+                    </div>
+
+                </h:form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JS: password strength + eye toggle -->
+    <script type="text/javascript">
+        //<![CDATA[
+        (function () {
+
+            function computeStrength(pw) {
+                if (!pw) return 0;
+                var score = 0;
+                if (pw.length >= 6)  score += 1;
+                if (pw.length >= 10) score += 1;
+                if (/[0-9]/.test(pw)) score += 1;
+                if (/[A-Z]/.test(pw)) score += 1;
+                if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+                return score; // 0..5
+            }
+
+            function initPasswordStrength() {
+                var passwordInput = document.querySelector('input[id$="password"]');
+                var bar = document.getElementById('pwStrengthFill');
+                var label = document.getElementById('pwStrengthLabel');
+                if (!passwordInput || !bar || !label) return;
+
+                function updateStrength() {
+                    var pw = passwordInput.value || "";
+                    var s = computeStrength(pw);
+                    var width = 0;
+                    var text = "Weak";
+                    var bg = "linear-gradient(90deg,#ef4444,#f97316)";
+
+                    if (s <= 1) {
+                        width = 20; text = "Very weak";
+                        bg = "linear-gradient(90deg,#ef4444,#f97316)";
+                    } else if (s === 2) {
+                        width = 40; text = "Weak";
+                        bg = "linear-gradient(90deg,#f97316,#facc15)";
+                    } else if (s === 3) {
+                        width = 60; text = "Medium";
+                        bg = "linear-gradient(90deg,#eab308,#22c55e)";
+                    } else if (s === 4) {
+                        width = 80; text = "Strong";
+                        bg = "linear-gradient(90deg,#22c55e,#16a34a)";
+                    } else {
+                        width = 100; text = "Very strong";
+                        bg = "linear-gradient(90deg,#22c55e,#16a34a)";
+                    }
+                    bar.style.width = width + "%";
+                    bar.style.background = bg;
+                    label.textContent = "Password strength: " + text;
+                }
+
+                passwordInput.addEventListener('input', updateStrength);
+                updateStrength();
+            }
+
+            function initPasswordToggles() {
+                var toggles = document.querySelectorAll('.password-toggle');
+                for (var i = 0; i < toggles.length; i++) {
+                    (function (t) {
+                        var targetId = t.getAttribute('data-target');
+                        var input = document.getElementById(targetId);
+                        if (!input) return;
+
+                        t.addEventListener('click', function () {
+                            if (input.type === "password") {
+                                input.type = "text";
+                                t.classList.add('password-toggle--active');
+                            } else {
+                                input.type = "password";
+                                t.classList.remove('password-toggle--active');
+                            }
+                        });
+                    })(toggles[i]);
+                }
+            }
+
+            window.addEventListener('load', function () {
+                initPasswordStrength();
+                initPasswordToggles();
+            });
+        })();
+        //]]>
+    </script>
+</h:body>
+</html>
