@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets">
+
+<h:head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><ui:insert name="title">FeastLink</ui:insert></title>
+
+    <!-- Tailwind + font -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap"
+          rel="stylesheet" />
+
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                primary: "#0B1120",
+                "background-light": "#F9FAFB",
+                "background-soft": "#F5F5F4",
+                "card-light": "#FFFFFF",
+                "champagne-gold": "#D4AF37",
+                "text-main-light": "#111827",
+                "text-secondary-light": "#4B5563",
+                "border-light": "#E5E7EB",
+                "cta-orange": "#F97316",
+                "success-green": "#22C55E",
+                "error-red": "#EF4444",
+              },
+              fontFamily: {
+                sans: ["Plus Jakarta Sans", "sans-serif"],
+              },
+              boxShadow: {
+                'subtle': '0 4px 12px -2px rgba(20, 20, 20, 0.04)',
+              }
+            },
+          },
+        };
+    </script>
+
+    <style>
+        body { background-color: #F9FAFB; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+        }
+    </style>
+</h:head>
+
+<h:body class="font-sans bg-background-light text-text-main-light">
+    <div class="flex flex-col min-h-screen">
+
+        <!-- TOP BAR (giống Figma, không logo FeastLink, không sidebar) -->
+        <header class="sticky top-0 z-10 flex items-center justify-between h-20 px-8 bg-card-light border-b border-border-light shadow-sm">
+            <!-- Phần bên trái: mỗi page tự define -->
+            <ui:insert name="header" />
+
+            <!-- Phần bên phải: New Booking + bell + profile -->
+            <div class="flex items-center space-x-6">
+                <button class="flex items-center justify-center bg-cta-orange text-white font-semibold py-2 px-5 rounded-lg hover:opacity-90 transition-opacity text-sm">
+                    <span class="material-symbols-outlined mr-2 text-base">add_circle</span>
+                    New Booking
+                </button>
+
+                <button class="p-2 relative rounded-full hover:bg-background-soft">
+                    <span class="material-symbols-outlined text-text-secondary-light">notifications</span>
+                    <span class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-error-red"></span>
+                </button>
+
+                <div class="flex items-center space-x-3">
+                    <img alt="Restaurant manager profile picture"
+                         class="w-10 h-10 rounded-full object-cover"
+                         src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAnKjQGks3gD9kxsvLraeSzojgLwf5Z61JrAgV9nLgVaOVJBoexk_CA3UNddMxmFdRURhXc3BMZ423UXkefu13YKsHoocOFGx2L7BWZcXRM4Rda_oBrmx3QAebrZ25VHwAy_j3FT1_7pXZBdzDhonbM8G-lZrO-xJi-0-jpgUvRkaOiMPQfCruaJdn9206ZsG3LnFCpUHU-fUr1H4fwkjszojJz9Ae7KJZdy1MtPT5VemJu0sBU4XBt5AQKKbfbZnbJNigaeyRE9Sb" />
+
+                    <div>
+                        <p class="font-semibold text-sm text-text-main-light">Alex Doe</p>
+                        <p class="text-xs text-text-secondary-light">The Grand Eatery</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1">
+            <div class="p-8">
+                <ui:insert name="content" />
+            </div>
+        </main>
+    </div>
+</h:body>
+</html>

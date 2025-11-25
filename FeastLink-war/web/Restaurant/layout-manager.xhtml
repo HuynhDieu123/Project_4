@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <h:head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title><ui:insert name="title">FeastLink</ui:insert></title>
+
+        <!-- Tailwind + font -->
+        <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap"
+              rel="stylesheet" />
+
+        <!-- Material Icons -->
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: "#0B1120",
+                            "background-light": "#F9FAFB",
+                            "background-soft": "#F5F5F4",
+                            "card-light": "#FFFFFF",
+                            "champagne-gold": "#D4AF37",
+                            "text-main-light": "#111827",
+                            "text-secondary-light": "#4B5563",
+                            "border-light": "#E5E7EB",
+                            "cta-orange": "#F97316",
+                            "success-green": "#22C55E",
+                            "error-red": "#EF4444",
+                        },
+                        fontFamily: {
+                            sans: ["Plus Jakarta Sans", "sans-serif"],
+                        },
+                        boxShadow: {
+                            'subtle': '0 4px 12px -2px rgba(20, 20, 20, 0.04)',
+                        }
+                    },
+                },
+            };
+        </script>
+
+        <style>
+            body {
+                background-color: #F9FAFB;
+            }
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+            }
+        </style>
+    </h:head>
+
+    <h:body class="bg-background">
+        <div class="flex flex-col min-h-screen">
+
+            <!-- TOP BAR (y chang dashboard) -->
+            <header class="sticky top-0 z-10 flex items-center justify-between h-20 px-8 bg-card-light border-b border-border-light shadow-sm">
+                <!-- Phần bên trái: mỗi page tự define -->
+                <ui:insert name="header" />
+
+                <!-- Phần bên phải: New Booking + bell + profile -->
+                <div class="flex items-center space-x-6">
+                    <button class="p-2 relative rounded-full hover:bg-background-soft">
+                        <span class="material-symbols-outlined text-text-secondary-light">notifications</span>
+                        <span class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-error-red"></span>
+                    </button>
+
+                    <div class="flex items-center space-x-3">
+                        <img alt="Restaurant manager profile picture"
+                             class="w-10 h-10 rounded-full object-cover"
+                             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAnKjQGks3gD9kxsvLraeSzojgLwf5Z61JrAgV9nLgVaOVJBoexk_CA3UNddMxmFdRURhXc3BMZ423UXkefu13YKsHoocOFGx2L7BWZcXRM4Rda_oBrmx3QAebrZ25VHwAy_j3FT1_7pXZBdzDhonbM8G-lZrO-xJi-0-jpgUvRkaOiMPQfCruaJdn9206ZsG3LnFCpUHU-fUr1H4fwkjszojJz9Ae7KJZdy1MtPT5VemJu0sBU4XBt5AQKKbfbZnbJNigaeyRE9Sb" />
+
+                        <div>
+                            <p class="font-semibold text-sm text-text-main-light">Alex Doe</p>
+                            <p class="text-xs text-text-secondary-light">The Grand Eatery</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- PHẦN CHÍNH: sidebar trái + nội dung phải -->
+            <div class="flex flex-1">
+                <!-- SIDEBAR -->
+                <aside
+                    class="w-64 bg-card border-r border-border p-6
+                    sticky top-20 self-start h-[calc(100vh-5rem)] overflow-y-auto">
+                    <h2 class="text-xl font-extrabold text-[#FFB300] mb-8">FeastLink</h2>
+
+                    <nav class="space-y-2 text-sm">
+                        <!-- Dashboard -->
+                        <a href="#{request.contextPath}/faces/Restaurant/dashboard.xhtml"
+                           class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100">
+                            <span class="material-symbols-outlined text-lg">space_dashboard</span>
+                            <span>Dashboard</span>
+                        </a>
+
+                        <!-- Restaurant Profile -->
+                        <a href="#{request.contextPath}/faces/Restaurant/profile.xhtml"
+                           class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100">
+                            <span class="material-symbols-outlined text-lg">badge</span>
+                            <span>Restaurant Profile</span>
+                        </a>
+
+                        <!-- Menu & Packages -->
+                        <a href="#{request.contextPath}/faces/Restaurant/menu-packages.xhtml"
+                           class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100">
+                            <span class="material-symbols-outlined text-lg">menu_book</span>
+                            <span>Menu &amp; Packages</span>
+                        </a>
+
+                        <!-- Capacity & Availability -->
+                        <a href="#{request.contextPath}/faces/Restaurant/capacity.xhtml"
+                           class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100">
+                            <span class="material-symbols-outlined text-lg">event_available</span>
+                            <span>Capacity &amp; Availability</span>
+                        </a>
+                    </nav>
+                </aside>
+
+                <!-- CONTENT -->
+                <main class="flex-1 px-10 py-8">
+                    <ui:insert name="content"/>
+                </main>
+            </div>
+
+            <!-- FOOTER -->
+            <footer class="px-8 py-4 bg-primary text-gray-300 text-sm text-center">
+                © 2023 FeastLink. All Rights Reserved.
+            </footer>
+        </div>
+    </h:body>
+</html>

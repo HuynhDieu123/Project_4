@@ -1,11 +1,142 @@
-<?xml version='1.0' encoding='UTF-8' ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="jakarta.faces.html">
-    <h:head>
-        <title>Facelet Title</title>
-    </h:head>
-    <h:body>
-        Hello from Facelets
-    </h:body>
-</html>
+<!DOCTYPE html>
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/Restaurant/restaurant-layout.xhtml">
+
+    <!-- Title tab trình duyệt -->
+    <ui:define name="title">FeastLink - Restaurant Manager Dashboard</ui:define>
+
+    <!-- Phần bên trái của TOP BAR (Dashboard + subtitle) -->
+    <ui:define name="header">
+        <div>
+            <h2 class="text-2xl font-bold text-text-main-light">Dashboard</h2>
+            <p class="text-sm text-text-secondary-light">Welcome back, Manager!</p>
+        </div>
+    </ui:define>
+
+    <!-- MAIN CONTENT: copy gần như y chang HTML Figma, chỉ gắn bean -->
+    <ui:define name="content">
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- ==== Cột trái (2/3) ==== -->
+            <div class="lg:col-span-2 space-y-8">
+
+                <!-- 3 CARD trên cùng -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Restaurant Profile -->
+                    <div class="bg-card-light p-6 rounded-2xl shadow-subtle flex flex-col justify-between">
+                        <div class="flex items-start justify-between">
+                            <h3 class="font-semibold text-text-main-light">Restaurant Profile</h3>
+                            <span class="material-symbols-outlined text-champagne-gold">storefront</span>
+                        </div>
+                        <h:link outcome="/Restaurant/profile"
+                                styleClass="mt-4 flex items-center text-sm font-medium text-champagne-gold hover:underline">
+                            Manage Profile
+                            <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
+                        </h:link>
+                    </div>
+
+                    <!-- Menu & Packages -->
+                    <div class="bg-card-light p-6 rounded-2xl shadow-subtle flex flex-col justify-between">
+                        <div class="flex items-start justify-between">
+                            <h3 class="font-semibold text-text-main-light">Menu &amp; Packages</h3>
+                            <span class="material-symbols-outlined text-champagne-gold">menu_book</span>
+                        </div>
+                        <h:link outcome="/Restaurant/menu-packages"
+                                styleClass="mt-4 flex items-center text-sm font-medium text-champagne-gold hover:underline">
+                            Update Menu
+                            <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
+                        </h:link>
+                    </div>
+
+                    <!-- Capacity & Availability -->
+                    <div class="bg-card-light p-6 rounded-2xl shadow-subtle flex flex-col justify-between">
+                        <div class="flex items-start justify-between">
+                            <h3 class="font-semibold text-text-main-light">Capacity &amp; Availability</h3>
+                            <span class="material-symbols-outlined text-champagne-gold">event_available</span>
+                        </div>
+                        <h:link outcome="/Restaurant/capacity"
+                                styleClass="mt-4 flex items-center text-sm font-medium text-champagne-gold hover:underline">
+                            Set Availability
+                            <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
+                        </h:link>
+                    </div>
+                </div>
+
+                <!-- Recent Bookings block -->
+                <div class="bg-card-light p-6 rounded-2xl shadow-subtle">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-text-main-light">Recent Bookings</h3>
+                        <a href="#" class="text-sm font-medium text-champagne-gold hover:underline">
+                            View All Bookings
+                        </a>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                            <tr>
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light">Booking ID</th>
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light">Customer</th>
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light">Date</th>
+                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light text-center">Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <ui:repeat value="#{restaurantDashboardBean.recentBookings}" var="b">
+                                <tr class="border-t border-border-light">
+                                    <td class="py-4 px-4 font-medium text-text-main-light text-sm">#{b.id}</td>
+                                    <td class="py-4 px-4 text-text-secondary-light text-sm">#{b.customer}</td>
+                                    <td class="py-4 px-4 text-text-secondary-light text-sm">#{b.date}</td>
+                                    <td class="py-4 px-4 text-center">
+                                        <div class="inline-flex items-center py-1 px-3 rounded-full #{b.statusClass}">
+                                            <div class="w-2 h-2 rounded-full bg-current mr-2"></div>
+                                            <span class="text-sm font-medium">#{b.statusLabel}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </ui:repeat>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==== Cột phải (Performance Overview, nền xám) ==== -->
+            <div class="lg:col-span-1 bg-background-soft p-6 rounded-2xl shadow-subtle flex flex-col">
+                <h3 class="text-lg font-semibold text-text-main-light mb-6">Performance Overview</h3>
+
+                <div class="space-y-6">
+                    <!-- Total Revenue -->
+                    <div class="bg-card-light p-4 rounded-lg">
+                        <p class="text-sm text-text-secondary-light">Total Revenue</p>
+                        <p class="text-2xl font-bold text-text-main-light mt-1">
+                            <h:outputText value="#{restaurantDashboardBean.totalRevenue}">
+                                <f:convertNumber type="currency" currencySymbol="$" />
+                            </h:outputText>
+                        </p>
+                    </div>
+
+                    <!-- Upcoming Bookings -->
+                    <div class="bg-card-light p-4 rounded-lg">
+                        <p class="text-sm text-text-secondary-light">Upcoming Bookings</p>
+                        <p class="text-2xl font-bold text-text-main-light mt-1">
+                            #{restaurantDashboardBean.upcomingBookings}
+                        </p>
+                    </div>
+
+                    <!-- New Inquiries -->
+                    <div class="bg-card-light p-4 rounded-lg">
+                        <p class="text-sm text-text-secondary-light">New Inquiries</p>
+                        <p class="text-2xl font-bold text-text-main-light mt-1">
+                            #{restaurantDashboardBean.newInquiries}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </ui:define>
+</ui:composition>

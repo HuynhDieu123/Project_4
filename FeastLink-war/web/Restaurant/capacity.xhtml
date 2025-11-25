@@ -1,11 +1,329 @@
-<?xml version='1.0' encoding='UTF-8' ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="jakarta.faces.html">
-    <h:head>
-        <title>Facelet Title</title>
-    </h:head>
-    <h:body>
-        Hello from Facelets
-    </h:body>
-</html>
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/Restaurant/layout-manager.xhtml">
+
+    <ui:define name="title">
+        FeastLink - Capacity &amp; Availability
+    </ui:define>
+    
+    <!-- ===== TOP BAR LEFT (giống figma) ===== -->
+    <ui:define name="header">
+        <div class="flex flex-col">
+            <h1 class="text-2xl font-bold text-text-main-light">
+                Restaurant Profile Management
+            </h1>
+            <p class="text-sm text-text-secondary-light">
+                Manage your restaurant&apos;s information and policies.
+            </p>
+        </div>
+    </ui:define>
+
+    <ui:define name="content">
+
+        <!-- PAGE TITLE + SUBTITLE -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-text-main-light">
+                Capacity &amp; Availability Management
+            </h1>
+            <p class="text-sm text-text-secondary-light">
+                Manage your booking limits, view calendar and block dates.
+            </p>
+        </div>
+
+        <!-- MAIN GRID: CALENDAR LEFT, SETTINGS RIGHT -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- ================= LEFT: CALENDAR CARD ================= -->
+            <section class="lg:col-span-2 bg-card-light border border-border-light rounded-2xl shadow-subtle p-6">
+
+                <!-- Month header + legend -->
+                <div class="flex items-center justify-between mb-6">
+                    <!-- Month + arrows (purely visual) -->
+                    <div class="flex items-center gap-2 text-sm font-semibold text-text-main-light">
+                        <button type="button"
+                                class="p-1 rounded-full hover:bg-gray-100">
+                            <span class="material-symbols-outlined text-base">chevron_left</span>
+                        </button>
+                        <span>December 2023</span>
+                        <button type="button"
+                                class="p-1 rounded-full hover:bg-gray-100">
+                            <span class="material-symbols-outlined text-base">chevron_right</span>
+                        </button>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="flex items-center gap-4 text-xs text-text-secondary-light">
+                        <span class="inline-flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-success-green"></span>
+                            Available
+                        </span>
+                        <span class="inline-flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-champagne-gold"></span>
+                            Gần đầy
+                        </span>
+                        <span class="inline-flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-error-red"></span>
+                            Đã đầy
+                        </span>
+                        <span class="inline-flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                            Bị chặn
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Weekday row -->
+                <div class="grid grid-cols-7 text-center text-xs font-medium text-text-secondary-light mb-4">
+                    <div>Sun</div>
+                    <div>Mon</div>
+                    <div>Tue</div>
+                    <div>Wed</div>
+                    <div>Thu</div>
+                    <div>Fri</div>
+                    <div>Sat</div>
+                </div>
+
+                <!-- Calendar days (static demo to match Figma layout) -->
+                <div class="grid grid-cols-7 gap-y-6 text-xs text-text-main-light">
+
+                    <!-- Row 1: tail of previous month + 1,2 -->
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>26</span>
+                    </div>
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>27</span>
+                    </div>
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>28</span>
+                    </div>
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>29</span>
+                    </div>
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>30</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>1</span>
+                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>2</span>
+                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
+                    </div>
+
+                    <!-- Row 2: 3–9 -->
+                    <div class="flex flex-col items-center">
+                        <span>3</span>
+                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>4</span>
+                        <span class="w-2 h-2 rounded-full bg-champagne-gold mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>5</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>6</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>7</span>
+                        <span class="w-2 h-2 rounded-full bg-error-red mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>8</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>9</span>
+                        <span class="w-2 h-2 rounded-full bg-gray-400 mt-1"></span>
+                    </div>
+
+                    <!-- Row 3: 10–16 -->
+                    <div class="flex flex-col items-center">
+                        <span>10</span>
+                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>11</span>
+                        <span class="w-2 h-2 rounded-full bg-champagne-gold mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>12</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>13</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>14</span>
+                        <span class="w-2 h-2 rounded-full bg-error-red mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>15</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>16</span>
+                        <span class="w-2 h-2 rounded-full bg-gray-400 mt-1"></span>
+                    </div>
+
+                    <!-- Row 4: 17–23 -->
+                    <div class="flex flex-col items-center">
+                        <span>17</span>
+                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>18</span>
+                        <span class="w-2 h-2 rounded-full bg-champagne-gold mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>19</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>20</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>21</span>
+                        <span class="w-2 h-2 rounded-full bg-error-red mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>22</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>23</span>
+                        <span class="w-2 h-2 rounded-full bg-gray-400 mt-1"></span>
+                    </div>
+
+                    <!-- Row 5: 24–30 -->
+                    <div class="flex flex-col items-center">
+                        <span>24</span>
+                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>25</span>
+                        <span class="w-2 h-2 rounded-full bg-champagne-gold mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>26</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>27</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>28</span>
+                        <span class="w-2 h-2 rounded-full bg-error-red mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>29</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span>30</span>
+                        <span class="w-2 h-2 rounded-full bg-gray-400 mt-1"></span>
+                    </div>
+
+                    <!-- Row 6: 31 + next month tail -->
+                    <div class="flex flex-col items-center">
+                        <span>31</span>
+                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
+                    </div>
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>1</span>
+                    </div>
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>2</span>
+                    </div>
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>3</span>
+                    </div>
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>4</span>
+                    </div>
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>5</span>
+                    </div>
+                    <div class="flex flex-col items-center text-gray-400">
+                        <span>6</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= RIGHT: SETTINGS CARDS ================= -->
+
+            <section class="space-y-6">
+
+                <!-- Default Limits card -->
+                <div class="bg-card-light border border-border-light rounded-2xl shadow-subtle p-5 space-y-4">
+                    <h2 class="text-sm font-semibold text-text-main-light">
+                        Thiết lập giới hạn mặc định
+                    </h2>
+
+                    <h:form id="limitsForm" styleClass="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                Số khách tối đa mỗi ngày
+                            </label>
+                            <h:inputText value="#{capacityAvailabilityBean.defaultMaxGuestsPerDay}"
+                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                Số booking tối đa mỗi ngày
+                            </label>
+                            <h:inputText value="#{capacityAvailabilityBean.defaultMaxBookingsPerDay}"
+                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
+                        </div>
+
+                        <h:commandButton value="Save Limits"
+                                         action="#{capacityAvailabilityBean.saveLimits}"
+                                         styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90" />
+                    </h:form>
+                </div>
+
+                <!-- Manual Block card -->
+                <div class="bg-card-light border border-border-light rounded-2xl shadow-subtle p-5 space-y-4">
+                    <h2 class="text-sm font-semibold text-text-main-light">
+                        Chặn thủ công
+                    </h2>
+
+                    <h:form id="blockForm" styleClass="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                Start Date
+                            </label>
+                            <h:inputText value="#{capacityAvailabilityBean.blockStartDate}"
+                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                <f:passThroughAttribute name="type" value="date" />
+                            </h:inputText>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                End Date
+                            </label>
+                            <h:inputText value="#{capacityAvailabilityBean.blockEndDate}"
+                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                <f:passThroughAttribute name="type" value="date" />
+                            </h:inputText>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                Hall / Saloon (optional)
+                            </label>
+                            <h:inputText value="#{capacityAvailabilityBean.blockHall}"
+                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
+                        </div>
+
+                        <h:commandButton value="Block Dates"
+                                         action="#{capacityAvailabilityBean.blockDates}"
+                                         styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90" />
+                    </h:form>
+                </div>
+
+            </section>
+
+        </div>
+
+    </ui:define>
+</ui:composition>
