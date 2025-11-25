@@ -49,8 +49,10 @@ body {
     border: 1px solid rgba(212, 175, 55, 0.35);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
     overflow: hidden;
-    margin: 0 auto; /* ← lệnh canh giữa trang */
+
+    margin: 40px auto 0; /* top 40px, trái/phải auto, bottom 0 */
 }
+
 .sidebar {
     padding: 24px 22px;
     border-right: 1px solid #f1e4c7;
