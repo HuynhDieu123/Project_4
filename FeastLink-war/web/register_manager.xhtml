@@ -2,7 +2,8 @@
 <html lang="vi"
       xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="http://xmlns.jcp.org/jsf/html"
-      xmlns:f="http://xmlns.jcp.org/jsf/core">
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="jakarta.faces.facelets">
 
     <h:head>
         <meta charset="UTF-8" />
@@ -11,9 +12,18 @@
         <link rel="stylesheet"
               type="text/css"
               href="#{request.contextPath}/css/register_manager.css" />
+          <!-- Tailwind CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- Lucide Icons CDN -->
+        <script src="https://unpkg.com/lucide@latest"></script>
     </h:head>
 
     <h:body>
+        <div id="top"></div>
+
+        <!-- HEADER -->
+        <ui:include src="header.xhtml" />
         <div class="shell">
             <!-- SIDEBAR -->
             <aside class="sidebar">
@@ -103,7 +113,8 @@
                         </div>
                     </div>
 
-                    <h:form id="registerForm">
+                    <!-- QUAN TRỌNG: multipart/form-data để upload file -->
+                    <h:form id="registerForm" enctype="multipart/form-data">
                         <!-- 1. THÔNG TIN QUẢN LÝ -->
                         <section class="section-card" id="s1">
                             <div class="section-header">
@@ -240,27 +251,26 @@
                                     </h:inputTextarea>
                                 </div>
 
+                                <!-- UPLOAD LOGO -->
                                 <div class="field">
-                                    <label for="logoUrl">Logo nhà hàng *</label>
+                                    <label for="logoFile">Logo nhà hàng *</label>
                                     <div class="upload-logo">
                                         <div>Ảnh vuông tối thiểu <strong>600 x 600px</strong></div>
-                                        <h:inputText id="logoUrl"
-                                                     value="#{registerRestaurantManagerBean.logoUrl}"
-                                                     required="true"
-                                                     requiredMessage="Vui lòng nhập link Logo nhà hàng.">
-                                            <f:passThroughAttribute name="placeholder"
-                                                                    value="https://example.com/path-to-logo.png" />
-                                        </h:inputText>
-                                        <h:message for="logoUrl" styleClass="msg-field-error" />
+
+                                        <h:inputFile id="logoFile"
+                                                     value="#{registerRestaurantManagerBean.logoFile}">
+                                        </h:inputFile>
                                         <div class="hint">
-                                            Định dạng: JPG, PNG. Tệp được lưu bên phía bạn, FeastLink chỉ hiển thị theo link.
+                                            Chọn file JPG/PNG từ máy. Logo sẽ được lưu vào thư mục
+                                            <code>resources/images/upload_file</code> của hệ thống.
                                         </div>
+                                        <h:message for="logoFile" styleClass="msg-field-error" />
 
                                         <!-- PREVIEW LOGO: KHUNG CỐ ĐỊNH -->
                                         <h:panelGroup rendered="#{not empty registerRestaurantManagerBean.logoUrl}">
                                             <div class="logo-preview">
                                                 <div class="logo-preview-inner">
-                                                    <img src="#{registerRestaurantManagerBean.logoUrl}"
+                                                    <img src="#{request.contextPath}#{registerRestaurantManagerBean.logoUrl}"
                                                          alt="Logo preview" />
                                                 </div>
                                                 <div class="logo-preview-caption">
@@ -269,7 +279,6 @@
                                             </div>
                                         </h:panelGroup>
                                     </div>
-
                                 </div>
                             </div>
 
@@ -461,13 +470,11 @@
                         </ul>
                     </div>
                 </div>
-                <div class="footer-text">
-                    © 2025 FeastLink. All rights reserved.
-                </div>
             </main>
         </div>
+          <ui:include src="footer.xhtml" />
 
-        <!-- JS: step highlight, khóa nút nếu chưa tick điều khoản, chọn loại tiệc (client-side, không reset form) -->
+        <!-- JS: step highlight, khóa nút nếu chưa tick điều khoản, chọn loại tiệc -->
         <script type="text/javascript">
             //<![CDATA[
             function initStepHighlight() {

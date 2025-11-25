@@ -12,8 +12,12 @@ import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
+import jakarta.servlet.http.Part;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -61,8 +65,10 @@ public class RegisterRestaurantManagerBean implements Serializable {
     private String closeTime;          // "22:00"
     private String servingStyle;
 
-    // Logo bằng link
+    // Logo: đường dẫn tương đối lưu trong DB
     private String logoUrl;
+    // File upload từ form
+    private Part logoFile;
 
     // ========= 3. Điều kiện nhận tiệc =========
     private Integer minGuests;
@@ -131,7 +137,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
         // Nếu đã là manager → load nhà hàng để chỉnh sửa
         loadExistingRestaurant();
-
     }
 
     private void loadExistingRestaurant() {
@@ -166,7 +171,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
             minGuests = existingRestaurant.getMinGuestCount();
             minDays   = existingRestaurant.getMinDaysInAdvance();
 
-            // Logo
+            // Logo: đường dẫn đã lưu trong DB
             logoUrl = existingRestaurant.getLogoUrl();
         }
     }
@@ -276,7 +281,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
     private boolean isApprovedManager() {
         if (managerStatus == null) return false;
         String st = managerStatus.trim();
-        // tuỳ bạn đặt tên trong DB, mình handle luôn 2 case phổ biến
         return st.equalsIgnoreCase("Active") || st.equalsIgnoreCase("Approved");
     }
 
@@ -306,11 +310,15 @@ public class RegisterRestaurantManagerBean implements Serializable {
             return null;
         }
 
+        // Kiểm tra logo: nếu không có file mới và cũng không có logo cũ → lỗi
+        boolean noNewLogo      = (logoFile == null || logoFile.getSize() <= 0);
+        boolean noExistingLogo = isBlank(logoUrl);
+
         // Validate bắt buộc
         if (isBlank(managerName) || isBlank(managerPhone) || isBlank(managerEmail) ||
             isBlank(restaurantName) || isBlank(restaurantAddress) ||
             isBlank(city) || isBlank(area) ||
-            isBlank(logoUrl) ||
+            (noNewLogo && noExistingLogo) ||
             isBlank(mainEventType) ||
             minGuests == null || minGuests < 0 ||
             minDays == null   || minDays   < 0) {
@@ -380,8 +388,57 @@ public class RegisterRestaurantManagerBean implements Serializable {
             restaurant.setMinGuestCount(minGuests);
             restaurant.setMinDaysInAdvance(minDays);
 
-            // Lưu link logo
-            restaurant.setLogoUrl(logoUrl);
+            // ------------------ UPLOAD LOGO ------------------
+            if (!noNewLogo && logoFile != null) {
+                // ĐƯỜNG DẪN THẬT TỚI THƯ MỤC upload_file TRONG PROJECT
+                // TODO: Nếu đường dẫn thực tế trên máy bạn khác, sửa lại chuỗi này.
+                String uploadRoot = "E:\\ProjectSemIV\\Code\\Project_4\\FeastLink-war\\web\\resources\\images\\upload_file";
+
+                File folder = new File(uploadRoot);
+                if (!folder.exists()) {
+                    folder.mkdirs();
+                }
+
+                // Lấy tên file gốc để tách đuôi
+                String submitted = logoFile.getSubmittedFileName();
+                String baseName  = submitted;
+                if (submitted != null) {
+                    int slash = submitted.lastIndexOf('/');
+                    int back  = submitted.lastIndexOf('\\');
+                    int idx   = Math.max(slash, back);
+                    if (idx >= 0 && idx < submitted.length() - 1) {
+                        baseName = submitted.substring(idx + 1);
+                    }
+                }
+                String ext = "";
+                int dot = baseName != null ? baseName.lastIndexOf('.') : -1;
+                if (dot != -1) {
+                    ext = baseName.substring(dot); // gồm luôn dấu .
+                }
+
+                String savedName = "logo_" + currentUser.getUserId() + "_" + System.currentTimeMillis() + ext;
+                File dest = new File(folder, savedName);
+
+                try (InputStream in = logoFile.getInputStream();
+                     FileOutputStream out = new FileOutputStream(dest)) {
+                    byte[] buf = new byte[8192];
+                    int len;
+                    while ((len = in.read(buf)) != -1) {
+                        out.write(buf, 0, len);
+                    }
+                }
+
+                // Đường dẫn tương đối để hiển thị trên web & lưu DB
+                String relativePath = "/resources/images/upload_file/" + savedName;
+                logoUrl = relativePath;
+                restaurant.setLogoUrl(relativePath);
+            } else {
+                // Không upload mới → dùng logoUrl cũ nếu có
+                if (!isBlank(logoUrl)) {
+                    restaurant.setLogoUrl(logoUrl);
+                }
+            }
+            // ------------------------------------------------
 
             // parse giờ mở/đóng cửa (HH:mm) → Date (TIME) nếu có
             Date open = parseTime(openTime);
@@ -431,6 +488,14 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
             return null; // ở lại trang
 
+        } catch (IOException e) {
+            e.printStackTrace();
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Không thể lưu file logo trên máy chủ. Gửi yêu cầu xét duyệt chưa thành công.",
+                    e.getMessage()
+            ));
+            return null;
         } catch (Exception e) {
             e.printStackTrace();
             ctx.addMessage(null, new FacesMessage(
@@ -512,6 +577,9 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
     public String getLogoUrl() { return logoUrl; }
     public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
+
+    public Part getLogoFile() { return logoFile; }
+    public void setLogoFile(Part logoFile) { this.logoFile = logoFile; }
 
     public Integer getMinGuests() { return minGuests; }
     public void setMinGuests(Integer minGuests) { this.minGuests = minGuests; }
