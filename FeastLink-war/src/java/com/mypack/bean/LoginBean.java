@@ -63,6 +63,7 @@ public class LoginBean implements Serializable {
             // TODO: đổi "index" thành trang chính của bạn
             return "index?faces-redirect=true";
         }
+        
 
         // 2. Tìm trong DB theo email hoặc phone
         List<Users> list = usersFacade.findAll();
@@ -99,7 +100,7 @@ public class LoginBean implements Serializable {
         ));
 
         // TODO: đổi "index" thành trang chính của bạn
-        return "index?faces-redirect=true";
+        return "register_manager?faces-redirect=true";
     }
 
     public String logout() {
