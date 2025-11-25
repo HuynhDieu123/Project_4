@@ -51,37 +51,49 @@ public class LoginBean implements Serializable {
     public String login() {
         FacesContext ctx = FacesContext.getCurrentInstance();
 
+        // 0. Validate input đơn giản
+        if (identifier == null || identifier.trim().isEmpty()
+                || password == null || password.trim().isEmpty()) {
+
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Missing information",
+                    "Please enter your email/phone and password."
+            ));
+            return null;   // ở lại login.xhtml
+        }
+
         // 1. Account cứng admin / 123
         if ("admin".equalsIgnoreCase(identifier) && "123".equals(password)) {
             ctx.getExternalContext().getSessionMap().put("currentUserRole", "ADMIN");
-            ctx.getExternalContext().getFlash().setKeepMessages(true);
-            ctx.addMessage(null, new FacesMessage(
-                    FacesMessage.SEVERITY_INFO,
-                    "Welcome, admin",
-                    "You have signed in with administrator privileges."
-            ));
-            // TODO: đổi "index" thành trang chính của bạn
-            return "index?faces-redirect=true";
+
+            // Lưu thông tin để header hiển thị tên/email
+            ctx.getExternalContext().getSessionMap().put("loginIdentifier", identifier);
+
+            // Trang sau khi đăng nhập admin (tạm cho về Customer/index)
+            return "/Customer/index?faces-redirect=true";
         }
-        
 
         // 2. Tìm trong DB theo email hoặc phone
         List<Users> list = usersFacade.findAll();
         Users matched = null;
-        if (identifier != null && password != null) {
-            for (Users u : list) {
-                boolean sameEmail = u.getEmail() != null &&
-                        identifier.equalsIgnoreCase(u.getEmail());
-                boolean samePhone = u.getPhone() != null &&
-                        identifier.equals(u.getPhone());
-                if ((sameEmail || samePhone) && password.equals(u.getPassword())) {
-                    matched = u;
-                    break;
-                }
+
+        for (Users u : list) {
+            boolean sameEmail = u.getEmail() != null
+                    && identifier.equalsIgnoreCase(u.getEmail());
+            boolean samePhone = u.getPhone() != null
+                    && identifier.equals(u.getPhone());
+            boolean samePassword = u.getPassword() != null
+                    && password.equals(u.getPassword());
+
+            if ((sameEmail || samePhone) && samePassword) {
+                matched = u;
+                break;
             }
         }
 
         if (matched == null) {
+            // Sai thông tin -> ở lại trang login, KHÔNG redirect
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
                     "Invalid credentials",
@@ -92,26 +104,22 @@ public class LoginBean implements Serializable {
 
         // 3. Đăng nhập thành công
         ctx.getExternalContext().getSessionMap().put("currentUser", matched);
-        ctx.getExternalContext().getFlash().setKeepMessages(true);
-        ctx.addMessage(null, new FacesMessage(
-                FacesMessage.SEVERITY_INFO,
-                "Welcome back",
-                "You have successfully signed in."
-        ));
+        ctx.getExternalContext().getSessionMap().put("currentUserRole", "CUSTOMER");
 
-        // TODO: đổi "index" thành trang chính của bạn
-        return "register_manager?faces-redirect=true";
+        // Dùng chuỗi người dùng nhập (email/phone) để hiển thị trên header
+        ctx.getExternalContext().getSessionMap().put("loginIdentifier", identifier);
+
+        // Sau khi login thành công, chuyển sang trang bạn muốn
+        return "/Customer/index?faces-redirect=true";
     }
 
     public String logout() {
         FacesContext ctx = FacesContext.getCurrentInstance();
+
+        // Hủy session hiện tại (xóa luôn currentUser, loginIdentifier, ...)
         ctx.getExternalContext().invalidateSession();
-        ctx.getExternalContext().getFlash().setKeepMessages(true);
-        ctx.addMessage(null, new FacesMessage(
-                FacesMessage.SEVERITY_INFO,
-                "Signed out",
-                "You have been signed out of FeastLink."
-        ));
+
+        // Quay về trang login
         return "login?faces-redirect=true";
     }
 }

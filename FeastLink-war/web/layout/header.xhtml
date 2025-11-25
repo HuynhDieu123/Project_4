@@ -1,5 +1,6 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
                 xmlns:ui="jakarta.faces.facelets">
 
     <!-- HEADER FeastLink -->
@@ -9,7 +10,6 @@
             id="header-bg"
             class="absolute inset-0 bg-gradient-to-b from-[#020617] via-[#020617] to-[#020617] border-b border-[#facc6b]/20 shadow-[0_8px_30px_rgba(0,0,0,0.45)]">
         </div>
-
 
         <!-- NAVBAR -->
         <nav
@@ -21,7 +21,7 @@
                     <div
                         class="absolute inset-3 rounded-full blur-lg opacity-70 bg-[#d4af37]/70 group-hover:opacity-100 transition-opacity">
                     </div>
-                    <!-- Đổi đường dẫn logo sang resources JSF -->
+                    <!-- Logo từ resources -->
                     <img src="#{request.contextPath}/resources/images/feastlink-logo.png"
                          alt="FeastLink Logo"
                          class="relative w-full h-full object-contain" />
@@ -99,18 +99,37 @@
                         </a>
                     </li>
 
-                    <!-- LOGIN desktop: trỏ sang login.xhtml -->
-                    <li>
-                        <a href="#{request.contextPath}/faces/login.xhtml"
-                           class="group relative text-[#facc6b] text-sm font-semibold tracking-wide transition-all whitespace-nowrap px-4 py-1.5 rounded-full border border-[#facc6b] bg-transparent hover:bg-[#facc6b]/10 hover:text-white shadow-[0_0_14px_rgba(250,204,107,0.4)]">
-                            <span class="relative z-10">LOGIN</span>
-                        </a>
-                    </li>
+                    <!-- CHƯA LOGIN: nút LOGIN -->
+                    <ui:fragment rendered="#{empty sessionScope.loginIdentifier}">
+                        <li>
+                            <a href="#{request.contextPath}/faces/login.xhtml"
+                               class="group relative text-[#facc6b] text-sm font-semibold tracking-wide transition-all whitespace-nowrap px-4 py-1.5 rounded-full border border-[#facc6b] bg-transparent hover:bg-[#facc6b]/10 hover:text-white shadow-[0_0_14px_rgba(250,204,107,0.4)]">
+                                <span class="relative z-10">LOGIN</span>
+                            </a>
+                        </li>
+                    </ui:fragment>
 
-                    <!-- FOR RESTAURANTS: tạm dẫn đến register.xhtml -->
+                    <!-- ĐÃ LOGIN: pill nhỏ hiển thị tên -->
+                    <ui:fragment rendered="#{not empty sessionScope.loginIdentifier}">
+                        <li>
+                            <div class="inline-flex flex-col justify-center px-3 py-1 rounded-full
+                                        border border-[#facc6b]/80
+                                        bg-[#020617]
+                                        shadow-[0_0_12px_rgba(250,204,107,0.35)]">
+                                <span class="leading-tight text-[11px] font-semibold text-[#facc6b]">
+                                    #{sessionScope.loginIdentifier}
+                                </span>
+                                <span class="leading-tight text-[9px] text-slate-300">
+                                    FeastLink Member
+                                </span>
+                            </div>
+                        </li>
+                    </ui:fragment>
+
+                    <!-- FOR RESTAURANTS: luôn hiển thị -->
                     <li>
                         <button type="button"
-                                onclick="window.location = '#{request.contextPath}/faces/register.xhtml'"
+                                onclick="window.location = '#{request.contextPath}/faces/register_manager.xhtml'"
                                 class="px-6 py-2 rounded-full border border-[#facc6b] text-xs font-semibold tracking-wide text-white bg-transparent hover:bg-[#facc6b]/10 transition-all duration-300 whitespace-nowrap">
                             FOR RESTAURANTS
                         </button>
@@ -128,7 +147,6 @@
         </nav>
 
         <!-- Menu mobile -->
-        <!-- sửa lỗi <d<div> thành <div> -->
         <div id="mobileMenu"
              class="lg:hidden absolute inset-x-0 top-full origin-top scale-y-0 opacity-0 pointer-events-none transform transition-all duration-200 ease-out z-40">
             <nav class="max-w-7xl mx-auto px-4 sm:px-6 pb-4">
@@ -145,7 +163,6 @@
                             RESTAURANTS
                         </a>
                     </li>
-
                     <li>
                         <a href="#event-types"
                            class="block px-2 py-2 text-sm font-semibold tracking-wide text-white hover:text-[#facc6b]">
@@ -176,16 +193,37 @@
                             SUPPORT
                         </a>
                     </li>
-                    <li>
-                        <!-- LOGIN mobile -->
-                        <a href="#{request.contextPath}/faces/login.xhtml"
-                           class="block px-2 py-2 text-sm font-semibold tracking-wide text-white hover:text-[#facc6b]">
-                            LOGIN
-                        </a>
-                    </li>
+
+                    <!-- MOBILE: chỉ hiện LOGIN khi chưa login -->
+                    <ui:fragment rendered="#{empty sessionScope.loginIdentifier}">
+                        <li>
+                            <a href="#{request.contextPath}/faces/login.xhtml"
+                               class="block px-2 py-2 text-sm font-semibold tracking-wide text-white hover:text-[#facc6b]">
+                                LOGIN
+                            </a>
+                        </li>
+                    </ui:fragment>
+
+                    <!-- MOBILE: đã login thì hiện pill giống bạn đang có -->
+                    <ui:fragment rendered="#{not empty sessionScope.loginIdentifier}">
+                        <li class="px-2 pt-2">
+                            <div class="inline-flex flex-col justify-center px-3 py-1 rounded-full
+                                        border border-[#facc6b]/80
+                                        bg-[#020617]
+                                        shadow-[0_0_12px_rgba(250,204,107,0.35)]">
+                                <span class="leading-tight text-[11px] font-semibold text-[#facc6b]">
+                                    #{sessionScope.loginIdentifier}
+                                </span>
+                                <span class="leading-tight text-[9px] text-slate-300">
+                                    FeastLink Member
+                                </span>
+                            </div>
+                        </li>
+                    </ui:fragment>
+
                     <li class="pt-1 pb-2">
                         <button type="button"
-                                onclick="window.location = '#{request.contextPath}/faces/register.xhtml'"
+                                onclick="window.location = '#{request.contextPath}/faces/register_manager.xhtml'"
                                 class="w-full px-4 py-2 rounded-full border border-[#facc6b] text-xs font-semibold tracking-wide text-white bg-transparent hover:bg-[#facc6b]/10 transition-all duration-300">
                             FOR RESTAURANTS
                         </button>
