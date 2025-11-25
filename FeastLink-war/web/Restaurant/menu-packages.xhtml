@@ -1,11 +1,219 @@
-<?xml version='1.0' encoding='UTF-8' ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="jakarta.faces.html">
-    <h:head>
-        <title>Facelet Title</title>
-    </h:head>
-    <h:body>
-        Hello from Facelets
-    </h:body>
-</html>
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:f="jakarta.faces.core"
+                template="/Restaurant/layout-manager.xhtml">
+
+    <!-- TITLE -->
+    <ui:define name="title">
+        FeastLink - Menu &amp; Packages
+    </ui:define>
+
+    <!-- ===== TOP BAR LEFT (giống figma) ===== -->
+    <ui:define name="header">
+        <div class="flex flex-col">
+            <h1 class="text-2xl font-bold text-text-main-light">
+                Restaurant Profile Management
+            </h1>
+            <p class="text-sm text-text-secondary-light">
+                Manage your restaurant&apos;s information and policies.
+            </p>
+        </div>
+    </ui:define>
+
+    <!-- MAIN CONTENT -->
+    <ui:define name="content">
+
+        <!-- ====== HEADER ROW (TITLE + NEW BUTTON) ====== -->
+        <div class="flex items-center justify-between mt-2">
+            <div>
+                <h1 class="text-2xl font-bold text-text-main-light">
+                    Menu &amp; Packages Management
+                </h1>
+                <p class="mt-1 text-sm text-text-secondary-light">
+                    Organize your offerings for catering events.
+                </p>
+            </div>
+
+            <!-- Nút + New ... (đổi label theo tab) -->
+            <h:link outcome="/Restaurant/menu-item-new"
+                    styleClass="inline-flex items-center px-5 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
+                <span class="material-symbols-outlined mr-2 text-base">add</span>
+                #{menuPackagesBean.activeTab eq 'items'
+                  ? 'New Item'
+                  : (menuPackagesBean.activeTab eq 'packages'
+                  ? 'New Package'
+                  : 'New Category')}
+            </h:link>
+        </div>
+
+        <h:form id="menuForm" styleClass="mt-8 space-y-6">
+
+            <!-- ====== TABS (Individual / Packages / Categories) ====== -->
+            <div class="border-b border-border-light">
+                <div class="flex gap-10 text-sm font-medium">
+
+                    <!-- Individual Items -->
+                    <h:commandLink action="#{menuPackagesBean.showItems}"
+                                   styleClass="#{menuPackagesBean.activeTab eq 'items' 
+                                                 ? 'py-3 border-b-2 border-champagne-gold text-text-main-light' 
+                                                 : 'py-3 text-text-secondary-light hover:text-text-main-light'}">
+                        Individual Items
+                    </h:commandLink>
+
+                    <!-- Catering Packages -->
+                    <h:commandLink action="#{menuPackagesBean.showPackages}"
+                                   styleClass="#{menuPackagesBean.activeTab eq 'packages' 
+                                                 ? 'py-3 border-b-2 border-champagne-gold text-text-main-light' 
+                                                 : 'py-3 text-text-secondary-light hover:text-text-main-light'}">
+                        Catering Packages
+                    </h:commandLink>
+
+                    <!-- Menu Categories -->
+                    <h:commandLink action="#{menuPackagesBean.showCategories}"
+                                   styleClass="#{menuPackagesBean.activeTab eq 'categories' 
+                                                 ? 'py-3 border-b-2 border-champagne-gold text-text-main-light' 
+                                                 : 'py-3 text-text-secondary-light hover:text-text-main-light'}">
+                        Menu Categories
+                    </h:commandLink>
+
+                </div>
+            </div>
+
+            <!-- ====== SEARCH BAR ====== -->
+            <div class="mt-2">
+                <div class="relative w-full max-w-md">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary-light text-base">
+                        search
+                    </span>
+                    <input type="text"
+                           placeholder="Search items..."
+                           class="w-full pl-10 pr-3 py-2 rounded-lg border border-border-light bg-white text-sm
+                           text-text-main-light placeholder:text-text-secondary-light
+                           focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
+                </div>
+            </div>
+
+            <!-- ===================================================== -->
+            <!-- ===============  TAB 1: INDIVIDUAL ITEMS  =========== -->
+            <!-- ===================================================== -->
+            <h:panelGroup layout="block"
+                          rendered="#{menuPackagesBean.activeTab eq 'items'}">
+
+                <!-- Grid 4 card / row như Figma -->
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <ui:repeat value="#{menuPackagesBean.items}" var="item">
+
+                        <article class="bg-card-light rounded-2xl shadow-subtle overflow-hidden flex flex-col">
+
+                            <!-- Ảnh món ăn -->
+                            <div class="h-48 bg-gray-100"></div>
+
+                            <!-- Nội dung món -->
+                            <div class="px-6 pt-4 pb-3 flex-1 flex flex-col">
+                                <h3 class="text-base font-semibold text-text-main-light">
+                                    #{item.name}
+                                </h3>
+                                <p class="mt-1 text-sm text-text-secondary-light flex-1">
+                                    #{item.description}
+                                </p>
+
+                                <!-- Giá bên phải, màu vàng -->
+                                <div class="mt-3 flex justify-between items-center">
+                                    <span></span>
+                                    <span class="text-champagne-gold font-semibold text-base">
+                                        <h:outputText value="#{item.price}">
+                                            <f:convertNumber type="currency" currencySymbol="$" />
+                                        </h:outputText>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Icon Edit / Delete -->
+                            <div class="px-6 pb-4 pt-1 flex items-center justify-start gap-4 text-champagne-gold">
+                                <button type="button"
+                                        class="inline-flex items-center justify-center rounded-full hover:opacity-80">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button type="button"
+                                        class="inline-flex items-center justify-center rounded-full hover:opacity-80">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </div>
+                        </article>
+
+                    </ui:repeat>
+                </div>
+            </h:panelGroup>
+
+            <!-- ===================================================== -->
+            <!-- =========  TAB 2: CATERING PACKAGES  ================= -->
+            <!-- ===================================================== -->
+            <h:panelGroup layout="block"
+                          rendered="#{menuPackagesBean.activeTab eq 'packages'}">
+
+                <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <ui:repeat value="#{menuPackagesBean.packages}" var="pkg">
+                        <article class="bg-card-light rounded-2xl shadow-subtle border border-border-light p-6 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-base font-semibold text-text-main-light mb-1">
+                                    #{pkg.name}
+                                </h3>
+                                <p class="text-sm text-text-secondary-light mb-4">
+                                    #{pkg.description}
+                                </p>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-champagne-gold font-semibold text-lg">
+                                    <h:outputText value="#{pkg.price}">
+                                        <f:convertNumber type="currency" currencySymbol="$" />
+                                    </h:outputText>
+                                </span>
+                                <div class="flex gap-3 text-champagne-gold">
+                                    <button type="button" class="hover:opacity-80">
+                                        <span class="material-symbols-outlined text-lg">edit</span>
+                                    </button>
+                                    <button type="button" class="hover:opacity-80">
+                                        <span class="material-symbols-outlined text-lg">delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    </ui:repeat>
+                </div>
+            </h:panelGroup>
+
+            <!-- ===================================================== -->
+            <!-- ============  TAB 3: MENU CATEGORIES  ================ -->
+            <!-- ===================================================== -->
+            <h:panelGroup layout="block"
+                          rendered="#{menuPackagesBean.activeTab eq 'categories'}">
+
+                <div class="mt-4 space-y-3">
+                    <ui:repeat value="#{menuPackagesBean.categories}" var="cat">
+                        <article class="bg-card-light rounded-2xl shadow-subtle border border-border-light px-5 py-4 flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-text-main-light">
+                                    #{cat.name}
+                                </p>
+                                <p class="text-xs text-text-secondary-light">
+                                    #{cat.itemCount} items
+                                </p>
+                            </div>
+                            <div class="flex gap-3 text-champagne-gold">
+                                <button type="button" class="hover:opacity-80">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button type="button" class="hover:opacity-80">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </div>
+                        </article>
+                    </ui:repeat>
+                </div>
+            </h:panelGroup>
+
+        </h:form>
+
+    </ui:define>
+</ui:composition>
