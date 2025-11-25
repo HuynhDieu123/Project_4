@@ -1,0 +1,799 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <h:head>
+        <meta charset="UTF-8" />
+        <title>FeastLink Party Booking Website Design</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <!-- Tailwind CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- Lucide Icons CDN -->
+        <script src="https://unpkg.com/lucide@latest"></script>
+
+        <!-- Custom CSS -->
+        <style type="text/css">
+            :root {
+                --primary: #05081a;
+                --primary-dark: #020617;
+                --secondary: #d4af37;
+                --secondary-soft: #e6c77f;
+                --bg: #ffffff;
+                --bg-soft: #f9fafb;
+                --border: #e5e7eb;
+                --text: #111827;
+                --text-muted: #6b7280;
+                --accent: #f97316;
+                --accent-gold: #eab308;
+                --success: #22c55e;
+                --danger: #ef4444;
+                --bg-alt: #f5f5f4;
+                --surface-dark: #020617;
+                --surface-dark-soft: #040717;
+                --warning: #facc15;
+                --info: #38bdf8;
+                --disabled: #9ca3af;
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                    sans-serif;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                background-color: #ffffff;
+            }
+        </style>
+    </h:head>
+
+    <h:body>
+        <div id="top"></div>
+
+        <!-- HEADER -->
+        <ui:include src="header.xhtml" />
+
+        <!-- MAIN CONTENT -->
+        <div class="min-h-screen bg-[#020617]">
+
+            <!-- Hero Section -->
+            <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+                <div class="absolute inset-0 bg-cover bg-center"
+                     style="background-image: url('https://images.pexels.com/photos/1395967/pexels-photo-1395967.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1920');">
+                    <div class="absolute inset-0 bg-gradient-to-b from-[#05081a]/80 via-[#05081a]/60 to-[#05081a]/80"></div>
+                    <div class="absolute inset-0"
+                         style="background-image: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 50%);">
+                    </div>
+                </div>
+
+                <!-- golden glow blobs -->
+                <div class="absolute top-1/4 left-10 w-72 h-72 bg-[#d4af37]/10 rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-1/4 right-10 w-96 h-96 bg-[#d4af37]/5 rounded-full blur-3xl animate-pulse delay-1000">
+                </div>
+
+                <div class="relative z-10 w-full max-w-6xl mx-auto px-6 text-center">
+                    <!-- badge -->
+                    <div class="mb-6 inline-block max-w-full">
+                        <span
+                            class="inline-block max-w-full
+                            text-[#d4af37]
+                            text-[0.6rem] sm:text-xs md:text-sm
+                            font-semibold
+                            tracking-[0.18em] sm:tracking-[0.25em] md:tracking-[0.3em]
+                            uppercase
+                            border border-[#d4af37]/30
+                            px-4 sm:px-6 py-2
+                            rounded-full
+                            backdrop-blur-sm bg-[#d4af37]/5
+                            whitespace-nowrap">
+                            Vietnam's leading banquet booking platform
+                        </span>
+                    </div>
+
+                    <!-- heading -->
+                    <h1 class="text-7xl md:text-8xl font-bold text-white mb-8 tracking-tight leading-[1.1]">
+                        Book Luxury Banquets
+                        <span class="block text-[#d4af37] mt-2">Easier Than Ever Before</span>
+                    </h1>
+
+                    <!-- sub text -->
+                    <p class="text-2xl text-gray-300 mb-12 font-light tracking-wide max-w-3xl mx-auto leading-relaxed">
+                        Connecting you with <span class="text-[#e6c77f] font-medium">500+ premium restaurants</span> for every kind
+                        of event
+                    </p>
+
+                    <!-- CTA button -->
+                    <div class="flex items-center justify-center mb-12">
+                        <button class="group relative inline-flex items-center justify-center">
+                            <div
+                                class="absolute inset-0 bg-[#d4af37] rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity">
+                            </div>
+                            <div
+                                class="relative bg-[#d4af37] hover:bg-[#e6c77f] text-[#05081a] px-16 py-5 rounded-full font-bold text-lg transition-all duration-300 transform group-hover:scale-105 flex items-center gap-3">
+                                Explore Venues
+                                <span class="group-hover:translate-x-1 transition-transform">→</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Stats + Scroll Down -->
+                    <div class="mt-8 text-white w-full max-w-4xl mx-auto px-4">
+                        <div class="flex flex-col items-center gap-6 md:flex-row md:items-center md:justify-between">
+                            <!-- Left: 3 avatars + text -->
+                            <div class="flex items-center gap-3 md:flex-1 md:justify-end">
+                                <div class="flex -space-x-2">
+                                    <div
+                                        class="w-10 h-10 rounded-full border-2 border-[#05081a] bg-gradient-to-br from-[#d4af37] to-[#e6c77f]">
+                                    </div>
+                                    <div
+                                        class="w-10 h-10 rounded-full border-2 border-[#05081a] bg-gradient-to-br from-[#e6c77f] to-[#d4af37]">
+                                    </div>
+                                    <div
+                                        class="w-10 h-10 rounded-full border-2 border-[#05081a] bg-gradient-to-br from-[#d4af37] to-[#e6c77f]">
+                                    </div>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-sm font-semibold">50,000+ Events</p>
+                                    <p class="text-xs text-gray-300">Successfully hosted</p>
+                                </div>
+                            </div>
+
+                            <!-- Middle: divider + scroll down -->
+                            <div class="flex flex-col items-center gap-3 mt-16 md:mt-18">
+                                <div class="h-12 w-px bg-white/30 hidden md:block"></div>
+                                <div class="flex flex-col items-center gap-2 animate-bounce">
+                                    <span class="text-[#d4af37] text-xs tracking-wider">SCROLL DOWN</span>
+                                    <div
+                                        class="w-6 h-10 border-2 border-[#d4af37] rounded-full flex items-start justify-center pt-2">
+                                        <div class="w-1.5 h-3 bg-[#d4af37] rounded-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            <!-- Right: rating -->
+                            <div class="flex items-center gap-3 md:flex-1 md:justify-start">
+                                <i
+                                    data-lucide="star"
+                                    class="w-4 h-4 text-[#d4af37] fill-[#d4af37]">
+                                </i>
+                                <div class="text-left">
+                                    <p class="text-sm font-semibold">4.9/5 Rating</p>
+                                    <p class="text-xs text-gray-300">From 10,000+ customers</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Features Section -->
+            <section id="restaurants" class="relative py-32 bg-gradient-to-b from-white via-gray-50 to-white overflow-hidden">
+                <div class="absolute top-20 right-0 w-96 h-96 bg-[#d4af37]/5 rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-20 left-0 w-96 h-96 bg-[#d4af37]/5 rounded-full blur-3xl animate-pulse"
+                     style="animation-delay: 1s;"></div>
+
+                <!-- Decorative Lines -->
+                <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#d4af37]/20 to-transparent">
+                </div>
+                <div class="absolute top-1/2 left-0 w-32 h-px bg-gradient-to-r from-transparent to-[#d4af37]/20"></div>
+                <div class="absolute top-1/2 right-0 w-32 h-px bg-gradient-to-l from-transparent to-[#d4af37]/20"></div>
+
+                <div class="relative max-w-7xl mx-auto px-6">
+                    <div class="text-center mb-20">
+                        <div class="inline-block mb-6 relative">
+                            <div class="absolute -inset-2 bg-[#d4af37]/10 rounded-full blur-xl"></div>
+                            <span
+                                class="relative text-[#d4af37] text-sm font-semibold tracking-[0.3em] uppercase px-6 py-2 border border-[#d4af37]/30 rounded-full bg-white/50 backdrop-blur-sm">
+                                DISCOVER DESTINATIONS
+                            </span>
+                        </div>
+                        <h2 class="text-6xl md:text-7xl font-bold text-[#05081a] mb-6 leading-tight">
+                            Find the <span class="bg-gradient-to-r from-[#d4af37] to-[#e6c77f] bg-clip-text text-transparent">Perfect
+                                Venue</span>
+                        </h2>
+                        <p class="text-xl text-[#6b7280] max-w-3xl mx-auto leading-relaxed">
+                            We connect you with premium restaurants that serve every occasion,
+                            from birthdays and weddings to corporate conferences.
+                        </p>
+
+                        <!-- Category Filters -->
+                        <div class="flex flex-wrap items-center justify-center gap-3 mt-12">
+                            <button
+                                class="group px-6 py-3 bg-[#d4af37] text-[#05081a] rounded-full font-semibold text-sm hover:bg-[#e6c77f] transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                All
+                            </button>
+                            <button
+                                class="group px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-full font-semibold text-sm hover:border-[#d4af37] hover:text-[#d4af37] transition-all duration-300">
+                                Weddings
+                            </button>
+                            <button
+                                class="group px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-full font-semibold text-sm hover:border-[#d4af37] hover:text-[#d4af37] transition-all duration-300">
+                                Birthdays
+                            </button>
+                            <button
+                                class="group px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-full font-semibold text-sm hover:border-[#d4af37] hover:text-[#d4af37] transition-all duration-300">
+                                Corporate
+                            </button>
+                            <button
+                                class="group px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-full font-semibold text-sm hover:border-[#d4af37] hover:text-[#d4af37] transition-all duration-300">
+                                Conferences
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <!-- Feature Card 1 -->
+                        <div
+                            class="group relative bg-white rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 border border-gray-100">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-b from-transparent via-[#05081a]/50 to-[#05081a]/90 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                            </div>
+                            <div
+                                class="absolute inset-0 border-2 border-[#d4af37] opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity duration-500 z-30">
+                            </div>
+
+                            <div class="h-80 overflow-hidden relative">
+                                <img
+                                    src="https://images.pexels.com/photos/2788792/pexels-photo-2788792.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=800"
+                                    alt="Luxury Banquet"
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#05081a]/20 to-transparent"></div>
+                            </div>
+
+                            <div class="absolute top-6 left-6 z-20 flex flex-col gap-2">
+                                <div
+                                    class="bg-[#d4af37] text-[#05081a] px-4 py-2 rounded-full text-xs font-bold tracking-wider shadow-lg backdrop-blur-sm inline-flex items-center gap-2">
+                                    <span class="w-2 h-2 bg-[#05081a] rounded-full animate-pulse"></span>
+                                    HOT
+                                </div>
+                            </div>
+
+                            <div class="absolute top-6 right-6 z-20">
+                                <div
+                                    class="bg-white/90 backdrop-blur-sm text-[#05081a] px-3 py-2 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                                    <i data-lucide="star" class="w-3 h-3 text-[#d4af37] fill-[#d4af37]"></i>
+                                    4.9
+                                </div>
+                            </div>
+
+                            <div class="relative z-20 p-8 bg-white group-hover:bg-transparent transition-colors duration-500">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div
+                                        class="p-3 bg-[#d4af37]/10 rounded-xl group-hover:bg-[#d4af37] transition-colors duration-500 shadow-md">
+                                        <i data-lucide="chef-hat" class="w-6 h-6 text-[#d4af37] group-hover:text-[#05081a]"></i>
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-[#05081a] group-hover:text-white transition-colors duration-500">
+                                        Luxury Restaurant
+                                    </h3>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i data-lucide="map-pin" class="w-4 h-4 text-[#d4af37]"></i>
+                                    <p class="text-[#d4af37] text-sm font-semibold tracking-wider">HO CHI MINH CITY</p>
+                                </div>
+                                <p class="text-[#111827] leading-relaxed group-hover:text-gray-300 transition-colors duration-500 mb-4">
+                                    5-star restaurants with diverse menus, serving from 50–500 guests.
+                                </p>
+                                <div class="flex items-center gap-4 text-xs text-gray-500 group-hover:text-gray-400 mb-4">
+                                    <div class="flex items-center gap-1">
+                                        <i data-lucide="users" class="w-4 h-4"></i>
+                                        <span>50–500 guests</span>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <i data-lucide="award" class="w-4 h-4"></i>
+                                        <span>5-Star Rated</span>
+                                    </div>
+                                </div>
+                                <div
+                                    class="mt-6 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500 border-t border-white/20 pt-4">
+                                    <span class="text-white text-sm font-semibold">View details</span>
+                                    <span class="text-white transform group-hover:translate-x-2 transition-transform">→</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature Card 2 -->
+                        <div
+                            class="group relative bg-white rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 border border-gray-100">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-b from-transparent via-[#05081a]/50 to-[#05081a]/90 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                            </div>
+                            <div
+                                class="absolute inset-0 border-2 border-[#d4af37] opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity duration-500 z-30">
+                            </div>
+
+                            <div class="h-80 overflow-hidden relative">
+                                <img
+                                    src="https://images.pexels.com/photos/1058277/pexels-photo-1058277.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=800"
+                                    alt="Buffet Hall"
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#05081a]/20 to-transparent"></div>
+                            </div>
+
+                            <div class="absolute top-6 left-6 z-20 flex flex-col gap-2">
+                                <div
+                                    class="bg-white/90 backdrop-blur-sm text-[#05081a] px-4 py-2 rounded-full text-xs font-bold tracking-wider shadow-lg inline-flex items-center gap-2">
+                                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                    NEW
+                                </div>
+                            </div>
+
+                            <div class="absolute top-6 right-6 z-20">
+                                <div
+                                    class="bg-white/90 backdrop-blur-sm text-[#05081a] px-3 py-2 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                                    <i data-lucide="star" class="w-3 h-3 text-[#d4af37] fill-[#d4af37]"></i>
+                                    4.8
+                                </div>
+                            </div>
+
+                            <div class="relative z-20 p-8 bg-white group-hover:bg-transparent transition-colors duration-500">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div
+                                        class="p-3 bg-[#d4af37]/10 rounded-xl group-hover:bg-[#d4af37] transition-colors duration-500 shadow-md">
+                                        <i data-lucide="award" class="w-6 h-6 text-[#d4af37] group-hover:text-[#05081a]"></i>
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-[#05081a] group-hover:text-white transition-colors duration-500">
+                                        Buffet Banquet Hall
+                                    </h3>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i data-lucide="map-pin" class="w-4 h-4 text-[#d4af37]"></i>
+                                    <p class="text-[#d4af37] text-sm font-semibold tracking-wider">HANOI</p>
+                                </div>
+                                <p class="text-[#111827] leading-relaxed group-hover:text-gray-300 transition-colors duration-500 mb-4">
+                                    Spacious buffet venue with a wide variety of dishes, ideal for large events.
+                                </p>
+                                <div class="flex items-center gap-4 text-xs text-gray-500 group-hover:text-gray-400 mb-4">
+                                    <div class="flex items-center gap-1">
+                                        <i data-lucide="users" class="w-4 h-4"></i>
+                                        <span>100–800 guests</span>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <i data-lucide="chef-hat" class="w-4 h-4"></i>
+                                        <span>Buffet Style</span>
+                                    </div>
+                                </div>
+                                <div
+                                    class="mt-6 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500 border-t border-white/20 pt-4">
+                                    <span class="text-white text-sm font-semibold">View details</span>
+                                    <span class="text-white transform group-hover:translate-x-2 transition-transform">→</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature Card 3 -->
+                        <div
+                            class="group relative bg-white rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 border border-gray-100">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-b from-transparent via-[#05081a]/50 to-[#05081a]/90 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                            </div>
+                            <div
+                                class="absolute inset-0 border-2 border-[#d4af37] opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity duration-500 z-30">
+                            </div>
+
+                            <div class="h-80 overflow-hidden relative">
+                                <img
+                                    src="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=800"
+                                    alt="Outdoor Garden Party"
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#05081a]/20 to-transparent"></div>
+                            </div>
+
+                            <div class="absolute top-6 left-6 z-20 flex flex-col gap-2">
+                                <div
+                                    class="bg-[#d4af37] text-[#05081a] px-4 py-2 rounded-full text-xs font-bold tracking-wider shadow-lg backdrop-blur-sm inline-flex items-center gap-1">
+                                    <i data-lucide="star" class="w-3 h-3 fill-[#05081a]"></i>
+                                    TOP
+                                </div>
+                            </div>
+
+                            <div class="absolute top-6 right-6 z-20">
+                                <div
+                                    class="bg-white/90 backdrop-blur-sm text-[#05081a] px-3 py-2 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                                    <i data-lucide="star" class="w-3 h-3 text-[#d4af37] fill-[#d4af37]"></i>
+                                    5.0
+                                </div>
+                            </div>
+
+                            <div class="relative z-20 p-8 bg-white group-hover:bg-transparent transition-colors duration-500">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div
+                                        class="p-3 bg-[#d4af37]/10 rounded-xl group-hover:bg-[#d4af37] transition-colors duration-500 shadow-md">
+                                        <i data-lucide="star" class="w-6 h-6 text-[#d4af37] group-hover:text-[#05081a]"></i>
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-[#05081a] group-hover:text-white transition-colors duration-500">
+                                        Garden Party Venue
+                                    </h3>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i data-lucide="map-pin" class="w-4 h-4 text-[#d4af37]"></i>
+                                    <p class="text-[#d4af37] text-sm font-semibold tracking-wider">DA NANG</p>
+                                </div>
+                                <p class="text-[#111827] leading-relaxed group-hover:text-gray-300 transition-colors duration-500 mb-4">
+                                    Romantic outdoor space with stunning views for weddings and birthday parties.
+                                </p>
+                                <div class="flex items-center gap-4 text-xs text-gray-500 group-hover:text-gray-400 mb-4">
+                                    <div class="flex items-center gap-1">
+                                        <i data-lucide="users" class="w-4 h-4"></i>
+                                        <span>30–200 guests</span>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <span>🌳</span>
+                                        <span>Outdoor</span>
+                                    </div>
+                                </div>
+                                <div
+                                    class="mt-6 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-500 border-t border-white/20 pt-4">
+                                    <span class="text-white text-sm font-semibold">View details</span>
+                                    <span class="text-white transform group-hover:translate-x-2 transition-transform">→</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-16">
+                        <button
+                            class="group relative inline-flex items-center gap-3 text-[#d4af37] hover:text-[#05081a] font-bold text-base tracking-wider transition-colors">
+                            <span>VIEW ALL VENUES</span>
+                            <span class="group-hover:translate-x-2 transition-transform">→</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300">
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Services Section -->
+            <section id="event-types" class="relative py-32 bg-[#05081a] overflow-hidden">
+                <div class="absolute inset-0 opacity-10">
+                    <div class="absolute top-0 left-1/4 w-96 h-96 bg-[#d4af37] rounded-full blur-3xl"></div>
+                    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-[#d4af37] rounded-full blur-3xl"></div>
+                </div>
+
+                <div class="relative max-w-7xl mx-auto px-6">
+                    <div class="text-center mb-20">
+                        <div class="inline-block mb-6">
+                            <span class="text-[#d4af37] text-sm font-semibold tracking-[0.3em] uppercase">SUCCESS STORIES</span>
+                        </div>
+                        <h2 class="text-6xl font-bold text-white mb-6 leading-tight">
+                            Truly <span class="text-[#d4af37]">Exceptional</span> Experiences
+                        </h2>
+                        <p class="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+                            Over 50,000 events have been successfully hosted with FeastLink.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Service Card 1 -->
+                        <div
+                            class="group relative overflow-hidden rounded-3xl shadow-2xl hover:shadow-[#d4af37]/20 transition-all duration-500 hover:-translate-y-2">
+                            <div class="h-[500px] overflow-hidden">
+                                <img
+                                    src="https://images.pexels.com/photos/3171815/pexels-photo-3171815.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1000"
+                                    alt="Wedding Event"
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#05081a] via-[#05081a]/70 to-transparent"></div>
+                            </div>
+                            <div class="absolute inset-0 flex flex-col justify-end p-10">
+                                <div class="absolute top-8 left-8 flex items-center gap-3 bg-[#d4af37] px-4 py-2 rounded-full">
+                                    <i data-lucide="calendar" class="w-4 h-4 text-[#05081a]"></i>
+                                    <span class="text-sm text-[#05081a] font-bold tracking-wider">DECEMBER 12, 2025</span>
+                                </div>
+                                <div
+                                    class="absolute top-8 right-8 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                                    <span class="text-sm text-white font-semibold">Wedding</span>
+                                </div>
+                                <h3
+                                    class="text-4xl font-bold mb-4 text-white leading-tight group-hover:text-[#d4af37] transition-colors duration-300">
+                                    A Memorable Wedding in Saigon
+                                </h3>
+                                <p class="text-gray-300 leading-relaxed mb-6 text-lg">
+                                    A perfect wedding at a 5-star restaurant with 300 guests,
+                                    dedicated service, and a world-class menu.
+                                </p>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex items-center gap-2 text-[#d4af37]">
+                                            <i data-lucide="users" class="w-5 h-5"></i>
+                                            <span class="text-sm font-semibold">300 Guests</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-[#d4af37]">
+                                            <i data-lucide="star" class="w-5 h-5 fill-[#d4af37]"></i>
+                                            <span class="text-sm font-semibold">5-Star Rated</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        class="flex items-center gap-2 text-white hover:text-[#d4af37] font-semibold transition-colors group/btn">
+                                        <span>Read more</span>
+                                        <span class="group-hover/btn:translate-x-1 transition-transform">→</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Service Card 2 -->
+                        <div
+                            class="group relative overflow-hidden rounded-3xl shadow-2xl hover:shadow-[#d4af37]/20 transition-all duration-500 hover:-translate-y-2">
+                            <div class="h-[500px] overflow-hidden">
+                                <img
+                                    src="https://images.pexels.com/photos/1024359/pexels-photo-1024359.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1000"
+                                    alt="Corporate Event"
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#05081a] via-[#05081a]/70 to-transparent"></div>
+                            </div>
+                            <div class="absolute inset-0 flex flex-col justify-end p-10">
+                                <div class="absolute top-8 left-8 flex items-center gap-3 bg-[#d4af37] px-4 py-2 rounded-full">
+                                    <i data-lucide="calendar" class="w-4 h-4 text-[#05081a]"></i>
+                                    <span class="text-sm text-[#05081a] font-bold tracking-wider">NOVEMBER 28, 2025</span>
+                                </div>
+                                <div
+                                    class="absolute top-8 right-8 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                                    <span class="text-sm text-white font-semibold">Corporate</span>
+                                </div>
+                                <h3
+                                    class="text-4xl font-bold mb-4 text-white leading-tight group-hover:text-[#d4af37] transition-colors duration-300">
+                                    Large-Scale Corporate Conference
+                                </h3>
+                                <p class="text-gray-300 leading-relaxed mb-6 text-lg">
+                                    A 200-guest corporate conference with full modern equipment
+                                    and premium buffet service in the city center.
+                                </p>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex items-center gap-2 text-[#d4af37]">
+                                            <i data-lucide="users" class="w-5 h-5"></i>
+                                            <span class="text-sm font-semibold">200 Guests</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-[#d4af37]">
+                                            <i data-lucide="award" class="w-5 h-5"></i>
+                                            <span class="text-sm font-semibold">Premium Service</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        class="flex items-center gap-2 text-white hover:text-[#d4af37] font-semibold transition-colors group/btn">
+                                        <span>Read more</span>
+                                        <span class="group-hover/btn:translate-x-1 transition-transform">→</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-16">
+                        <button
+                            class="group relative inline-flex items-center gap-3 bg-[#d4af37] hover:bg-[#e6c77f] text-[#05081a] font-bold text-base tracking-wider px-10 py-4 rounded-full transition-all duration-300 transform hover:scale-105">
+                            <span>VIEW ALL STORIES</span>
+                            <span class="group-hover:translate-x-2 transition-transform">→</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CTA Section -->
+            <section class="relative py-40 overflow-hidden">
+                <div class="absolute inset-0 bg-cover bg-center"
+                     style="background-image: url('https://images.pexels.com/photos/587741/pexels-photo-587741.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1920');">
+                    <div class="absolute inset-0 bg-gradient-to-br from-[#05081a]/90 via-[#d4af37]/20 to-[#05081a]/90"></div>
+                    <div class="absolute inset-0"
+                         style="background-image: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(212, 175, 55, 0.03) 2px, rgba(212, 175, 55, 0.03) 4px);">
+                    </div>
+                </div>
+
+                <div
+                    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#d4af37]/20 rounded-full blur-3xl">
+                </div>
+
+                <div class="relative z-10 max-w-5xl mx-auto text-center px-6">
+                    <div
+                        class="inline-flex items-center gap-2 bg-[#d4af37]/20 backdrop-blur-sm border border-[#d4af37]/30 px-6 py-3 rounded-full mb-8">
+                        <i data-lucide="star" class="w-4 h-4 text-[#d4af37] fill-[#d4af37]"></i>
+                        <span class="text-[#d4af37] text-sm font-bold tracking-wider">EXCLUSIVE OFFER</span>
+                    </div>
+
+                    <h2 class="text-6xl md:text-7xl font-bold text-white mb-8 leading-tight">
+                        Ready to Host<br />
+                        <span class="text-[#d4af37]">Your Dream Event?</span>
+                    </h2>
+
+                    <p class="text-2xl text-gray-300 mb-12 leading-relaxed max-w-3xl mx-auto">
+                        Hundreds of premium venues are waiting for you. Book your banquet today
+                        and receive a <span class="text-[#d4af37] font-bold">20% discount</span> on your first booking.
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16">
+                        <button
+                            class="group relative overflow-hidden bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:from-[#ea580c] hover:to-[#c2410c] text-white px-16 py-6 rounded-full font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-[#f97316]/50">
+                            <span class="relative z-10 flex items-center gap-3">
+                                BOOK YOUR EVENT
+                                <span class="group-hover:translate-x-1 transition-transform">→</span>
+                            </span>
+                            <div
+                                class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                            </div>
+                        </button>
+
+                        <button
+                            class="group relative border-2 border-white/30 hover:border-[#d4af37] text-white hover:text-[#d4af37] px-16 py-6 rounded-full font-bold text-xl transition-all duration-300 backdrop-blur-sm bg-white/5">
+                            <span class="flex items-center gap-3">
+                                FREE CONSULTATION
+                                <i data-lucide="search" class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300"></i>
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-8 text-white/80 text-sm">
+                        <div class="flex items-center gap-2">
+                            <div class="w-5 h-5 rounded-full bg-[#d4af37]/20 flex items-center justify-center">
+                                <div class="w-2 h-2 rounded-full bg-[#d4af37]"></div>
+                            </div>
+                            <span>No hidden fees</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-5 h-5 rounded-full bg-[#d4af37]/20 flex items-center justify-center">
+                                <div class="w-2 h-2 rounded-full bg-[#d4af37]"></div>
+                            </div>
+                            <span>24/7 support</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-5 h-5 rounded-full bg-[#d4af37]/20 flex items-center justify-center">
+                                <div class="w-2 h-2 rounded-full bg-[#d4af37]"></div>
+                            </div>
+                            <span>Money-back guarantee</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stats Section -->
+            <section class="relative py-32 bg-gradient-to-b from-white to-gray-50 overflow-hidden">
+                <div
+                    class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-[#d4af37]/30 to-transparent">
+                </div>
+
+                <div class="max-w-7xl mx-auto px-6">
+                    <div class="text-center mb-20">
+                        <h2 class="text-5xl font-bold text-[#05081a] mb-4">
+                            Impressive Numbers
+                        </h2>
+                        <p class="text-lg text-[#6b7280]">
+                            Milestones we are proud of
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        <div
+                            class="group relative bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-br from-[#d4af37]/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                            </div>
+                            <div class="relative">
+                                <div
+                                    class="inline-flex items-center justify-center w-16 h-16 bg-[#d4af37]/10 rounded-full mb-6 group-hover:bg-[#d4af37] transition-colors duration-300">
+                                    <i data-lucide="map-pin"
+                                       class="w-8 h-8 text-[#d4af37] group-hover:text-white transition-colors duration-300"></i>
+                                </div>
+                                <div
+                                    class="text-6xl font-bold text-[#d4af37] mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    500+</div>
+                                <div class="text-sm text-[#6b7280] uppercase tracking-wider font-semibold">Restaurants</div>
+                                <p class="text-xs text-gray-400 mt-2">Across Vietnam</p>
+                            </div>
+                        </div>
+
+                        <div
+                            class="group relative bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-br from-[#d4af37]/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                            </div>
+                            <div class="relative">
+                                <div
+                                    class="inline-flex items-center justify-center w-16 h-16 bg-[#d4af37]/10 rounded-full mb-6 group-hover:bg-[#d4af37] transition-colors duration-300">
+                                    <i data-lucide="calendar"
+                                       class="w-8 h-8 text-[#d4af37] group-hover:text-white transition-colors duration-300"></i>
+                                </div>
+                                <div
+                                    class="text-6xl font-bold text-[#d4af37] mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    50K+</div>
+                                <div class="text-sm text-[#6b7280] uppercase tracking-wider font-semibold">Successful Events</div>
+                                <p class="text-xs text-gray-400 mt-2">And counting</p>
+                            </div>
+                        </div>
+
+                        <div
+                            class="group relative bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-br from-[#d4af37]/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                            </div>
+                            <div class="relative">
+                                <div
+                                    class="inline-flex items-center justify-center w-16 h-16 bg-[#d4af37]/10 rounded-full mb-6 group-hover:bg-[#d4af37] transition-colors duration-300">
+                                    <i data-lucide="star"
+                                       class="w-8 h-8 text-[#d4af37] fill-[#d4af37] group-hover:text-white group-hover:fill-white transition-colors duration-300"></i>
+                                </div>
+                                <div
+                                    class="text-6xl font-bold text-[#d4af37] mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    98%</div>
+                                <div class="text-sm text-[#6b7280] uppercase tracking-wider font-semibold">Satisfaction</div>
+                                <p class="text-xs text-gray-400 mt-2">From our customers</p>
+                            </div>
+                        </div>
+
+                        <div
+                            class="group relative bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-br from-[#d4af37]/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                            </div>
+                            <div class="relative">
+                                <div
+                                    class="inline-flex items-center justify-center w-16 h-16 bg-[#d4af37]/10 rounded-full mb-6 group-hover:bg-[#d4af37] transition-colors duration-300">
+                                    <i data-lucide="users"
+                                       class="w-8 h-8 text-[#d4af37] group-hover:text-white transition-colors duration-300"></i>
+                                </div>
+                                <div
+                                    class="text-6xl font-bold text-[#d4af37] mb-3 group-hover:scale-110 transition-transform duration-300">
+                                    24/7</div>
+                                <div class="text-sm text-[#6b7280] uppercase tracking-wider font-semibold">Support</div>
+                                <p class="text-xs text-gray-400 mt-2">Always available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div> <!-- end main wrapper -->
+
+        <!-- FOOTER -->
+        <ui:include src="footer.xhtml" />
+
+        <!-- JS: init header menu + Lucide icons -->
+        <script type="text/javascript">
+            function initHeaderMenu() {
+                var btn = document.getElementById('mobileToggle');
+                var menu = document.getElementById('mobileMenu');
+                if (!btn || !menu) {
+                    return;
+                }
+                btn.addEventListener('click', function () {
+                    menu.classList.toggle('scale-y-0');
+                    menu.classList.toggle('opacity-0');
+                    menu.classList.toggle('pointer-events-none');
+                });
+            }
+
+            function initScrollHint() {
+                var hint = document.getElementById('scrollHint');
+                if (!hint)
+                    return;
+
+                var shown = false;
+
+                window.addEventListener('scroll', function () {
+                    if (shown)
+                        return;
+                    if (window.scrollY > 40) { // kéo nhẹ xuống là hiện
+                        shown = true;
+                        hint.classList.remove('opacity-0', 'translate-y-2', 'pointer-events-none');
+                        hint.classList.add('opacity-100', 'translate-y-0');
+                    }
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                initHeaderMenu();
+                initScrollHint();
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            });
+        </script>
+
+
+    </h:body>
+</html>

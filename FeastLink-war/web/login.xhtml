@@ -2,159 +2,165 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="http://xmlns.jcp.org/jsf/html"
       xmlns:f="http://xmlns.jcp.org/jsf/core">
-<h:head>
-    <title>FeastLink – Sign in</title>
-    <meta charset="UTF-8" />
-    <link rel="stylesheet" type="text/css"
-          href="#{request.contextPath}/css/auth.css" />
-</h:head>
+    <h:head>
+        <title>FeastLink – Sign in</title>
+        <meta charset="UTF-8" />
+        <link rel="stylesheet" type="text/css"
+              href="#{request.contextPath}/css/auth.css" />
+    </h:head>
 
-<h:body>
-    <div class="auth-shell">
+    <h:body>
+        <div class="auth-shell">
+            <div class="auth-shell-inner">
 
-        <!-- LEFT visual -->
-        <div class="auth-left">
-            <div class="auth-left-overlay"></div>
-            <div class="auth-left-content">
+                <!-- LEFT visual -->
+                <div class="auth-left">
+                    <div class="auth-left-overlay"></div>
+                    <div class="auth-left-content">
 
-                <!-- LOGO HOÀNG GIA -->
-                <h:graphicImage library="images"
-                                name="feastlink-logo.png"
-                                styleClass="auth-logo-mark" />
-
-                <div class="auth-left-badge">BANQUET EXPERIENCE VISUAL</div>
-                <div class="auth-left-logo">Feast<span>Link</span></div>
-                <div class="auth-left-tagline">
-                    Premium Banquet &amp; Catering Booking
-                </div>
-                <p class="auth-left-sub">
-                    Premium venues, cinematic atmospheres and signature menus –
-                    all in one seamless booking experience.
-                </p>
-            </div>
-        </div>
-
-        <!-- RIGHT card -->
-        <div class="auth-right">
-            <div class="auth-card">
-                <h:form id="loginForm">
-
-                    <!-- Logo nhỏ trong card -->
-                    <div style="display:flex; justify-content:center; margin-bottom:10px;">
                         <h:graphicImage library="images"
                                         name="feastlink-logo.png"
-                                        style="width:38px; height:auto; border-radius:999px;" />
-                    </div>
+                                        styleClass="auth-logo-mark" />
 
-                    <div class="auth-title">
-                        Sign in to <span>FeastLink</span>
-                    </div>
-                    <div class="auth-subtitle">
-                        Access your reservations, favourites and member-only benefits.
-                    </div>
-
-                    <div style="margin-top:10px;font-size:12px;">
-                        <h:messages layout="list"
-                                    infoClass="msg-info"
-                                    errorClass="msg-error"
-                                    warnClass="msg-warn" />
-                    </div>
-
-                    <div class="auth-form-grid">
-
-                        <div>
-                            <label for="identifier" class="auth-label">Email or Phone</label>
-                            <h:inputText id="identifier"
-                                         value="#{loginBean.identifier}"
-                                         required="true"
-                                         requiredMessage="Please enter your email or phone."
-                                         styleClass="auth-input">
-                                <f:passThroughAttribute name="placeholder"
-                                                        value="Enter your email or phone" />
-                            </h:inputText>
-                            <h:message for="identifier" styleClass="msg-error" />
+                        <div class="auth-left-badge">BANQUET EXPERIENCE VISUAL</div>
+                        <div class="auth-left-logo">
+                            Feast<span>Link</span>
                         </div>
 
-                        <div>
-                            <label for="password" class="auth-label">Password</label>
-                            <div class="password-field">
-                                <h:inputSecret id="password"
-                                               value="#{loginBean.password}"
-                                               required="true"
-                                               requiredMessage="Please enter your password."
-                                               styleClass="auth-input">
-                                    <f:passThroughAttribute name="placeholder"
-                                                            value="Enter your password" />
-                                </h:inputSecret>
-                                <span class="password-toggle"
-                                      data-target="loginForm:password"
-                                      title="Show/Hide password">&#128065;</span>
+                        <div class="auth-left-tagline">
+                            Premium Banquet &amp; Catering Booking
+                        </div>
+
+                        <p class="auth-left-sub">
+                            Handpicked venues, cinematic atmospheres and signature menus –
+                            all woven into one seamless booking experience.
+                        </p>
+
+                    </div>
+                </div>
+
+                <!-- RIGHT card -->
+                <div class="auth-right">
+                    <div class="auth-card">
+                        <h:form id="loginForm">
+
+                            <div style="display:flex; justify-content:center; margin-bottom:10px;">
+                                <h:graphicImage library="images"
+                                                name="feastlink-logo.png"
+                                                style="width:100px; height:auto; border-radius:999px;" />
                             </div>
-                            <h:message for="password" styleClass="msg-error" />
-                        </div>
 
+                            <div class="auth-title">
+                                Sign in to <span>FeastLink</span>
+                            </div>
+                            <div class="auth-subtitle">
+                                Access your reservations, favourites and member-only benefits.
+                            </div>
+
+                            <div style="margin-top:10px;font-size:12px;">
+                                <h:messages layout="list"
+                                            infoClass="msg-info"
+                                            errorClass="msg-error"
+                                            warnClass="msg-warn" />
+                            </div>
+
+                            <div class="auth-form-grid">
+
+                                <div>
+                                    <label for="identifier" class="auth-label">Email or Phone</label>
+                                    <h:inputText id="identifier"
+                                                 value="#{loginBean.identifier}"
+                                                 required="true"
+                                                 requiredMessage="Please enter your email or phone."
+                                                 styleClass="auth-input">
+                                        <f:passThroughAttribute name="placeholder"
+                                                                value="Enter your email or phone" />
+                                    </h:inputText>
+                                    <h:message for="identifier" styleClass="msg-error" />
+                                </div>
+
+                                <div>
+                                    <label for="password" class="auth-label">Password</label>
+                                    <div class="password-field">
+                                        <h:inputSecret id="password"
+                                                       value="#{loginBean.password}"
+                                                       required="true"
+                                                       requiredMessage="Please enter your password."
+                                                       styleClass="auth-input">
+                                            <f:passThroughAttribute name="placeholder"
+                                                                    value="Enter your password" />
+                                        </h:inputSecret>
+                                        <span class="password-toggle"
+                                              data-target="loginForm:password"
+                                              title="Show/Hide password">&#128065;</span>
+                                    </div>
+                                    <h:message for="password" styleClass="msg-error" />
+                                </div>
+
+                            </div>
+
+                            <div class="auth-row-inline">
+                                <div class="auth-checkbox">
+                                    <h:selectBooleanCheckbox id="remember"
+                                                             value="#{loginBean.rememberMe}" />
+                                    <label for="remember">Remember me</label>
+                                </div>
+
+                                <h:link outcome="forgot-password"
+                                        styleClass="auth-link"
+                                        value="Forgot password?" />
+                            </div>
+
+                            <h:commandButton value="Sign in"
+                                             action="#{loginBean.login}"
+                                             styleClass="btn-primary" />
+
+                            <h:commandButton value="Create account"
+                                             immediate="true"
+                                             action="register?faces-redirect=true"
+                                             styleClass="btn-secondary" />
+
+                            <div class="auth-footer">
+                                New to FeastLink?
+                                <h:link outcome="register"
+                                        styleClass="auth-link"
+                                        value="Create account" />
+                            </div>
+
+                        </h:form>
                     </div>
+                </div>
 
-                    <div class="auth-row-inline">
-                        <div class="auth-checkbox">
-                            <h:selectBooleanCheckbox id="remember"
-                                                     value="#{loginBean.rememberMe}" />
-                            <label for="remember">Remember me</label>
-                        </div>
-
-                        <h:link outcome="forgot-password"
-                                styleClass="auth-link"
-                                value="Forgot password?" />
-                    </div>
-
-                    <h:commandButton value="Sign in"
-                                     action="#{loginBean.login}"
-                                     styleClass="btn-primary" />
-
-                    <h:commandButton value="Create account"
-                                     immediate="true"
-                                     action="register?faces-redirect=true"
-                                     styleClass="btn-secondary" />
-
-                    <div class="auth-footer">
-                        New to FeastLink?
-                        <h:link outcome="register"
-                                styleClass="auth-link"
-                                value="Create account" />
-                    </div>
-
-                </h:form>
             </div>
         </div>
 
-    </div>
-
-    <!-- JS: eye toggle -->
-    <script type="text/javascript">
-        //<![CDATA[
-        (function () {
-            function initPasswordToggles() {
-                var toggles = document.querySelectorAll('.password-toggle');
-                for (var i = 0; i < toggles.length; i++) {
-                    (function (t) {
-                        var targetId = t.getAttribute('data-target');
-                        var input = document.getElementById(targetId);
-                        if (!input) return;
-                        t.addEventListener('click', function () {
-                            if (input.type === "password") {
-                                input.type = "text";
-                                t.classList.add('password-toggle--active');
-                            } else {
-                                input.type = "password";
-                                t.classList.remove('password-toggle--active');
-                            }
-                        });
-                    })(toggles[i]);
+        <!-- JS: eye toggle -->
+        <script type="text/javascript">
+            //<![CDATA[
+            (function () {
+                function initPasswordToggles() {
+                    var toggles = document.querySelectorAll('.password-toggle');
+                    for (var i = 0; i < toggles.length; i++) {
+                        (function (t) {
+                            var targetId = t.getAttribute('data-target');
+                            var input = document.getElementById(targetId);
+                            if (!input)
+                                return;
+                            t.addEventListener('click', function () {
+                                if (input.type === "password") {
+                                    input.type = "text";
+                                    t.classList.add('password-toggle--active');
+                                } else {
+                                    input.type = "password";
+                                    t.classList.remove('password-toggle--active');
+                                }
+                            });
+                        })(toggles[i]);
+                    }
                 }
-            }
-            window.addEventListener('load', initPasswordToggles);
-        })();
-        //]]>
-    </script>
-</h:body>
+                window.addEventListener('load', initPasswordToggles);
+            })();
+            //]]>
+        </script>
+    </h:body>
 </html>
