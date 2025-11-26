@@ -26,6 +26,17 @@ public interface BookingsFacadeLocal {
     List<Bookings> findAll();
 
     List<Bookings> findRange(int[] range);
+    
+    long countAllBookings();
+    
+    double calculateMonthlyRevenue();
+    
+    double getCancelRate();
+    
+    long countPendingApprovals();
+    public double calculateCancelRate();
+    
+    List<Bookings> findRecentBookings();
 
     int count();
     

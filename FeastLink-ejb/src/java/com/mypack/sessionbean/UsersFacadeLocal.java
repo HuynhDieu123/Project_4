@@ -20,6 +20,7 @@ public interface UsersFacadeLocal {
     void edit(Users users);
 
     void remove(Users users);
+    long countUsers();
 
     Users find(Object id);
 

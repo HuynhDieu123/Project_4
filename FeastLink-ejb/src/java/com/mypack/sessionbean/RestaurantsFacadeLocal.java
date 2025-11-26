@@ -26,6 +26,8 @@ public interface RestaurantsFacadeLocal {
     List<Restaurants> findAll();
 
     List<Restaurants> findRange(int[] range);
+    
+    long countRestaurants();
 
     int count();
     

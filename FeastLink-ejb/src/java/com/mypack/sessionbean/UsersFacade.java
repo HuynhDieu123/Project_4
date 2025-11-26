@@ -28,4 +28,9 @@ public class UsersFacade extends AbstractFacade<Users> implements UsersFacadeLoc
         super(Users.class);
     }
     
+    @Override
+    public long countUsers() {
+        return (long) em.createQuery("SELECT COUNT(u) FROM Users u").getSingleResult();
+    }
+
 }
