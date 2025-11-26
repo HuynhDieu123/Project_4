@@ -10,7 +10,7 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" type="text/css"
           href="#{request.contextPath}/css/profile.css" />
-     <script src="https://cdn.tailwindcss.com"></script>
+      <script src="https://cdn.tailwindcss.com"></script>
 
         <!-- Lucide Icons CDN -->
         <script src="https://unpkg.com/lucide@latest"></script>
@@ -25,7 +25,7 @@
     <div class="profile-shell">
         <h:form id="profileForm" enctype="multipart/form-data">
 
-            <!-- Nếu muốn giữ message thì vẫn để, nhưng redirect sẽ không giữ lại; có thể bỏ nếu thấy thừa -->
+            <!-- THÔNG BÁO (thành công + lỗi required) -->
             <h:messages style="margin:0 auto 16px;max-width:1100px;font-size:12px;"
                         infoClass="msg-info"
                         errorClass="msg-error"
@@ -107,28 +107,39 @@
                         </div>
 
                         <div class="profile-grid">
+                            <!-- Full name (required) -->
                             <div class="profile-field">
                                 <label class="profile-label">Full name</label>
                                 <h:inputText value="#{profileBean.fullName}"
-                                             styleClass="profile-input" />
+                                             styleClass="profile-input"
+                                             required="true"
+                                             requiredMessage="Please enter your full name." />
                             </div>
 
+                            <!-- Phone (required) -->
                             <div class="profile-field">
                                 <label class="profile-label">Phone</label>
                                 <h:inputText value="#{profileBean.phone}"
-                                             styleClass="profile-input" />
+                                             styleClass="profile-input"
+                                             required="true"
+                                             requiredMessage="Please enter your phone number." />
                             </div>
 
+                            <!-- Email: CHỈ HIỂN THỊ, KHÔNG SỬA -->
                             <div class="profile-field">
                                 <label class="profile-label">Email</label>
                                 <h:inputText value="#{profileBean.email}"
-                                             styleClass="profile-input" />
+                                             styleClass="profile-input"
+                                             disabled="true" />
                             </div>
 
+                            <!-- City (required) -->
                             <div class="profile-field">
                                 <label class="profile-label">City</label>
                                 <h:selectOneMenu value="#{profileBean.cityId}"
-                                                 styleClass="profile-input">
+                                                 styleClass="profile-input"
+                                                 required="true"
+                                                 requiredMessage="Please select your city.">
                                     <f:selectItem itemLabel="Select city" noSelectionOption="true" />
                                     <f:selectItems value="#{profileBean.cities}"
                                                    var="c"
@@ -137,10 +148,13 @@
                                 </h:selectOneMenu>
                             </div>
 
+                            <!-- Address (required) -->
                             <div class="profile-field" style="grid-column:1 / -1;">
                                 <label class="profile-label">Address</label>
                                 <h:inputText value="#{profileBean.address}"
-                                             styleClass="profile-input" />
+                                             styleClass="profile-input"
+                                             required="true"
+                                             requiredMessage="Please enter your address." />
                             </div>
                         </div>
 

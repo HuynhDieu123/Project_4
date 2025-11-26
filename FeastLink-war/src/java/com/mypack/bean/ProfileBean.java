@@ -168,13 +168,20 @@ public class ProfileBean implements Serializable {
             }
         }
 
-        try {
+       try {
             usersFacade.edit(currentUser);
 
             // update lại session cho header
-            ExternalContext ec = ctx.getExternalContext();
-            ec.getSessionMap().put("currentUser", currentUser);
-            ec.getSessionMap().put("loginIdentifier", currentUser.getEmail());
+            ctx.getExternalContext().getSessionMap().put("currentUser", currentUser);
+            ctx.getExternalContext().getSessionMap().put("loginIdentifier", currentUser.getEmail());
+
+            // THÔNG BÁO THÀNH CÔNG – KHÔNG redirect, nên message hiện ngay
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_INFO,
+                    "Profile updated",
+                    "Your profile has been saved successfully."
+            ));
+            
 
             // redirect lại /Customer/profile.xhtml
             return "/Customer/profile?faces-redirect=true";
