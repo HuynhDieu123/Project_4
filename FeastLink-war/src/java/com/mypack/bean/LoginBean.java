@@ -119,6 +119,6 @@ public class LoginBean implements Serializable {
         ctx.getExternalContext().invalidateSession();
 
         // Quay về trang login – KHÔNG redirect
-        return "login";
+        return "index";
     }
 }
