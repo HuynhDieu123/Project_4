@@ -1,0 +1,119 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:f="jakarta.faces.core"
+                template="/Restaurant/layout-manager.xhtml">
+
+    <!-- TITLE -->
+    <ui:define name="title">
+        FeastLink - Menu Item Detail
+    </ui:define>
+
+    <!-- HEADER -->
+    <ui:define name="header">
+        <div class="flex flex-col">
+            <h1 class="text-2xl font-bold text-text-main-light">
+                Menu &amp; Packages
+            </h1>
+            <p class="text-sm text-text-secondary-light">
+                View detailed information of the menu item.
+            </p>
+        </div>
+    </ui:define>
+
+    <!-- CONTENT -->
+    <ui:define name="content">
+
+        <h:panelGroup rendered="#{menuItemDetailBean.found}">
+            <div class="max-w-4xl bg-card-light rounded-2xl shadow-subtle p-8 space-y-6">
+
+                <!-- Top info -->
+                <div class="flex items-start justify-between gap-6">
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-semibold text-text-main-light">
+                            #{menuItemDetailBean.item.name}
+                        </h2>
+                        <p class="mt-2 text-sm text-text-secondary-light">
+                            #{menuItemDetailBean.item.description}
+                        </p>
+
+                        <div class="mt-4 text-sm text-text-secondary-light space-y-1">
+                            <p>
+                                <span class="font-medium text-text-main-light">Cuisine:</span>
+                                #{menuItemDetailBean.item.cuisineId != null 
+                                   ? menuItemDetailBean.item.cuisineId.name 
+                                   : 'Not specified'}
+                            </p>
+                            <p>
+                                <span class="font-medium text-text-main-light">Vegetarian:</span>
+                                #{menuItemDetailBean.item.isVegetarian ? 'Yes' : 'No'}
+                            </p>
+                            <p>
+                                <span class="font-medium text-text-main-light">Status:</span>
+                                #{menuItemDetailBean.item.status}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Price block -->
+                    <div class="flex flex-col items-end">
+                        <span class="text-sm text-text-secondary-light">Price per person</span>
+                        <span class="text-2xl font-semibold text-champagne-gold">
+                            <h:outputText value="#{menuItemDetailBean.item.pricePerPerson}">
+                                <f:convertNumber type="currency" currencySymbol="$" />
+                            </h:outputText>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Image preview (tạm placeholder) -->
+                <div class="mt-4">
+                    <p class="text-sm font-medium text-text-main-light mb-2">
+                        Image
+                    </p>
+                    <div class="w-full h-64 rounded-xl bg-gray-100 flex items-center justify-center text-text-secondary-light text-sm">
+                        <!-- sau này thay bằng <h:graphicImage> -->
+                        #{menuItemDetailBean.item.imageUrl != null 
+                           ? menuItemDetailBean.item.imageUrl 
+                           : 'No image set'}
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex justify-end gap-3 pt-4">
+                    <!-- Back -->
+                    <h:link outcome="/Restaurant/menu-packages"
+                            styleClass="px-4 py-2 rounded-lg border border-border-light text-sm text-text-secondary-light hover:bg-background-soft">
+                        Back to list
+                    </h:link>
+
+                    <!-- Edit -->
+                    <h:link outcome="/Restaurant/menu-item-new"
+                            styleClass="px-5 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
+                        <f:param name="itemId" value="#{menuItemDetailBean.item.menuItemId}" />
+                        Edit item
+                    </h:link>
+                </div>
+
+            </div>
+        </h:panelGroup>
+
+        <!-- Khi không tìm thấy item -->
+        <h:panelGroup rendered="#{not menuItemDetailBean.found}">
+            <div class="max-w-2xl bg-card-light rounded-2xl shadow-subtle p-8 text-center">
+                <p class="text-lg font-semibold text-text-main-light mb-2">
+                    Item not found
+                </p>
+                <p class="text-sm text-text-secondary-light mb-4">
+                    The menu item you are looking for does not exist or has been removed.
+                </p>
+                <h:link outcome="/Restaurant/menu-packages"
+                        styleClass="px-4 py-2 rounded-lg border border-border-light text-sm text-text-secondary-light hover:bg-background-soft">
+                    Back to list
+                </h:link>
+            </div>
+        </h:panelGroup>
+
+    </ui:define>
+</ui:composition>
+

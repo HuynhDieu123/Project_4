@@ -1,0 +1,101 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:f="jakarta.faces.core"
+                template="/Restaurant/layout-manager.xhtml">
+
+    <!-- TITLE -->
+    <ui:define name="title">
+        FeastLink - #{menuCategoryFormBean.editMode ? 'Edit Category' : 'New Category'}
+    </ui:define>
+
+    <!-- HEADER -->
+    <ui:define name="header">
+        <div class="flex flex-col">
+            <h1 class="text-2xl font-bold text-text-main-light">
+                Menu &amp; Packages
+            </h1>
+            <p class="text-sm text-text-secondary-light">
+                #{menuCategoryFormBean.editMode
+                  ? 'Update an existing menu category.'
+                  : 'Add a new menu category to your restaurant.'}
+            </p>
+        </div>
+    </ui:define>
+
+    <!-- CONTENT -->
+    <ui:define name="content">
+
+        <h:form id="categoryForm" styleClass="max-w-3xl">
+
+            <div class="bg-card-light rounded-2xl shadow-subtle p-8 space-y-6">
+
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-semibold text-text-main-light">
+                            #{menuCategoryFormBean.editMode ? 'Edit Menu Category' : 'New Menu Category'}
+                        </h2>
+                        <p class="text-sm text-text-secondary-light mt-1">
+                            #{menuCategoryFormBean.editMode
+                              ? 'Change the name or description of this category.'
+                              : 'Enter details for the new category such as Main Courses, Appetizers, etc.'}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Name -->
+                <div>
+                    <label for="name" class="block text-sm font-medium text-text-main-light">
+                        Category name <span class="text-red-500">*</span>
+                    </label>
+                    <h:inputText id="name"
+                                 value="#{menuCategoryFormBean.category.name}"
+                                 required="true"
+                                 requiredMessage="Category name is required."
+                                 styleClass="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
+                    <h:message for="name" styleClass="text-xs text-error-red mt-1" />
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label for="description" class="block text-sm font-medium text-text-main-light">
+                        Description
+                    </label>
+                    <h:inputTextarea id="description"
+                                     value="#{menuCategoryFormBean.category.description}"
+                                     rows="3"
+                                     styleClass="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
+                </div>
+
+                <!-- Sort order -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="sortOrder" class="block text-sm font-medium text-text-main-light">
+                            Sort order
+                        </label>
+                        <h:inputText id="sortOrder"
+                                     value="#{menuCategoryFormBean.category.sortOrder}"
+                                     styleClass="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:convertNumber integerOnly="true" />
+                        </h:inputText>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex justify-end gap-3 pt-4">
+                    <h:commandLink action="#{menuCategoryFormBean.cancel}"
+                                   styleClass="px-4 py-2 rounded-lg border border-border-light text-sm text-text-secondary-light hover:bg-background-soft">
+                        Cancel
+                    </h:commandLink>
+
+                    <h:commandButton value="#{menuCategoryFormBean.editMode ? 'Save Changes' : 'Save Category'}"
+                                     action="#{menuCategoryFormBean.save}"
+                                     styleClass="px-5 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90" />
+                </div>
+
+            </div>
+
+        </h:form>
+
+    </ui:define>
+</ui:composition>
