@@ -5,9 +5,11 @@ const BookingUI = (function () {
         tableCount: 20,
         pricePerGuest: 1200000,
         serviceCharge: 5000000,
-        addOns: [ { id: 1, name: 'Extra dessert table',   price: 50000,  unit: 'guest', quantity: 0 },
-            { id: 2, name: 'Premium wine pairing',  price: 500000, unit: 'table', quantity: 0 },
-            { id: 3, name: 'Late-night snacks',     price: 35000,  unit: 'guest', quantity: 0 }],
+        addOns: [
+            {id: 1, name: 'Extra dessert table', price: 50000, unit: 'guest', quantity: 0},
+            {id: 2, name: 'Premium wine pairing', price: 500000, unit: 'table', quantity: 0},
+            {id: 3, name: 'Late-night snacks', price: 35000, unit: 'guest', quantity: 0}
+        ],
         depositPercentage: 30,
         discount: 0,
         voucherCode: '',
@@ -19,7 +21,6 @@ const BookingUI = (function () {
         depositAmount: 0,
         remainingAmount: 0
     };
-
 
     function formatNumber(n) {
         return n.toLocaleString('en-US');
@@ -63,7 +64,6 @@ const BookingUI = (function () {
         if (guestHidden) {
             guestHidden.value = totalGuests;
         }
-
     }
 
     function collectAddonQuantities() {
@@ -90,13 +90,12 @@ const BookingUI = (function () {
         const depositAmount = Math.round(totalWithCharges * (state.depositPercentage / 100));
         const remainingAmount = totalWithCharges - depositAmount;
 
-        // store tax/discount for later
         state.tax = tax;
         state.totalAmount = totalWithCharges;
         state.depositAmount = depositAmount;
         state.remainingAmount = remainingAmount;
 
-// push to hidden fields (nếu tồn tại)
+        // hidden fields
         const totalField = document.getElementById('hf-total-amount');
         if (totalField)
             totalField.value = totalWithCharges;
@@ -109,26 +108,25 @@ const BookingUI = (function () {
         if (remainingField)
             remainingField.value = remainingAmount;
 
-
-        // write to DOM
+        // DOM
         const pkgTotalEl = document.getElementById('summary-package-total');
         if (pkgTotalEl)
-            pkgTotalEl.textContent = formatNumber(packageSubtotal) + ' VND';
+            pkgTotalEl.textContent = '$' + formatNumber(packageSubtotal);
 
         const serviceEl = document.getElementById('summary-service-charge');
         if (serviceEl)
-            serviceEl.textContent = formatNumber(state.serviceCharge) + ' VND';
+            serviceEl.textContent = '$' + formatNumber(state.serviceCharge);
 
         const taxEl = document.getElementById('summary-tax');
         if (taxEl)
-            taxEl.textContent = formatNumber(tax) + ' VND';
+            taxEl.textContent = '$' + formatNumber(tax);
 
         const discountRow = document.getElementById('summary-discount-row');
         const discountEl = document.getElementById('summary-discount');
         if (discountRow && discountEl) {
             if (discount > 0) {
                 discountRow.classList.remove('hidden');
-                discountEl.textContent = '-' + formatNumber(discount) + ' VND';
+                discountEl.textContent = '-$' + formatNumber(discount);
             } else {
                 discountRow.classList.add('hidden');
             }
@@ -144,8 +142,9 @@ const BookingUI = (function () {
                 row.innerHTML =
                         '<span class="text-[#4B5563]">' +
                         addon.name + ' (' + addon.quantity + ')</span>' +
-                        '<span class="font-medium text-[#111827]">' +
-                        formatNumber(addon.price * addon.quantity) + ' VND</span>';
+                        '<span class="font-medium text-[#111827]">$' +
+                        formatNumber(addon.price * addon.quantity) + '</span>';
+
                 container.appendChild(row);
             });
         }
@@ -154,11 +153,11 @@ const BookingUI = (function () {
         const depositEl = document.getElementById('summary-deposit');
         const remainingEl = document.getElementById('summary-remaining');
         if (totalEl)
-            totalEl.textContent = formatNumber(totalWithCharges) + ' VND';
+            totalEl.textContent = '$' + formatNumber(totalWithCharges);
         if (depositEl)
-            depositEl.textContent = formatNumber(depositAmount) + ' VND';
+            depositEl.textContent = '$' + formatNumber(depositAmount);
         if (remainingEl)
-            remainingEl.textContent = formatNumber(remainingAmount) + ' VND';
+            remainingEl.textContent = '$' + formatNumber(remainingAmount);
     }
 
     function setServiceLevel(level) {
@@ -206,7 +205,6 @@ const BookingUI = (function () {
         if (locHidden) {
             locHidden.value = state.locationType;
         }
-
     }
 
     function setPaymentMethod(method) {
@@ -338,6 +336,65 @@ const BookingUI = (function () {
             nextBtn.disabled = !canProceed;
     }
 
+    // ====== CONFIRM CLICK (JSF submit) ======
+    function handleConfirmClick() {
+        // 1. Validate contact + policies
+        const accept = document.getElementById('accept-policies');
+        if (!accept || !accept.checked) {
+            goToStep(2);
+            validateContact();
+            alert('Please fill your contact info and accept policies before payment.');
+            return false;
+        }
+
+        validateContact();
+        const nextBtn = document.getElementById('btn-step2-next');
+        if (nextBtn && nextBtn.disabled) {
+            goToStep(2);
+            alert('Please complete your contact information before payment.');
+            return false;
+        }
+
+        // 2. lấy param URL (restaurantId, date)
+        const params = new URLSearchParams(window.location.search);
+        const restaurantIdParam = params.get('restaurantId');
+        const dateParam = params.get('date');
+
+        const setVal = (id, value) => {
+            const el = document.getElementById(id);
+            if (el)
+                el.value = value != null ? value : '';
+        };
+
+        setVal('hf-restaurant-id', restaurantIdParam);
+        setVal('hf-event-date', dateParam);
+        setVal('hf-location-type', state.locationType);
+
+        // outside address
+        const street = document.getElementById('outside-street');
+        const area = document.getElementById('outside-area');
+        const city = document.getElementById('outside-city');
+        const parts = [];
+        if (street && street.value)
+            parts.push(street.value);
+        if (area && area.value)
+            parts.push(area.value);
+        if (city && city.value)
+            parts.push(city.value);
+        setVal('hf-outside-address', parts.join(', '));
+
+        // guests + money
+        const totalGuests = state.tableCount * 10;
+        setVal('hf-guest-count', totalGuests);
+        setVal('hf-total-amount', state.totalAmount);
+        setVal('hf-deposit-amount', state.depositAmount);
+        setVal('hf-remaining-amount', state.remainingAmount);
+
+        // cho JSF submit form
+        return true;
+    }
+
+    // ====== INIT ======
     function init() {
         // init lucide
         if (window.lucide) {
@@ -392,7 +449,6 @@ const BookingUI = (function () {
                 summarySlotEl.textContent = slotParam;
             }
         }
-
 
         // table buttons
         const minusBtn = document.getElementById('btn-minus-table');
@@ -594,63 +650,10 @@ const BookingUI = (function () {
             });
         }
 
-        // Confirm payment
-        function handleConfirmClick() {
-    const accept = document.getElementById('accept-policies');
-    if (!accept || !accept.checked) {
-        goToStep(2);
-        validateContact();
-        alert('Please fill your contact info and accept policies before payment.');
-        return false;
-    }
-
-    validateContact();
-    const nextBtn = document.getElementById('btn-step2-next');
-    if (nextBtn && nextBtn.disabled) {
-        goToStep(2);
-        alert('Please complete your contact information before payment.');
-        return false;
-    }
-
-    // Lấy param URL
-    const params = new URLSearchParams(window.location.search);
-    const restaurantIdParam = params.get('restaurantId');
-    const dateParam = params.get('date');
-
-    const setVal = (id, value) => {
-        const el = document.getElementById(id);
-        if (el) el.value = value != null ? value : '';
-    };
-
-    setVal('hf-restaurant-id', restaurantIdParam);
-    setVal('hf-event-date', dateParam);
-    setVal('hf-location-type', state.locationType);
-
-    const street = document.getElementById('outside-street');
-    const area = document.getElementById('outside-area');
-    const city = document.getElementById('outside-city');
-    const parts = [];
-    if (street && street.value) parts.push(street.value);
-    if (area && area.value) parts.push(area.value);
-    if (city && city.value) parts.push(city.value);
-    setVal('hf-outside-address', parts.join(', '));
-
-    const totalGuests = state.tableCount * 10;
-    setVal('hf-guest-count', totalGuests);
-    setVal('hf-total-amount', state.totalAmount);
-    setVal('hf-deposit-amount', state.depositAmount);
-    setVal('hf-remaining-amount', state.remainingAmount);
-
-    // cho submit form
-    return true;
-}
-
-
         // ---- Change venue: quay lại trang venue ----
         const changeVenueBtn = document.getElementById('btn-change-venue');
         if (changeVenueBtn) {
             changeVenueBtn.addEventListener('click', function () {
-                // Nếu có restaurantId thì quay lại đúng trang chi tiết, không thì về list
                 if (restaurantId) {
                     window.location.href = 'restaurant-details.xhtml?restaurantId=' + encodeURIComponent(restaurantId);
                 } else {
@@ -663,7 +666,7 @@ const BookingUI = (function () {
         const changeDatetimeBtn = document.getElementById('btn-change-datetime');
         if (changeDatetimeBtn) {
             changeDatetimeBtn.addEventListener('click', function () {
-                BookingUI.goToStep(1);  // về step 1
+                BookingUI.goToStep(1);
                 const step1 = document.getElementById('step-1');
                 if (step1) {
                     step1.scrollIntoView({behavior: 'smooth', block: 'start'});

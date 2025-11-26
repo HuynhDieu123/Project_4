@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
             badge: 'TOP RATED',
             capacityMin: 100,
             capacityMax: 500,
-            pricePerGuest: 850000,
+            pricePerGuest: 8500,
             eventTypes: ['Wedding', 'Corporate', 'Gala'],
             advanceBookingDays: 30,
             cancelDays: 14,
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
             badge: 'VIP',
             capacityMin: 50,
             capacityMax: 250,
-            pricePerGuest: 720000,
+            pricePerGuest: 7200,
             eventTypes: ['Wedding', 'Birthday', 'Anniversary'],
             advanceBookingDays: 21,
             cancelDays: 10,
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
             badge: 'NEW',
             capacityMin: 80,
             capacityMax: 300,
-            pricePerGuest: 950000,
+            pricePerGuest: 950,
             eventTypes: ['Corporate', 'Gala', 'Wedding'],
             advanceBookingDays: 45,
             cancelDays: 21,
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
             reviews: 412,
             capacityMin: 200,
             capacityMax: 800,
-            pricePerGuest: 680000,
+            pricePerGuest: 680,
             eventTypes: ['Wedding', 'Corporate', 'Graduation'],
             advanceBookingDays: 60,
             cancelDays: 30,
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
             badge: 'TOP RATED',
             capacityMin: 120,
             capacityMax: 400,
-            pricePerGuest: 780000,
+            pricePerGuest: 780,
             eventTypes: ['Wedding', 'Anniversary', 'Corporate'],
             advanceBookingDays: 30,
             cancelDays: 14,
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
             reviews: 198,
             capacityMin: 60,
             capacityMax: 200,
-            pricePerGuest: 820000,
+            pricePerGuest: 820,
             eventTypes: ['Birthday', 'Corporate', 'Gala'],
             advanceBookingDays: 21,
             cancelDays: 7,
@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
             badge: 'VIP',
             capacityMin: 150,
             capacityMax: 600,
-            pricePerGuest: 920000,
+            pricePerGuest: 920,
             eventTypes: ['Wedding', 'Gala', 'Corporate'],
             advanceBookingDays: 45,
             cancelDays: 21,
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
             badge: 'VIP',
             capacityMin: 30,
             capacityMax: 150,
-            pricePerGuest: 1200000,
+            pricePerGuest: 120,
             eventTypes: ['Wedding', 'Birthday', 'Anniversary'],
             advanceBookingDays: 60,
             cancelDays: 30,
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
             reviews: 289,
             capacityMin: 300,
             capacityMax: 1500,
-            pricePerGuest: 550000,
+            pricePerGuest: 550,
             eventTypes: ['Corporate', 'Graduation', 'Gala'],
             advanceBookingDays: 90,
             cancelDays: 45,
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function () {
             reviews: 213,
             capacityMin: 40,
             capacityMax: 180,
-            pricePerGuest: 890000,
+            pricePerGuest: 890,
             eventTypes: ['Birthday', 'Anniversary', 'Corporate'],
             advanceBookingDays: 14,
             cancelDays: 7,
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function () {
             badge: 'TOP RATED',
             capacityMin: 100,
             capacityMax: 450,
-            pricePerGuest: 980000,
+            pricePerGuest: 980,
             eventTypes: ['Wedding', 'Gala', 'Corporate'],
             advanceBookingDays: 30,
             cancelDays: 14,
@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', function () {
             badge: 'NEW',
             capacityMin: 50,
             capacityMax: 220,
-            pricePerGuest: 650000,
+            pricePerGuest: 650,
             eventTypes: ['Wedding', 'Birthday', 'Corporate'],
             advanceBookingDays: 21,
             cancelDays: 10,
@@ -232,9 +232,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     ];
 
-    // --- toàn bộ phần state, render, handler y chang file gốc ---
-    // (tui giữ nguyên, không sửa logic)
-
     const state = {
         viewMode: 'grid',
         sortBy: 'recommended',
@@ -242,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
         eventTypes: new Set(),
         capacity: '',
         rating: 0,
-        priceMax: 2000000,
+        priceMax: 10000,
         city: '',
         area: '',
         searchEventType: '',
@@ -284,8 +281,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const mobileClose = document.getElementById('mobileFilterClose');
     const mobileApply = document.getElementById('mobileFilterApply');
 
+    // 🔁 ĐỔI SANG USD
     function formatCurrency(v) {
-        return v.toLocaleString('vi-VN') + ' ₫';
+        return '$' + v.toLocaleString('en-US');
     }
 
     function applyQuickFilterCondition(r, tag) {
@@ -391,9 +389,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 arr.sort((a, b) => {
                     const score = (r) =>
                         r.rating * 2 +
-                                r.reviews / 100 +
-                                (r.badge === 'TOP RATED' ? 1 : 0) +
-                                (r.badge === 'VIP' ? 0.5 : 0);
+                        r.reviews / 100 +
+                        (r.badge === 'TOP RATED' ? 1 : 0) +
+                        (r.badge === 'VIP' ? 0.5 : 0);
                     return score(b) - score(a);
                 });
         }
@@ -416,15 +414,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const badgeHtml = r.badge
-                ? `<span class="inline-block px-3 py-1 bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] text-[#0B1120] text-xs font-bold rounded-full shadow-lg">${r.badge}</span>`
-                : '';
+            ? `<span class="inline-block px-3 py-1 bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] text-[#0B1120] text-xs font-bold rounded-full shadow-lg">${r.badge}</span>`
+            : '';
 
         const eventTypesHtml = r.eventTypes
-                .map(
-                        (t) =>
-                        `<span class="px-2.5 py-1 text-xs font-medium text-[#D4AF37] border border-[#E6C77F] rounded-full">${t}</span>`
-                )
-                .join('');
+            .map(
+                (t) =>
+                    `<span class="px-2.5 py-1 text-xs font-medium text-[#D4AF37] border border-[#E6C77F] rounded-full">${t}</span>`
+            )
+            .join('');
 
         return `
 <article
@@ -509,10 +507,9 @@ document.addEventListener('DOMContentLoaded', function () {
         <i data-lucide="heart" class="w-4 h-4"></i>
       </button>
       <a href="restaurant-details.xhtml?restaurantId=${r.id}"
-   class="flex-1 px-4 py-2.5 bg-[#0B1120] hover:bg-[#020617] text-white text-sm font-semibold rounded-xl border-b-2 border-[#D4AF37] transition-all hover:scale-[1.02] active:scale-95 hover:shadow-lg hover:shadow-[#D4AF37]/20 inline-flex items-center justify-center">
-  View details
-</a>
-
+         class="flex-1 px-4 py-2.5 bg-[#0B1120] hover:bg-[#020617] text-white text-sm font-semibold rounded-xl border-b-2 border-[#D4AF37] transition-all hover:scale-[1.02] active:scale-95 hover:shadow-lg hover:shadow-[#D4AF37]/20 inline-flex items-center justify-center">
+        View details
+      </a>
 
       <button type="button" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#F97316] text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-2xl hover:shadow-[#EAB308]/40 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden" data-action="book">
         <span class="relative z-10">Book now</span>
@@ -565,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function () {
         prevBtn.dataset.page = String(state.page - 1);
         prevBtn.disabled = state.page === 1;
         prevBtn.className =
-                'p-3 rounded-full border-2 border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed';
+            'p-3 rounded-full border-2 border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed';
         prevBtn.innerHTML = '<i data-lucide="chevron-left" class="w-5 h-5"></i>';
         paginationEl.appendChild(prevBtn);
 
@@ -575,10 +572,10 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.dataset.page = String(i);
             if (i === state.page) {
                 btn.className =
-                        'min-w-[44px] h-11 px-4 rounded-full font-semibold text-sm bg-gradient-to-br from-[#0B1120] to-[#020617] text-white border-2 border-[#D4AF37] shadow-xl shadow-[#D4AF37]/20';
+                    'min-w-[44px] h-11 px-4 rounded-full font-semibold text-sm bg-gradient-to-br from-[#0B1120] to-[#020617] text-white border-2 border-[#D4AF37] shadow-xl shadow-[#D4AF37]/20';
             } else {
                 btn.className =
-                        'min-w-[44px] h-11 px-4 rounded-full font-semibold text-sm bg-white text-[#4B5563] border-2 border-[#E5E7EB] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg';
+                    'min-w-[44px] h-11 px-4 rounded-full font-semibold text-sm bg-white text-[#4B5563] border-2 border-[#E5E7EB] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg';
             }
             btn.textContent = String(i);
             paginationEl.appendChild(btn);
@@ -589,7 +586,7 @@ document.addEventListener('DOMContentLoaded', function () {
         nextBtn.dataset.page = String(state.page + 1);
         nextBtn.disabled = state.page === totalPages;
         nextBtn.className =
-                'p-3 rounded-full border-2 border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed';
+            'p-3 rounded-full border-2 border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed';
         nextBtn.innerHTML = '<i data-lucide="chevron-right" class="w-5 h-5"></i>';
         paginationEl.appendChild(nextBtn);
 
@@ -743,7 +740,7 @@ document.addEventListener('DOMContentLoaded', function () {
         state.eventTypes = new Set();
         state.capacity = '';
         state.rating = 0;
-        state.priceMax = 2000000;
+        state.priceMax = 10000;
         state.city = '';
         state.area = '';
         state.searchEventType = '';
@@ -757,8 +754,8 @@ document.addEventListener('DOMContentLoaded', function () {
         ratingButtons.forEach((btn) => btn.classList.remove('filter-pill-selected'));
         statusButtons.forEach((btn) => btn.classList.remove('filter-pill-selected'));
 
-        priceRangeInputs.forEach((input) => (input.value = '2000000'));
-        priceLabels.forEach((lab) => (lab.textContent = formatCurrency(2000000)));
+        priceRangeInputs.forEach((input) => (input.value = '10000'));
+        priceLabels.forEach((lab) => (lab.textContent = formatCurrency(10000)));
 
         citySelect.value = '';
         areaSelect.value = '';
@@ -796,11 +793,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (action === 'favorite') {
             alert('Added to favorites (demo).');
         } else if (action === 'book') {
-            // Tìm thẻ article gần nhất để lấy restaurantId
             const card = btn.closest('article[data-restaurant-id]');
             const restaurantId = card ? card.dataset.restaurantId : null;
 
-            // Redirect sang trang booking (cùng folder Customer)
             if (restaurantId) {
                 window.location.href = 'booking.xhtml?restaurantId=' + encodeURIComponent(restaurantId);
             } else {
@@ -808,8 +803,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
-
-
 
     function openSheet() {
         mobileSheet.classList.remove('hidden');

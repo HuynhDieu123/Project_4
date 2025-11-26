@@ -63,15 +63,15 @@ public class LoginBean implements Serializable {
             return null;   // ở lại login.xhtml
         }
 
+        String input = identifier.trim();
+
         // 1. Account cứng admin / 123
-        if ("admin".equalsIgnoreCase(identifier) && "123".equals(password)) {
+        if ("admin".equalsIgnoreCase(input) && "123".equals(password)) {
             ctx.getExternalContext().getSessionMap().put("currentUserRole", "ADMIN");
+            ctx.getExternalContext().getSessionMap().put("loginIdentifier", input);
 
-            // Lưu thông tin để header hiển thị tên/email
-            ctx.getExternalContext().getSessionMap().put("loginIdentifier", identifier);
-
-            // Trang sau khi đăng nhập admin (tạm cho về Customer/index)
-            return "/Customer/index?faces-redirect=true";
+            // KHÔNG dùng ?faces-redirect=true để tránh lỗi Flash
+            return "/Customer/index";
         }
 
         // 2. Tìm trong DB theo email hoặc phone
@@ -80,9 +80,9 @@ public class LoginBean implements Serializable {
 
         for (Users u : list) {
             boolean sameEmail = u.getEmail() != null
-                    && identifier.equalsIgnoreCase(u.getEmail());
+                    && input.equalsIgnoreCase(u.getEmail());
             boolean samePhone = u.getPhone() != null
-                    && identifier.equals(u.getPhone());
+                    && input.equals(u.getPhone());
             boolean samePassword = u.getPassword() != null
                     && password.equals(u.getPassword());
 
@@ -93,7 +93,7 @@ public class LoginBean implements Serializable {
         }
 
         if (matched == null) {
-            // Sai thông tin -> ở lại trang login, KHÔNG redirect
+            // Sai thông tin -> ở lại trang login
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
                     "Invalid credentials",
@@ -104,13 +104,12 @@ public class LoginBean implements Serializable {
 
         // 3. Đăng nhập thành công
         ctx.getExternalContext().getSessionMap().put("currentUser", matched);
+        // nếu entity Users có field role thì có thể dùng matched.getRole()
         ctx.getExternalContext().getSessionMap().put("currentUserRole", "CUSTOMER");
+        ctx.getExternalContext().getSessionMap().put("loginIdentifier", input);
 
-        // Dùng chuỗi người dùng nhập (email/phone) để hiển thị trên header
-        ctx.getExternalContext().getSessionMap().put("loginIdentifier", identifier);
-
-        // Sau khi login thành công, chuyển sang trang bạn muốn
-        return "/Customer/index?faces-redirect=true";
+        // Về trang Customer home – KHÔNG redirect
+        return "/Customer/index";
     }
 
     public String logout() {
@@ -119,7 +118,7 @@ public class LoginBean implements Serializable {
         // Hủy session hiện tại (xóa luôn currentUser, loginIdentifier, ...)
         ctx.getExternalContext().invalidateSession();
 
-        // Quay về trang login
-          return "/Customer/index?faces-redirect=true";
+        // Quay về trang login – KHÔNG redirect
+        return "login";
     }
 }
