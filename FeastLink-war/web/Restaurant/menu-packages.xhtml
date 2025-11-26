@@ -35,16 +35,32 @@
                 </p>
             </div>
 
-            <!-- Nút + New ... (đổi label theo tab) -->
-            <h:link outcome="/Restaurant/menu-item-new"
-                    styleClass="inline-flex items-center px-5 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
-                <span class="material-symbols-outlined mr-2 text-base">add</span>
-                #{menuPackagesBean.activeTab eq 'items'
-                  ? 'New Item'
-                  : (menuPackagesBean.activeTab eq 'packages'
-                  ? 'New Package'
-                  : 'New Category')}
-            </h:link>
+            <!-- Button + New (theo tab) -->
+            <h:panelGroup>
+                <!-- New Item -->
+                <h:link outcome="/Restaurant/menu-item-new"
+                        rendered="#{menuPackagesBean.activeTab eq 'items'}"
+                        styleClass="inline-flex items-center px-5 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
+                    <span class="material-symbols-outlined mr-2 text-base">add</span>
+                    New Item
+                </h:link>
+
+                <!-- New Package -->
+                <h:link outcome="/Restaurant/menu-combo-new"
+                        rendered="#{menuPackagesBean.activeTab eq 'packages'}"
+                        styleClass="inline-flex items-center px-5 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
+                    <span class="material-symbols-outlined mr-2 text-base">add</span>
+                    New Package
+                </h:link>
+
+                <!-- New Category -->
+                <h:link outcome="/Restaurant/menu-category-new"
+                        rendered="#{menuPackagesBean.activeTab eq 'categories'}"
+                        styleClass="inline-flex items-center px-5 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
+                    <span class="material-symbols-outlined mr-2 text-base">add</span>
+                    New Category
+                </h:link>
+            </h:panelGroup>
         </div>
 
         <h:form id="menuForm" styleClass="mt-8 space-y-6">
@@ -55,24 +71,24 @@
 
                     <!-- Individual Items -->
                     <h:commandLink action="#{menuPackagesBean.showItems}"
-                                   styleClass="#{menuPackagesBean.activeTab eq 'items' 
-                                                 ? 'py-3 border-b-2 border-champagne-gold text-text-main-light' 
+                                   styleClass="#{menuPackagesBean.activeTab eq 'items'
+                                                 ? 'py-3 border-b-2 border-champagne-gold text-text-main-light'
                                                  : 'py-3 text-text-secondary-light hover:text-text-main-light'}">
                         Individual Items
                     </h:commandLink>
 
                     <!-- Catering Packages -->
                     <h:commandLink action="#{menuPackagesBean.showPackages}"
-                                   styleClass="#{menuPackagesBean.activeTab eq 'packages' 
-                                                 ? 'py-3 border-b-2 border-champagne-gold text-text-main-light' 
+                                   styleClass="#{menuPackagesBean.activeTab eq 'packages'
+                                                 ? 'py-3 border-b-2 border-champagne-gold text-text-main-light'
                                                  : 'py-3 text-text-secondary-light hover:text-text-main-light'}">
                         Catering Packages
                     </h:commandLink>
 
                     <!-- Menu Categories -->
                     <h:commandLink action="#{menuPackagesBean.showCategories}"
-                                   styleClass="#{menuPackagesBean.activeTab eq 'categories' 
-                                                 ? 'py-3 border-b-2 border-champagne-gold text-text-main-light' 
+                                   styleClass="#{menuPackagesBean.activeTab eq 'categories'
+                                                 ? 'py-3 border-b-2 border-champagne-gold text-text-main-light'
                                                  : 'py-3 text-text-secondary-light hover:text-text-main-light'}">
                         Menu Categories
                     </h:commandLink>
@@ -104,7 +120,9 @@
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                     <ui:repeat value="#{menuPackagesBean.items}" var="item">
 
-                        <article class="bg-card-light rounded-2xl shadow-subtle overflow-hidden flex flex-col">
+                        <article class="bg-card-light rounded-2xl shadow-subtle overflow-hidden flex flex-col"
+                                 style="cursor: pointer;"
+                                 onclick="window.location = '#{request.contextPath}/faces/Restaurant/menu-item-detail.xhtml?itemId=#{item.menuItemId}'">
 
                             <!-- Ảnh món ăn -->
                             <div class="h-48 bg-gray-100"></div>
@@ -118,11 +136,13 @@
                                     #{item.description}
                                 </p>
 
-                                <!-- Giá bên phải, màu vàng -->
+                                <!-- Giá + cuisine -->
                                 <div class="mt-3 flex justify-between items-center">
-                                    <span></span>
+                                    <span class="text-xs text-text-secondary-light">
+                                        #{item.cuisineId != null ? item.cuisineId.name : ''}
+                                    </span>
                                     <span class="text-champagne-gold font-semibold text-base">
-                                        <h:outputText value="#{item.price}">
+                                        <h:outputText value="#{item.pricePerPerson}">
                                             <f:convertNumber type="currency" currencySymbol="$" />
                                         </h:outputText>
                                     </span>
@@ -131,14 +151,22 @@
 
                             <!-- Icon Edit / Delete -->
                             <div class="px-6 pb-4 pt-1 flex items-center justify-start gap-4 text-champagne-gold">
-                                <button type="button"
-                                        class="inline-flex items-center justify-center rounded-full hover:opacity-80">
+
+                                <!-- Edit -->
+                                <h:link outcome="/Restaurant/menu-item-new"
+                                        onclick="event.stopPropagation();"
+                                        styleClass="inline-flex items-center justify-center rounded-full hover:opacity-80">
+                                    <f:param name="itemId" value="#{item.menuItemId}" />
                                     <span class="material-symbols-outlined text-lg">edit</span>
-                                </button>
-                                <button type="button"
-                                        class="inline-flex items-center justify-center rounded-full hover:opacity-80">
+                                </h:link>
+
+                                <!-- Delete (soft delete) -->
+                                <h:commandLink action="#{menuPackagesBean.deleteItem(item.menuItemId)}"
+                                               onclick="event.stopPropagation(); return confirm('Delete this item?');"
+                                               styleClass="inline-flex items-center justify-center rounded-full hover:opacity-80">
                                     <span class="material-symbols-outlined text-lg">delete</span>
-                                </button>
+                                </h:commandLink>
+
                             </div>
                         </article>
 
@@ -162,20 +190,32 @@
                                 <p class="text-sm text-text-secondary-light mb-4">
                                     #{pkg.description}
                                 </p>
+                                <p class="text-xs text-text-secondary-light">
+                                    Min guests:
+                                    #{pkg.minGuests != null ? pkg.minGuests : 'Not specified'}
+                                </p>
                             </div>
-                            <div class="flex items-center justify-between">
+
+                            <div class="flex items-center justify-between mt-4">
                                 <span class="text-champagne-gold font-semibold text-lg">
-                                    <h:outputText value="#{pkg.price}">
+                                    <h:outputText value="#{pkg.priceTotal}">
                                         <f:convertNumber type="currency" currencySymbol="$" />
                                     </h:outputText>
                                 </span>
                                 <div class="flex gap-3 text-champagne-gold">
-                                    <button type="button" class="hover:opacity-80">
+                                    <!-- Edit package -->
+                                    <h:link outcome="/Restaurant/menu-combo-new"
+                                            styleClass="hover:opacity-80 inline-flex items-center justify-center rounded-full">
+                                        <f:param name="comboId" value="#{pkg.comboId}" />
                                         <span class="material-symbols-outlined text-lg">edit</span>
-                                    </button>
-                                    <button type="button" class="hover:opacity-80">
+                                    </h:link>
+
+                                    <!-- Delete package (soft delete) -->
+                                    <h:commandLink action="#{menuPackagesBean.deletePackage(pkg.comboId)}"
+                                                   onclick="return confirm('Delete this package?');"
+                                                   styleClass="hover:opacity-80 inline-flex items-center justify-center rounded-full">
                                         <span class="material-symbols-outlined text-lg">delete</span>
-                                    </button>
+                                    </h:commandLink>
                                 </div>
                             </div>
                         </article>
@@ -191,22 +231,33 @@
 
                 <div class="mt-4 space-y-3">
                     <ui:repeat value="#{menuPackagesBean.categories}" var="cat">
-                        <article class="bg-card-light rounded-2xl shadow-subtle border border-border-light px-5 py-4 flex items-center justify-between">
+                        <article
+                            class="bg-card-light rounded-2xl shadow-subtle border border-border-light px-5 py-4 flex items-center justify-between">
                             <div>
+                                <!-- Tên category -->
                                 <p class="font-semibold text-text-main-light">
                                     #{cat.name}
                                 </p>
+
+                                <!-- MÔ TẢ: chỉ in 1 lần, nếu trống thì hiện fallback -->
                                 <p class="text-xs text-text-secondary-light">
-                                    #{cat.itemCount} items
+                                    #{empty cat.description ? 'No description yet' : cat.description}
                                 </p>
                             </div>
+
+                            <!-- Icon edit / delete (giữ y như bạn đang dùng) -->
                             <div class="flex gap-3 text-champagne-gold">
-                                <button type="button" class="hover:opacity-80">
+                                <h:link outcome="/Restaurant/menu-category-new"
+                                        styleClass="hover:opacity-80 inline-flex items-center justify-center rounded-full">
+                                    <f:param name="categoryId" value="#{cat.categoryId}" />
                                     <span class="material-symbols-outlined text-lg">edit</span>
-                                </button>
-                                <button type="button" class="hover:opacity-80">
+                                </h:link>
+
+                                <h:commandLink action="#{menuPackagesBean.deleteCategory(cat.categoryId)}"
+                                               onclick="return confirm('Delete this category?');"
+                                               styleClass="hover:opacity-80 inline-flex items-center justify-center rounded-full">
                                     <span class="material-symbols-outlined text-lg">delete</span>
-                                </button>
+                                </h:commandLink>
                             </div>
                         </article>
                     </ui:repeat>

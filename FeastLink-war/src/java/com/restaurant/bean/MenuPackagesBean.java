@@ -1,11 +1,20 @@
 package com.restaurant.bean;
 
+import com.mypack.entity.MenuCategories;
+import com.mypack.entity.MenuCombos;
+import com.mypack.entity.MenuItems;
+import com.mypack.sessionbean.MenuCategoriesFacadeLocal;
+import com.mypack.sessionbean.MenuCombosFacadeLocal;
+import com.mypack.sessionbean.MenuItemsFacadeLocal;
 import jakarta.annotation.PostConstruct;
+import jakarta.ejb.EJB;
+import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Named("menuPackagesBean")
 @ViewScoped
@@ -13,106 +22,148 @@ public class MenuPackagesBean implements Serializable {
 
     private String activeTab; // "items", "packages", "categories"
 
-    private List<MenuItem> items;
-    private List<MenuPackage> packages;
-    private List<MenuCategory> categories;
+    @EJB
+    private MenuItemsFacadeLocal menuItemsFacade;
+
+    @EJB
+    private MenuCategoriesFacadeLocal menuCategoriesFacade;
+
+    @EJB
+    private MenuCombosFacadeLocal menuCombosFacade;
+
+    private List<MenuItems> items;
+    private List<MenuCategories> categories;
+    private List<MenuCombos> packages;   // danh sách combo thực tế
 
     @PostConstruct
     public void init() {
-        activeTab = "items";
+        // Lấy tab từ query (?tab=items/packages/categories)
+        FacesContext fc = FacesContext.getCurrentInstance();
+        if (fc != null && fc.getExternalContext() != null) {
+            Map<String, String> params = fc.getExternalContext().getRequestParameterMap();
+            String tabParam = params.get("tab");
+            if (tabParam != null && !tabParam.isBlank()) {
+                activeTab = tabParam;
+            } else {
+                activeTab = "items";
+            }
+        } else {
+            activeTab = "items";
+        }
 
-        items = new ArrayList<>();
-        items.add(new MenuItem("Grilled Salmon", "Atlantic salmon fillet grilled to perfection.",
-                28.50));
-        items.add(new MenuItem("Filet Mignon", "Center-cut tenderloin with red wine sauce.",
-                42.00));
-        items.add(new MenuItem("Lobster Risotto", "Creamy risotto with fresh lobster.",
-                35.00));
-        items.add(new MenuItem("Truffle Pasta", "Tagliatelle with truffle cream sauce.",
-                25.00));
-
-        packages = new ArrayList<>();
-        packages.add(new MenuPackage("The Grand Wedding Feast", "Perfect for weddings, includes appetizers, mains & dessert bar.",
-                1250.00));
-        packages.add(new MenuPackage("Executive Corporate Lunch", "Quick, delicious and convenient for meetings.",
-                450.00));
-        packages.add(new MenuPackage("Holiday Celebration Feast", "Classic holiday dishes from turkey to pies.",
-                800.00));
-
-        categories = new ArrayList<>();
-        categories.add(new MenuCategory("Main Courses", 12));
-        categories.add(new MenuCategory("Appetizers", 8));
-        categories.add(new MenuCategory("Desserts", 6));
-        categories.add(new MenuCategory("Beverages", 15));
+        refreshItems();
+        refreshCategories();
+        refreshPackages();
     }
 
-    // ====== Actions for tabs ======
+    // ===== LOAD ITEMS (bỏ IsDeleted = true) =====
+    private void refreshItems() {
+        List<MenuItems> all = menuItemsFacade.findAll();
+        items = new ArrayList<>();
+        if (all != null) {
+            for (MenuItems m : all) {
+                Boolean deleted = m.getIsDeleted();
+                if (deleted == null || !deleted) {
+                    items.add(m);
+                }
+            }
+        }
+    }
 
+    // ===== LOAD CATEGORIES (IsActive = true) =====
+    private void refreshCategories() {
+        List<MenuCategories> all = menuCategoriesFacade.findAll();
+        categories = new ArrayList<>();
+        if (all != null) {
+            for (MenuCategories c : all) {
+                Boolean active = c.getIsActive();
+                if (active == null || active) {
+                    categories.add(c);
+                }
+            }
+        }
+    }
+
+    // ===== LOAD PACKAGES/COMBOS (IsDeleted = false) =====
+    private void refreshPackages() {
+        List<MenuCombos> all = menuCombosFacade.findAll();
+        packages = new ArrayList<>();
+        if (all != null) {
+            for (MenuCombos combo : all) {
+                Boolean deleted = combo.getIsDeleted();
+                if (deleted == null || !deleted) {
+                    packages.add(combo);
+                }
+            }
+        }
+    }
+
+    // ===== TAB ACTIONS =====
     public String getActiveTab() {
         return activeTab;
     }
 
-    public void showItems() { activeTab = "items"; }
-    public void showPackages() { activeTab = "packages"; }
-    public void showCategories() { activeTab = "categories"; }
-
-    // ====== Getters ======
-
-    public List<MenuItem> getItems() { return items; }
-
-    public List<MenuPackage> getPackages() { return packages; }
-
-    public List<MenuCategory> getCategories() { return categories; }
-
-    // ====== Inner classes ======
-
-    public static class MenuItem implements Serializable {
-        private String name;
-        private String description;
-        private double price;
-
-        public MenuItem(String name, String description, double price) {
-            this.name = name;
-            this.description = description;
-            this.price = price;
-        }
-
-        public String getName() { return name; }
-
-        public String getDescription() { return description; }
-
-        public double getPrice() { return price; }
+    public void showItems() {
+        activeTab = "items";
     }
 
-    public static class MenuPackage implements Serializable {
-        private String name;
-        private String description;
-        private double price;
-
-        public MenuPackage(String name, String description, double price) {
-            this.name = name;
-            this.description = description;
-            this.price = price;
-        }
-
-        public String getName() { return name; }
-
-        public String getDescription() { return description; }
-
-        public double getPrice() { return price; }
+    public void showPackages() {
+        activeTab = "packages";
     }
 
-    public static class MenuCategory implements Serializable {
-        private String name;
-        private int itemCount;
+    public void showCategories() {
+        activeTab = "categories";
+    }
 
-        public MenuCategory(String name, int itemCount) {
-            this.name = name;
-            this.itemCount = itemCount;
+    // ===== DELETE ITEM (soft delete) =====
+    public String deleteItem(Long itemId) {
+        if (itemId != null) {
+            MenuItems item = menuItemsFacade.find(itemId);
+            if (item != null) {
+                item.setIsDeleted(true);
+                menuItemsFacade.edit(item);
+            }
         }
+        refreshItems();
+        return null;
+    }
 
-        public String getName() { return name; }
+    // ===== DELETE CATEGORY (IsActive = false) =====
+    public String deleteCategory(Long categoryId) {
+        if (categoryId != null) {
+            MenuCategories cat = menuCategoriesFacade.find(categoryId);
+            if (cat != null) {
+                cat.setIsActive(false);
+                menuCategoriesFacade.edit(cat);
+            }
+        }
+        refreshCategories();
+        return null;
+    }
 
-        public int getItemCount() { return itemCount; }
+    // ===== DELETE PACKAGE / COMBO (soft delete) =====
+    public String deletePackage(Long comboId) {
+        if (comboId != null) {
+            MenuCombos combo = menuCombosFacade.find(comboId);
+            if (combo != null) {
+                combo.setIsDeleted(true);
+                menuCombosFacade.edit(combo);
+            }
+        }
+        refreshPackages();
+        return null;
+    }
+
+    // ===== GETTERS =====
+    public List<MenuItems> getItems() {
+        return items;
+    }
+
+    public List<MenuCategories> getCategories() {
+        return categories;
+    }
+
+    public List<MenuCombos> getPackages() {
+        return packages;
     }
 }

@@ -7,7 +7,7 @@
     <ui:define name="title">
         FeastLink - Capacity &amp; Availability
     </ui:define>
-    
+
     <!-- ===== TOP BAR LEFT (giống figma) ===== -->
     <ui:define name="header">
         <div class="flex flex-col">
@@ -36,216 +36,78 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
             <!-- ================= LEFT: CALENDAR CARD ================= -->
+            <!-- ================= LEFT: CALENDAR CARD ================= -->
             <section class="lg:col-span-2 bg-card-light border border-border-light rounded-2xl shadow-subtle p-6">
 
-                <!-- Month header + legend -->
-                <div class="flex items-center justify-between mb-6">
-                    <!-- Month + arrows (purely visual) -->
-                    <div class="flex items-center gap-2 text-sm font-semibold text-text-main-light">
-                        <button type="button"
-                                class="p-1 rounded-full hover:bg-gray-100">
-                            <span class="material-symbols-outlined text-base">chevron_left</span>
-                        </button>
-                        <span>December 2023</span>
-                        <button type="button"
-                                class="p-1 rounded-full hover:bg-gray-100">
-                            <span class="material-symbols-outlined text-base">chevron_right</span>
-                        </button>
+                <!-- CẦN form để bấm prev/next month -->
+                <h:form id="calendarForm">
+
+                    <!-- Month header + legend -->
+                    <div class="flex items-center justify-between mb-6">
+                        <!-- Month + arrows -->
+                        <div class="flex items-center gap-2 text-sm font-semibold text-text-main-light">
+                            <h:commandLink action="#{capacityAvailabilityBean.previousMonth}"
+                                           styleClass="p-1 rounded-full hover:bg-gray-100">
+                                <span class="material-symbols-outlined text-base">chevron_left</span>
+                            </h:commandLink>
+
+                            <span>#{capacityAvailabilityBean.currentMonthLabel}</span>
+
+                            <h:commandLink action="#{capacityAvailabilityBean.nextMonth}"
+                                           styleClass="p-1 rounded-full hover:bg-gray-100">
+                                <span class="material-symbols-outlined text-base">chevron_right</span>
+                            </h:commandLink>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="flex items-center gap-4 text-xs text-text-secondary-light">
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-success-green"></span>
+                                Available
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-champagne-gold"></span>
+                                Gần đầy
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-error-red"></span>
+                                Đã đầy
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                                Bị chặn
+                            </span>
+                        </div>
                     </div>
 
-                    <!-- Legend -->
-                    <div class="flex items-center gap-4 text-xs text-text-secondary-light">
-                        <span class="inline-flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-success-green"></span>
-                            Available
-                        </span>
-                        <span class="inline-flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-champagne-gold"></span>
-                            Gần đầy
-                        </span>
-                        <span class="inline-flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-error-red"></span>
-                            Đã đầy
-                        </span>
-                        <span class="inline-flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-gray-400"></span>
-                            Bị chặn
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Weekday row -->
-                <div class="grid grid-cols-7 text-center text-xs font-medium text-text-secondary-light mb-4">
-                    <div>Sun</div>
-                    <div>Mon</div>
-                    <div>Tue</div>
-                    <div>Wed</div>
-                    <div>Thu</div>
-                    <div>Fri</div>
-                    <div>Sat</div>
-                </div>
-
-                <!-- Calendar days (static demo to match Figma layout) -->
-                <div class="grid grid-cols-7 gap-y-6 text-xs text-text-main-light">
-
-                    <!-- Row 1: tail of previous month + 1,2 -->
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>26</span>
-                    </div>
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>27</span>
-                    </div>
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>28</span>
-                    </div>
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>29</span>
-                    </div>
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>30</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>1</span>
-                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>2</span>
-                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
+                    <!-- Weekday row -->
+                    <div class="grid grid-cols-7 text-center text-xs font-medium text-text-secondary-light mb-4">
+                        <div>Sun</div>
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                        <div>Sat</div>
                     </div>
 
-                    <!-- Row 2: 3–9 -->
-                    <div class="flex flex-col items-center">
-                        <span>3</span>
-                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>4</span>
-                        <span class="w-2 h-2 rounded-full bg-champagne-gold mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>5</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>6</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>7</span>
-                        <span class="w-2 h-2 rounded-full bg-error-red mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>8</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>9</span>
-                        <span class="w-2 h-2 rounded-full bg-gray-400 mt-1"></span>
+                    <!-- Calendar days: 6 hàng x 7 cột -->
+                    <div class="grid grid-cols-7 gap-y-6 text-xs text-text-main-light">
+                        <ui:repeat value="#{capacityAvailabilityBean.calendarDays}" var="day">
+                            <div class="flex flex-col items-center #{day.inCurrentMonth ? '' : 'text-gray-400'}">
+                                <span>#{day.dayNumber}</span>
+
+                                <!-- chấm trạng thái -->
+                                <h:panelGroup rendered="#{day.showDot}">
+                                    <span class="w-2 h-2 rounded-full #{day.dotCss} mt-1"></span>
+                                </h:panelGroup>
+                            </div>
+                        </ui:repeat>
                     </div>
 
-                    <!-- Row 3: 10–16 -->
-                    <div class="flex flex-col items-center">
-                        <span>10</span>
-                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>11</span>
-                        <span class="w-2 h-2 rounded-full bg-champagne-gold mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>12</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>13</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>14</span>
-                        <span class="w-2 h-2 rounded-full bg-error-red mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>15</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>16</span>
-                        <span class="w-2 h-2 rounded-full bg-gray-400 mt-1"></span>
-                    </div>
-
-                    <!-- Row 4: 17–23 -->
-                    <div class="flex flex-col items-center">
-                        <span>17</span>
-                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>18</span>
-                        <span class="w-2 h-2 rounded-full bg-champagne-gold mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>19</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>20</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>21</span>
-                        <span class="w-2 h-2 rounded-full bg-error-red mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>22</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>23</span>
-                        <span class="w-2 h-2 rounded-full bg-gray-400 mt-1"></span>
-                    </div>
-
-                    <!-- Row 5: 24–30 -->
-                    <div class="flex flex-col items-center">
-                        <span>24</span>
-                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>25</span>
-                        <span class="w-2 h-2 rounded-full bg-champagne-gold mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>26</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>27</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>28</span>
-                        <span class="w-2 h-2 rounded-full bg-error-red mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>29</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span>30</span>
-                        <span class="w-2 h-2 rounded-full bg-gray-400 mt-1"></span>
-                    </div>
-
-                    <!-- Row 6: 31 + next month tail -->
-                    <div class="flex flex-col items-center">
-                        <span>31</span>
-                        <span class="w-2 h-2 rounded-full bg-success-green mt-1"></span>
-                    </div>
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>1</span>
-                    </div>
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>2</span>
-                    </div>
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>3</span>
-                    </div>
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>4</span>
-                    </div>
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>5</span>
-                    </div>
-                    <div class="flex flex-col items-center text-gray-400">
-                        <span>6</span>
-                    </div>
-                </div>
+                </h:form>
             </section>
+
 
             <!-- ================= RIGHT: SETTINGS CARDS ================= -->
 
