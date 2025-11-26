@@ -1,0 +1,499 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+  <h:head>
+    <meta charset="UTF-8" />
+    <title>FeastLink - My Bookings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style type="text/css">
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background-color: #F9FAFB;
+      }
+    </style>
+  </h:head>
+
+  <h:body class="bg-[#F9FAFB]">
+    <!-- HEADER / FOOTER đã có sẵn -->
+    <ui:include src="/layout/header.xhtml" />
+
+    <!-- =================== PAGE BODY =================== -->
+    <main class="pt-28 pb-16 min-h-screen bg-[#F9FAFB]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- =========== Page Intro + Stats =========== -->
+        <section id="page-intro" class="mb-8">
+          <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 lg:gap-8">
+            <div class="flex-1">
+              <div class="inline-block">
+                <h1 class="text-4xl sm:text-5xl font-bold text-[#0B1120] mb-2">
+                  My Bookings
+                </h1>
+                <div class="h-1 w-24 bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] rounded-full"></div>
+              </div>
+              <p class="text-[#4B5563] text-lg mt-4 max-w-2xl leading-relaxed">
+                Track all your banquet reservations – status, payments, and event details in one place.
+              </p>
+            </div>
+
+            <h:panelGroup layout="block"
+                          styleClass="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:min-w-[400px]">
+              <!-- Upcoming Events -->
+              <div
+                class="bg-white border border-[#E6C77F]/30 rounded-2xl p-5 hover:shadow-lg hover:border-[#D4AF37]/50 transition-all duration-300">
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="text-[#D4AF37]">
+                    <i data-lucide="calendar" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[#4B5563] text-sm font-medium">Upcoming Events</span>
+                </div>
+                <p id="stat-upcoming" class="text-2xl font-bold text-[#0B1120] ml-8">
+                  <h:outputText value="#{customerMyBookingsBean.upcomingCount}" />
+                </p>
+              </div>
+
+              <!-- Completed -->
+              <div
+                class="bg-white border border-[#E6C77F]/30 rounded-2xl p-5 hover:shadow-lg hover:border-[#D4AF37]/50 transition-all duration-300">
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="text-[#22C55E]">
+                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[#4B5563] text-sm font-medium">Completed</span>
+                </div>
+                <p id="stat-completed" class="text-2xl font-bold text-[#0B1120] ml-8">
+                  <h:outputText value="#{customerMyBookingsBean.completedCount}" />
+                </p>
+              </div>
+
+              <!-- Total Spent -->
+              <div
+                class="bg-white border border-[#E6C77F]/30 rounded-2xl p-5 hover:shadow-lg hover:border-[#D4AF37]/50 transition-all duration-300">
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="text-[#E6C77F]">
+                    <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-[#4B5563] text-sm font-medium">Total Spent</span>
+                </div>
+                <p id="stat-total-spent" class="text-2xl font-bold text-[#0B1120] ml-8">
+                  <h:outputText value="#{customerMyBookingsBean.formattedTotalSpent}" />
+                </p>
+              </div>
+            </h:panelGroup>
+          </div>
+        </section>
+
+        <!-- =========== Filter Toolbar =========== -->
+        <section class="mt-8 bg-white/80 backdrop-blur-xl border border-[#E5E7EB] rounded-3xl p-4 sm:p-6 shadow-lg">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <!-- Tabs -->
+            <div class="flex gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+              <button type="button"
+                      data-role="status-tab"
+                      data-filter-value="all"
+                      class="px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-all duration-300">
+                All
+              </button>
+              <button type="button"
+                      data-role="status-tab"
+                      data-filter-value="upcoming"
+                      class="px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-all duration-300">
+                Upcoming
+              </button>
+              <button type="button"
+                      data-role="status-tab"
+                      data-filter-value="completed"
+                      class="px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-all duration-300">
+                Completed
+              </button>
+              <button type="button"
+                      data-role="status-tab"
+                      data-filter-value="cancelled"
+                      class="px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-all duration-300">
+                Cancelled
+              </button>
+            </div>
+
+            <!-- Search -->
+            <div class="flex gap-3 w-full lg:w-auto">
+              <div class="relative flex-1 lg:flex-none lg:w-80">
+                <i data-lucide="search"
+                   class="absolute left-4 top-1/2 -translate-y-1/2 text-[#4B5563] w-5 h-5 pointer-events-none"></i>
+                <input id="search-input"
+                       type="text"
+                       placeholder="Search by venue or booking code…"
+                       class="w-full pl-12 pr-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl text-[#111827] placeholder-[#4B5563] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition-all" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =========== Empty state: KHÔNG có booking nào =========== -->
+        <h:panelGroup rendered="#{empty customerMyBookingsBean.myBookings}">
+          <div class="mt-12">
+            <div class="bg-gradient-to-br from-white to-[#F9FAFB] rounded-3xl border border-[#E5E7EB] p-12 text-center shadow-xl">
+              <div class="max-w-md mx-auto">
+                <div class="w-24 h-24 bg-gradient-to-br from-[#0B1120] to-[#020617] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <i data-lucide="calendar-x-2" class="w-12 h-12 text-[#D4AF37]"></i>
+                </div>
+                <h3 class="text-3xl font-bold text-[#0B1120] mb-4">You don't have any bookings yet</h3>
+                <p class="text-[#4B5563] text-lg leading-relaxed mb-8">
+                  Once you book a venue, your reservations will appear here. Start planning your perfect event today.
+                </p>
+                <h:link outcome="/Customer/restaurants" styleClass="inline-block">
+                  <span
+                    class="px-8 py-4 bg-gradient-to-r from-[#0B1120] to-[#020617] hover:from-[#020617] hover:to-[#0B1120] text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border border-[#D4AF37] hover:border-[#E6C77F]">
+                    Explore Restaurants
+                  </span>
+                </h:link>
+              </div>
+            </div>
+          </div>
+        </h:panelGroup>
+
+        <!-- =========== Có booking: list + empty-filter state =========== -->
+        <h:panelGroup rendered="#{not empty customerMyBookingsBean.myBookings}" layout="block">
+
+          <!-- Empty state khi filter không match cái nào (JS control) -->
+          <div id="empty-filter-state" class="mt-12 hidden">
+            <div class="bg-white rounded-3xl border-2 border-dashed border-[#E5E7EB] p-12 text-center">
+              <div class="max-w-md mx-auto">
+                <div class="w-20 h-20 bg-gradient-to-br from-[#E6C77F]/20 to-[#D4AF37]/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <i data-lucide="search" class="w-10 h-10 text-[#D4AF37]"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-[#0B1120] mb-3">No bookings match your filters</h3>
+                <p class="text-[#4B5563] leading-relaxed">
+                  Try adjusting your search or filter criteria to find what you're looking for.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bọc danh sách bằng FORM để commandLink hoạt động -->
+          <h:form id="myBookingsForm">
+            <!-- DANH SÁCH BOOKING -->
+            <div id="bookings-list" class="grid grid-cols-1 gap-6 mt-8">
+              <ui:repeat value="#{customerMyBookingsBean.myBookings}" var="b">
+                <div
+                  class="booking-card group bg-white rounded-3xl border border-[#E5E7EB] shadow-lg hover:shadow-2xl hover:border-[#D4AF37]/50 transition-all duration-500 overflow-hidden hover:-translate-y-1"
+                  data-role="booking-card"
+                  data-booking-status="#{b.bookingStatus}"
+                  data-payment-status="#{b.paymentStatus}"
+                  data-booking-code="#{b.bookingCode}"
+                  data-restaurant-name="#{b.restaurantId.name}">
+                  <div class="p-6 sm:p-8">
+                    <!-- Top row -->
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+                      <div class="flex-1">
+                        <div class="flex flex-wrap items-center gap-3 mb-3">
+                          <span class="px-4 py-1.5 bg-gradient-to-r from-[#E6C77F]/20 to-[#D4AF37]/20 text-[#0B1120] text-sm font-semibold rounded-full border border-[#D4AF37]/30">
+                            <h:outputText value="#{b.bookingCode}" />
+                          </span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-[#0B1120] mb-2 group-hover:text-[#D4AF37] transition-colors">
+                          <h:outputText value="#{b.restaurantId.name}" />
+                        </h3>
+                        <div class="flex flex-wrap items-center gap-2 text-[#4B5563]">
+                          <span class="font-medium">
+                            <h:outputText value="#{customerMyBookingsBean.eventTypeDisplay(b)}" />
+                          </span>
+                          <span class="w-1 h-1 rounded-full bg-[#D4AF37]"></span>
+                          <span>
+                            <h:outputText value="#{b.guestCount}" /> guests
+                          </span>
+                          <span class="w-1 h-1 rounded-full bg-[#D4AF37]"></span>
+                          <span>
+                            <h:outputText value="#{customerMyBookingsBean.locationDisplay(b)}" />
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- Status & Payment badges -->
+                      <div class="flex flex-wrap gap-2 sm:flex-col sm:items-end">
+                        <!-- Booking status -->
+                        <h:panelGroup rendered="#{b.bookingStatus eq 'PENDING'}">
+                          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]">
+                            Pending
+                          </span>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{b.bookingStatus eq 'CONFIRMED'}">
+                          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#22C55E] text-white border-[#22C55E]">
+                            Confirmed
+                          </span>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{b.bookingStatus eq 'COMPLETED'}">
+                          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#0B1120] text-[#D4AF37] border-[#0B1120]">
+                            Completed
+                          </span>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{b.bookingStatus eq 'CANCELLED'}">
+                          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#EF4444] text-white border-[#EF4444]">
+                            Cancelled
+                          </span>
+                        </h:panelGroup>
+
+                        <!-- Payment status -->
+                        <h:panelGroup rendered="#{b.paymentStatus eq 'UNPAID'}">
+                          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border bg-[#4B5563]/10 text-[#4B5563] border-[#4B5563]/30">
+                            Unpaid
+                          </span>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{b.paymentStatus eq 'DEPOSIT_PAID'}">
+                          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/50">
+                            Deposit Paid
+                          </span>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{b.paymentStatus eq 'PAID'}">
+                          <span class="px-4 py-1.5 rounded-full text-sm font-semibold border bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/50">
+                            Paid in Full
+                          </span>
+                        </h:panelGroup>
+                      </div>
+                    </div>
+
+                    <!-- Middle: event + payment summary -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      <div class="space-y-4">
+                        <h4 class="text-sm font-semibold text-[#0B1120] uppercase tracking-wide mb-3">
+                          Event Details
+                        </h4>
+
+                        <div class="flex items-start gap-3">
+                          <i data-lucide="calendar" class="w-5 h-5 text-[#D4AF37] mt-0.5 flex-shrink-0"></i>
+                          <div>
+                            <p class="text-[#111827] font-medium">
+                              <h:outputText value="#{customerMyBookingsBean.formatDateShort(b.eventDate)}" />
+                            </p>
+                          </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                          <i data-lucide="clock" class="w-5 h-5 text-[#D4AF37] mt-0.5 flex-shrink-0"></i>
+                          <div>
+                            <p class="text-[#111827] font-medium">
+                              <h:outputText value="#{customerMyBookingsBean.formatTime(b.startTime)}" /> –
+                              <h:outputText value="#{customerMyBookingsBean.formatTime(b.endTime)}" />
+                            </p>
+                          </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                          <i data-lucide="map-pin" class="w-5 h-5 text-[#D4AF37] mt-0.5 flex-shrink-0"></i>
+                          <div>
+                            <p class="text-[#111827] font-medium">
+                              <h:outputText value="#{customerMyBookingsBean.locationDisplay(b)}" />
+                            </p>
+                          </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                          <i data-lucide="users" class="w-5 h-5 text-[#D4AF37] mt-0.5 flex-shrink-0"></i>
+                          <div>
+                            <p class="text-[#111827] font-medium">
+                              <h:outputText value="#{customerMyBookingsBean.serviceTypeDisplay(b)}" />
+                              <span> · </span>
+                              <h:outputText value="#{customerMyBookingsBean.eventTypeDisplay(b)}" />
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="bg-gradient-to-br from-[#F9FAFB] to-white border border-[#E5E7EB] rounded-2xl p-5">
+                        <h4 class="text-sm font-semibold text-[#0B1120] uppercase tracking-wide mb-4">
+                          Payment Summary
+                        </h4>
+
+                        <div class="space-y-3">
+                          <div class="flex justify-between items-center pb-3 border-b border-[#E5E7EB]">
+                            <span class="text-[#4B5563] text-sm">Total Amount</span>
+                            <span class="text-2xl font-bold text-[#0B1120]">
+                              <h:outputText value="#{customerMyBookingsBean.formatMoney(b.totalAmount)}" />
+                            </span>
+                          </div>
+
+                          <div class="flex justify-between items-center">
+                            <span class="text-[#4B5563] text-sm">Deposit Paid</span>
+                            <span class="text-[#22C55E] font-semibold">
+                              <h:outputText value="#{customerMyBookingsBean.formatMoney(b.depositAmount)}" />
+                            </span>
+                          </div>
+
+                          <div class="flex justify-between items-center">
+                            <span class="text-[#4B5563] text-sm">Remaining</span>
+                            <h:panelGroup rendered="#{customerMyBookingsBean.isRemainingPositive(b)}">
+                              <span class="font-semibold text-[#F97316]">
+                                <h:outputText value="#{customerMyBookingsBean.formatMoney(b.remainingAmount)}" />
+                              </span>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not customerMyBookingsBean.isRemainingPositive(b)}">
+                              <span class="font-semibold text-[#22C55E]">
+                                <h:outputText value="#{customerMyBookingsBean.formatMoney(b.remainingAmount)}" />
+                              </span>
+                            </h:panelGroup>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Bottom row: message + actions -->
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t border-[#E5E7EB]">
+                      <p class="text-sm text-[#4B5563] flex-1 leading-relaxed">
+                        <h:outputText value="#{customerMyBookingsBean.statusMessage(b)}" />
+                      </p>
+
+                      <div class="flex flex-wrap gap-3">
+                        <!-- Pay remaining: demo (chưa xử lý backend) -->
+                        <h:panelGroup rendered="#{customerMyBookingsBean.needsPayment(b)}">
+                          <button type="button"
+                                  class="btn-pay-remaining px-6 py-3 bg-[#F97316] hover:bg-[#EA580C] text-white font-semibold rounded-xl transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2">
+                            <i data-lucide="credit-card" class="w-4 h-4"></i>
+                            Pay Remaining
+                          </button>
+                        </h:panelGroup>
+
+                        <!-- Cancel booking: gọi action bean -->
+                        <h:panelGroup rendered="#{customerMyBookingsBean.canCancel(b)}">
+                          <h:commandLink
+                              action="#{customerMyBookingsBean.cancelBooking(b.bookingId)}"
+                              styleClass="btn-cancel-booking px-6 py-3 bg-white hover:bg-[#FEF2F2] text-[#EF4444] border-2 border-[#EF4444] font-semibold rounded-xl transition-all duration-300 flex items-center gap-2"
+                              onclick="return confirm('Are you sure you want to cancel this booking? This may affect your deposit.');">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            <span>Cancel</span>
+                          </h:commandLink>
+                        </h:panelGroup>
+
+                        <!-- View details: sang trang booking-details -->
+                        <h:commandLink
+                            action="#{customerMyBookingsBean.viewDetails(b.bookingId)}"
+                            styleClass="btn-view-details px-6 py-3 bg-gradient-to-r from-[#F97316] to-[#EAB308] hover:from-[#EA580C] hover:to-[#D4AF37] text-white font-semibold rounded-xl transition-all duration-300 shadow-md hover:shadow-xl flex items-center gap-2">
+                          <span>View Details</span>
+                          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </h:commandLink>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ui:repeat>
+            </div>
+          </h:form>
+        </h:panelGroup>
+      </div>
+    </main>
+
+    <ui:include src="/layout/footer.xhtml" />
+
+    <!-- JS: lucide + filter -->
+    <script type="text/javascript">
+      //<![CDATA[
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+
+        var statusFilter = 'all';
+        var searchQuery = '';
+
+        var cards = Array.prototype.slice.call(
+          document.querySelectorAll('[data-role="booking-card"]')
+        );
+        var emptyFilter = document.getElementById('empty-filter-state');
+
+        function updateStatusTabs() {
+          var activeClasses =
+            'px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-all duration-300 bg-[#0B1120] text-white border-2 border-[#D4AF37] shadow-md shadow-[#D4AF37]/20';
+          var inactiveClasses =
+            'px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-all duration-300 bg-white text-[#4B5563] border-2 border-[#E5E7EB] hover:border-[#E6C77F] hover:text-[#D4AF37]';
+
+          var tabs = document.querySelectorAll('[data-role="status-tab"]');
+          tabs.forEach(function (btn) {
+            var value = btn.getAttribute('data-filter-value');
+            if (value === statusFilter) {
+              btn.setAttribute('class', activeClasses);
+            } else {
+              btn.setAttribute('class', inactiveClasses);
+            }
+          });
+        }
+
+        function matchesStatus(card) {
+          var status = (card.getAttribute('data-booking-status') || '').toUpperCase();
+          if (statusFilter === 'all') return true;
+          if (statusFilter === 'upcoming') {
+            return status === 'PENDING' || status === 'CONFIRMED';
+          }
+          if (statusFilter === 'completed') {
+            return status === 'COMPLETED';
+          }
+          if (statusFilter === 'cancelled') {
+            return status === 'CANCELLED';
+          }
+          return true;
+        }
+
+        function matchesSearch(card) {
+          if (!searchQuery) return true;
+          var code = (card.getAttribute('data-booking-code') || '').toLowerCase();
+          var name = (card.getAttribute('data-restaurant-name') || '').toLowerCase();
+          return code.indexOf(searchQuery) !== -1 || name.indexOf(searchQuery) !== -1;
+        }
+
+        function applyFilters() {
+          var visibleCount = 0;
+          cards.forEach(function (card) {
+            var ok = matchesStatus(card) && matchesSearch(card);
+            if (ok) {
+              card.classList.remove('hidden');
+              visibleCount++;
+            } else {
+              card.classList.add('hidden');
+            }
+          });
+
+          if (emptyFilter) {
+            if (visibleCount === 0) {
+              emptyFilter.classList.remove('hidden');
+            } else {
+              emptyFilter.classList.add('hidden');
+            }
+          }
+        }
+
+        // Tabs click
+        document.querySelectorAll('[data-role="status-tab"]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var value = btn.getAttribute('data-filter-value');
+            statusFilter = value || 'all';
+            updateStatusTabs();
+            applyFilters();
+          });
+        });
+
+        // Search input
+        var searchInput = document.getElementById('search-input');
+        if (searchInput) {
+          searchInput.addEventListener('input', function (e) {
+            searchQuery = (e.target.value || '').toLowerCase();
+            applyFilters();
+          });
+        }
+
+        updateStatusTabs();
+        applyFilters();
+      });
+      //]]>
+    </script>
+
+  </h:body>
+</html>
