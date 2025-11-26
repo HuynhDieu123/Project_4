@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     createIcons();
+    // Lấy restaurantId từ query string (vd: ?restaurantId=1)
+    const params = new URLSearchParams(window.location.search);
+    const restaurantId = params.get('restaurantId');
 
     // ================== TABS + SCROLL ==================
     const tabButtons = qsa('.tab-btn');
@@ -253,19 +256,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Hành vi Book Now trong time slot
                 btn.addEventListener('click', () => {
-                    alert(
-                            'Bạn đã chọn khung giờ: ' +
-                            slot.time +
-                            ' vào ngày ' +
-                            monthNames[selectedDateMonth] +
-                            ' ' +
-                            selectedDate +
-                            '. (Demo: bước tiếp theo sẽ là form booking chi tiết).'
-                            );
+                    if (!selectedDate)
+                        return;
+
+                    var year = selectedDateYear;
+                    var month = selectedDateMonth + 1; // 1–12
+                    var day = selectedDate;
+
+                    var dateStr =
+                            year + '-' +
+                            String(month).padStart(2, '0') + '-' +
+                            String(day).padStart(2, '0');
+
+                    var qsParams = new URLSearchParams();
+                    if (restaurantId)
+                        qsParams.set('restaurantId', restaurantId);
+                    qsParams.set('date', dateStr);
+                    qsParams.set('slot', slot.time);
+
+                    window.location.href = 'booking.xhtml?' + qsParams.toString();
                 });
 
-                right.appendChild(badge);
-                right.appendChild(btn);
             } else if (slot.status === 'limited') {
                 const badge = document.createElement('span');
                 badge.className = 'px-3 py-1 bg-[#EAB308] text-white text-sm font-medium rounded-full';
@@ -276,19 +287,27 @@ document.addEventListener('DOMContentLoaded', function () {
                         'px-4 py-2 bg-gradient-to-r from-[#F97316] to-[#EAB308] text-white text-sm font-semibold rounded-lg hover:shadow-lg transition-all';
                 btn.textContent = 'Book Now';
                 btn.addEventListener('click', () => {
-                    alert(
-                            'Khung giờ gần full: ' +
-                            slot.time +
-                            ' ngày ' +
-                            monthNames[selectedDateMonth] +
-                            ' ' +
-                            selectedDate +
-                            '. (Demo: bước tiếp theo sẽ là form booking chi tiết).'
-                            );
+                    if (!selectedDate)
+                        return;
+
+                    var year = selectedDateYear;
+                    var month = selectedDateMonth + 1;
+                    var day = selectedDate;
+
+                    var dateStr =
+                            year + '-' +
+                            String(month).padStart(2, '0') + '-' +
+                            String(day).padStart(2, '0');
+
+                    var qsParams = new URLSearchParams();
+                    if (restaurantId)
+                        qsParams.set('restaurantId', restaurantId);
+                    qsParams.set('date', dateStr);
+                    qsParams.set('slot', slot.time);
+
+                    window.location.href = 'booking.xhtml?' + qsParams.toString();
                 });
 
-                right.appendChild(badge);
-                right.appendChild(btn);
             } else {
                 const badge = document.createElement('span');
                 badge.className =
@@ -334,17 +353,27 @@ document.addEventListener('DOMContentLoaded', function () {
         proceedBtn.addEventListener('click', () => {
             if (!selectedDate) {
                 alert('Vui lòng chọn ngày trước.');
-            } else {
-                alert(
-                        'Demo: Tiếp tục đặt tiệc vào ngày ' +
-                        monthNames[selectedDateMonth] +
-                        ' ' +
-                        selectedDate +
-                        '.'
-                        );
+                return;
             }
+
+            var year = selectedDateYear;
+            var month = selectedDateMonth + 1;
+            var day = selectedDate;
+
+            var dateStr =
+                    year + '-' +
+                    String(month).padStart(2, '0') + '-' +
+                    String(day).padStart(2, '0');
+
+            var qsParams = new URLSearchParams();
+            if (restaurantId)
+                qsParams.set('restaurantId', restaurantId);
+            qsParams.set('date', dateStr);
+
+            window.location.href = 'booking.xhtml?' + qsParams.toString();
         });
     }
+
 
     // ================== FAQ TOGGLE ==================
     const faqItems = qsa('.faq-item');
