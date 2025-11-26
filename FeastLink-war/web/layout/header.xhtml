@@ -16,7 +16,8 @@
             class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-4">
 
             <!-- Logo -->
-            <a href="#top" class="flex items-center gap-3 sm:gap-4 group">
+            <h:link outcome="/Customer/index"
+                    styleClass="flex items-center gap-3 sm:gap-4 group">
                 <div class="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24">
                     <div
                         class="absolute inset-3 rounded-full blur-lg opacity-70 bg-[#d4af37]/70 group-hover:opacity-100 transition-opacity">
@@ -36,26 +37,21 @@
                         Luxury Events
                     </span>
                 </div>
-            </a>
+            </h:link>
+
+
 
             <!-- Menu desktop -->
             <div class="hidden lg:flex flex-1 justify-end">
                 <ul class="flex items-center gap-7 xl:gap-9">
                     <li>
-                        <a href="#{request.contextPath}/faces/Customer/index.xhtml"
-                           class="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
-                            <span class="relative z-10">HOME</span>
-                            <span
-                                class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#{request.contextPath}/faces/Customer/restaurants.xhtml"
-                           class="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
+                        <!-- VD: RESTAURANTS desktop -->
+                        <h:link outcome="/Customer/restaurants"
+                                styleClass="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
                             <span class="relative z-10">RESTAURANTS</span>
-                            <span
-                                class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
-                        </a>
+                            <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
+                        </h:link>
+
                     </li>
 
                     <li>
@@ -113,9 +109,9 @@
                     <ui:fragment rendered="#{not empty sessionScope.loginIdentifier}">
                         <li>
                             <div class="inline-flex flex-col justify-center px-3 py-1 rounded-full
-                                        border border-[#facc6b]/80
-                                        bg-[#020617]
-                                        shadow-[0_0_12px_rgba(250,204,107,0.35)]">
+                                 border border-[#facc6b]/80
+                                 bg-[#020617]
+                                 shadow-[0_0_12px_rgba(250,204,107,0.35)]">
                                 <span class="leading-tight text-[11px] font-semibold text-[#facc6b]">
                                     #{sessionScope.loginIdentifier}
                                 </span>
@@ -151,12 +147,6 @@
              class="lg:hidden absolute inset-x-0 top-full origin-top scale-y-0 opacity-0 pointer-events-none transform transition-all duration-200 ease-out z-40">
             <nav class="max-w-7xl mx-auto px-4 sm:px-6 pb-4">
                 <ul class="flex flex-col gap-1 bg-[#020617]/95 border-t border-[#1f2937] pt-3 rounded-b-2xl">
-                    <li>
-                        <a href="#{request.contextPath}/faces/Customer/index.xhtml"
-                           class="block px-2 py-2 text-sm font-semibold tracking-wide text-white hover:text-[#facc6b]">
-                            HOME
-                        </a>
-                    </li>
                     <li>
                         <a href="#{request.contextPath}/faces/Customer/restaurants.xhtml"
                            class="block px-2 py-2 text-sm font-semibold tracking-wide text-white hover:text-[#facc6b]">
@@ -208,9 +198,9 @@
                     <ui:fragment rendered="#{not empty sessionScope.loginIdentifier}">
                         <li class="px-2 pt-2">
                             <div class="inline-flex flex-col justify-center px-3 py-1 rounded-full
-                                        border border-[#facc6b]/80
-                                        bg-[#020617]
-                                        shadow-[0_0_12px_rgba(250,204,107,0.35)]">
+                                 border border-[#facc6b]/80
+                                 bg-[#020617]
+                                 shadow-[0_0_12px_rgba(250,204,107,0.35)]">
                                 <span class="leading-tight text-[11px] font-semibold text-[#facc6b]">
                                     #{sessionScope.loginIdentifier}
                                 </span>
