@@ -3,6 +3,11 @@ package com.mypack.bean;
 import com.mypack.entity.RestaurantManagers;
 import com.mypack.entity.Restaurants;
 import com.mypack.entity.Users;
+
+import com.mypack.entity.Areas;
+import com.mypack.entity.Cities;
+
+import com.mypack.sessionbean.AreasFacadeLocal;
 import com.mypack.sessionbean.RestaurantManagersFacadeLocal;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import com.mypack.sessionbean.UsersFacadeLocal;
@@ -22,7 +27,6 @@ import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -42,6 +46,10 @@ public class RegisterRestaurantManagerBean implements Serializable {
     @EJB
     private RestaurantManagersFacadeLocal restaurantManagersFacade;
 
+    // Dùng để load Cities/Areas từ DB
+    @EJB
+    private AreasFacadeLocal areasFacade;
+
     // ========= User hiện tại =========
     private Users currentUser;
 
@@ -55,8 +63,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
     private String restaurantName;
     private String restaurantBrandName;
     private String restaurantAddress;  // địa chỉ chi tiết
-    private String city;               // thành phố (text, không lấy từ DB)
-    private String area;               // khu vực (text)
+    private String city;               // tên thành phố (từ DB)
+    private String area;               // tên khu vực (từ DB)
     private String description;
 
     private String taxCode;
@@ -80,15 +88,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
     // Loại tiệc phục vụ chính (bind từ hidden input)
     private String mainEventType;
-    private final List<String> eventTypeOptions = Arrays.asList(
-            "Wedding",
-            "Birthday",
-            "Corporate / Gala",
-            "Conference",
-            "Private Dining"
-    );
 
-    // ========= Thành phố / Khu vực (gợi ý tĩnh) =========
+    // ========= Thành phố / Khu vực (lấy từ DB) =========
     private List<String> cityList;
     private List<String> areaList;
 
@@ -120,32 +121,58 @@ public class RegisterRestaurantManagerBean implements Serializable {
             return;
         }
 
-        // Danh sách thành phố tĩnh
-        cityList = Arrays.asList(
-                "TP. Hồ Chí Minh",
-                "Hà Nội",
-                "Đà Nẵng",
-                "Cần Thơ",
-                "Nha Trang"
-        );
-        areaList = new ArrayList<>();
-
         // Prefill từ Users
         managerName  = currentUser.getFullName();
         managerPhone = currentUser.getPhone();
         managerEmail = currentUser.getEmail();
 
+        // Load danh sách City từ DB (dựa trên bảng Areas → CityId → Name)
+        loadCitiesFromDb();
+        areaList = new ArrayList<>();
+
         // Nếu đã là manager → load nhà hàng để chỉnh sửa
         loadExistingRestaurant();
+    }
+
+    // Lấy danh sách thành phố (distinct theo Cities.Name) từ bảng Areas
+    private void loadCitiesFromDb() {
+        cityList = new ArrayList<>();
+        List<Areas> allAreas = areasFacade.findAll();
+        if (allAreas == null) {
+            return;
+        }
+
+        for (Areas a : allAreas) {
+            if (a == null) continue;
+            Cities c = a.getCityId();
+            if (c == null || c.getName() == null) continue;
+
+            String name = c.getName().trim();
+            if (name.isEmpty()) continue;
+
+            boolean exists = false;
+            for (String s : cityList) {
+                if (s.equalsIgnoreCase(name)) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                cityList.add(name);
+            }
+        }
+
+        // Sort nhẹ cho đẹp
+        cityList.sort(String::compareToIgnoreCase);
     }
 
     private void loadExistingRestaurant() {
         List<RestaurantManagers> rms = restaurantManagersFacade.findAll();
         for (RestaurantManagers rm : rms) {
             if (rm.getUserId() != null &&
-                    rm.getUserId().getUserId().equals(currentUser.getUserId())) {
+                rm.getUserId().getUserId().equals(currentUser.getUserId())) {
                 existingRestaurant = rm.getRestaurantId();
-                managerStatus = rm.getStatus();     // Lưu lại trạng thái manager
+                managerStatus = rm.getStatus();
                 break;
             }
         }
@@ -173,6 +200,20 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
             // Logo: đường dẫn đã lưu trong DB
             logoUrl = existingRestaurant.getLogoUrl();
+
+            // Nếu restaurant đã có AreaId → map ngược ra city/area để hiển thị
+            Areas a = existingRestaurant.getAreaId();
+            if (a != null) {
+                Cities c = a.getCityId();
+                if (c != null && c.getName() != null) {
+                    city = c.getName();
+                }
+                if (a.getName() != null) {
+                    area = a.getName();
+                }
+                // Khi đã có city → load areaList tương ứng
+                onCityChange();
+            }
         }
     }
 
@@ -210,65 +251,38 @@ public class RegisterRestaurantManagerBean implements Serializable {
     }
 
     // --------------------------------------------------------
-    // Thành phố / Khu vực: gợi ý theo city (tĩnh, không dùng DB)
+    // Thành phố / Khu vực: lấy từ DB
     // --------------------------------------------------------
     public void onCityChange() {
         areaList = new ArrayList<>();
 
-        if (city == null || city.trim().isEmpty()) {
+        if (isBlank(city)) {
             area = null;
             return;
         }
 
-        switch (city) {
-            case "TP. Hồ Chí Minh":
-                areaList.addAll(Arrays.asList(
-                        "Quận 1", "Quận 3", "Quận 5", "Quận 7", "Quận 10",
-                        "Quận Tân Bình", "Quận Bình Thạnh",
-                        "Thành phố Thủ Đức",
-                        "Khu ven / Ngoại thành"
-                ));
-                break;
-            case "Hà Nội":
-                areaList.addAll(Arrays.asList(
-                        "Quận Hoàn Kiếm", "Quận Ba Đình", "Quận Đống Đa",
-                        "Quận Cầu Giấy", "Quận Hai Bà Trưng",
-                        "Quận Long Biên", "Quận Nam Từ Liêm", "Quận Bắc Từ Liêm",
-                        "Khu ven / Ngoại thành"
-                ));
-                break;
-            case "Đà Nẵng":
-                areaList.addAll(Arrays.asList(
-                        "Quận Hải Châu", "Quận Sơn Trà", "Quận Ngũ Hành Sơn",
-                        "Quận Liên Chiểu", "Quận Cẩm Lệ", "Huyện Hòa Vang"
-                ));
-                break;
-            case "Cần Thơ":
-                areaList.addAll(Arrays.asList(
-                        "Quận Ninh Kiều", "Quận Bình Thủy", "Quận Cái Răng",
-                        "Quận Ô Môn", "Huyện Phong Điền",
-                        "Khu ven / Ngoại thành"
-                ));
-                break;
-            case "Nha Trang":
-                areaList.addAll(Arrays.asList(
-                        "Trung tâm thành phố",
-                        "Khu biển Trần Phú",
-                        "Khu Bắc Nha Trang",
-                        "Khu phía Tây Nha Trang",
-                        "Khu ven / Ngoại thành"
-                ));
-                break;
-            default:
-                areaList.addAll(Arrays.asList(
-                        "Trung tâm",
-                        "Quận nội thành",
-                        "Khu ven / Ngoại thành"
-                ));
-                break;
+        String cityName = city.trim();
+        List<Areas> allAreas = areasFacade.findAll();
+        if (allAreas == null) {
+            area = null;
+            return;
         }
 
-        area = null;
+        for (Areas a : allAreas) {
+            if (a == null || a.getName() == null) continue;
+            Cities c = a.getCityId();
+            if (c == null || c.getName() == null) continue;
+
+            if (c.getName().trim().equalsIgnoreCase(cityName)) {
+                String areaName = a.getName().trim();
+                if (!areaName.isEmpty()) {
+                    areaList.add(areaName);
+                }
+            }
+        }
+
+        areaList.sort(String::compareToIgnoreCase);
+        area = null; // reset chọn lại
     }
 
     // --------------------------------------------------------
@@ -282,6 +296,36 @@ public class RegisterRestaurantManagerBean implements Serializable {
         if (managerStatus == null) return false;
         String st = managerStatus.trim();
         return st.equalsIgnoreCase("Active") || st.equalsIgnoreCase("Approved");
+    }
+
+    // --------------------------------------------------------
+    // Map City + Area name → Areas entity (để set AreaId cho Restaurants)
+    // --------------------------------------------------------
+    private Areas resolveAreaEntity() {
+        if (isBlank(city) || isBlank(area)) {
+            return null;
+        }
+
+        String cityName = city.trim();
+        String areaName = area.trim();
+
+        List<Areas> all = areasFacade.findAll();
+        if (all == null || all.isEmpty()) {
+            return null;
+        }
+
+        for (Areas a : all) {
+            if (a == null || a.getName() == null) continue;
+            if (!a.getName().trim().equalsIgnoreCase(areaName)) continue;
+
+            Cities c = a.getCityId();
+            if (c == null || c.getName() == null) continue;
+
+            if (c.getName().trim().equalsIgnoreCase(cityName)) {
+                return a;
+            }
+        }
+        return null;
     }
 
     // --------------------------------------------------------
@@ -325,7 +369,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Vui lòng điền đầy đủ các trường bắt buộc (bao gồm Logo và Loại tiệc chính).",
+                    "Vui lòng điền đầy đủ các trường bắt buộc (bao gồm Logo, Thành phố, Khu vực và Loại tiệc chính).",
                     null
             ));
             return null;
@@ -347,19 +391,17 @@ public class RegisterRestaurantManagerBean implements Serializable {
                     ? new Restaurants()
                     : existingRestaurant;
 
-            // ====== BẮT BUỘC: status + createdAt + updatedAt ======
             Date now = new Date();
 
             if (isNewRestaurant) {
-                restaurant.setStatus("Pending");      // tối đa 30 ký tự
+                restaurant.setStatus("Pending");
                 restaurant.setCreatedAt(now);
             }
             restaurant.setUpdatedAt(now);
-            // =======================================================
 
             restaurant.setName(restaurantName);
 
-            // Gộp description + loại tiệc chính (nếu dùng cách [Main Event: ...])
+            // Gộp description + loại tiệc chính
             String descToSave = description;
             if (!isBlank(mainEventType)) {
                 String marker = "[Main Event: " + mainEventType + "]";
@@ -371,7 +413,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
             }
             restaurant.setDescription(descToSave);
 
-            // Gộp địa chỉ chi tiết + khu vực + thành phố
+            // Address text (hiển thị)
             String fullAddr = restaurantAddress;
             if (!isBlank(area)) {
                 fullAddr += ", " + area;
@@ -380,6 +422,18 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 fullAddr += ", " + city;
             }
             restaurant.setAddress(fullAddr);
+
+            // Map sang AreaId (bắt buộc không null)
+            Areas selectedArea = resolveAreaEntity();
+            if (selectedArea == null) {
+                ctx.addMessage(null, new FacesMessage(
+                        FacesMessage.SEVERITY_ERROR,
+                        "Không tìm thấy Khu vực tương ứng trong hệ thống.",
+                        "Kiểm tra lại Cities/Areas trong DB hoặc liên hệ Admin FeastLink."
+                ));
+                return null;
+            }
+            restaurant.setAreaId(selectedArea);
 
             restaurant.setPhone(managerPhone);
             restaurant.setEmail(managerEmail);
@@ -390,8 +444,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
             // ------------------ UPLOAD LOGO ------------------
             if (!noNewLogo && logoFile != null) {
-                // ĐƯỜNG DẪN THẬT TỚI THƯ MỤC upload_file TRONG PROJECT
-                // TODO: Nếu đường dẫn thực tế trên máy bạn khác, sửa lại chuỗi này.
                 String uploadRoot = "E:\\ProjectSemIV\\Code\\Project_4\\FeastLink-war\\web\\resources\\images\\upload_file";
 
                 File folder = new File(uploadRoot);
@@ -399,7 +451,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
                     folder.mkdirs();
                 }
 
-                // Lấy tên file gốc để tách đuôi
                 String submitted = logoFile.getSubmittedFileName();
                 String baseName  = submitted;
                 if (submitted != null) {
@@ -413,7 +464,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 String ext = "";
                 int dot = baseName != null ? baseName.lastIndexOf('.') : -1;
                 if (dot != -1) {
-                    ext = baseName.substring(dot); // gồm luôn dấu .
+                    ext = baseName.substring(dot);
                 }
 
                 String savedName = "logo_" + currentUser.getUserId() + "_" + System.currentTimeMillis() + ext;
@@ -428,17 +479,14 @@ public class RegisterRestaurantManagerBean implements Serializable {
                     }
                 }
 
-                // Đường dẫn tương đối để hiển thị trên web & lưu DB
                 String relativePath = "/resources/images/upload_file/" + savedName;
                 logoUrl = relativePath;
                 restaurant.setLogoUrl(relativePath);
             } else {
-                // Không upload mới → dùng logoUrl cũ nếu có
                 if (!isBlank(logoUrl)) {
                     restaurant.setLogoUrl(logoUrl);
                 }
             }
-            // ------------------------------------------------
 
             // parse giờ mở/đóng cửa (HH:mm) → Date (TIME) nếu có
             Date open = parseTime(openTime);
@@ -451,15 +499,13 @@ public class RegisterRestaurantManagerBean implements Serializable {
             }
 
             if (isNewRestaurant) {
-                // Tạo mới
                 restaurantsFacade.create(restaurant);
 
-                // Tạo bản ghi RestaurantManagers gắn với user hiện tại
                 RestaurantManagers rm = new RestaurantManagers();
                 rm.setUserId(currentUser);
                 rm.setRestaurantId(restaurant);
                 rm.setIsPrimary(true);
-                rm.setStatus("Pending");     // <= 20 ký tự
+                rm.setStatus("Pending");
                 rm.setCreatedAt(now);
 
                 restaurantManagersFacade.create(rm);
@@ -467,11 +513,9 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 existingRestaurant = restaurant;
                 managerStatus = "Pending";
             } else {
-                // Cập nhật (khi đã là manager)
                 restaurantsFacade.edit(restaurant);
             }
 
-            // Thông báo theo trường hợp
             if (isNewRestaurant) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_INFO,
@@ -482,11 +526,11 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_INFO,
                         "Cập nhật thông tin nhà hàng thành công",
-                        "Thông tin nhà hàng đã được lưu lại. Nếu có thay đổi lớn, FeastLink có thể xem xét lại hồ sơ của bạn."
+                        "Thông tin nhà hàng đã được lưu lại."
                 ));
             }
 
-            return null; // ở lại trang
+            return null;
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -595,8 +639,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
     public String getMainEventType() { return mainEventType; }
     public void setMainEventType(String mainEventType) { this.mainEventType = mainEventType; }
-
-    public List<String> getEventTypeOptions() { return eventTypeOptions; }
 
     public List<String> getCityList() { return cityList; }
     public void setCityList(List<String> cityList) { this.cityList = cityList; }
