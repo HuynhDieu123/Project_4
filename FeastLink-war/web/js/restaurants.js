@@ -427,8 +427,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 .join('');
 
         return `
-<article class="group bg-white rounded-[28px] border border-[#E5E7EB] shadow-sm hover:shadow-2xl hover:-translate-y-2 hover:shadow-[#D4AF37]/20 hover:border-[#D4AF37]/50 transition-all duration-500 ease-out relative overflow-hidden">
-  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none z-10"></div>
+<article
+  class="group bg-white rounded-[28px] border border-[#E5E7EB] shadow-sm hover:shadow-2xl hover:-translate-y-2 hover:shadow-[#D4AF37]/20 hover:border-[#D4AF37]/50 transition-all duration-500 ease-out relative overflow-hidden"
+  data-restaurant-id="${r.id}">
+ <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none z-10"></div>
 
   <div class="relative aspect-[16/9] rounded-t-[28px] overflow-hidden">
     <img
@@ -506,10 +508,11 @@ document.addEventListener('DOMContentLoaded', function () {
       <button type="button" class="px-4 py-2 border border-[#E5E7EB] hover:border-[#E6C77F] rounded-xl text-sm text-[#4B5563] hover:text-[#D4AF37] transition-all hover:scale-110 active:scale-95" data-action="favorite">
         <i data-lucide="heart" class="w-4 h-4"></i>
       </button>
-      <a href="restaurant-details.xhtml"
+      <a href="restaurant-details.xhtml?restaurantId=${r.id}"
    class="flex-1 px-4 py-2.5 bg-[#0B1120] hover:bg-[#020617] text-white text-sm font-semibold rounded-xl border-b-2 border-[#D4AF37] transition-all hover:scale-[1.02] active:scale-95 hover:shadow-lg hover:shadow-[#D4AF37]/20 inline-flex items-center justify-center">
   View details
 </a>
+
 
       <button type="button" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#F97316] text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-2xl hover:shadow-[#EAB308]/40 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden" data-action="book">
         <span class="relative z-10">Book now</span>
@@ -787,13 +790,25 @@ document.addEventListener('DOMContentLoaded', function () {
         const btn = e.target.closest('[data-action]');
         if (!btn)
             return;
+
         const action = btn.dataset.action;
+
         if (action === 'favorite') {
             alert('Added to favorites (demo).');
         } else if (action === 'book') {
-            alert('Book now (demo – booking flow will be implemented later).');
+            // Tìm thẻ article gần nhất để lấy restaurantId
+            const card = btn.closest('article[data-restaurant-id]');
+            const restaurantId = card ? card.dataset.restaurantId : null;
+
+            // Redirect sang trang booking (cùng folder Customer)
+            if (restaurantId) {
+                window.location.href = 'booking.xhtml?restaurantId=' + encodeURIComponent(restaurantId);
+            } else {
+                window.location.href = 'booking.xhtml';
+            }
         }
     });
+
 
 
     function openSheet() {
