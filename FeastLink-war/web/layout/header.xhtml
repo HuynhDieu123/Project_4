@@ -22,7 +22,6 @@
                     <div
                         class="absolute inset-3 rounded-full blur-lg opacity-70 bg-[#d4af37]/70 group-hover:opacity-100 transition-opacity">
                     </div>
-                    <!-- Logo từ resources -->
                     <img src="#{request.contextPath}/resources/images/feastlink-logo.png"
                          alt="FeastLink Logo"
                          class="relative w-full h-full object-contain" />
@@ -39,63 +38,55 @@
                 </div>
             </h:link>
 
-
-
             <!-- Menu desktop -->
             <div class="hidden lg:flex flex-1 justify-end">
                 <ul class="flex items-center gap-7 xl:gap-9">
                     <li>
-                        <!-- VD: RESTAURANTS desktop -->
-                        <h:link outcome="/Admin/dashboard"
+                        <h:link outcome="/Customer/restaurants"
                                 styleClass="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
                             <span class="relative z-10">RESTAURANTS</span>
                             <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
                         </h:link>
-
                     </li>
 
                     <li>
                         <a href="#event-types"
                            class="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
                             <span class="relative z-10">EVENT TYPES</span>
-                            <span
-                                class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
+                            <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
                         </a>
                     </li>
                     <li>
                         <a href="#offers"
                            class="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
                             <span class="relative z-10">OFFERS</span>
-                            <span
-                                class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
+                            <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
                         </a>
                     </li>
                     <li>
-                        <a href="#my-bookings"
-                           class="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
+                        <h:link outcome="/Customer/my-bookings"
+                                styleClass="group relative text-white text-[11px] lg:text-[13px] font-semibold tracking-wide transition-colors whitespace-nowrap">
                             <span class="relative z-10">MY BOOKINGS</span>
-                            <span
-                                class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
-                        </a>
+                            <span class="absolute bottom-0 left-0 h-[2px] w-0 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
+                        </h:link>
                     </li>
+
                     <li>
                         <a href="#favorites"
                            class="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
                             <span class="relative z-10">FAVORITES</span>
-                            <span
-                                class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
+                            <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
                         </a>
                     </li>
                     <li>
                         <a href="#support"
                            class="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
                             <span class="relative z-10">SUPPORT</span>
-                            <span
-                                class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
+                            <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
                         </a>
                     </li>
 
-                    <!-- CHƯA LOGIN: nút LOGIN -->
+                    <!-- CHƯA LOGIN -->
                     <ui:fragment rendered="#{empty sessionScope.loginIdentifier}">
                         <li>
                             <a href="#{request.contextPath}/faces/login.xhtml"
@@ -105,24 +96,57 @@
                         </li>
                     </ui:fragment>
 
-                    <!-- ĐÃ LOGIN: pill nhỏ hiển thị tên -->
+                    <!-- ĐÃ LOGIN: pill + dropdown -->
                     <ui:fragment rendered="#{not empty sessionScope.loginIdentifier}">
-                        <li>
-                            <div class="inline-flex flex-col justify-center px-3 py-1 rounded-full
-                                 border border-[#facc6b]/80
-                                 bg-[#020617]
-                                 shadow-[0_0_12px_rgba(250,204,107,0.35)]">
+                        <li class="relative">
+                            <button type="button"
+                                    id="userMenuToggle"
+                                    onclick="var e=event||window.event; e.stopPropagation(); var m=document.getElementById('userMenuPanel'); if(m){m.classList.toggle('hidden');}"
+                                    class="inline-flex flex-col justify-center px-3 py-1 rounded-full
+                                           border border-[#facc6b]/80
+                                           bg-[#020617]
+                                           shadow-[0_0_12px_rgba(250,204,107,0.35)]">
                                 <span class="leading-tight text-[11px] font-semibold text-[#facc6b]">
                                     #{sessionScope.loginIdentifier}
                                 </span>
                                 <span class="leading-tight text-[9px] text-slate-300">
                                     FeastLink Member
                                 </span>
+                            </button>
+
+                            <div id="userMenuPanel"
+                                 onclick="event.stopPropagation();"
+                                 class="hidden absolute right-0 mt-2 w-56 rounded-2xl
+                                        bg-[#020617]/95 border border-[#facc6b]/40
+                                        shadow-[0_18px_45px_rgba(0,0,0,0.75)] backdrop-blur-sm">
+
+                                <div class="px-4 py-3 border-b border-[#1f2937]/80">
+                                    <p class="text-[10px] uppercase tracking-wide text-slate-400">
+                                        Signed in as
+                                    </p>
+                                    <p class="text-xs font-semibold text-[#facc6b] truncate">
+                                        #{sessionScope.loginIdentifier}
+                                    </p>
+                                </div>
+
+                                <div class="py-1">
+                                    <a href="#{request.contextPath}/faces/Customer/profile.xhtml"
+                                       class="block px-4 py-2 text-xs text-slate-100 hover:bg-white/5">
+                                        View profile
+                                    </a>
+
+                                    <h:form style="margin:0;">
+                                        <h:commandLink action="#{loginBean.logout}"
+                                                       styleClass="block w-full text-left px-4 py-2 text-xs text-red-300 hover:bg-red-500/10">
+                                            Sign out
+                                        </h:commandLink>
+                                    </h:form>
+                                </div>
                             </div>
                         </li>
                     </ui:fragment>
 
-                    <!-- FOR RESTAURANTS: luôn hiển thị -->
+                    <!-- FOR RESTAURANTS -->
                     <li>
                         <button type="button"
                                 onclick="window.location = '#{request.contextPath}/faces/register_manager.xhtml'"
@@ -166,11 +190,13 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#my-bookings"
-                           class="block px-2 py-2 text-sm font-semibold tracking-wide text-white hover:text-[#facc6b]">
-                            MY BOOKINGS
-                        </a>
+                        <h:link outcome="/Customer/my-bookings"
+                                styleClass="group relative text-white text-[11px] lg:text-[13px] font-semibold tracking-wide transition-colors whitespace-nowrap">
+                            <span class="relative z-10">MY BOOKINGS</span>
+                            <span class="absolute bottom-0 left-0 h-[2px] w-0 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
+                        </h:link>
                     </li>
+
                     <li>
                         <a href="#favorites"
                            class="block px-2 py-2 text-sm font-semibold tracking-wide text-white hover:text-[#facc6b]">
@@ -184,7 +210,7 @@
                         </a>
                     </li>
 
-                    <!-- MOBILE: chỉ hiện LOGIN khi chưa login -->
+                    <!-- MOBILE: khi chưa login -->
                     <ui:fragment rendered="#{empty sessionScope.loginIdentifier}">
                         <li>
                             <a href="#{request.contextPath}/faces/login.xhtml"
@@ -194,20 +220,48 @@
                         </li>
                     </ui:fragment>
 
-                    <!-- MOBILE: đã login thì hiện pill giống bạn đang có -->
+                    <!-- MOBILE: khi đã login – version đẹp hơn -->
                     <ui:fragment rendered="#{not empty sessionScope.loginIdentifier}">
-                        <li class="px-2 pt-2">
-                            <div class="inline-flex flex-col justify-center px-3 py-1 rounded-full
-                                 border border-[#facc6b]/80
-                                 bg-[#020617]
-                                 shadow-[0_0_12px_rgba(250,204,107,0.35)]">
-                                <span class="leading-tight text-[11px] font-semibold text-[#facc6b]">
-                                    #{sessionScope.loginIdentifier}
-                                </span>
-                                <span class="leading-tight text-[9px] text-slate-300">
-                                    FeastLink Member
-                                </span>
+                        <!-- nhãn ACCOUNT nhỏ -->
+                        <li class="px-3 pt-3">
+                            <span class="text-[10px] uppercase tracking-[0.18em] text-slate-400">
+                                Account
+                            </span>
+                        </li>
+
+                        <!-- pill email gọn + ton-sur-ton -->
+                        <li class="px-3 pt-1">
+                            <div class="flex items-center gap-3 px-3 py-2 rounded-2xl
+                                        border border-[#facc6b]/40
+                                        bg-black/40
+                                        shadow-[0_0_10px_rgba(0,0,0,0.6)]">
+                                <div class="flex flex-col">
+                                    <span class="text-[12px] font-semibold text-[#facc6b] leading-tight">
+                                        #{sessionScope.loginIdentifier}
+                                    </span>
+                                    <span class="text-[10px] text-slate-300 leading-tight">
+                                        FeastLink Member
+                                    </span>
+                                </div>
                             </div>
+                        </li>
+
+                        <!-- View profile -->
+                        <li class="mt-1">
+                            <a href="#{request.contextPath}/faces/Customer/profile.xhtml"
+                               class="block px-3 py-2 text-xs font-medium tracking-wide text-slate-100 hover:bg-white/5">
+                                View profile
+                            </a>
+                        </li>
+
+                        <!-- Sign out -->
+                        <li>
+                            <h:form style="margin:0;">
+                                <h:commandLink action="#{loginBean.logout}"
+                                               styleClass="block w-full text-left px-3 py-2 text-xs font-medium tracking-wide text-red-300 hover:bg-red-500/10">
+                                    Sign out
+                                </h:commandLink>
+                            </h:form>
                         </li>
                     </ui:fragment>
 
@@ -222,5 +276,17 @@
             </nav>
         </div>
     </header>
+
+    <!-- JS: đóng dropdown desktop khi click ra ngoài -->
+    <script type="text/javascript">
+        //<![CDATA[
+        document.addEventListener('click', function () {
+            var panel = document.getElementById('userMenuPanel');
+            if (panel) {
+                panel.classList.add('hidden');
+            }
+        });
+        //]]>
+    </script>
 
 </ui:composition>
