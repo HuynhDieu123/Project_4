@@ -27,7 +27,11 @@ public interface UsersFacadeLocal {
     List<Users> findAll();
 
     List<Users> findRange(int[] range);
+    int countFiltered(String keyword, String role, String status);
 
+    List<Users> findFiltered(String keyword, String role,
+                             String status, int start, int size);
+    public Users findByEmail(String email);
     int count();
     
 }
