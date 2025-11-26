@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets">
+
+<h:head>
+    <title>FeastLink Admin</title>
+
+    <!-- Tailwind + Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&amp;family=Poppins:wght@500;600&amp;display=swap" rel="stylesheet"/>
+
+    <style>
+        :root {
+            --primary-dark: #020617;
+            --primary: #0B1120;
+
+            --secondary: #d4af37;
+            --secondary-soft: #e6c77f;
+
+            --bg-soft: #f9fafb;
+            --border: #e5e7eb;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            background: var(--bg-soft);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: #1c2130;
+            width: 280px;
+            height: 100vh;
+            color: white;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 26px;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255,255,255,0.06);
+            transform: translateX(4px);
+            color: var(--secondary);
+        }
+
+        /* HEADER FIX FULL WIDTH */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 280px;
+            width: calc(100% - 280px);
+
+            background: linear-gradient(90deg,
+                rgba(212,175,55,0.12),
+                rgba(2,6,23,1) 60%);
+
+            border-bottom: 1px solid rgba(212,175,55,0.2);
+            padding: 20px 40px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            height: 95px;
+            z-index: 10;
+        }
+
+        /* MAIN CONTENT */
+        .content-wrapper {
+            margin-left: 280px;
+            margin-top: 110px;
+            padding: 20px 40px;
+        }
+    </style>
+</h:head>
+
+<h:body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <!-- Logo -->
+        <div class="flex flex-col items-center mb-6 pb-6 border-b border-[rgba(212,175,55,0.25)]">
+
+            <h:graphicImage value="#{resource['images/FeastLink_Logo.png']}"
+                            styleClass="w-40 h-40 object-contain drop-shadow-xl" />
+
+            <h1 class="text-[24px] font-semibold text-[var(--secondary)] mt-4 tracking-wide">
+                FeastLink
+            </h1>
+
+            <p class="text-gray-400 text-xs -mt-1 tracking-wide">Admin Console</p>
+        </div>
+
+        <!-- MENU -->
+        <nav class="space-y-1.5 text-[15px]">
+
+            <a href="#{request.contextPath}/faces/Admin/dashboard.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📊 Dashboard</a>
+            <a href="#{request.contextPath}/faces/Admin/users.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">👥 Users</a>
+            <a href="#{request.contextPath}/faces/Admin/restaurants.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">🏨 Restaurants</a>
+            <a href="#{request.contextPath}/faces/Admin/approvals.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📝 Approvals</a>
+            <a href="#{request.contextPath}/faces/Admin/system-data.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📚 System Data</a>
+            <a href="#{request.contextPath}/faces/Admin/complaints.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">⚠ Complaints</a>
+            <a href="#{request.contextPath}/faces/Admin/settings.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">⚙ Settings</a>
+            <a href="#{request.contextPath}/faces/Admin/analytics.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📈 Analytics</a>
+
+        </nav>
+
+    </aside>
+
+    <!-- HEADER -->
+    <header class="header text-white">
+
+        <h2 class="text-xl font-semibold tracking-wide">
+            <ui:insert name="title">Page Title</ui:insert>
+        </h2>
+
+        <div class="flex items-center gap-3 bg-[rgba(255,255,255,0.08)] px-4 py-2 rounded-xl">
+            <img src="https://i.pravatar.cc/40"
+                 class="w-10 h-10 rounded-full border border-[var(--secondary)]" />
+
+            <div>
+                <p class="font-medium">Admin</p>
+                <p class="text-xs text-gray-300">FeastLink Admin</p>
+            </div>
+        </div>
+
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <main class="content-wrapper">
+        <ui:insert name="content"/>
+    </main>
+
+</h:body>
+
+</html>

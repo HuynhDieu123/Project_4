@@ -28,4 +28,9 @@ public class RestaurantsFacade extends AbstractFacade<Restaurants> implements Re
         super(Restaurants.class);
     }
     
+    @Override
+    public long countRestaurants() {
+        return (long) em.createQuery("SELECT COUNT(r) FROM Restaurants r").getSingleResult();
+    }
+
 }

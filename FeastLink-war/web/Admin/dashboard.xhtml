@@ -1,0 +1,96 @@
+<ui:composition 
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="jakarta.faces.html"
+    xmlns:ui="jakarta.faces.facelets"
+    template="template.xhtml">
+
+    <ui:define name="title">Dashboard Overview</ui:define>
+
+    <ui:define name="content">
+
+        <!-- ==== TOP METRICS ==== -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-10">
+
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-[rgba(0,0,0,0.05)]">
+                <div class="text-[28px] font-bold">#{dashboardBean.totalUsers}</div>
+                <div class="text-gray-500 text-sm mt-1">Khách hàng</div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-[rgba(0,0,0,0.05)]">
+                <div class="text-[28px] font-bold">#{dashboardBean.totalRestaurants}</div>
+                <div class="text-gray-500 text-sm mt-1">Nhà hàng</div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-[rgba(0,0,0,0.05)]">
+                <div class="text-[28px] font-bold">#{dashboardBean.totalBookings}</div>
+                <div class="text-gray-500 text-sm mt-1">Tổng Booking</div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-[rgba(0,0,0,0.05)]">
+                <div class="text-[28px] text-[var(--secondary)] font-bold">
+                    #{dashboardBean.monthlyRevenue}
+                </div>
+                <div class="text-gray-500 text-sm mt-1">Doanh thu tháng</div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-[rgba(0,0,0,0.05)]">
+                <div class="text-[28px] text-red-500 font-bold">
+                    #{dashboardBean.cancelRate}%
+                </div>
+                <div class="text-gray-500 text-sm mt-1">Tỷ lệ hủy</div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-[rgba(0,0,0,0.05)]">
+                <div class="text-[28px] text-sky-600 font-bold">
+                    #{dashboardBean.pendingApprovals}
+                </div>
+                <div class="text-gray-500 text-sm mt-1">Chờ duyệt</div>
+            </div>
+
+        </div>
+
+
+        <!-- ==== Recent Bookings ==== -->
+        <div class="bg-white rounded-3xl p-8 shadow-lg border border-[rgba(0,0,0,0.06)]">
+
+            <h3 class="text-lg font-semibold mb-6">Booking gần nhất</h3>
+
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b text-gray-500 text-[13px]">
+                        <th class="pb-3">Booking</th>
+                        <th>Khách</th>
+                        <th>Nhà hàng</th>
+                        <th>Ngày</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+
+                <tbody class="text-[14px]">
+
+                    <ui:repeat value="#{dashboardBean.recentBookings}" var="b">
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="py-3">#{b.bookingCode}</td>
+                            <td>#{b.customerId.fullName}</td>
+                            <td>#{b.restaurantId.name}</td>
+                            <td>#{b.eventDate}</td>
+                            <td>
+                                <span class="
+                                    px-3 py-1 rounded-full text-xs
+                                    #{b.bookingStatus eq 'CONFIRMED' ? 'bg-green-100 text-green-700' :
+                                      b.bookingStatus eq 'PENDING'   ? 'bg-yellow-100 text-yellow-700' :
+                                      'bg-red-100 text-red-700'}">
+                                    #{b.bookingStatus}
+                                </span>
+                            </td>
+                        </tr>
+                    </ui:repeat>
+
+                </tbody>
+            </table>
+
+        </div>
+
+    </ui:define>
+    <!-- #{request.contextPath}/faces/Admin/dashboard.xhtml -->
+</ui:composition>
