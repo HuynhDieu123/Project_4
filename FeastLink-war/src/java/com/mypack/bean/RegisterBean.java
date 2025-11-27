@@ -12,6 +12,9 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
+// Thêm import BCrypt
+import org.mindrot.jbcrypt.BCrypt;
+
 @Named("registerBean")
 @RequestScoped
 public class RegisterBean implements Serializable {
@@ -108,11 +111,14 @@ public class RegisterBean implements Serializable {
 
         // 6. Tạo user mới
         try {
+            // Hash password bằng BCrypt trước khi lưu
+            String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+
             Users user = new Users();
             user.setFullName(fullName);
             user.setEmail(email);
             user.setPhone(phone);
-            user.setPassword(password);
+            user.setPassword(hashedPassword);  // <-- dùng hashed password
             user.setRole("CUSTOMER");
             user.setStatus("ACTIVE");
             user.setAvatarUrl(null);

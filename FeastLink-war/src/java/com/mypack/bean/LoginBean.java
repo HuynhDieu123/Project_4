@@ -11,6 +11,9 @@ import jakarta.faces.context.FacesContext;
 import java.io.Serializable;
 import java.util.List;
 
+// Thêm import BCrypt
+import org.mindrot.jbcrypt.BCrypt;
+
 @Named("loginBean")
 @RequestScoped
 public class LoginBean implements Serializable {
@@ -65,13 +68,13 @@ public class LoginBean implements Serializable {
 
         String input = identifier.trim();
 
-        // 1. Account cứng admin / 123
+        // 1. Account cứng admin / 123 (giữ nguyên)
         if ("admin".equalsIgnoreCase(input) && "123".equals(password)) {
             ctx.getExternalContext().getSessionMap().put("currentUserRole", "ADMIN");
             ctx.getExternalContext().getSessionMap().put("loginIdentifier", input);
 
             // KHÔNG dùng ?faces-redirect=true để tránh lỗi Flash
-            return "/Customer/index";
+            return "Admin/dashboard";
         }
 
         // 2. Tìm trong DB theo email hoặc phone
@@ -83,8 +86,27 @@ public class LoginBean implements Serializable {
                     && input.equalsIgnoreCase(u.getEmail());
             boolean samePhone = u.getPhone() != null
                     && input.equals(u.getPhone());
-            boolean samePassword = u.getPassword() != null
-                    && password.equals(u.getPassword());
+
+            boolean samePassword = false;
+            String storedPassword = u.getPassword();
+
+            if (storedPassword != null) {
+                // Nếu là password hash BCrypt
+                if (storedPassword.startsWith("$2a$") ||
+                    storedPassword.startsWith("$2b$") ||
+                    storedPassword.startsWith("$2y$")) {
+
+                    try {
+                        samePassword = BCrypt.checkpw(password, storedPassword);
+                    } catch (IllegalArgumentException e) {
+                        // Nếu hash lỗi format, default là false
+                        samePassword = false;
+                    }
+                } else {
+                    // Trường hợp cũ: nếu db đang còn plain text (để tương thích tạm)
+                    samePassword = password.equals(storedPassword);
+                }
+            }
 
             if ((sameEmail || samePhone) && samePassword) {
                 matched = u;
