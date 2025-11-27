@@ -4,12 +4,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const qsa = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 
     const createIcons = () => {
-        if (window.lucide)
+        if (window.lucide) {
             window.lucide.createIcons();
+        }
     };
 
     createIcons();
-    // Lấy restaurantId từ query string (vd: ?restaurantId=1)
+
+    // Read restaurantId from query string (e.g., ?restaurantId=1)
     const params = new URLSearchParams(window.location.search);
     const restaurantId = params.get('restaurantId');
 
@@ -22,16 +24,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const section = btn.getAttribute('data-section');
             const isActive = section === id;
             const baseClasses =
-                    'tab-btn group relative px-4 lg:px-8 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl text-xs lg:text-sm font-bold whitespace-nowrap transition-all duration-300';
+                'tab-btn group relative px-4 lg:px-8 py-2.5 lg:py-3 rounded-xl lg:rounded-2xl text-xs lg:text-sm font-bold whitespace-nowrap transition-all duration-300';
 
             if (isActive) {
                 btn.className =
-                        baseClasses +
-                        ' bg-gradient-to-r from-[#0B1120] to-[#020617] text-white shadow-xl shadow-[#0B1120]/30';
+                    baseClasses +
+                    ' bg-gradient-to-r from-[#0B1120] to-[#020617] text-white shadow-xl shadow-[#0B1120]/30';
             } else {
                 btn.className =
-                        baseClasses +
-                        ' bg-white text-[#4B5563] border-2 border-[#E5E7EB] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#D4AF37]/5';
+                    baseClasses +
+                    ' bg-white text-[#4B5563] border-2 border-[#E5E7EB] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#D4AF37]/5';
             }
         });
     }
@@ -39,14 +41,14 @@ document.addEventListener('DOMContentLoaded', function () {
     tabButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.getAttribute('data-section');
-            if (!target)
-                return;
+            if (!target) return;
+
             const el = document.getElementById(target);
             if (el) {
                 const offset = 120;
                 const rect = el.getBoundingClientRect();
                 const offsetTop = rect.top + window.pageYOffset - offset;
-                window.scrollTo({top: offsetTop, behavior: 'smooth'});
+                window.scrollTo({ top: offsetTop, behavior: 'smooth' });
             }
         });
     });
@@ -55,11 +57,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const offsetTrigger = 150;
         for (const id of sectionIds) {
             const el = document.getElementById(id);
-            if (!el)
-                continue;
+            if (!el) continue;
+
             const rect = el.getBoundingClientRect();
             const top = rect.top;
             const bottom = rect.bottom;
+
             if (top <= offsetTrigger && bottom >= offsetTrigger) {
                 setActiveTab(id);
                 break;
@@ -75,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let currentMonth = new Date();
     currentMonth.setDate(1);
+
     let selectedDate = null;
     let selectedDateMonth = currentMonth.getMonth();
     let selectedDateYear = currentMonth.getFullYear();
@@ -88,34 +92,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const timeSlotsList = qs('#time-slots-list');
 
     const timeSlots = [
-        {time: 'Lunch (11:00–14:00)', status: 'available'},
-        {time: 'Afternoon (15:00–18:00)', status: 'limited'},
-        {time: 'Dinner (18:00–22:00)', status: 'booked'}
+        { time: 'Lunch (11:00–14:00)', status: 'available' },
+        { time: 'Afternoon (15:00–18:00)', status: 'limited' },
+        { time: 'Dinner (18:00–22:00)', status: 'booked' }
     ];
 
     function getDateStatus(day) {
-        if (day % 7 === 0)
-            return 'booked';
-        if (day % 5 === 0)
-            return 'limited';
+        if (day % 7 === 0) return 'booked';
+        if (day % 5 === 0) return 'limited';
         return 'available';
     }
 
     function renderCalendar() {
-        if (!monthLabel || !daysContainer)
-            return;
+        if (!monthLabel || !daysContainer) return;
 
         const year = currentMonth.getFullYear();
         const month = currentMonth.getMonth();
 
         monthLabel.textContent = monthNames[month] + ' ' + year;
-
         daysContainer.innerHTML = '';
 
         const firstDayOfMonth = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        // empty cells
+        // Leading empty cells
         for (let i = 0; i < firstDayOfMonth; i++) {
             const div = document.createElement('div');
             div.className = 'aspect-square';
@@ -125,49 +125,49 @@ document.addEventListener('DOMContentLoaded', function () {
         for (let d = 1; d <= daysInMonth; d++) {
             const status = getDateStatus(d);
             const isSelected =
-                    selectedDate === d &&
-                    selectedDateMonth === month &&
-                    selectedDateYear === year;
+                selectedDate === d &&
+                selectedDateMonth === month &&
+                selectedDateYear === year;
 
             const btn = document.createElement('button');
             btn.textContent = String(d);
             btn.classList.add(
-                    'relative', 'aspect-square', 'rounded-xl', 'text-sm', 'font-medium',
-                    'transition-all', 'flex', 'items-center', 'justify-center'
-                    );
+                'relative', 'aspect-square', 'rounded-xl', 'text-sm', 'font-medium',
+                'transition-all', 'flex', 'items-center', 'justify-center'
+            );
 
             if (status === 'available') {
                 if (isSelected) {
                     btn.classList.add(
-                            'bg-[#0B1120]', 'text-white', 'ring-2',
-                            'ring-[#D4AF37]', 'ring-offset-2'
-                            );
+                        'bg-[#0B1120]', 'text-white', 'ring-2',
+                        'ring-[#D4AF37]', 'ring-offset-2'
+                    );
                 } else {
                     btn.classList.add(
-                            'border-2', 'border-[#22C55E]/30',
-                            'text-[#111827]', 'hover:border-[#22C55E]', 'hover:bg-[#22C55E]/5'
-                            );
+                        'border-2', 'border-[#22C55E]/30',
+                        'text-[#111827]', 'hover:border-[#22C55E]', 'hover:bg-[#22C55E]/5'
+                    );
                 }
             } else if (status === 'limited') {
                 if (isSelected) {
                     btn.classList.add(
-                            'bg-[#0B1120]', 'text-white', 'ring-2',
-                            'ring-[#D4AF37]', 'ring-offset-2'
-                            );
+                        'bg-[#0B1120]', 'text-white', 'ring-2',
+                        'ring-[#D4AF37]', 'ring-offset-2'
+                    );
                 } else {
                     btn.classList.add(
-                            'border-2', 'border-[#EAB308]/30',
-                            'text-[#111827]', 'hover:border-[#EAB308]', 'hover:bg-[#EAB308]/5'
-                            );
+                        'border-2', 'border-[#EAB308]/30',
+                        'text-[#111827]', 'hover:border-[#EAB308]', 'hover:bg-[#EAB308]/5'
+                    );
                     const dot = document.createElement('span');
                     dot.className = 'absolute top-1 right-1 w-1.5 h-1.5 bg-[#EAB308] rounded-full';
                     btn.appendChild(dot);
                 }
             } else {
                 btn.classList.add(
-                        'bg-[#EF4444]/10', 'text-[#EF4444]',
-                        'border', 'border-[#EF4444]/20', 'cursor-not-allowed'
-                        );
+                    'bg-[#EF4444]/10', 'text-[#EF4444]',
+                    'border', 'border-[#EF4444]/20', 'cursor-not-allowed'
+                );
                 btn.disabled = true;
             }
 
@@ -186,8 +186,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderTimeSlots() {
-        if (!timeSlotsContainer || !timeSlotsTitle || !timeSlotsList)
-            return;
+        if (!timeSlotsContainer || !timeSlotsTitle || !timeSlotsList) return;
 
         if (!selectedDate) {
             timeSlotsContainer.classList.add('hidden');
@@ -196,22 +195,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
         timeSlotsContainer.classList.remove('hidden');
         timeSlotsTitle.textContent =
-                'Available Time Slots for ' + monthNames[selectedDateMonth] + ' ' + selectedDate;
+            'Available Time Slots for ' +
+            monthNames[selectedDateMonth] +
+            ' ' +
+            selectedDate;
 
         timeSlotsList.innerHTML = '';
+
         timeSlots.forEach(slot => {
             const wrapper = document.createElement('div');
             wrapper.classList.add(
-                    'flex', 'items-center', 'justify-between',
-                    'p-4', 'rounded-xl', 'border-2', 'transition-all'
-                    );
+                'flex', 'items-center', 'justify-between',
+                'p-4', 'rounded-xl', 'border-2', 'transition-all'
+            );
 
             if (slot.status === 'available') {
-                wrapper.classList.add('border-[#22C55E]/30', 'bg-[#22C55E]/5', 'hover:border-[#22C55E]');
+                wrapper.classList.add(
+                    'border-[#22C55E]/30',
+                    'bg-[#22C55E]/5',
+                    'hover:border-[#22C55E]'
+                );
             } else if (slot.status === 'limited') {
-                wrapper.classList.add('border-[#EAB308]/30', 'bg-[#EAB308]/5', 'hover:border-[#EAB308]');
+                wrapper.classList.add(
+                    'border-[#EAB308]/30',
+                    'bg-[#EAB308]/5',
+                    'hover:border-[#EAB308]'
+                );
             } else {
-                wrapper.classList.add('border-[#EF4444]/30', 'bg-[#EF4444]/5', 'opacity-60');
+                wrapper.classList.add(
+                    'border-[#EF4444]/30',
+                    'bg-[#EF4444]/5',
+                    'opacity-60'
+                );
             }
 
             const left = document.createElement('div');
@@ -220,12 +235,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const icon = document.createElement('i');
             icon.setAttribute('data-lucide', 'clock');
             icon.className = 'w-5 h-5';
-            if (slot.status === 'available')
+            if (slot.status === 'available') {
                 icon.classList.add('text-[#22C55E]');
-            else if (slot.status === 'limited')
+            } else if (slot.status === 'limited') {
                 icon.classList.add('text-[#EAB308]');
-            else
+            } else {
                 icon.classList.add('text-[#EF4444]');
+            }
 
             const span = document.createElement('span');
             span.className = 'font-medium text-[#111827]';
@@ -240,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (slot.status === 'available') {
                 const badge = document.createElement('span');
                 badge.className =
-                        'px-3 py-1 bg-[#22C55E] text-white text-sm font-medium rounded-full flex items-center gap-1';
+                    'px-3 py-1 bg-[#22C55E] text-white text-sm font-medium rounded-full flex items-center gap-1';
                 const checkIcon = document.createElement('i');
                 checkIcon.setAttribute('data-lucide', 'check');
                 checkIcon.className = 'w-4 h-4';
@@ -251,72 +267,91 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const btn = document.createElement('button');
                 btn.className =
-                        'px-4 py-2 bg-gradient-to-r from-[#F97316] to-[#EAB308] text-white text-sm font-semibold rounded-lg hover:shadow-lg transition-all';
+                    'px-4 py-2 bg-gradient-to-r from-[#F97316] to-[#EAB308] text-white text-sm font-semibold rounded-lg hover:shadow-lg transition-all';
                 btn.textContent = 'Book Now';
 
-                // Hành vi Book Now trong time slot
+                // Book Now in a specific time slot (available)
                 btn.addEventListener('click', () => {
-                    if (!selectedDate)
-                        return;
+                    if (!selectedDate) return;
 
-                    var year = selectedDateYear;
-                    var month = selectedDateMonth + 1; // 1–12
-                    var day = selectedDate;
+                    const year = selectedDateYear;
+                    const month = selectedDateMonth + 1; // 1–12
+                    const day = selectedDate;
 
-                    var dateStr =
-                            year + '-' +
-                            String(month).padStart(2, '0') + '-' +
-                            String(day).padStart(2, '0');
+                    const dateStr =
+                        year +
+                        '-' +
+                        String(month).padStart(2, '0') +
+                        '-' +
+                        String(day).padStart(2, '0');
 
-                    var qsParams = new URLSearchParams();
-                    if (restaurantId)
+                    const qsParams = new URLSearchParams();
+                    if (restaurantId) {
                         qsParams.set('restaurantId', restaurantId);
+                    }
                     qsParams.set('date', dateStr);
                     qsParams.set('slot', slot.time);
+
+                    if (selectedPackageName) {
+                        qsParams.set('package', selectedPackageName);
+                    }
 
                     window.location.href = 'booking.xhtml?' + qsParams.toString();
                 });
 
+                right.appendChild(badge);
+                right.appendChild(btn);
             } else if (slot.status === 'limited') {
                 const badge = document.createElement('span');
-                badge.className = 'px-3 py-1 bg-[#EAB308] text-white text-sm font-medium rounded-full';
-                badge.textContent = 'Limited Slots';
+                badge.className =
+                    'px-3 py-1 bg-[#EAB308] text-white text-sm font-medium rounded-full';
+                badge.textContent = 'Limited slots';
 
                 const btn = document.createElement('button');
                 btn.className =
-                        'px-4 py-2 bg-gradient-to-r from-[#F97316] to-[#EAB308] text-white text-sm font-semibold rounded-lg hover:shadow-lg transition-all';
+                    'px-4 py-2 bg-gradient-to-r from-[#F97316] to-[#EAB308] text-white text-sm font-semibold rounded-lg hover:shadow-lg transition-all';
                 btn.textContent = 'Book Now';
+
+                // Book Now in a specific time slot (limited)
                 btn.addEventListener('click', () => {
-                    if (!selectedDate)
-                        return;
+                    if (!selectedDate) return;
 
-                    var year = selectedDateYear;
-                    var month = selectedDateMonth + 1;
-                    var day = selectedDate;
+                    const year = selectedDateYear;
+                    const month = selectedDateMonth + 1;
+                    const day = selectedDate;
 
-                    var dateStr =
-                            year + '-' +
-                            String(month).padStart(2, '0') + '-' +
-                            String(day).padStart(2, '0');
+                    const dateStr =
+                        year +
+                        '-' +
+                        String(month).padStart(2, '0') +
+                        '-' +
+                        String(day).padStart(2, '0');
 
-                    var qsParams = new URLSearchParams();
-                    if (restaurantId)
+                    const qsParams = new URLSearchParams();
+                    if (restaurantId) {
                         qsParams.set('restaurantId', restaurantId);
+                    }
                     qsParams.set('date', dateStr);
                     qsParams.set('slot', slot.time);
+
+                    if (selectedPackageName) {
+                        qsParams.set('package', selectedPackageName);
+                    }
 
                     window.location.href = 'booking.xhtml?' + qsParams.toString();
                 });
 
+                right.appendChild(badge);
+                right.appendChild(btn);
             } else {
                 const badge = document.createElement('span');
                 badge.className =
-                        'px-3 py-1 bg-[#EF4444] text-white text-sm font-medium rounded-full flex items-center gap-1';
+                    'px-3 py-1 bg-[#EF4444] text-white text-sm font-medium rounded-full flex items-center gap-1';
                 const xIcon = document.createElement('i');
                 xIcon.setAttribute('data-lucide', 'x');
                 xIcon.className = 'w-4 h-4';
                 const text = document.createElement('span');
-                text.textContent = 'Fully Booked';
+                text.textContent = 'Fully booked';
                 badge.appendChild(xIcon);
                 badge.appendChild(text);
                 right.appendChild(badge);
@@ -348,32 +383,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
     renderCalendar();
 
+    // Proceed with selected date & package (bottom button)
     const proceedBtn = qs('#proceed-button');
     if (proceedBtn) {
         proceedBtn.addEventListener('click', () => {
             if (!selectedDate) {
-                alert('Vui lòng chọn ngày trước.');
+                alert('Please select a date first.');
                 return;
             }
 
-            var year = selectedDateYear;
-            var month = selectedDateMonth + 1;
-            var day = selectedDate;
+            if (!selectedPackageName) {
+                alert('Please select a package before continuing.');
+                return;
+            }
 
-            var dateStr =
-                    year + '-' +
-                    String(month).padStart(2, '0') + '-' +
-                    String(day).padStart(2, '0');
+            const year = selectedDateYear;
+            const month = selectedDateMonth + 1;
+            const day = selectedDate;
 
-            var qsParams = new URLSearchParams();
-            if (restaurantId)
+            const dateStr =
+                year +
+                '-' +
+                String(month).padStart(2, '0') +
+                '-' +
+                String(day).padStart(2, '0');
+
+            const qsParams = new URLSearchParams();
+            if (restaurantId) {
                 qsParams.set('restaurantId', restaurantId);
+            }
             qsParams.set('date', dateStr);
+
+            if (selectedPackageName) {
+                qsParams.set('package', selectedPackageName);
+            }
 
             window.location.href = 'booking.xhtml?' + qsParams.toString();
         });
     }
-
 
     // ================== FAQ TOGGLE ==================
     const faqItems = qsa('.faq-item');
@@ -382,10 +429,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const content = qs('.faq-content', item);
         const icon = qs('[data-lucide="chevron-down"]', item);
 
-        if (!toggleBtn || !content || !icon)
-            return;
+        if (!toggleBtn || !content || !icon) return;
 
-        // Mặc định: FAQ 1 mở
+        // Default: first FAQ open
         if (index === 0) {
             content.classList.remove('hidden');
             icon.classList.add('rotate-180');
@@ -397,10 +443,8 @@ document.addEventListener('DOMContentLoaded', function () {
             faqItems.forEach(i => {
                 const c = qs('.faq-content', i);
                 const ic = qs('[data-lucide="chevron-down"]', i);
-                if (c)
-                    c.classList.add('hidden');
-                if (ic)
-                    ic.classList.remove('rotate-180');
+                if (c) c.classList.add('hidden');
+                if (ic) ic.classList.remove('rotate-180');
             });
 
             if (isHidden) {
@@ -422,14 +466,12 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentImageIndex = 0;
 
     function updateLightboxCounter() {
-        if (!lightboxCounter)
-            return;
+        if (!lightboxCounter) return;
         lightboxCounter.textContent = (currentImageIndex + 1) + ' / ' + totalImages;
     }
 
     function openLightbox(index) {
-        if (!lightbox)
-            return;
+        if (!lightbox) return;
         currentImageIndex = index;
         updateLightboxCounter();
         lightbox.classList.remove('hidden');
@@ -437,8 +479,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function closeLightbox() {
-        if (!lightbox)
-            return;
+        if (!lightbox) return;
         lightbox.classList.add('hidden');
         lightbox.classList.remove('flex');
     }
@@ -446,6 +487,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (heroTrigger) {
         heroTrigger.addEventListener('click', () => openLightbox(0));
     }
+
     thumbs.forEach(thumb => {
         thumb.addEventListener('click', () => {
             const idx = parseInt(thumb.getAttribute('data-index') || '0', 10);
@@ -477,8 +519,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const bottomCallBtn = qs('#bottom-call-btn');
 
     window.addEventListener('scroll', () => {
-        if (!scrollTopBtn)
-            return;
+        if (!scrollTopBtn) return;
         if (window.scrollY > 500) {
             scrollTopBtn.classList.remove('opacity-0', 'pointer-events-none');
         } else {
@@ -488,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (scrollTopBtn) {
         scrollTopBtn.addEventListener('click', () => {
-            window.scrollTo({top: 0, behavior: 'smooth'});
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     }
 
@@ -514,14 +555,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const closeMobileBooking = qs('#close-mobile-booking');
 
     function openMobileModal() {
-        if (!mobileBookingModal)
-            return;
+        if (!mobileBookingModal) return;
         mobileBookingModal.classList.remove('hidden');
         mobileBookingModal.classList.add('flex');
     }
+
     function closeMobileModal() {
-        if (!mobileBookingModal)
-            return;
+        if (!mobileBookingModal) return;
         mobileBookingModal.classList.add('hidden');
         mobileBookingModal.classList.remove('flex');
     }
@@ -540,40 +580,76 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Nút "Book Now" ở bottom bar mobile: mở modal luôn (thay vì chỉ scroll)
+    // Bottom bar "Book Now" on mobile: open modal (or scroll to availability as fallback)
     if (bottomBookBtn) {
         bottomBookBtn.addEventListener('click', () => {
-            // Nếu có modal thì mở modal, nếu không thì scroll tới availability
             if (mobileBookingModal) {
                 openMobileModal();
             } else {
                 const el = document.getElementById('availability');
-                if (el)
-                    el.scrollIntoView({behavior: 'smooth'});
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
             }
         });
     }
 
     // ================== PACKAGE BUTTONS (Select / Compare / View menu) ==================
+    let selectedCard = null;
     let selectedPackageName = null;
     const packagesSection = qs('#packages');
 
-    function getPackageNameFromButton(btn) {
-        const card = btn.closest('.group');
+    function getCardFromButton(btn) {
+        return btn.closest('.group');
+    }
+
+    function getPackageNameFromCard(card) {
         const title = card ? qs('h3', card) : null;
         return title ? title.textContent.trim() : 'this package';
     }
 
-    // Highlight card khi chọn package
-    function highlightSelectedPackage(packageName) {
+    function resetAllPackageCards() {
         const cards = qsa('#packages .group');
         cards.forEach(card => {
             card.classList.remove('ring-2', 'ring-[#D4AF37]', 'ring-offset-2');
-            const title = qs('h3', card);
-            if (title && title.textContent.trim() === packageName) {
-                card.classList.add('ring-2', 'ring-[#D4AF37]', 'ring-offset-2');
+
+            const btn = qs('button[data-role="select-package"]', card);
+            if (btn) {
+                btn.dataset.selected = 'false';
+
+                const span = btn.querySelector('span');
+                if (span) span.textContent = 'Select Package';
+
+                // back to default (orange) style
+                btn.classList.remove('bg-white', 'text-[#111827]', 'border', 'border-[#D4AF37]');
+                btn.classList.add(
+                    'bg-gradient-to-r',
+                    'from-[#F97316]',
+                    'to-[#FACC6B]',
+                    'text-white'
+                );
             }
         });
+    }
+
+    function applySelectedState(card) {
+        if (!card) return;
+
+        card.classList.add('ring-2', 'ring-[#D4AF37]', 'ring-offset-2');
+
+        const btn = qs('button[data-role="select-package"]', card);
+        if (btn) {
+            btn.dataset.selected = 'true';
+
+            const span = btn.querySelector('span');
+            if (span) span.textContent = 'Selected';
+
+            btn.classList.remove(
+                'bg-gradient-to-r',
+                'from-[#F97316]',
+                'to-[#FACC6B]',
+                'text-white'
+            );
+            btn.classList.add('bg-white', 'text-[#111827]', 'border', 'border-[#D4AF37]');
+        }
     }
 
     const compareSet = new Set();
@@ -581,77 +657,96 @@ document.addEventListener('DOMContentLoaded', function () {
     if (packagesSection) {
         packagesSection.addEventListener('click', (e) => {
             const target = e.target;
+            if (!(target instanceof HTMLElement)) return;
 
-            if (!(target instanceof HTMLElement))
-                return;
+            const btn = target.closest('button');
+            if (!btn) return;
 
-            // Select Package
-            if (target.textContent.trim() === 'Select Package') {
-                const pkgName = getPackageNameFromButton(target);
-                selectedPackageName = pkgName;
-                highlightSelectedPackage(pkgName);
-                alert(
-                        'Đã chọn gói: ' +
-                        pkgName +
-                        '. Bây giờ bạn có thể chọn ngày tại mục Availability để tiếp tục đặt tiệc.'
-                        );
-            }
+            const role = btn.dataset.role;
 
-            // Compare
-            if (target.textContent.trim() === 'Compare') {
-                const pkgName = getPackageNameFromButton(target);
-                if (compareSet.has(pkgName)) {
-                    compareSet.delete(pkgName);
-                    alert('Đã bỏ gói khỏi danh sách so sánh: ' + pkgName);
+            // SELECT / DESELECT PACKAGE
+            if (role === 'select-package') {
+                const card = getCardFromButton(btn);
+                if (!card) return;
+
+                if (selectedCard === card) {
+                    resetAllPackageCards();
+                    selectedCard = null;
+                    selectedPackageName = null;
+                    alert('Package selection has been cleared.');
                 } else {
-                    compareSet.add(pkgName);
+                    resetAllPackageCards();
+                    selectedCard = card;
+                    selectedPackageName = getPackageNameFromCard(card);
+                    applySelectedState(card);
                     alert(
-                            'Đã thêm vào danh sách so sánh: ' +
-                            pkgName +
-                            '\nCác gói đang so sánh: ' +
-                            Array.from(compareSet).join(', ')
-                            );
+                        'Selected package: ' +
+                        selectedPackageName +
+                        '. You can now choose a date in the Availability section to continue your booking.'
+                    );
                 }
             }
 
-            // View full menu details
-            if (target.textContent.trim() === 'View full menu details') {
-                const pkgName = getPackageNameFromButton(target);
+            // COMPARE
+            if (role === 'compare-package') {
+                const card = getCardFromButton(btn);
+                const name = getPackageNameFromCard(card);
+
+                if (compareSet.has(name)) {
+                    compareSet.delete(name);
+                    alert('Removed from comparison list: ' + name);
+                } else {
+                    compareSet.add(name);
+                    alert(
+                        'Added to comparison list: ' +
+                        name +
+                        '\nCurrently comparing: ' +
+                        Array.from(compareSet).join(', ')
+                    );
+                }
+            }
+
+            // VIEW MENU DETAILS (demo)
+            if (role === 'view-menu') {
+                const card = getCardFromButton(btn);
+                const name = getPackageNameFromCard(card);
                 alert(
-                        'Demo: Trang/ popup chi tiết menu cho gói "' +
-                        pkgName +
-                        '" sẽ được mở ở phiên bản thật.'
-                        );
+                    'Demo: A full menu details page or popup for "' +
+                    name +
+                    '" will open here in the final version.'
+                );
             }
         });
     }
 
     // ================== REVIEWS: WRITE & LOAD MORE ==================
     const writeReviewBtn = qs('#reviews button', qs('#reviews'));
-    const loadMoreBtn = qs('#reviews button:nth-of-type(2)'); // "Load More Reviews" là nút cuối section
+    const loadMoreBtn = qs('#reviews button:nth-of-type(2)'); // second button inside #reviews
 
     if (writeReviewBtn) {
         writeReviewBtn.addEventListener('click', () => {
-            alert('Demo: Form viết đánh giá sẽ được hiển thị ở phiên bản hoàn chỉnh.');
+            alert('Demo: The review form will be displayed here in the full version.');
         });
     }
 
     const loadMoreReviewsBtn = qs('#reviews .mt-6.text-center button');
     if (loadMoreReviewsBtn) {
         loadMoreReviewsBtn.addEventListener('click', () => {
-            alert('Demo: Không còn review nào nữa. (Dữ liệu sẽ được load từ backend sau này).');
+            alert(
+                'Demo: There are no more reviews. In the real version, more reviews will be loaded from the backend.'
+            );
         });
     }
 
     // ================== DESKTOP CHECK AVAILABILITY BUTTON ==================
-    // Nút "Check Availability & Pricing" trong card bên phải (desktop)
+    // "Check Availability & Pricing" button in the right-hand booking card (desktop)
     qsa('button').forEach(btn => {
         const text = btn.textContent.trim();
         if (text === 'Check Availability & Pricing' && btn.id !== 'open-mobile-booking') {
             btn.addEventListener('click', () => {
                 const availabilitySection = document.getElementById('availability');
                 if (availabilitySection) {
-                    availabilitySection.scrollIntoView({behavior: 'smooth'});
+                    availabilitySection.scrollIntoView({ behavior: 'smooth' });
                 }
             });
         }
@@ -662,16 +757,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (viewAllVenuesBtn) {
         viewAllVenuesBtn.addEventListener('click', () => {
-            alert('Demo: Nút này sẽ dẫn về trang danh sách nhà hàng (Restaurant Listing).');
+            alert('Demo: This button will navigate to the restaurant listing page.');
         });
     }
 
     qsa('#similar-venues .group button').forEach(btn => {
         if (btn.textContent.trim() === 'View') {
             btn.addEventListener('click', () => {
-                alert('Demo: Nút này sẽ dẫn tới trang chi tiết của venue tương ứng.');
+                alert('Demo: This button will navigate to the detail page of the selected venue.');
             });
         }
     });
 });
-        
