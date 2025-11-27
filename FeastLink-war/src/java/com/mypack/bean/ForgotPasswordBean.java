@@ -11,6 +11,9 @@ import jakarta.faces.context.FacesContext;
 import java.io.Serializable;
 import java.util.List;
 
+// Thêm import BCrypt
+import org.mindrot.jbcrypt.BCrypt;
+
 @Named("forgotPasswordBean")
 @RequestScoped
 public class ForgotPasswordBean implements Serializable {
@@ -96,9 +99,10 @@ public class ForgotPasswordBean implements Serializable {
             return null;
         }
 
-        // 4. Cập nhật mật khẩu
+        // 4. Cập nhật mật khẩu (hash BCrypt)
         try {
-            user.setPassword(newPassword);
+            String hashedNewPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+            user.setPassword(hashedNewPassword);
             usersFacade.edit(user);
 
             ctx.getExternalContext().getFlash().setKeepMessages(true);
