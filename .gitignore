@@ -1,15 +1,14 @@
-# B? các th? m?c build/dist c?a T?T C? module
+# B? cï¿½c th? m?c build/dist c?a T?T C? module
 **/build/
 **/dist/
 
-# B? config riêng c?a NetBeans (máy ai n?y xài)
+# B? config riï¿½ng c?a NetBeans (mï¿½y ai n?y xï¿½i)
 **/nbproject/private/
 
-# File t?m/biên d?ch
+# File t?m/biï¿½n d?ch
 *.class
 *.log
 
-# File ?óng gói
+# File ?ï¿½ng gï¿½i
 *.war
 *.ear
-*.jar
