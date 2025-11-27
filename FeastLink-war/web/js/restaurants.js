@@ -4,234 +4,24 @@ document.addEventListener('DOMContentLoaded', function () {
         window.lucide.createIcons();
     }
 
-    // Mock data
-    const restaurants = [
-        {
-            id: '1',
-            name: 'Grand Royal Ballroom',
-            image: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 1',
-            description: 'Luxury banquet hall with panoramic city views, crystal chandeliers, and world-class service for unforgettable celebrations.',
-            rating: 4.9,
-            reviews: 328,
-            badge: 'TOP RATED',
-            capacityMin: 100,
-            capacityMax: 500,
-            pricePerGuest: 8500,
-            eventTypes: ['Wedding', 'Corporate', 'Gala'],
-            advanceBookingDays: 30,
-            cancelDays: 14,
-            depositPercent: 30,
-            availability: 'available'
-        },
-        {
-            id: '2',
-            name: 'Garden Paradise Restaurant',
-            image: 'https://images.pexels.com/photos/2306281/pexels-photo-2306281.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 3',
-            description: 'Enchanting outdoor venue surrounded by lush gardens, perfect for romantic weddings and intimate gatherings.',
-            rating: 4.8,
-            reviews: 245,
-            badge: 'VIP',
-            capacityMin: 50,
-            capacityMax: 250,
-            pricePerGuest: 7200,
-            eventTypes: ['Wedding', 'Birthday', 'Anniversary'],
-            advanceBookingDays: 21,
-            cancelDays: 10,
-            depositPercent: 25,
-            availability: 'limited'
-        },
-        {
-            id: '3',
-            name: 'Skyline Tower Events',
-            image: 'https://images.pexels.com/photos/1395964/pexels-photo-1395964.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 1',
-            description: 'Contemporary rooftop venue on the 45th floor with breathtaking 360° skyline views and modern amenities.',
-            rating: 5.0,
-            reviews: 189,
-            badge: 'NEW',
-            capacityMin: 80,
-            capacityMax: 300,
-            pricePerGuest: 950,
-            eventTypes: ['Corporate', 'Gala', 'Wedding'],
-            advanceBookingDays: 45,
-            cancelDays: 21,
-            depositPercent: 40,
-            availability: 'available'
-        },
-        {
-            id: '4',
-            name: 'Imperial Palace Banquet',
-            image: 'https://images.pexels.com/photos/2306276/pexels-photo-2306276.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 7',
-            description: 'Majestic palace-style venue with ornate architecture, grand entrance, and capacity for large-scale celebrations.',
-            rating: 4.7,
-            reviews: 412,
-            capacityMin: 200,
-            capacityMax: 800,
-            pricePerGuest: 680,
-            eventTypes: ['Wedding', 'Corporate', 'Graduation'],
-            advanceBookingDays: 60,
-            cancelDays: 30,
-            depositPercent: 35,
-            availability: 'available'
-        },
-        {
-            id: '5',
-            name: 'Riverside Elegance',
-            image: 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 2',
-            description: 'Sophisticated waterfront venue offering stunning river views, elegant interiors, and exceptional culinary experiences.',
-            rating: 4.9,
-            reviews: 356,
-            badge: 'TOP RATED',
-            capacityMin: 120,
-            capacityMax: 400,
-            pricePerGuest: 780,
-            eventTypes: ['Wedding', 'Anniversary', 'Corporate'],
-            advanceBookingDays: 30,
-            cancelDays: 14,
-            depositPercent: 30,
-            availability: 'limited'
-        },
-        {
-            id: '6',
-            name: 'Crystal Hall & Lounge',
-            image: 'https://images.pexels.com/photos/2306277/pexels-photo-2306277.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 3',
-            description: 'Ultra-modern event space with state-of-the-art lighting, crystal installations, and premium sound systems.',
-            rating: 4.6,
-            reviews: 198,
-            capacityMin: 60,
-            capacityMax: 200,
-            pricePerGuest: 820,
-            eventTypes: ['Birthday', 'Corporate', 'Gala'],
-            advanceBookingDays: 21,
-            cancelDays: 7,
-            depositPercent: 25,
-            availability: 'available'
-        },
-        {
-            id: '7',
-            name: 'Heritage Grand Hotel',
-            image: 'https://images.pexels.com/photos/1024359/pexels-photo-1024359.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 1',
-            description: 'Historic luxury hotel ballroom combining colonial charm with modern elegance, perfect for prestigious events.',
-            rating: 4.8,
-            reviews: 467,
-            badge: 'VIP',
-            capacityMin: 150,
-            capacityMax: 600,
-            pricePerGuest: 920,
-            eventTypes: ['Wedding', 'Gala', 'Corporate'],
-            advanceBookingDays: 45,
-            cancelDays: 21,
-            depositPercent: 35,
-            availability: 'available'
-        },
-        {
-            id: '8',
-            name: 'Lotus Garden Villa',
-            image: 'https://images.pexels.com/photos/1395967/pexels-photo-1395967.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 9',
-            description: 'Private villa estate with tropical gardens, koi ponds, and intimate pavilions for exclusive celebrations.',
-            rating: 5.0,
-            reviews: 124,
-            badge: 'VIP',
-            capacityMin: 30,
-            capacityMax: 150,
-            pricePerGuest: 120,
-            eventTypes: ['Wedding', 'Birthday', 'Anniversary'],
-            advanceBookingDays: 60,
-            cancelDays: 30,
-            depositPercent: 50,
-            availability: 'limited'
-        },
-        {
-            id: '9',
-            name: 'Metropolitan Convention Center',
-            image: 'https://images.pexels.com/photos/2306278/pexels-photo-2306278.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 7',
-            description: 'Massive convention facility with flexible spaces, ideal for large corporate events and trade exhibitions.',
-            rating: 4.5,
-            reviews: 289,
-            capacityMin: 300,
-            capacityMax: 1500,
-            pricePerGuest: 550,
-            eventTypes: ['Corporate', 'Graduation', 'Gala'],
-            advanceBookingDays: 90,
-            cancelDays: 45,
-            depositPercent: 40,
-            availability: 'available'
-        },
-        {
-            id: '10',
-            name: 'Sunset Terrace Restaurant',
-            image: 'https://images.pexels.com/photos/1581384/pexels-photo-1581384.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 2',
-            description: 'Open-air rooftop restaurant with spectacular sunset views, contemporary design, and gourmet dining.',
-            rating: 4.7,
-            reviews: 213,
-            capacityMin: 40,
-            capacityMax: 180,
-            pricePerGuest: 890,
-            eventTypes: ['Birthday', 'Anniversary', 'Corporate'],
-            advanceBookingDays: 14,
-            cancelDays: 7,
-            depositPercent: 20,
-            availability: 'available'
-        },
-        {
-            id: '11',
-            name: 'Diamond Ballroom Saigon',
-            image: 'https://images.pexels.com/photos/265916/pexels-photo-265916.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 1',
-            description: 'Opulent ballroom featuring Italian marble floors, Swarovski chandeliers, and white-glove service.',
-            rating: 4.9,
-            reviews: 378,
-            badge: 'TOP RATED',
-            capacityMin: 100,
-            capacityMax: 450,
-            pricePerGuest: 980,
-            eventTypes: ['Wedding', 'Gala', 'Corporate'],
-            advanceBookingDays: 30,
-            cancelDays: 14,
-            depositPercent: 35,
-            availability: 'full'
-        },
-        {
-            id: '12',
-            name: 'Bamboo Grove Events',
-            image: 'https://images.pexels.com/photos/1309240/pexels-photo-1309240.jpeg?auto=compress&cs=tinysrgb&w=1200',
-            city: 'Ho Chi Minh City',
-            district: 'District 9',
-            description: 'Serene nature-inspired venue with bamboo architecture, water features, and farm-to-table catering.',
-            rating: 4.6,
-            reviews: 167,
-            badge: 'NEW',
-            capacityMin: 50,
-            capacityMax: 220,
-            pricePerGuest: 650,
-            eventTypes: ['Wedding', 'Birthday', 'Corporate'],
-            advanceBookingDays: 21,
-            cancelDays: 10,
-            depositPercent: 25,
-            availability: 'available'
-        }
-    ];
+    // --------- LẤY DATA TỪ BACKEND ----------
+    let raw = window.FEASTLINK_RESTAURANTS;
+    let restaurants = [];
 
+    try {
+        if (Array.isArray(raw)) {
+            restaurants = raw;
+        } else if (typeof raw === 'string' && raw.trim().length > 0) {
+            restaurants = JSON.parse(raw);
+        }
+    } catch (e) {
+        console.error('Failed to parse FEASTLINK_RESTAURANTS', e, raw);
+        restaurants = [];
+    }
+
+    console.log('Restaurants after parse:', restaurants);
+
+    // ----- PHẦN CODE CŨ GIỮ NGUYÊN TỪ ĐÂY TRỞ XUỐNG -----
     const state = {
         viewMode: 'grid',
         sortBy: 'recommended',
@@ -239,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
         eventTypes: new Set(),
         capacity: '',
         rating: 0,
-        priceMax: 10000,
+        priceMax: 2000000,
         city: '',
         area: '',
         searchEventType: '',
