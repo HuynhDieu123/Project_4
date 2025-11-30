@@ -1,0 +1,752 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <h:head>
+        <meta charset="UTF-8" />
+        <title>FeastLink System Feedback</title>
+         <!-- Tailwind CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- Lucide Icons CDN -->
+        <script src="https://unpkg.com/lucide@latest"></script>
+
+
+        <style type="text/css">
+            :root {
+                --fl-primary: #020617;
+                --fl-primary-soft: #0f172a;
+                --fl-gold: #d4af37;
+                --fl-gold-soft: #facc6b;
+                --fl-border: #e5e7eb;
+                --fl-bg: #f9fafb;
+                --fl-card-bg: #ffffff;
+                --fl-danger: #ef4444;
+                --fl-success: #22c55e;
+                --fl-warn: #f97316;
+                --fl-text-main: #111827;
+                --fl-text-muted: #6b7280;
+            }
+
+            body {
+                margin: 0;
+            }
+
+            .fl-feedback-body {
+                margin: 0;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                background: radial-gradient(circle at top, #fef3c7 0, #f9fafb 40%, #f3f4f6 100%);
+                color: var(--fl-text-main);
+            }
+
+            .fl-feedback-page {
+                max-width: 1160px;
+                margin: 0 auto;
+                padding: 0 16px 40px;
+            }
+
+            .fl-feedback-header {
+                margin-bottom: 24px;
+            }
+
+            .fl-feedback-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 4px 10px;
+                border-radius: 999px;
+                font-size: 11px;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                background: rgba(250, 204, 21, 0.12);
+                color: #92400e;
+                border: 1px solid rgba(212, 175, 55, 0.4);
+            }
+
+            .fl-feedback-badge::before {
+                content: "";
+                width: 6px;
+                height: 6px;
+                border-radius: 999px;
+                background: linear-gradient(135deg, var(--fl-gold), #fbbf24);
+                box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.25);
+            }
+
+            .fl-feedback-title {
+                margin: 10px 0 6px;
+                font-size: 24px;
+                font-weight: 700;
+                color: var(--fl-primary);
+            }
+
+            .fl-feedback-subtitle {
+                margin: 0;
+                max-width: 840px;
+                font-size: 14px;
+                color: var(--fl-text-muted);
+            }
+
+            .fl-feedback-layout {
+                display: grid;
+                grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.3fr);
+                gap: 18px;
+            }
+
+            .fl-feedback-left,
+            .fl-feedback-right {
+                background: var(--fl-card-bg);
+                border-radius: 18px;
+                border: 1px solid rgba(148, 163, 184, 0.18);
+                box-shadow:
+                    0 22px 45px rgba(15, 23, 42, 0.12),
+                    0 0 0 1px rgba(148, 163, 184, 0.12);
+                padding: 18px 20px 20px;
+            }
+
+            .fl-section-title {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 15px;
+                font-weight: 600;
+                margin: 0 0 6px;
+                color: var(--fl-primary);
+            }
+
+            .fl-dot {
+                width: 6px;
+                height: 18px;
+                border-radius: 999px;
+                background: linear-gradient(180deg, var(--fl-gold-soft), var(--fl-gold));
+            }
+
+            .fl-section-desc {
+                margin: 0 0 14px;
+                font-size: 12px;
+                color: var(--fl-text-muted);
+            }
+
+            .fl-field {
+                margin-bottom: 14px;
+            }
+
+            .fl-label {
+                display: block;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--fl-primary-soft);
+                margin-bottom: 4px;
+            }
+
+            .fl-input,
+            .fl-select,
+            .fl-textarea {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 9px 11px;
+                border-radius: 10px;
+                border: 1px solid var(--fl-border);
+                font-size: 13px;
+                outline: none;
+                background: #f9fafb;
+                transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+            }
+
+            .fl-input:focus,
+            .fl-select:focus,
+            .fl-textarea:focus {
+                border-color: var(--fl-gold-soft);
+                box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.35);
+                background: #ffffff;
+            }
+
+            .fl-input-readonly,
+            .fl-textarea-readonly {
+                background: #f3f4f6;
+                cursor: default;
+            }
+
+            .fl-textarea {
+                resize: vertical;
+                min-height: 84px;
+            }
+
+            .fl-help-text {
+                display: block;
+                margin-top: 4px;
+                font-size: 11px;
+                color: var(--fl-text-muted);
+            }
+
+            .fl-grid-2 {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .fl-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                margin-top: 16px;
+            }
+
+            .fl-btn {
+                border-radius: 999px;
+                border: none;
+                padding: 9px 18px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                white-space: nowrap;
+                transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
+            }
+
+            .fl-btn-primary {
+                background: linear-gradient(135deg, var(--fl-gold), #fbbf24);
+                color: #1f2933;
+                box-shadow: 0 10px 20px rgba(234, 179, 8, 0.35);
+            }
+
+            .fl-btn-primary:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 14px 28px rgba(234, 179, 8, 0.45);
+            }
+
+            .fl-btn-primary[disabled] {
+                opacity: 0.5;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+
+            .fl-btn-ghost {
+                background: transparent;
+                color: var(--fl-text-muted);
+                border: 1px solid rgba(148, 163, 184, 0.5);
+            }
+
+            .fl-btn-ghost:hover {
+                background: rgba(148, 163, 184, 0.06);
+            }
+
+            .fl-status-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin: 6px 0 16px;
+            }
+
+            .fl-status-label {
+                font-size: 12px;
+                color: var(--fl-text-muted);
+            }
+
+            .fl-status-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                border-radius: 999px;
+                background: rgba(16, 185, 129, 0.06);
+                border: 1px solid rgba(16, 185, 129, 0.4);
+            }
+
+            .fl-status-dot {
+                width: 7px;
+                height: 7px;
+                border-radius: 999px;
+                background: #22c55e;
+                box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+            }
+
+            .fl-status-text {
+                font-size: 11px;
+                font-weight: 600;
+                color: #065f46;
+            }
+
+            .fl-tips {
+                margin-top: 16px;
+                padding-top: 10px;
+                border-top: 1px dashed rgba(148, 163, 184, 0.6);
+            }
+
+            .fl-tips-title {
+                font-size: 12px;
+                font-weight: 600;
+                margin: 0 0 6px;
+                color: var(--fl-primary-soft);
+            }
+
+            .fl-tips-list {
+                margin: 0;
+                padding-left: 18px;
+                font-size: 11px;
+                color: var(--fl-text-muted);
+            }
+
+            .fl-tips-list li {
+                margin-bottom: 4px;
+            }
+
+            .fl-messages {
+                margin-top: 10px;
+                font-size: 12px;
+            }
+
+            .fl-message-error {
+                color: var(--fl-danger);
+            }
+
+            .fl-message-info {
+                color: var(--fl-success);
+            }
+
+            .fl-message-warn {
+                color: var(--fl-warn);
+            }
+
+            .fl-login-hint {
+                margin-bottom: 10px;
+                padding: 8px 10px;
+                border-radius: 10px;
+                background: rgba(248, 113, 113, 0.08);
+                border: 1px solid rgba(248, 113, 113, 0.4);
+                font-size: 12px;
+                color: #b91c1c;
+            }
+
+            @media (max-width: 900px) {
+                .fl-feedback-layout {
+                    grid-template-columns: minmax(0, 1fr);
+                }
+            }
+
+            @media (max-width: 640px) {
+                .fl-feedback-page {
+                    padding: 0 10px 28px;
+                }
+
+                .fl-feedback-title {
+                    font-size: 20px;
+                }
+            }
+
+            /* ===== LỊCH SỬ FEEDBACK (DƯỚI TRANG) ===== */
+            .fl-history-card {
+                margin-top: 24px;
+                background: var(--fl-card-bg);
+                border-radius: 18px;
+                border: 1px solid rgba(148, 163, 184, 0.18);
+                box-shadow:
+                    0 18px 35px rgba(15, 23, 42, 0.08),
+                    0 0 0 1px rgba(148, 163, 184, 0.1);
+                padding: 16px 20px 18px;
+            }
+
+            .fl-history-empty {
+                font-size: 12px;
+                color: var(--fl-text-muted);
+                padding: 10px 4px 2px;
+            }
+
+            .fl-history-list {
+                margin: 4px 0 0;
+                padding: 0;
+                list-style: none;
+            }
+
+            .fl-history-item {
+                padding: 10px 0 12px;
+                border-top: 1px dashed rgba(209, 213, 219, 0.9);
+            }
+
+            .fl-history-item:first-child {
+                border-top: none;
+            }
+
+            .fl-history-header {
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+                align-items: baseline;
+            }
+
+            .fl-history-title {
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--fl-primary-soft);
+            }
+
+            .fl-history-meta {
+                font-size: 11px;
+                color: var(--fl-text-muted);
+            }
+
+            .fl-history-status {
+                display: inline-flex;
+                align-items: center;
+                padding: 2px 8px;
+                border-radius: 999px;
+                font-size: 10px;
+                font-weight: 600;
+            }
+
+            .fl-history-status-NEW {
+                background: rgba(251, 191, 36, 0.1);
+                color: #92400e;
+            }
+
+            .fl-history-status-IN_PROGRESS {
+                background: rgba(59, 130, 246, 0.08);
+                color: #1d4ed8;
+            }
+
+            .fl-history-status-RESOLVED {
+                background: rgba(16, 185, 129, 0.1);
+                color: #047857;
+            }
+
+            .fl-history-desc {
+                margin-top: 4px;
+                font-size: 12px;
+                color: var(--fl-text-main);
+            }
+
+            .fl-history-admin-note {
+                margin-top: 6px;
+                font-size: 11px;
+                color: var(--fl-text-muted);
+            }
+
+            .fl-history-admin-note strong {
+                color: var(--fl-primary-soft);
+            }
+        </style>
+    </h:head>
+
+    <h:body>
+           <div id="top"></div>
+            <ui:include src="/layout/header.xhtml" />
+
+        <div class="fl-feedback-body">
+
+           
+
+            <h:form id="feedbackForm">
+
+                <div class="fl-feedback-page">
+
+                    <!-- HEADER -->
+                    <header class="fl-feedback-header">
+                        <div class="fl-feedback-badge">FEASTLINK SYSTEM FEEDBACK</div>
+                        <h1 class="fl-feedback-title">
+                          SYSTEM FEEDBACK TO ADMIN FEASTLINK
+                        </h1>
+                        <p class="fl-feedback-subtitle">
+                            Admin FeastLink tiếp nhận góp ý, lỗi hệ thống và khiếu nại.
+                            
+                        </p>
+                    </header>
+
+                    <!-- Nhắc login nếu chưa đăng nhập -->
+                    <h:panelGroup rendered="#{customerFeedbackBean.currentUser == null}">
+                        <div class="fl-login-hint">
+                            Bạn chưa đăng nhập. Hãy đăng nhập vào tài khoản FeastLink để gửi feedback và xem trạng thái xử lý.
+                        </div>
+                    </h:panelGroup>
+
+                    <!-- MAIN CONTENT: 2 COLUMNS -->
+                    <div class="fl-feedback-layout">
+
+                        <!-- LEFT: FORM SEND TO ADMIN -->
+                        <section class="fl-feedback-left">
+
+                            <h2 class="fl-section-title">
+                                <span class="fl-dot"></span>
+                                Thông tin feedback gửi về Admin
+                            </h2>
+                            <p class="fl-section-desc">
+                                Vui lòng mô tả rõ bối cảnh, màn hình bạn đang sử dụng và ảnh hưởng của vấn đề tới trải nghiệm đặt tiệc hoặc vận hành nhà hàng.
+                            </p>
+
+                            <!-- ACCOUNT -->
+                            <div class="fl-field">
+                                <label class="fl-label">Tài khoản gửi feedback</label>
+                                <h:inputText value="#{customerFeedbackBean.displayAccountName}"
+                                             styleClass="fl-input"
+                                             readonly="true" />
+                                <small class="fl-help-text">
+                                    Tự động lấy từ tài khoản đang đăng nhập.
+                                </small>
+                            </div>
+
+                            <!-- EMAIL -->
+                            <div class="fl-field">
+                                <label class="fl-label">Email liên hệ *</label>
+                                <h:inputText value="#{customerFeedbackBean.contactEmail}"
+                                             styleClass="fl-input" />
+                                <small class="fl-help-text">
+                                    Admin FeastLink sẽ dùng email này để trao đổi thêm với bạn nếu cần.
+                                </small>
+                            </div>
+
+                            <!-- RESTAURANT + BOOKING (2 CỘT) -->
+                            <div class="fl-grid-2">
+                                <div class="fl-field">
+                                    <label class="fl-label">Nhà hàng / địa điểm liên quan</label>
+                                    <h:selectOneMenu value="#{customerFeedbackBean.selectedRestaurantId}"
+                                                     styleClass="fl-select">
+                                        <f:selectItem itemLabel="Chọn nhà hàng..." itemValue="#{null}" />
+                                        <f:selectItems value="#{customerFeedbackBean.restaurants}"
+                                                       var="r"
+                                                       itemLabel="#{r.name}"
+                                                       itemValue="#{r.restaurantId}" />
+                                    </h:selectOneMenu>
+                                    <small class="fl-help-text">
+                                        Chọn nếu feedback liên quan đến một venue cụ thể.
+                                    </small>
+                                </div>
+
+                                <div class="fl-field">
+                                    <label class="fl-label">Booking liên quan (nếu có)</label>
+                                    <h:selectOneMenu value="#{customerFeedbackBean.selectedBookingId}"
+                                                     styleClass="fl-select">
+                                        <f:selectItem itemLabel="Chọn mã booking..." itemValue="#{null}" />
+                                        <f:selectItems value="#{customerFeedbackBean.userBookings}"
+                                                       var="b"
+                                                       itemLabel="#{b.bookingCode}"
+                                                       itemValue="#{b.bookingId}" />
+                                    </h:selectOneMenu>
+                                    <small class="fl-help-text">
+                                        Chỉ load những booking thuộc tài khoản của bạn.
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- TITLE -->
+                            <div class="fl-field">
+                                <label class="fl-label">Tiêu đề feedback *</label>
+                                <h:inputText value="#{customerFeedbackBean.title}"
+                                             styleClass="fl-input">
+                                    <f:validateLength maximum="200" />
+                                </h:inputText>
+                            </div>
+
+                            <!-- DESCRIPTION -->
+                            <div class="fl-field">
+                                <label class="fl-label">Nội dung chi tiết *</label>
+                                <h:inputTextarea value="#{customerFeedbackBean.description}"
+                                                 styleClass="fl-textarea"
+                                                 rows="6">
+                                    <f:validateLength maximum="2000" />
+                                </h:inputTextarea>
+                                <small class="fl-help-text">
+                                    Hãy mô tả: bạn đang ở màn hình nào (Homepage, Restaurant Detail, Booking, Manager Dashboard, Payment...), 
+                                    thao tác gì, hệ thống phản hồi ra sao (lỗi, chậm, hiển thị sai...), thời điểm và ảnh hưởng tới bạn / khách / nhà hàng.
+                                </small>
+                            </div>
+
+                            <!-- ACTION BUTTONS -->
+                            <div class="fl-actions">
+                                <h:commandButton value="Huỷ"
+                                                 type="reset"
+                                                 styleClass="fl-btn fl-btn-ghost" />
+
+                                <h:commandButton value="Gửi feedback cho Admin FeastLink"
+                                                 action="#{customerFeedbackBean.submitFeedback}"
+                                                 styleClass="fl-btn fl-btn-primary"
+                                                 disabled="#{customerFeedbackBean.currentUser == null}" />
+                            </div>
+
+                            <!-- THÔNG BÁO FACES MESSAGE -->
+                            <h:messages styleClass="fl-messages"
+                                        errorClass="fl-message-error"
+                                        infoClass="fl-message-info"
+                                        warnClass="fl-message-warn" />
+
+                        </section>
+
+                        <!-- RIGHT: ADMIN STATUS PANEL (READ ONLY) -->
+                        <aside class="fl-feedback-right">
+
+                            <h2 class="fl-section-title">
+                                <span class="fl-dot"></span>
+                                Trạng thái xử lý từ Admin
+                            </h2>
+                            <p class="fl-section-desc">
+                                Các trường này dùng cho hệ thống Admin để theo dõi vòng đời feedback và trao đổi lại với bạn.
+                            </p>
+
+                            <!-- STATUS BADGE -->
+                            <div class="fl-status-header">
+                                <div class="fl-status-label">Status:</div>
+                                <div class="fl-status-pill">
+                                    <span class="fl-status-dot"></span>
+                                    <span class="fl-status-text">
+                                        #{customerFeedbackBean.displayStatus}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- FIELDS (READ-ONLY) -->
+                            <div class="fl-grid-2">
+                                <div class="fl-field">
+                                    <label class="fl-label">ID feedback</label>
+                                    <h:inputText value="#{customerFeedbackBean.lastFeedbackId}"
+                                                 styleClass="fl-input fl-input-readonly"
+                                                 readonly="true" />
+                                </div>
+                                <div class="fl-field">
+                                    <label class="fl-label">Admin phụ trách</label>
+                                    <h:inputText value="#{customerFeedbackBean.lastAdminName}"
+                                                 styleClass="fl-input fl-input-readonly"
+                                                 readonly="true" />
+                                </div>
+                            </div>
+
+                            <div class="fl-grid-2">
+                                <div class="fl-field">
+                                    <label class="fl-label">Ngày tạo</label>
+                                    <h:inputText value="#{customerFeedbackBean.lastCreatedAt}"
+                                                 styleClass="fl-input fl-input-readonly"
+                                                 readonly="true">
+                                        <f:convertDateTime pattern="dd/MM/yyyy HH:mm"
+                                                           timeZone="Asia/Ho_Chi_Minh" />
+                                    </h:inputText>
+                                </div>
+
+                                <div class="fl-field">
+                                    <label class="fl-label">Lần cập nhật gần nhất</label>
+                                    <h:inputText value="#{customerFeedbackBean.lastUpdatedAt}"
+                                                 styleClass="fl-input fl-input-readonly"
+                                                 readonly="true">
+                                        <f:convertDateTime pattern="dd/MM/yyyy HH:mm"
+                                                           timeZone="Asia/Ho_Chi_Minh" />
+                                    </h:inputText>
+                                </div>
+                            </div>
+
+                            <div class="fl-field">
+                                <label class="fl-label">Ngày đóng feedback</label>
+                                <h:inputText value="#{customerFeedbackBean.lastResolvedAt}"
+                                             styleClass="fl-input fl-input-readonly"
+                                             readonly="true">
+                                    <f:convertDateTime pattern="dd/MM/yyyy HH:mm"
+                                                       timeZone="Asia/Ho_Chi_Minh" />
+                                </h:inputText>
+                            </div>
+
+                            <div class="fl-field">
+                                <label class="fl-label">Ghi chú xử lý của Admin</label>
+                                <h:inputTextarea value="#{customerFeedbackBean.lastResolutionNote}"
+                                                 styleClass="fl-textarea fl-textarea-readonly"
+                                                 rows="5"
+                                                 readonly="true" />
+                            </div>
+
+                            <!-- TIPS -->
+                            <div class="fl-tips">
+                                <h3 class="fl-tips-title">Tips gửi feedback hệ thống hiệu quả</h3>
+                                <ul class="fl-tips-list">
+                                    <li>Ghi rõ thời điểm, thiết bị (PC / Mobile) và trình duyệt nếu là lỗi hiển thị.</li>
+                                    <li>Nếu liên quan tới booking, hãy kèm mã booking và tên nhà hàng.</li>
+                                    <li>Nếu bạn là Manager: mô tả rõ module nào trên Dashboard (Menu, Booking, Pricing...).</li>
+                                    <li>Nếu bạn là Customer: mô tả từng bước tương tác trên màn hình (Tìm kiếm, Xem chi tiết, Thanh toán...).</li>
+                                </ul>
+                            </div>
+
+                        </aside>
+
+                    </div> <!-- /fl-feedback-layout -->
+
+                    <!-- LỊCH SỬ FEEDBACK CỦA BẠN -->
+                    <section class="fl-history-card">
+                        <h2 class="fl-section-title">
+                            <span class="fl-dot"></span>
+                            Lịch sử feedback của bạn
+                        </h2>
+                        <p class="fl-section-desc">
+                            Các feedback gần đây mà bạn đã gửi cho Admin FeastLink và phản hồi tương ứng từ Admin.
+                        </p>
+
+                        <!-- Nếu chưa có feedback nào -->
+                        <h:panelGroup rendered="#{empty customerFeedbackBean.myFeedbackHistory}">
+                            <div class="fl-history-empty">
+                                Bạn chưa có feedback nào. Hãy gửi feedback đầu tiên để Admin FeastLink hỗ trợ bạn.
+                            </div>
+                        </h:panelGroup>
+
+                        <!-- Danh sách feedback -->
+                        <h:panelGroup rendered="#{not empty customerFeedbackBean.myFeedbackHistory}">
+                            <ul class="fl-history-list">
+                                <ui:repeat value="#{customerFeedbackBean.myFeedbackHistory}" var="fb">
+                                    <li class="fl-history-item">
+                                        <div class="fl-history-header">
+                                            <div>
+                                                <div class="fl-history-title">
+                                                    ID # #{fb.feedbackId} · #{fb.title}
+                                                </div>
+                                                <div class="fl-history-meta">
+                                                    <h:outputText value="#{fb.createdAt}">
+                                                        <f:convertDateTime pattern="dd/MM/yyyy HH:mm"
+                                                                           timeZone="Asia/Ho_Chi_Minh" />
+                                                    </h:outputText>
+                                                    <h:panelGroup rendered="#{fb.restaurantId != null}">
+                                                        · #{fb.restaurantId.name}
+                                                    </h:panelGroup>
+                                                    <h:panelGroup rendered="#{fb.bookingId != null}">
+                                                        · Booking: #{fb.bookingId.bookingCode}
+                                                    </h:panelGroup>
+                                                </div>
+                                            </div>
+
+                                            <span class="fl-history-status fl-history-status-#{fb.status}">
+                                                #{fb.status}
+                                            </span>
+                                        </div>
+
+                                        <div class="fl-history-desc">
+                                            #{fb.description}
+                                        </div>
+
+                                        <div class="fl-history-admin-note">
+                                            <h:panelGroup rendered="#{fb.resolutionNote != null}">
+                                                <strong>Phản hồi từ Admin:</strong>
+                                                #{fb.resolutionNote}
+                                                <h:panelGroup rendered="#{fb.resolvedAt != null}">
+                                                    ·
+                                                    <h:outputText value="#{fb.resolvedAt}">
+                                                        <f:convertDateTime pattern="dd/MM/yyyy HH:mm"
+                                                                           timeZone="Asia/Ho_Chi_Minh" />
+                                                    </h:outputText>
+                                                </h:panelGroup>
+                                            </h:panelGroup>
+
+                                            <h:panelGroup rendered="#{fb.resolutionNote == null}">
+                                                <strong>Phản hồi từ Admin:</strong>
+                                                Đang chờ Admin xử lý...
+                                            </h:panelGroup>
+                                        </div>
+                                    </li>
+                                </ui:repeat>
+                            </ul>
+                        </h:panelGroup>
+                    </section>
+
+                </div> <!-- /fl-feedback-page -->
+
+            </h:form>
+
+        </div> <!-- /fl-feedback-body -->
+          <ui:include src="/layout/footer.xhtml" />
+
+    </h:body>
+</html>
