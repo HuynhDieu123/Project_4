@@ -1,0 +1,221 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition
+        template="template.xhtml"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:h="jakarta.faces.html"
+        xmlns:f="jakarta.faces.core"
+        xmlns:ui="jakarta.faces.facelets">
+
+    <ui:define name="title">Complaints &amp; System Feedback</ui:define>
+
+    <ui:define name="content">
+
+        <h:form id="complaintsForm">
+
+            <!-- HEADER -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Complaints &amp; System Feedback</h2>
+                    <p class="text-sm text-gray-500">
+                        Quản lý feedback hệ thống từ Customer &amp; Restaurant Manager.
+                    </p>
+                </div>
+            </div>
+
+            <!-- FILTER BAR -->
+            <div class="bg-white p-4 rounded-2xl shadow mb-5 border border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    <h:inputText value="#{adminFeedbackBean.keyword}"
+                                 styleClass="p-2.5 border rounded-xl text-sm w-full"
+                                 title="Tìm theo tiêu đề hoặc nội dung" />
+
+                    <h:selectOneMenu value="#{adminFeedbackBean.statusFilter}"
+                                     styleClass="p-2.5 border rounded-xl text-sm w-full">
+                        <f:selectItem itemValue="ALL" itemLabel="Tất cả trạng thái" />
+                        <f:selectItem itemValue="NEW" itemLabel="NEW" />
+                        <f:selectItem itemValue="IN_PROGRESS" itemLabel="IN_PROGRESS" />
+                        <f:selectItem itemValue="RESOLVED" itemLabel="RESOLVED" />
+                        <f:selectItem itemValue="CLOSED" itemLabel="CLOSED" />
+                    </h:selectOneMenu>
+
+                    <div class="flex gap-2">
+                        <h:commandButton value="Filter"
+                                         action="#{adminFeedbackBean.applyFilter}"
+                                         styleClass="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm w-full md:w-auto" />
+                        <h:commandButton value="Reset"
+                                         action="#{adminFeedbackBean.clearFilter}"
+                                         styleClass="px-4 py-2 rounded-xl bg-gray-100 text-sm w-full md:w-auto" />
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- TABLE LIST -->
+            <div class="bg-white p-4 rounded-3xl shadow border border-gray-200">
+
+                <table class="w-full text-sm">
+                    <thead>
+                    <tr class="border-b text-gray-500">
+                        <th class="py-3 text-left">Tiêu đề</th>
+                        <th class="text-left">Người gửi / Booking</th>
+                        <th class="text-left">Nhà hàng</th>
+                        <th class="text-left">Trạng thái</th>
+                        <th class="text-left">Tạo lúc</th>
+                        <th class="text-left">Cập nhật</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <ui:repeat value="#{adminFeedbackBean.feedbackList}" var="fb">
+                        <tr class="border-b last:border-b-0 hover:bg-gray-50">
+                            <td class="py-3 align-top">
+                                <div class="font-medium text-gray-900">
+                                    #{fb.title}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    ##{fb.feedbackId}
+                                </div>
+                            </td>
+
+                            <td class="align-top">
+                                <div class="text-xs text-gray-700">
+                                    #{fb.reporterUserId != null ? fb.reporterUserId.fullName : ''}
+                                </div>
+                                <div class="text-xs text-gray-400">
+                                    <h:panelGroup rendered="#{fb.bookingId != null}">
+                                        Booking: #{fb.bookingId.bookingCode}
+                                    </h:panelGroup>
+                                </div>
+                            </td>
+
+                            <td class="align-top text-xs text-gray-700">
+                                #{fb.restaurantId != null ? fb.restaurantId.name : '—'}
+                            </td>
+
+                            <td class="align-top text-xs">
+                                #{fb.status}
+                            </td>
+
+                            <td class="align-top text-xs text-gray-500">
+                                <h:outputText value="#{fb.createdAt}">
+                                    <f:convertDateTime pattern="dd/MM/yyyy HH:mm"
+                                                       timeZone="Asia/Ho_Chi_Minh" />
+                                </h:outputText>
+                            </td>
+
+                            <td class="align-top text-xs text-gray-500">
+                                <h:outputText value="#{fb.updatedAt}">
+                                    <f:convertDateTime pattern="dd/MM/yyyy HH:mm"
+                                                       timeZone="Asia/Ho_Chi_Minh" />
+                                </h:outputText>
+                            </td>
+
+                            <td class="align-top text-center">
+                                <h:commandButton value="Xử lý"
+                                                 action="#{adminFeedbackBean.prepareEdit(fb)}"
+                                                 styleClass="px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs" />
+                            </td>
+                        </tr>
+                    </ui:repeat>
+                    </tbody>
+                </table>
+
+                <!-- EDIT PANEL -->
+                <h:panelGroup rendered="#{adminFeedbackBean.selectedFeedback != null}">
+                    <hr class="my-4" />
+
+                    <h3 class="text-sm font-semibold mb-2">
+                        Cập nhật feedback ##{adminFeedbackBean.selectedFeedback.feedbackId}
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div>
+                            <span class="text-xs text-gray-500">Tiêu đề</span>
+                            <div class="text-sm font-medium">
+                                #{adminFeedbackBean.selectedFeedback.title}
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-xs text-gray-500">Người gửi</span>
+                            <div class="text-sm">
+                                #{adminFeedbackBean.selectedFeedback.reporterUserId != null
+                                  ? adminFeedbackBean.selectedFeedback.reporterUserId.fullName : ''}
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-xs text-gray-500">Trạng thái hiện tại</span>
+                            <div class="text-sm">
+                                #{adminFeedbackBean.selectedFeedback.status}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600">Trạng thái mới</label>
+                            <h:selectOneMenu value="#{adminFeedbackBean.editStatus}"
+                                             styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
+                                <f:selectItem itemValue="NEW" itemLabel="NEW" />
+                                <f:selectItem itemValue="IN_PROGRESS" itemLabel="IN_PROGRESS" />
+                                <f:selectItem itemValue="RESOLVED" itemLabel="RESOLVED" />
+                                <f:selectItem itemValue="CLOSED" itemLabel="CLOSED" />
+                            </h:selectOneMenu>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600">Admin phụ trách</label>
+                            <h:selectOneMenu value="#{adminFeedbackBean.selectedAdminId}"
+                                             styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
+                                <f:selectItem itemValue="#{null}" itemLabel="Chưa gán" />
+                                <f:selectItems value="#{adminFeedbackBean.adminUsers}"
+                                               var="au"
+                                               itemValue="#{au.userId}"
+                                               itemLabel="#{au.fullName}" />
+                            </h:selectOneMenu>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600">Ngày đóng (nếu RESOLVED)</label>
+                            <div class="mt-1 text-sm text-gray-600">
+                                <h:outputText value="#{adminFeedbackBean.selectedFeedback.resolvedAt}">
+                                    <f:convertDateTime pattern="dd/MM/yyyy HH:mm"
+                                                       timeZone="Asia/Ho_Chi_Minh" />
+                                </h:outputText>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-xs font-semibold text-gray-600">
+                            Ghi chú phản hồi cho Customer / Manager
+                        </label>
+                        <h:inputTextarea value="#{adminFeedbackBean.editResolutionNote}"
+                                         rows="3"
+                                         styleClass="mt-1 w-full p-2 border rounded-xl text-sm" />
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <h:commandButton value="Lưu thay đổi"
+                                         action="#{adminFeedbackBean.updateFeedback}"
+                                         styleClass="px-4 py-2 bg-blue-600 text-white text-sm rounded-xl" />
+                    </div>
+                </h:panelGroup>
+
+                <h:messages styleClass="mt-3 text-sm"
+                            errorClass="text-red-500"
+                            infoClass="text-green-600"
+                            warnClass="text-amber-500" />
+
+            </div>
+
+        </h:form>
+
+    </ui:define>
+
+</ui:composition>
