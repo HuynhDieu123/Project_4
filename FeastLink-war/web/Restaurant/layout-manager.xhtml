@@ -55,15 +55,15 @@
         </style>
     </h:head>
 
-    <h:body class="bg-background">
+    <h:body class="bg-background-light">
         <div class="flex flex-col min-h-screen">
 
-            <!-- TOP BAR (y chang dashboard) -->
+            <!-- TOP BAR -->
             <header class="sticky top-0 z-10 flex items-center justify-between h-20 px-8 bg-card-light border-b border-border-light shadow-sm">
                 <!-- Phần bên trái: mỗi page tự define -->
                 <ui:insert name="header" />
 
-                <!-- Phần bên phải: New Booking + bell + profile -->
+                <!-- Phần bên phải: bell + profile -->
                 <div class="flex items-center space-x-6">
                     <button class="p-2 relative rounded-full hover:bg-background-soft">
                         <span class="material-symbols-outlined text-text-secondary-light">notifications</span>
@@ -83,12 +83,12 @@
                 </div>
             </header>
 
-            <!-- PHẦN CHÍNH: sidebar trái + nội dung phải -->
+            <!-- MAIN: sidebar + content -->
             <div class="flex flex-1">
                 <!-- SIDEBAR -->
                 <aside
-                    class="w-64 bg-card border-r border-border p-6
-                    sticky top-20 self-start h-[calc(100vh-5rem)] overflow-y-auto">
+                    class="w-64 bg-card-light border-r border-border-light p-6
+                           sticky top-20 self-start h-[calc(100vh-5rem)] overflow-y-auto">
                     <h2 class="text-xl font-extrabold text-[#FFB300] mb-8">FeastLink</h2>
 
                     <nav class="space-y-2 text-sm">
@@ -118,6 +118,13 @@
                            class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100">
                             <span class="material-symbols-outlined text-lg">event_available</span>
                             <span>Capacity &amp; Availability</span>
+                        </a>
+
+                        <!-- Booking Management (MỚI THÊM) -->
+                        <a href="#{request.contextPath}/faces/Restaurant/booking-management.xhtml"
+                           class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100">
+                            <span class="material-symbols-outlined text-lg">event_note</span>
+                            <span>Booking Management</span>
                         </a>
                     </nav>
                 </aside>

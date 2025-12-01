@@ -166,13 +166,25 @@ public class CustomerBookingDetailsBean implements Serializable {
         if (booking == null || booking.getEventDate() == null) {
             return "Please contact the venue directly for detailed cancellation policy.";
         }
-        LocalDate event = booking.getEventDate().toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate();
+
+        // eventDate hiện là java.sql.Date -> không dùng toInstant() trực tiếp
+        Date eventDate = booking.getEventDate();
+        LocalDate event;
+
+        if (eventDate instanceof java.sql.Date) {
+            event = ((java.sql.Date) eventDate).toLocalDate();
+        } else {
+            event = eventDate.toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+        }
+
         LocalDate deadline = event.minusDays(3);
+
         Date deadlineDate = Date.from(
                 deadline.atStartOfDay(ZoneId.systemDefault()).toInstant()
         );
+
         String deadlineStr = shortDateFmt.format(deadlineDate);
         return "Free cancellation is available until " + deadlineStr
                 + ". After this date, your deposit may become non-refundable "
