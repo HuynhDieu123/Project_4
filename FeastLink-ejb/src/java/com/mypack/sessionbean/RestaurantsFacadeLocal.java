@@ -30,5 +30,6 @@ public interface RestaurantsFacadeLocal {
     long countRestaurants();
 
     int count();
+    public boolean existsByEmail(String email);
     
 }
