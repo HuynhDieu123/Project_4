@@ -355,6 +355,21 @@ public class CustomerMyBookingsBean implements Serializable {
         return "/Customer/my-bookings";
     }
 
+    // Dùng cho sort: trả về millis của ngày tạo booking (hoặc eventDate nếu createdAt = null)
+    public long bookingCreatedAtMillis(com.mypack.entity.Bookings b) {
+        if (b == null) {
+            return 0L;
+        }
+
+        java.util.Date created = b.getCreatedAt();
+        if (created != null) {
+            return created.getTime();
+        }
+
+        java.util.Date event = b.getEventDate();
+        return (event != null) ? event.getTime() : 0L;
+    }
+
     private void addMessage(FacesMessage.Severity severity,
             String summary,
             String detail) {

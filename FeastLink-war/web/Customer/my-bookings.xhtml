@@ -127,16 +127,31 @@
                         </div>
 
                         <!-- Search -->
+                        <!-- Search + Sort -->
                         <div class="flex gap-3 w-full lg:w-auto">
+                            <!-- Search -->
                             <div class="relative flex-1 lg:flex-none lg:w-80">
                                 <i data-lucide="search"
                                    class="absolute left-4 top-1/2 -translate-y-1/2 text-[#4B5563] w-5 h-5 pointer-events-none"></i>
                                 <input id="search-input"
                                        type="text"
                                        placeholder="Search by venue or booking code…"
-                                       class="w-full pl-12 pr-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl text-[#111827] placeholder-[#4B5563] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition-all" />
+                                       class="w-full pl-12 pr-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-full text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition-all" />
+                            </div>
+
+                            <!-- Sort -->
+                            <div class="flex items-center gap-2">
+                                <span class="hidden sm:inline text-xs text-[#6B7280] uppercase tracking-wide">
+                                    Sort
+                                </span>
+                                <select id="sort-select"
+                                        class="px-3 py-2 rounded-full border border-[#E5E7EB] bg-[#F9FAFB] text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37]">
+                                    <option value="newest" selected="selected">Newest first</option>
+                                    <option value="oldest">Oldest first</option>
+                                </select>
                             </div>
                         </div>
+
                     </div>
                 </section>
 
@@ -192,7 +207,9 @@
                                     data-booking-status="#{b.bookingStatus}"
                                     data-payment-status="#{b.paymentStatus}"
                                     data-booking-code="#{b.bookingCode}"
-                                    data-restaurant-name="#{b.restaurantId.name}">
+                                    data-restaurant-name="#{b.restaurantId.name}"
+                                    data-created-at="#{customerMyBookingsBean.bookingCreatedAtMillis(b)}">
+
                                     <div class="p-6 sm:p-8">
                                         <!-- Top row -->
                                         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
@@ -404,11 +421,28 @@
 
                 var statusFilter = 'all';
                 var searchQuery = '';
+                var sortOrder = 'newest';
 
                 var cards = Array.prototype.slice.call(
                         document.querySelectorAll('[data-role="booking-card"]')
                         );
                 var emptyFilter = document.getElementById('empty-filter-state');
+
+                var cards = Array.prototype.slice.call(
+                        document.querySelectorAll('[data-role="booking-card"]')
+                        );
+                var emptyFilter = document.getElementById('empty-filter-state');
+                var listContainer = document.getElementById('bookings-list');
+                var sortSelect = document.getElementById('sort-select');
+
+                if (sortSelect) {
+                    sortSelect.addEventListener('change', function (e) {
+                        sortOrder = e.target.value || 'newest';
+                        sortCards();
+                        applyFilters();
+                    });
+                }
+
 
                 function updateStatusTabs() {
                     var activeClasses =
@@ -451,6 +485,34 @@
                     return code.indexOf(searchQuery) !== -1 || name.indexOf(searchQuery) !== -1;
                 }
 
+                function sortCards() {
+                    if (!listContainer)
+                        return;
+
+                    cards.sort(function (a, b) {
+                        var aVal = parseInt(a.getAttribute('data-created-at') || '0', 10);
+                        var bVal = parseInt(b.getAttribute('data-created-at') || '0', 10);
+
+                        if (isNaN(aVal))
+                            aVal = 0;
+                        if (isNaN(bVal))
+                            bVal = 0;
+
+                        if (sortOrder === 'oldest') {
+                            // Cũ nhất trước
+                            return aVal - bVal;
+                        }
+                        // Mặc định: mới nhất trước
+                        return bVal - aVal;
+                    });
+
+                    // Re-append theo thứ tự mới
+                    cards.forEach(function (card) {
+                        listContainer.appendChild(card);
+                    });
+                }
+
+
                 function applyFilters() {
                     var visibleCount = 0;
                     cards.forEach(function (card) {
@@ -492,7 +554,9 @@
                 }
 
                 updateStatusTabs();
+                sortCards();   // sort theo mặc định "newest"
                 applyFilters();
+
             });
             //]]>
         </script>
