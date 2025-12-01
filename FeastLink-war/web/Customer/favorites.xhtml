@@ -1,0 +1,749 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+    <h:head>
+        <meta charset="UTF-8" />
+        <title>FeastLink - My Favorites</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+           <!-- Tailwind CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- Lucide Icons CDN -->
+        <script src="https://unpkg.com/lucide@latest"></script>
+
+
+        <style type="text/css">
+            :root {
+                --primary: #05081a;
+                --primary-dark: #020617;
+                --secondary: #d4af37;
+                --secondary-soft: #e6c77f;
+
+                --bg: #f9fafb;
+                --bg-soft: #f3f4f6;
+                --border: #e5e7eb;
+                --text: #111827;
+                --text-muted: #6b7280;
+
+                --accent: #f97316;
+                --accent-gold: #eab308;
+                --success: #22c55e;
+                --danger: #ef4444;
+            }
+
+            html, body {
+                margin: 0;
+                padding: 0;
+                background: radial-gradient(circle at top, #ffffff 0, #f9fafb 38%, #f3f4f6 100%);
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                color: var(--text);
+            }
+
+            .fl-page {
+                position: relative;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 32px 16px 48px 16px;
+            }
+
+            .fl-page::before {
+                content: "";
+                position: absolute;
+                inset: 80px 0 0 0;
+                margin: 0 40px;
+                border-radius: 40px;
+                background:
+                    radial-gradient(circle at 0% 0%, rgba(212, 175, 55, 0.09), transparent 55%),
+                    radial-gradient(circle at 100% 0%, rgba(15, 23, 42, 0.12), transparent 55%),
+                    linear-gradient(to bottom, #f9fafb, #edf1f7);
+                box-shadow:
+                    0 40px 80px rgba(15, 23, 42, 0.18),
+                    0 0 0 1px rgba(148, 163, 184, 0.25);
+                z-index: -1;
+            }
+
+            .fl-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 20px;
+                margin-bottom: 18px;
+            }
+
+            .fl-header-main {
+                max-width: 70%;
+            }
+
+            .fl-badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 4px 10px;
+                font-size: 11px;
+                border-radius: 999px;
+                border: 1px solid rgba(212, 175, 55, 0.55);
+                background: #020617;
+                color: #f9fafb;
+                letter-spacing: .09em;
+                text-transform: uppercase;
+                margin-bottom: 8px;
+            }
+
+            .fl-title {
+                font-size: 26px;
+                font-weight: 700;
+                margin: 0 0 8px 0;
+            }
+
+            .fl-subtitle {
+                font-size: 13px;
+                color: var(--text-muted);
+                margin: 0;
+            }
+
+            .fl-summary {
+                min-width: 180px;
+                padding: 14px 16px;
+                border-radius: 22px;
+                border: 1px solid rgba(15, 23, 42, 0.8);
+                background: radial-gradient(circle at 0% 0%, rgba(250, 250, 249, 0.12), transparent 60%),
+                            radial-gradient(circle at 130% 0%, rgba(212, 175, 55, 0.45), transparent 55%),
+                            #020617;
+                color: #e5e7eb;
+                box-shadow: 0 24px 60px rgba(15, 23, 42, 0.75);
+            }
+
+            .fl-summary-label {
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: .13em;
+                color: #9ca3af;
+            }
+
+            .fl-summary-value {
+                font-size: 28px;
+                font-weight: 700;
+                color: var(--secondary-soft);
+                margin-top: 6px;
+            }
+
+            .fl-summary-caption {
+                font-size: 12px;
+                color: #e5e7eb;
+            }
+
+            /* TOOLBAR */
+            .fl-toolbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                margin-bottom: 20px;
+            }
+
+            .fl-toolbar-left {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .fl-toolbar-label {
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: .12em;
+                color: #6b7280;
+            }
+
+            .fl-toolbar-pills {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .fl-pill-toggle {
+                border-radius: 999px;
+                border: 1px solid #e5e7eb;
+                padding: 5px 12px;
+                font-size: 12px;
+                background: #ffffff;
+                color: #4b5563;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .fl-pill-toggle-active {
+                border-color: rgba(212, 175, 55, 0.85);
+                background: #fffbeb;
+                color: #92400e;
+                box-shadow: 0 6px 18px rgba(251, 191, 36, 0.45);
+            }
+
+            .fl-toolbar-right {
+                font-size: 12px;
+                color: #6b7280;
+            }
+
+            .fl-toolbar-highlight {
+                font-weight: 600;
+                color: #111827;
+            }
+
+            .fl-list-surface {
+                padding: 18px 14px 22px 14px;
+                border-radius: 32px;
+                background:
+                    radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.9), transparent 55%),
+                    radial-gradient(circle at 100% 0%, rgba(248, 250, 252, 0.95), transparent 55%),
+                    #f9fafb;
+                box-shadow:
+                    0 32px 60px rgba(15, 23, 42, 0.16),
+                    0 0 0 1px rgba(229, 231, 235, 0.8);
+            }
+
+            .fl-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                grid-gap: 20px;
+            }
+
+            .fl-card {
+                border-radius: 32px;
+                border: 1px solid rgba(250, 204, 21, 0.35);
+                overflow: hidden;
+                background: #ffffff;
+                box-shadow: 0 18px 50px rgba(15, 23, 42, 0.14);
+                transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+            }
+
+            .fl-card:hover {
+                transform: translateY(-4px);
+                border-color: rgba(234, 179, 8, 0.85);
+                box-shadow: 0 26px 80px rgba(15, 23, 42, 0.2);
+            }
+
+            .fl-card-top {
+                position: relative;
+                height: 150px;
+                background: linear-gradient(to bottom, #f9fafb, #e5e7eb);
+            }
+
+            .fl-card-hero {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+            .fl-hero-placeholder {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: radial-gradient(circle at 0% 0%, #f9fafb, #e5e7eb);
+            }
+
+            .fl-hero-initials {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 70px;
+                height: 70px;
+                border-radius: 999px;
+                border: 1px solid rgba(15, 23, 42, 0.12);
+                font-size: 26px;
+                font-weight: 700;
+                color: var(--primary-dark);
+                background: #ffffff;
+                box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
+            }
+
+            .fl-tag-new {
+                position: absolute;
+                left: 18px;
+                top: 16px;
+                padding: 4px 12px;
+                font-size: 11px;
+                border-radius: 999px;
+                background: #fef3c7;
+                color: #92400e;
+                font-weight: 600;
+                box-shadow: 0 8px 18px rgba(180, 83, 9, 0.35);
+            }
+
+            .fl-rating-pill {
+                position: absolute;
+                right: 18px;
+                top: 16px;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 10px;
+                border-radius: 999px;
+                background: #ffffff;
+                color: #111827;
+                font-size: 12px;
+                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.25);
+            }
+
+            .fl-rating-star {
+                font-size: 13px;
+                color: #facc15;
+            }
+
+            .fl-rating-score {
+                font-weight: 600;
+            }
+
+            .fl-card-body {
+                padding: 16px 20px 18px 20px;
+                background: #ffffff;
+            }
+
+            .fl-name {
+                font-size: 18px;
+                font-weight: 700;
+                margin: 0 0 6px 0;
+            }
+
+            .fl-location {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 13px;
+                color: var(--text-muted);
+            }
+
+            .fl-location-icon {
+                font-size: 14px;
+                color: #fbbf24;
+            }
+
+            .fl-desc {
+                font-size: 13px;
+                color: var(--text-muted);
+                margin: 10px 0 10px 0;
+            }
+
+            .fl-meta-row {
+                display: flex;
+                gap: 18px;
+                font-size: 12px;
+                color: var(--text-muted);
+            }
+
+            .fl-meta-item {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .fl-meta-icon {
+                font-size: 14px;
+            }
+
+            .fl-divider {
+                margin: 12px 0 10px 0;
+                border-top: 1px solid rgba(229, 231, 235, 0.9);
+            }
+
+            .fl-tag-row {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-bottom: 10px;
+            }
+
+            .fl-pill {
+                font-size: 11px;
+                padding: 4px 11px;
+                border-radius: 999px;
+                background: #fef3c7;
+                color: #92400e;
+                border: 1px solid rgba(253, 224, 71, 0.8);
+            }
+
+            .fl-pill-muted {
+                font-size: 11px;
+                padding: 4px 11px;
+                border-radius: 999px;
+                background: #f3f4f6;
+                color: #4b5563;
+            }
+
+            .fl-policy-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                font-size: 12px;
+                color: var(--text-muted);
+                margin-bottom: 10px;
+            }
+
+            .fl-policy-item {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                white-space: nowrap;
+            }
+
+            .fl-policy-icon {
+                font-size: 13px;
+                color: #f59e0b;
+            }
+
+            .fl-bottom-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                margin-top: 4px;
+            }
+
+            .fl-status-pill {
+                font-size: 11px;
+                padding: 4px 10px;
+                border-radius: 999px;
+                background: #22c55e;
+                color: #ecfdf5;
+                font-weight: 600;
+            }
+
+            .fl-actions {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+
+            .fl-btn-fav {
+                width: 40px;
+                height: 40px;
+                border-radius: 999px;
+                border: 1px solid #fecaca;
+                background: #fee2e2;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                color: #ef4444;
+                cursor: pointer;
+                box-shadow: 0 8px 20px rgba(248, 113, 113, 0.55);
+            }
+
+            .fl-btn-fav:hover {
+                background: #fecaca;
+                border-color: #fca5a5;
+                color: #b91c1c;
+            }
+
+            .fl-btn-primary-sm {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 7px 18px;
+                border-radius: 999px;
+                border: none;
+                text-decoration: none;
+                font-size: 13px;
+                font-weight: 600;
+                background: #020617;
+                color: #f9fafb;
+            }
+
+            .fl-btn-primary-sm:hover {
+                background: #020314;
+            }
+
+            .fl-btn-accent-sm {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 7px 20px;
+                border-radius: 999px;
+                border: none;
+                text-decoration: none;
+                font-size: 13px;
+                font-weight: 600;
+                background: linear-gradient(135deg, #f97316, #fbbf24);
+                color: #111827;
+                box-shadow: 0 10px 25px rgba(248, 171, 31, 0.5);
+            }
+
+            .fl-btn-accent-sm:hover {
+                background: linear-gradient(135deg, #fb923c, #facc15);
+            }
+
+            .fl-empty {
+                margin-top: 24px;
+                padding: 24px 20px;
+                border-radius: 20px;
+                border: 1px dashed rgba(148, 163, 184, 0.9);
+                background: #ffffff;
+                text-align: center;
+                box-shadow: 0 14px 40px rgba(148, 163, 184, 0.25);
+            }
+
+            .fl-empty-title {
+                font-size: 16px;
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+
+            .fl-empty-text {
+                font-size: 13px;
+                color: var(--text-muted);
+                margin-bottom: 16px;
+            }
+
+            .fl-btn-primary {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px 22px;
+                border-radius: 999px;
+                border: none;
+                text-decoration: none;
+                font-size: 13px;
+                font-weight: 600;
+                background: linear-gradient(135deg, #ff7b1a, #ff9a1a);
+                color: #111827;
+                box-shadow: 0 12px 30px rgba(248, 143, 30, 0.55);
+            }
+
+            .fl-btn-primary:hover {
+                background: linear-gradient(135deg, #ff8b1a, #ffad33);
+            }
+
+            @media (max-width: 768px) {
+                .fl-header {
+                    flex-direction: column;
+                }
+
+                .fl-header-main {
+                    max-width: 100%;
+                }
+
+                .fl-page::before {
+                    margin: 0 12px;
+                }
+
+                .fl-toolbar {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+            }
+        </style>
+    </h:head>
+
+    <h:body>
+          <div id="top"></div>
+
+        <!-- HEADER -->
+        <ui:include src="/layout/header.xhtml" />
+        <h:form id="favoritesForm">
+            <div class="fl-page">
+
+                <!-- HEADER -->
+                <div class="fl-header">
+                    <div class="fl-header-main">
+                        <div class="fl-badge">Danh sách yêu thích</div>
+                        <h2 class="fl-title">Nhà hàng bạn đã lưu lại</h2>
+                        <p class="fl-subtitle">
+                            Xem nhanh các địa điểm ưa thích để đặt tiệc cho những dịp quan trọng.
+                        </p>
+                    </div>
+                    <div class="fl-summary">
+                        <div class="fl-summary-label">Tổng số</div>
+                        <div class="fl-summary-value">
+                            #{customerFavoritesBean.favoriteRestaurants.size()}
+                        </div>
+                        <div class="fl-summary-caption">nhà hàng yêu thích</div>
+                    </div>
+                </div>
+
+                <!-- TOOLBAR FILTER -->
+                <div class="fl-toolbar">
+                    <div class="fl-toolbar-left">
+                        <span class="fl-toolbar-label">Bộ lọc nhanh</span>
+                        <div class="fl-toolbar-pills">
+                            <h:commandLink action="#{customerFavoritesBean.filterAll}"
+                                           styleClass="#{customerFavoritesBean.activeFilter eq 'ALL' ? 'fl-pill-toggle fl-pill-toggle-active' : 'fl-pill-toggle'}">
+                                Tất cả
+                            </h:commandLink>
+
+                            <h:commandLink action="#{customerFavoritesBean.filterRecent}"
+                                           styleClass="#{customerFavoritesBean.activeFilter eq 'RECENT' ? 'fl-pill-toggle fl-pill-toggle-active' : 'fl-pill-toggle'}">
+                                Mới thêm gần đây
+                            </h:commandLink>
+
+                            <h:commandLink action="#{customerFavoritesBean.filterTopRated}"
+                                           styleClass="#{customerFavoritesBean.activeFilter eq 'TOP_RATED' ? 'fl-pill-toggle fl-pill-toggle-active' : 'fl-pill-toggle'}">
+                                Đánh giá cao
+                            </h:commandLink>
+                        </div>
+                    </div>
+                    <div class="fl-toolbar-right">
+                        Bạn đang theo dõi
+                        <span class="fl-toolbar-highlight">
+                            #{customerFavoritesBean.favoriteRestaurants.size()} nhà hàng
+                        </span>.
+                    </div>
+                </div>
+
+                <!-- EMPTY STATE -->
+                <h:panelGroup rendered="#{empty customerFavoritesBean.favoriteRestaurants}">
+                    <div class="fl-empty">
+                        <div class="fl-empty-title">Bạn chưa lưu nhà hàng nào</div>
+                        <p class="fl-empty-text">
+                            Hãy quay lại trang danh sách nhà hàng và nhấn biểu tượng trái tim để thêm vào yêu thích.
+                        </p>
+                        <h:link outcome="/Customer/restaurants" styleClass="fl-btn-primary">
+                            Khám phá nhà hàng
+                        </h:link>
+                    </div>
+                </h:panelGroup>
+
+                <!-- LIST FAVORITES -->
+                <h:panelGroup rendered="#{not empty customerFavoritesBean.favoriteRestaurants}">
+                    <div class="fl-list-surface">
+                        <div class="fl-grid">
+                            <ui:repeat value="#{customerFavoritesBean.displayedFavorites}" var="restaurant">
+                                <article class="fl-card">
+
+                                    <div class="fl-card-top">
+                                        <h:graphicImage value="#{restaurant.logoUrl}"
+                                                        alt="#{restaurant.name}"
+                                                        rendered="#{not empty restaurant.logoUrl}"
+                                                        styleClass="fl-card-hero" />
+                                        <div class="fl-hero-placeholder"
+                                             rendered="#{empty restaurant.logoUrl}">
+                                            <span class="fl-hero-initials">
+                                                #{customerFavoritesBean.initials(restaurant.name)}
+                                            </span>
+                                        </div>
+
+                                        <div class="fl-tag-new">NEW</div>
+
+                                        <div class="fl-rating-pill">
+                                            <span class="fl-rating-star">&#9733;</span>
+                                            <span class="fl-rating-score">
+                                                #{customerFavoritesBean.averageRatingFormatted(restaurant)}
+                                            </span>
+                                            <span class="fl-rating-count">
+                                                (#{customerFavoritesBean.approvedReviewCount(restaurant)})
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="fl-card-body">
+                                        <h3 class="fl-name">
+                                            #{restaurant.name}
+                                        </h3>
+
+                                        <div class="fl-location">
+                                            <span class="fl-location-icon">&#128205;</span>
+                                            <span>
+                                                <h:panelGroup rendered="#{not empty restaurant.areaId and not empty restaurant.areaId.cityId}">
+                                                    #{restaurant.areaId.cityId.name}
+                                                    <h:panelGroup rendered="#{not empty restaurant.areaId.name}">
+                                                        &#160;&#183;&#160;#{restaurant.areaId.name}
+                                                    </h:panelGroup>
+                                                </h:panelGroup>
+                                                <h:panelGroup rendered="#{empty restaurant.areaId}">
+                                                    #{restaurant.address}
+                                                </h:panelGroup>
+                                            </span>
+                                        </div>
+
+                                        <h:panelGroup rendered="#{not empty restaurant.description}">
+                                            <p class="fl-desc">
+                                                #{restaurant.description}
+                                            </p>
+                                        </h:panelGroup>
+
+                                        <div class="fl-meta-row">
+                                            <h:panelGroup layout="block" styleClass="fl-meta-item"
+                                                          rendered="#{not empty restaurant.minGuestCount}">
+                                                <span class="fl-meta-icon">&#128101;</span>
+                                                <span>From #{restaurant.minGuestCount} guests</span>
+                                            </h:panelGroup>
+
+                                            <h:panelGroup layout="block" styleClass="fl-meta-item">
+                                                <span class="fl-meta-icon">&#36;</span>
+                                                <span>Contact for pricing</span>
+                                            </h:panelGroup>
+                                        </div>
+
+                                        <div class="fl-divider"></div>
+
+                                        <div class="fl-tag-row">
+                                            <span class="fl-pill">Hội nghị / Tiệc</span>
+                                            <span class="fl-pill-muted">ID ##{restaurant.restaurantId}</span>
+                                        </div>
+
+                                        <div class="fl-policy-row">
+                                            <h:panelGroup layout="inline" styleClass="fl-policy-item"
+                                                          rendered="#{not empty restaurant.minDaysInAdvance}">
+                                                <span class="fl-policy-icon">&#9201;</span>
+                                                <span>Book ≥ #{restaurant.minDaysInAdvance} days</span>
+                                            </h:panelGroup>
+
+                                            <h:panelGroup layout="inline" styleClass="fl-policy-item"
+                                                          rendered="#{not empty restaurant.cancelFullRefundDays}">
+                                                <span class="fl-policy-icon">&#128260;</span>
+                                                <span>Free cancel up to #{restaurant.cancelFullRefundDays} days</span>
+                                            </h:panelGroup>
+
+                                            <h:panelGroup layout="inline" styleClass="fl-policy-item"
+                                                          rendered="#{not empty restaurant.defaultDepositPercent}">
+                                                <span class="fl-policy-icon">&#128181;</span>
+                                                <span>Deposit ~#{restaurant.defaultDepositPercent}%</span>
+                                            </h:panelGroup>
+                                        </div>
+
+                                        <div class="fl-bottom-row">
+                                            <span class="fl-status-pill">
+                                                Available
+                                            </span>
+
+                                            <div class="fl-actions">
+                                                <!-- Trái tim: bấm để xóa khỏi danh sách yêu thích -->
+                                                <h:commandButton action="#{customerFavoritesBean.removeFavorite(restaurant)}"
+                                                                 styleClass="fl-btn-fav"
+                                                                 value="♥" />
+
+                                                <h:link outcome="/Customer/restaurant-details"
+                                                        styleClass="fl-btn-primary-sm">
+                                                    View details
+                                                    <f:param name="restaurantId"
+                                                             value="#{restaurant.restaurantId}" />
+                                                </h:link>
+
+                                                <h:link outcome="/Customer/booking"
+                                                        styleClass="fl-btn-accent-sm">
+                                                    Book now
+                                                    <f:param name="restaurantId"
+                                                             value="#{restaurant.restaurantId}" />
+                                                </h:link>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </article>
+                            </ui:repeat>
+                        </div>
+                    </div>
+                </h:panelGroup>
+
+            </div>
+        </h:form>
+         <ui:include src="/layout/footer.xhtml" />
+    </h:body>
+</html>
