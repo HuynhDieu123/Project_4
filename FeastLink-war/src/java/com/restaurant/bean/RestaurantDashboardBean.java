@@ -1,15 +1,30 @@
 package com.restaurant.bean;
 
+import com.mypack.entity.Bookings;
+import com.mypack.entity.Users;
+import com.mypack.sessionbean.BookingsFacadeLocal;
 import jakarta.annotation.PostConstruct;
+import jakarta.ejb.EJB;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
+
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 @Named("restaurantDashboardBean")
 @ViewScoped
 public class RestaurantDashboardBean implements Serializable {
+
+    @EJB
+    private BookingsFacadeLocal bookingsFacade;
 
     private double totalRevenue;
     private int upcomingBookings;
@@ -19,23 +34,116 @@ public class RestaurantDashboardBean implements Serializable {
 
     @PostConstruct
     public void init() {
-        totalRevenue = 45231.89;
-        upcomingBookings = 12;
-        newInquiries = 8;
-
-        recentBookings = new ArrayList<>();
-        recentBookings.add(new BookingSummary("#FL-84321", "Alice Johnson", "Dec 24, 2023", "Confirmed",
-                "bg-green-100 text-green-700"));
-        recentBookings.add(new BookingSummary("#FL-84320", "Bob Williams", "Dec 20, 2023", "Pending",
-                "bg-yellow-100 text-yellow-700"));
-        recentBookings.add(new BookingSummary("#FL-84319", "Charlie Brown", "Nov 15, 2023", "Completed",
-                "bg-gray-100 text-gray-700"));
-        recentBookings.add(new BookingSummary("#FL-84318", "Diana Miller", "Nov 10, 2023", "Cancelled",
-                "bg-red-100 text-red-700"));
+        loadDashboardData();
     }
 
-    // ========== GETTERS ==========
+    // ================== LOAD DATA TỪ DATABASE ==================
+    private void loadDashboardData() {
+        List<Bookings> all = bookingsFacade.findAll();
+        recentBookings = new ArrayList<>();
 
+        if (all == null || all.isEmpty()) {
+            totalRevenue = 0;
+            upcomingBookings = 0;
+            newInquiries = 0;
+            return;
+        }
+
+        // TODO: sau này filter theo restaurant của manager đang đăng nhập
+        List<Bookings> filtered = new ArrayList<>(all);
+
+        // ----- Total Revenue: sum TotalAmount -----
+        BigDecimal total = BigDecimal.ZERO;
+        for (Bookings b : filtered) {
+            if (b.getTotalAmount() != null) {
+                total = total.add(b.getTotalAmount());
+            }
+        }
+        totalRevenue = total.doubleValue();
+
+        LocalDate today = LocalDate.now();
+        ZoneId zone = ZoneId.systemDefault();
+
+        // ----- Upcoming bookings: eventDate >= hôm nay -----
+        upcomingBookings = (int) filtered.stream()
+                .filter(b -> b.getEventDate() != null)
+                .map(b -> b.getEventDate().toInstant().atZone(zone).toLocalDate())
+                .filter(d -> !d.isBefore(today))
+                .count();
+
+        // ----- New inquiries: eventDate trong 7 ngày tới -----
+        LocalDate nextWeek = today.plusDays(7);
+        newInquiries = (int) filtered.stream()
+                .filter(b -> b.getEventDate() != null)
+                .map(b -> b.getEventDate().toInstant().atZone(zone).toLocalDate())
+                .filter(d -> !d.isBefore(today) && !d.isAfter(nextWeek))
+                .count();
+
+        // ----- Recent bookings: 4 booking mới nhất theo EventDate -----
+        filtered.sort(Comparator
+                .comparing(Bookings::getEventDate, Comparator.nullsLast(Date::compareTo))
+                .thenComparing(Bookings::getBookingId)
+                .reversed());
+
+        SimpleDateFormat fmt = new SimpleDateFormat("MMM dd, yyyy", Locale.ENGLISH);
+
+        int limit = Math.min(4, filtered.size());
+        for (int i = 0; i < limit; i++) {
+            Bookings b = filtered.get(i);
+
+            // Booking ID / Code
+            String id;
+            if (b.getBookingCode() != null && !b.getBookingCode().isBlank()) {
+                id = b.getBookingCode();
+            } else {
+                id = "#BK-" + b.getBookingId();
+            }
+
+            // Customer name
+            String customerName = "Guest";
+            Users u = b.getCustomerId();
+            if (u != null) {
+                if (u.getFullName() != null && !u.getFullName().isBlank()) {
+                    customerName = u.getFullName();
+                } else if (u.getEmail() != null && !u.getEmail().isBlank()) {
+                    customerName = u.getEmail();
+                }
+            }
+
+            // Date label
+            String dateLabel = "";
+            if (b.getEventDate() != null) {
+                dateLabel = fmt.format(b.getEventDate());
+            }
+
+            // Status theo EventDate (để ra màu giống Figma)
+            String statusLabel;
+            String statusClass;
+
+            if (b.getEventDate() == null) {
+                statusLabel = "Pending";
+                statusClass = "bg-yellow-100 text-yellow-700";
+            } else {
+                LocalDate ev = b.getEventDate().toInstant().atZone(zone).toLocalDate();
+                if (ev.isBefore(today)) {
+                    statusLabel = "Completed";
+                    statusClass = "bg-gray-100 text-gray-700";
+                } else if (ev.isEqual(today)) {
+                    statusLabel = "Pending";
+                    statusClass = "bg-yellow-100 text-yellow-700";
+                } else {
+                    statusLabel = "Confirmed";
+                    statusClass = "bg-green-100 text-green-700";
+                }
+            }
+
+            recentBookings.add(
+                    new BookingSummary(id, customerName, dateLabel, statusLabel, statusClass)
+            );
+        }
+    }
+
+    // ================== GETTERS ==================
     public double getTotalRevenue() {
         return totalRevenue;
     }
@@ -52,8 +160,7 @@ public class RestaurantDashboardBean implements Serializable {
         return recentBookings;
     }
 
-    // ========== INNER CLASS ==========
-
+    // ================== INNER CLASS ==================
     public static class BookingSummary implements Serializable {
         private String id;
         private String customer;
@@ -71,13 +178,9 @@ public class RestaurantDashboardBean implements Serializable {
         }
 
         public String getId() { return id; }
-
         public String getCustomer() { return customer; }
-
         public String getDate() { return date; }
-
         public String getStatusLabel() { return statusLabel; }
-
         public String getStatusClass() { return statusClass; }
     }
 }

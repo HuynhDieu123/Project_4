@@ -1,21 +1,21 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSF/JSFManagedBean.java to edit this template
- */
 package com.restaurant.bean;
 
+import com.mypack.entity.Areas;
+import com.mypack.sessionbean.AreasFacadeLocal;
 import jakarta.annotation.PostConstruct;
-import jakarta.inject.Named;
+import jakarta.ejb.EJB;
 import jakarta.faces.view.ViewScoped;
-import java.io.Serializable;
+import jakarta.inject.Named;
 
-/**
- *
- * @author nghiapham
- */
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 @Named("restaurantProfileBean")
 @ViewScoped
 public class RestaurantProfileBean implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String name;
     private String description;
@@ -27,9 +27,22 @@ public class RestaurantProfileBean implements Serializable {
     private Integer minDaysBeforeBooking;
     private String cancelPolicy;
 
+    // ======== SERVICE AREAS =========
+    @EJB
+    private AreasFacadeLocal areasFacade;
+
+    /** Tất cả quận/huyện trong CSDL */
+    private List<Areas> allAreas;
+
+    /** Các quận/huyện mà nhà hàng đã chọn phục vụ */
+    private List<Areas> serviceAreas;
+
+    /** Area đang được chọn trong dropdown */
+    private Integer selectedAreaId;
+
     @PostConstruct
     public void init() {
-        // Tạm thời gán dữ liệu demo
+        // Demo dữ liệu profile (tạm thời hard-code như cũ)
         name = "The Grand Eatery";
         description = "A modern fine-dining restaurant specializing in catering.";
         phone = "(555) 123-4567";
@@ -40,18 +53,59 @@ public class RestaurantProfileBean implements Serializable {
         minDaysBeforeBooking = 7;
         cancelPolicy = "Full refund if cancelled 14 days before the event. "
                 + "50% refund between 7–13 days. No refund within 7 days.";
+
+        // Lấy tất cả quận/huyện từ CSDL
+        allAreas = areasFacade.findAll();
+
+        // Các khu vực nhà hàng đang phục vụ (ban đầu để trống,
+        // sau này có thể load từ bảng liên kết RestaurantAreas)
+        serviceAreas = new ArrayList<>();
+
+        // Nếu muốn demo có sẵn 1–2 khu vực:
+        // if (!allAreas.isEmpty()) {
+        //     serviceAreas.add(allAreas.get(0));
+        // }
     }
 
-    // ========== ACTION ==========
-
+    /** Lưu profile (tạm thời chỉ in ra console) */
     public String saveProfile() {
-        // TODO: sau này gọi EJB để lưu xuống SQL Server
         System.out.println("Saving restaurant profile for: " + name);
-        // Giữ lại trên cùng trang
+        System.out.println("Service areas:");
+        for (Areas a : serviceAreas) {
+            System.out.println("- " + a.getCityId().getName() + " / " + a.getName());
+        }
+        // TODO: sau này lưu vào bảng RestaurantAreas
         return null;
     }
 
-    // ========== GETTER/SETTER ==========
+    /** Thêm một quận/huyện vào danh sách phục vụ */
+    public void addServiceArea() {
+        if (selectedAreaId == null) {
+            return;
+        }
+
+        Areas area = areasFacade.find(selectedAreaId);
+        if (area == null) {
+            return;
+        }
+
+        if (!serviceAreas.contains(area)) {
+            serviceAreas.add(area);
+        }
+
+        // reset dropdown
+        selectedAreaId = null;
+    }
+
+    /** Xóa một quận/huyện khỏi danh sách phục vụ */
+    public void removeServiceArea(Integer areaId) {
+        if (areaId == null || serviceAreas == null) {
+            return;
+        }
+        serviceAreas.removeIf(a -> areaId.equals(a.getAreaId()));
+    }
+
+    // ============ GETTERS / SETTERS ============
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -81,4 +135,27 @@ public class RestaurantProfileBean implements Serializable {
 
     public String getCancelPolicy() { return cancelPolicy; }
     public void setCancelPolicy(String cancelPolicy) { this.cancelPolicy = cancelPolicy; }
+
+    public List<Areas> getAllAreas() {
+        if (allAreas == null) {
+            allAreas = areasFacade.findAll();
+        }
+        return allAreas;
+    }
+
+    public List<Areas> getServiceAreas() {
+        return serviceAreas;
+    }
+
+    public void setServiceAreas(List<Areas> serviceAreas) {
+        this.serviceAreas = serviceAreas;
+    }
+
+    public Integer getSelectedAreaId() {
+        return selectedAreaId;
+    }
+
+    public void setSelectedAreaId(Integer selectedAreaId) {
+        this.selectedAreaId = selectedAreaId;
+    }
 }

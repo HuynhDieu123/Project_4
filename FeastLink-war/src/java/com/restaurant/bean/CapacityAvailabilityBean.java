@@ -3,16 +3,12 @@ package com.restaurant.bean;
 import jakarta.annotation.PostConstruct;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
+
 import java.io.Serializable;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 @Named("capacityAvailabilityBean")
 @ViewScoped
@@ -22,7 +18,8 @@ public class CapacityAvailabilityBean implements Serializable {
     private int defaultMaxGuestsPerDay;
     private int defaultMaxBookingsPerDay;
 
-    private String blockStartDate; // yyyy-MM-dd từ input type="date"
+    // form chặn theo range
+    private String blockStartDate; // yyyy-MM-dd
     private String blockEndDate;
     private String blockHall;
 
@@ -30,42 +27,30 @@ public class CapacityAvailabilityBean implements Serializable {
     private YearMonth currentMonth;
     private List<CalendarDay> calendarDays;
 
-    // trạng thái từng ngày (sau này có thể load từ DB)
+    // trạng thái từng ngày
     private Map<LocalDate, StatusType> dayStatusMap = new HashMap<>();
+
+    // --- chọn 1 ngày để chỉnh trạng thái ---
+    private LocalDate selectedDate;
+    private String selectedStatus; // map với enum StatusType
 
     @PostConstruct
     public void init() {
         defaultMaxGuestsPerDay = 150;
         defaultMaxBookingsPerDay = 10;
 
-        // tháng hiện tại
         currentMonth = YearMonth.now();
 
-        // DEMO: set vài trạng thái giống Figma (có thể bỏ nếu muốn)
-        YearMonth dec = YearMonth.of(2023, 12);
-        setStatus(dec.atDay(3), StatusType.AVAILABLE);
-        setStatus(dec.atDay(4), StatusType.NEAR_FULL);
-        setStatus(dec.atDay(7), StatusType.FULL);
-        setStatus(dec.atDay(9), StatusType.BLOCKED);
-        setStatus(dec.atDay(10), StatusType.AVAILABLE);
-        setStatus(dec.atDay(11), StatusType.NEAR_FULL);
-        setStatus(dec.atDay(14), StatusType.FULL);
-        setStatus(dec.atDay(16), StatusType.BLOCKED);
-        setStatus(dec.atDay(17), StatusType.AVAILABLE);
-        setStatus(dec.atDay(18), StatusType.NEAR_FULL);
-        setStatus(dec.atDay(21), StatusType.FULL);
-        setStatus(dec.atDay(23), StatusType.BLOCKED);
-        setStatus(dec.atDay(24), StatusType.AVAILABLE);
-        setStatus(dec.atDay(25), StatusType.NEAR_FULL);
-        setStatus(dec.atDay(28), StatusType.FULL);
-        setStatus(dec.atDay(30), StatusType.BLOCKED);
-        setStatus(dec.atDay(31), StatusType.AVAILABLE);
+        // DEMO một vài ngày trong tháng hiện tại
+        YearMonth demoMonth = currentMonth;
+        setStatus(demoMonth.atDay(3), StatusType.AVAILABLE);
+        setStatus(demoMonth.atDay(5), StatusType.NEAR_FULL);
+        setStatus(demoMonth.atDay(7), StatusType.FULL);
 
         buildCalendar();
     }
 
     // ========= CALENDAR LOGIC =========
-
     private void setStatus(LocalDate date, StatusType status) {
         dayStatusMap.put(date, status);
     }
@@ -74,7 +59,7 @@ public class CapacityAvailabilityBean implements Serializable {
         calendarDays = new ArrayList<>();
 
         LocalDate firstOfMonth = currentMonth.atDay(1);
-        // JS time: Monday=1..Sunday=7 ⇒ ta chuyển về 0..6 với Sunday=0
+        // Monday=1..Sunday=7  -> Sunday=0
         int shift = firstOfMonth.getDayOfWeek().getValue() % 7;
         LocalDate start = firstOfMonth.minusDays(shift);
 
@@ -82,7 +67,8 @@ public class CapacityAvailabilityBean implements Serializable {
             LocalDate date = start.plusDays(i);
             boolean inMonth = date.getMonthValue() == currentMonth.getMonthValue();
             StatusType status = dayStatusMap.getOrDefault(date, StatusType.NONE);
-            calendarDays.add(new CalendarDay(date, inMonth, status));
+            boolean isSelected = (selectedDate != null && selectedDate.equals(date));
+            calendarDays.add(new CalendarDay(date, inMonth, status, isSelected));
         }
     }
 
@@ -105,16 +91,61 @@ public class CapacityAvailabilityBean implements Serializable {
         return calendarDays;
     }
 
-    // ========= ACTIONS BÊN PHẢI =========
+    // ========== CLICK 1 NGÀY TRÊN LỊCH ==========
+    public void selectDay(String dateIso) {
+        try {
+            if (dateIso == null || dateIso.isBlank()) {
+                selectedDate = null;
+                selectedStatus = null;
+            } else {
+                selectedDate = LocalDate.parse(dateIso); // yyyy-MM-dd
+                StatusType st = dayStatusMap.getOrDefault(selectedDate, StatusType.NONE);
+                selectedStatus = st.name(); // bind cho dropdown
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        buildCalendar(); // để highlight ngày được chọn
+    }
 
+    // áp dụng trạng thái từ dropdown xuống ngày đã chọn
+    public void applyStatusToSelectedDay() {
+        // log cho chắc là hàm có chạy và nhận được value mới
+        System.out.println("Apply status: date=" + selectedDate + ", status=" + selectedStatus);
+
+        if (selectedDate == null || selectedStatus == null || selectedStatus.isBlank()) {
+            return;
+        }
+        StatusType st;
+        try {
+            st = StatusType.valueOf(selectedStatus);
+        } catch (IllegalArgumentException ex) {
+            st = StatusType.NONE;
+        }
+
+        if (st == StatusType.NONE) {
+            dayStatusMap.remove(selectedDate); // xóa chấm
+        } else {
+            dayStatusMap.put(selectedDate, st);
+        }
+        buildCalendar();
+    }
+
+    public String getSelectedDateLabel() {
+        if (selectedDate == null) {
+            return "Chưa chọn ngày";
+        }
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        return selectedDate.format(fmt);
+    }
+
+    // ========= ACTIONS BÊN PHẢI =========
     public void saveLimits() {
-        // TODO: sau này lưu xuống bảng RestaurantCapacitySettings
         System.out.println("Saving default limits: guests=" + defaultMaxGuestsPerDay
                 + ", bookings=" + defaultMaxBookingsPerDay);
     }
 
     public void blockDates() {
-        // parse yyyy-MM-dd từ input type="date"
         try {
             if (blockStartDate != null && !blockStartDate.isBlank()
                     && blockEndDate != null && !blockEndDate.isBlank()) {
@@ -133,13 +164,10 @@ public class CapacityAvailabilityBean implements Serializable {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-
-        // rebuild calendar để thấy dot xám
         buildCalendar();
     }
 
     // ========= GET / SET =========
-
     public int getDefaultMaxGuestsPerDay() {
         return defaultMaxGuestsPerDay;
     }
@@ -180,21 +208,36 @@ public class CapacityAvailabilityBean implements Serializable {
         this.blockHall = blockHall;
     }
 
-    // ========= INNER TYPES =========
+    public LocalDate getSelectedDate() {
+        return selectedDate;
+    }
 
+    public String getSelectedStatus() {
+        return selectedStatus;
+    }
+
+    public void setSelectedStatus(String selectedStatus) {
+        this.selectedStatus = selectedStatus;
+    }
+
+    // ========= INNER TYPES =========
     public enum StatusType {
         NONE, AVAILABLE, NEAR_FULL, FULL, BLOCKED
     }
 
     public static class CalendarDay implements Serializable {
+
         private final LocalDate date;
         private final boolean inCurrentMonth;
         private final StatusType status;
+        private final boolean selected;
 
-        public CalendarDay(LocalDate date, boolean inCurrentMonth, StatusType status) {
+        public CalendarDay(LocalDate date, boolean inCurrentMonth,
+                StatusType status, boolean selected) {
             this.date = date;
             this.inCurrentMonth = inCurrentMonth;
             this.status = status;
+            this.selected = selected;
         }
 
         public boolean isInCurrentMonth() {
@@ -224,12 +267,17 @@ public class CapacityAvailabilityBean implements Serializable {
             }
         }
 
-        public StatusType getStatus() {
-            return status;
+        public String getDateIso() {
+            return date.toString(); // yyyy-MM-dd
         }
 
-        public LocalDate getDate() {
-            return date;
+        public boolean isSelected() {
+            return selected;
+        }
+
+        // nếu cần dùng trong EL: #{day.selectedBorderCss}
+        public String getSelectedBorderCss() {
+            return selected ? "bg-gray-100 rounded-full" : "";
         }
     }
 }

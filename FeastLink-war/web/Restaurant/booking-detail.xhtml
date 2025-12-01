@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/Restaurant/restaurant-layout.xhtml">
+
+    <ui:define name="title">
+        FeastLink - Booking Detail
+    </ui:define>
+
+    <!-- Header trên top bar -->
+    <ui:define name="header">
+        <div class="flex flex-col">
+            <h2 class="text-2xl font-bold text-text-main-light">
+                Booking Detail
+            </h2>
+            <p class="text-sm text-text-secondary-light">
+                View detailed information of a booking.
+            </p>
+        </div>
+    </ui:define>
+
+    <ui:define name="content">
+
+        <!-- Nếu tìm thấy booking -->
+        <h:panelGroup rendered="#{bookingDetailBean.bookingFound}">
+            <div class="bg-card-light rounded-2xl shadow-subtle p-6 space-y-6">
+
+                <!-- Top: mã booking + status chip -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-text-secondary-light">
+                            Booking ID
+                        </p>
+                        <p class="text-xl font-semibold text-text-main-light">
+                            #{bookingDetailBean.bookingCode}
+                        </p>
+                        <p class="text-sm text-text-secondary-light mt-1">
+                            #{bookingDetailBean.customerName}
+                            <!-- dùng ký tự · thay cho &middot; -->
+                            ·
+                            #{bookingDetailBean.booking.eventDate}
+                        </p>
+                    </div>
+
+                    <div>
+                        <span class="inline-flex items-center py-1 px-3 rounded-full #{bookingDetailBean.statusCss}">
+                            <span class="w-2 h-2 rounded-full bg-current mr-2"></span>
+                            <span class="text-sm font-medium">
+                                #{bookingDetailBean.statusLabel}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Grid 2 cột thông tin -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+
+                    <!-- Cột trái -->
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
+                                Event date &amp; time
+                            </p>
+                            <p class="text-text-main-light">
+                                #{bookingDetailBean.booking.eventDate}
+                                (#{bookingDetailBean.booking.startTime}
+                                - #{bookingDetailBean.booking.endTime})
+                            </p>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
+                                Guests
+                            </p>
+                            <p class="text-text-main-light">
+                                #{bookingDetailBean.booking.guestCount}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
+                                Location
+                            </p>
+                            <p class="text-text-main-light">
+                                #{bookingDetailBean.locationDisplay}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Cột phải -->
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
+                                Total amount
+                            </p>
+                            <p class="text-text-main-light">
+                                <h:outputText value="#{bookingDetailBean.booking.totalAmount}">
+                                    <f:convertNumber type="currency" currencySymbol="$" />
+                                </h:outputText>
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
+                                    Deposit
+                                </p>
+                                <p class="text-text-main-light">
+                                    <h:outputText value="#{bookingDetailBean.booking.depositAmount}">
+                                        <f:convertNumber type="currency" currencySymbol="$" />
+                                    </h:outputText>
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
+                                    Remaining
+                                </p>
+                                <p class="text-text-main-light">
+                                    <h:outputText value="#{bookingDetailBean.booking.remainingAmount}">
+                                        <f:convertNumber type="currency" currencySymbol="$" />
+                                    </h:outputText>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
+                                Note
+                            </p>
+                            <p class="text-text-main-light">
+                                #{empty bookingDetailBean.booking.note
+                                   ? 'No note.'
+                                   : bookingDetailBean.booking.note}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Back -->
+                <div class="pt-4 border-t border-border-light flex justify-between items-center">
+                    <h:link outcome="/Restaurant/dashboard"
+                            styleClass="text-sm text-text-secondary-light hover:text-text-main-light inline-flex items-center">
+                        <span class="material-symbols-outlined text-base mr-1">arrow_back</span>
+                        Back to dashboard
+                    </h:link>
+                </div>
+            </div>
+        </h:panelGroup>
+
+        <!-- Nếu không tìm thấy booking -->
+        <h:panelGroup rendered="#{not bookingDetailBean.bookingFound}">
+            <div class="bg-card-light rounded-2xl shadow-subtle p-6">
+                <p class="text-sm text-error-red">
+                    Booking not found.
+                </p>
+                <h:link outcome="/Restaurant/dashboard"
+                        styleClass="mt-4 inline-flex items-center text-sm text-champagne-gold hover:underline">
+                    <span class="material-symbols-outlined text-base mr-1">arrow_back</span>
+                    Back to dashboard
+                </h:link>
+            </div>
+        </h:panelGroup>
+
+    </ui:define>
+</ui:composition>
