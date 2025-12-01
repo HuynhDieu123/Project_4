@@ -34,12 +34,12 @@ public class CustomerMyBookingsBean implements Serializable {
     private List<Bookings> myBookings = new ArrayList<>();
 
     private final Locale displayLocale = Locale.US;
-    private final SimpleDateFormat shortDateFmt =
-            new SimpleDateFormat("EEE, dd MMM yyyy", displayLocale);
-    private final SimpleDateFormat longDateFmt  =
-            new SimpleDateFormat("EEEE, dd MMMM yyyy", displayLocale);
-    private final SimpleDateFormat timeFmt      =
-            new SimpleDateFormat("HH:mm", displayLocale);
+    private final SimpleDateFormat shortDateFmt
+            = new SimpleDateFormat("EEE, dd MMM yyyy", displayLocale);
+    private final SimpleDateFormat longDateFmt
+            = new SimpleDateFormat("EEEE, dd MMMM yyyy", displayLocale);
+    private final SimpleDateFormat timeFmt
+            = new SimpleDateFormat("HH:mm", displayLocale);
 
     @PostConstruct
     public void init() {
@@ -59,7 +59,7 @@ public class CustomerMyBookingsBean implements Serializable {
                 for (Bookings b : all) {
                     if (b.getCustomerId() != null
                             && b.getCustomerId().getUserId()
-                            .equals(currentUser.getUserId())) {
+                                    .equals(currentUser.getUserId())) {
                         myBookings.add(b);
                     }
                 }
@@ -72,7 +72,6 @@ public class CustomerMyBookingsBean implements Serializable {
     }
 
     // ========== STATS ==========
-
     public int getUpcomingCount() {
         int count = 0;
         LocalDate today = LocalDate.now();
@@ -80,9 +79,9 @@ public class CustomerMyBookingsBean implements Serializable {
             String status = safe(b.getBookingStatus());
             LocalDate event = toLocalDate(b.getEventDate());
             boolean isFutureOrToday = (event == null || !event.isBefore(today));
-            if (isFutureOrToday &&
-                    ("PENDING".equalsIgnoreCase(status)
-                            || "CONFIRMED".equalsIgnoreCase(status))) {
+            if (isFutureOrToday
+                    && ("PENDING".equalsIgnoreCase(status)
+                    || "CONFIRMED".equalsIgnoreCase(status))) {
                 count++;
             }
         }
@@ -117,9 +116,17 @@ public class CustomerMyBookingsBean implements Serializable {
     }
 
     // ========== FORMAT HỖ TRỢ ==========
-
     private LocalDate toLocalDate(Date date) {
-        if (date == null) return null;
+        if (date == null) {
+            return null;
+        }
+
+        // Nếu là java.sql.Date thì dùng toLocalDate() riêng
+        if (date instanceof java.sql.Date) {
+            return ((java.sql.Date) date).toLocalDate();
+        }
+
+        // Còn lại (java.util.Date bình thường) mới dùng toInstant()
         return date.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate();
@@ -138,20 +145,23 @@ public class CustomerMyBookingsBean implements Serializable {
     }
 
     public String formatMoney(BigDecimal value) {
-        if (value == null) return "$0.00";
+        if (value == null) {
+            return "$0.00";
+        }
         NumberFormat nf = NumberFormat.getCurrencyInstance(displayLocale);
         return nf.format(value);
     }
 
     // ========== HELPER DÙNG TRONG EL ==========
-
     private String safe(String s) {
         return (s == null) ? "" : s;
     }
 
     // Cho phép hủy: đang Pending/Confirmed và còn cách ngày tiệc >= 3 ngày
     public boolean canCancel(Bookings b) {
-        if (b == null) return false;
+        if (b == null) {
+            return false;
+        }
         String status = safe(b.getBookingStatus()).toUpperCase();
         if (!("PENDING".equals(status) || "CONFIRMED".equals(status))) {
             return false;
@@ -161,7 +171,9 @@ public class CustomerMyBookingsBean implements Serializable {
 
     private boolean canCancelByDate(Bookings b) {
         Date date = b.getEventDate();
-        if (date == null) return true;  // demo: nếu thiếu ngày thì cho hủy
+        if (date == null) {
+            return true;  // demo: nếu thiếu ngày thì cho hủy
+        }
         LocalDate event = toLocalDate(date);
         LocalDate today = LocalDate.now();
         // phải còn ít nhất 3 ngày
@@ -169,19 +181,25 @@ public class CustomerMyBookingsBean implements Serializable {
     }
 
     public boolean isRemainingPositive(Bookings b) {
-        if (b == null || b.getRemainingAmount() == null) return false;
+        if (b == null || b.getRemainingAmount() == null) {
+            return false;
+        }
         return b.getRemainingAmount().compareTo(BigDecimal.ZERO) > 0;
     }
 
     public boolean needsPayment(Bookings b) {
-        if (b == null) return false;
+        if (b == null) {
+            return false;
+        }
         String status = safe(b.getBookingStatus()).toUpperCase();
         String payment = safe(b.getPaymentStatus()).toUpperCase();
         return "CONFIRMED".equals(status) && !"PAID".equals(payment);
     }
 
     public String statusMessage(Bookings b) {
-        if (b == null) return "";
+        if (b == null) {
+            return "";
+        }
         String status = safe(b.getBookingStatus()).toUpperCase();
 
         if ("CONFIRMED".equals(status)) {
@@ -203,7 +221,9 @@ public class CustomerMyBookingsBean implements Serializable {
     }
 
     public String locationDisplay(Bookings b) {
-        if (b == null) return "";
+        if (b == null) {
+            return "";
+        }
         String locType = safe(b.getLocationType());
         if ("AT_RESTAURANT".equalsIgnoreCase(locType)) {
             return "At restaurant";
@@ -213,19 +233,56 @@ public class CustomerMyBookingsBean implements Serializable {
     }
 
     public String eventTypeDisplay(Bookings b) {
-        if (b == null) return "";
+        if (b == null) {
+            return "";
+        }
         EventTypes et = b.getEventTypeId();
         return (et != null) ? safe(et.getName()) : "";
     }
 
     public String serviceTypeDisplay(Bookings b) {
-        if (b == null) return "";
+        if (b == null) {
+            return "";
+        }
         ServiceTypes st = b.getServiceTypeId();
         return (st != null) ? safe(st.getName()) : "";
     }
 
-    // ========== ACTION: VIEW DETAILS ==========
+    public String bookerDisplay(Bookings b) {
+        if (b == null) {
+            return "";
+        }
+        Users u = b.getCustomerId();
+        if (u == null) {
+            return "";
+        }
 
+        StringBuilder sb = new StringBuilder();
+
+        String fullName = safe(u.getFullName());
+        String phone = safe(u.getPhone());
+        String email = safe(u.getEmail());
+
+        if (!fullName.isEmpty()) {
+            sb.append(fullName);
+        }
+        if (!phone.isEmpty()) {
+            if (sb.length() > 0) {
+                sb.append(" · ");
+            }
+            sb.append(phone);
+        }
+        if (!email.isEmpty()) {
+            if (sb.length() > 0) {
+                sb.append(" · ");
+            }
+            sb.append(email);
+        }
+
+        return sb.toString();
+    }
+
+    // ========== ACTION: VIEW DETAILS ==========
     public String viewDetails(Long bookingId) {
         if (bookingId == null) {
             addMessage(FacesMessage.SEVERITY_ERROR,
@@ -240,7 +297,6 @@ public class CustomerMyBookingsBean implements Serializable {
     }
 
     // ========== ACTION: CANCEL BOOKING ==========
-
     public String cancelBooking(Long bookingId) {
         FacesContext ctx = FacesContext.getCurrentInstance();
 
@@ -269,7 +325,7 @@ public class CustomerMyBookingsBean implements Serializable {
         Users currentUser = (Users) userObj;
         if (booking.getCustomerId() == null
                 || !booking.getCustomerId().getUserId()
-                .equals(currentUser.getUserId())) {
+                        .equals(currentUser.getUserId())) {
             addMessage(FacesMessage.SEVERITY_ERROR,
                     "Error", "You cannot cancel this booking.");
             return null;
@@ -300,8 +356,8 @@ public class CustomerMyBookingsBean implements Serializable {
     }
 
     private void addMessage(FacesMessage.Severity severity,
-                            String summary,
-                            String detail) {
+            String summary,
+            String detail) {
         FacesContext ctx = FacesContext.getCurrentInstance();
         ctx.addMessage(null, new FacesMessage(severity, summary, detail));
     }
