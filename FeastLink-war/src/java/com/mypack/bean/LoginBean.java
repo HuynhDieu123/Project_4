@@ -125,8 +125,19 @@ public class LoginBean implements Serializable {
         }
 
         // 3. Đăng nhập thành công
+        String role = matched.getRole();  // dùng role trong bảng Users
+
+        // Nếu là MANAGER -> vào Restaurant/dashboard.xhtml
+        if (role != null && "MANAGER".equalsIgnoreCase(role)) {
+            ctx.getExternalContext().getSessionMap().put("currentUser", matched);
+            ctx.getExternalContext().getSessionMap().put("currentUserRole", "MANAGER");
+            ctx.getExternalContext().getSessionMap().put("loginIdentifier", input);
+
+            return "/Restaurant/dashboard";
+        }
+
+        // Mặc định (CUSTOMER) -> về trang Customer home
         ctx.getExternalContext().getSessionMap().put("currentUser", matched);
-        // nếu entity Users có field role thì có thể dùng matched.getRole()
         ctx.getExternalContext().getSessionMap().put("currentUserRole", "CUSTOMER");
         ctx.getExternalContext().getSessionMap().put("loginIdentifier", input);
 
