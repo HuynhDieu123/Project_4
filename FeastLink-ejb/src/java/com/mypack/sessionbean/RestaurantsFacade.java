@@ -32,5 +32,14 @@ public class RestaurantsFacade extends AbstractFacade<Restaurants> implements Re
     public long countRestaurants() {
         return (long) em.createQuery("SELECT COUNT(r) FROM Restaurants r").getSingleResult();
     }
+    
+    public boolean existsByEmail(String email) {
+    Long count = em.createQuery(
+            "SELECT COUNT(r) FROM Restaurants r WHERE r.email = :email", Long.class)
+        .setParameter("email", email)
+        .getSingleResult();
+    return count != null && count > 0;
+}
+
 
 }
