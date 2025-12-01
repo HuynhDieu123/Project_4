@@ -2,6 +2,7 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:h="jakarta.faces.html"
                 xmlns:ui="jakarta.faces.facelets"
+                xmlns:f="jakarta.faces.core"
                 template="/Restaurant/layout-manager.xhtml">
 
     <!-- ===== PAGE TITLE (tab title) ===== -->
@@ -157,23 +158,52 @@
                         Service Areas
                     </label>
 
-                    <p class="text-xs text-text-secondary-light mb-2">
+                    <p class="text-xs text-text-secondary-light mb-3">
                         Add the cities/areas where your restaurant provides catering.
                     </p>
 
-                    <div class="flex flex-wrap gap-2">
-                        <span
-                            class="inline-flex items-center rounded-full border border-border-light bg-background-soft px-3 py-1 text-xs text-text-secondary-light">
-                            Metropolis
-                        </span>
-                        <span
-                            class="inline-flex items-center rounded-full border border-border-light bg-background-soft px-3 py-1 text-xs text-text-secondary-light">
-                            Star City
-                        </span>
-                        <button type="button"
-                                class="inline-flex items-center rounded-full border border-dashed border-border-light px-3 py-1 text-xs text-champagne-gold hover:bg-gray-50">
-                            + Add a new area…
-                        </button>
+                    <!-- Danh sách các khu vực đã chọn (hiển thị dạng chip) -->
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <ui:repeat value="#{restaurantProfileBean.serviceAreas}" var="area">
+                            <span
+                                class="inline-flex items-center rounded-full border border-border-light bg-background-soft px-3 py-1 text-xs text-text-secondary-light">
+                                <span>
+                                    #{area.cityId.name} - #{area.name}
+                                </span>
+
+                                <!-- nút remove -->
+                                <h:commandLink action="#{restaurantProfileBean.removeServiceArea(area.areaId)}"
+                                               styleClass="ml-2 text-[11px] font-bold leading-none">
+                                    ✕
+                                    <f:ajax render="@form"/>
+                                </h:commandLink>
+                            </span>
+                        </ui:repeat>
+
+                        <!-- Nếu chưa chọn khu vực nào -->
+                        <h:panelGroup rendered="#{empty restaurantProfileBean.serviceAreas}">
+                            <span class="text-xs text-text-secondary-light italic">
+                                No service areas selected yet.
+                            </span>
+                        </h:panelGroup>
+                    </div>
+
+                    <!-- Hàng chọn thêm khu vực (dropdown + nút Add) -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <h:selectOneMenu value="#{restaurantProfileBean.selectedAreaId}"
+                                         styleClass="min-w-[260px] border border-dashed border-border-light rounded-full px-3 py-1.5 text-xs text-text-main-light bg-background-soft focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:selectItem itemValue="" itemLabel="Select an area..." noSelectionOption="true"/>
+                            <f:selectItems value="#{restaurantProfileBean.allAreas}"
+                                           var="a"
+                                           itemValue="#{a.areaId}"
+                                           itemLabel="#{a.cityId.name} - #{a.name}"/>
+                        </h:selectOneMenu>
+
+                        <h:commandButton value="Add"
+                                         action="#{restaurantProfileBean.addServiceArea}"
+                                         styleClass="inline-flex items-center rounded-full bg-cta-orange text-white text-xs font-semibold px-4 py-1.5 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-cta-orange">
+                            <f:ajax render="@form"/>
+                        </h:commandButton>
                     </div>
                 </div>
             </section>

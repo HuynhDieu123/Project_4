@@ -77,27 +77,35 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead>
-                            <tr>
-                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light">Booking ID</th>
-                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light">Customer</th>
-                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light">Date</th>
-                                <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light text-center">Status</th>
-                            </tr>
+                                <tr>
+                                    <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light">Booking ID</th>
+                                    <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light">Customer</th>
+                                    <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light">Date</th>
+                                    <th class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary-light text-center">Status</th>
+                                </tr>
                             </thead>
                             <tbody>
-                            <ui:repeat value="#{restaurantDashboardBean.recentBookings}" var="b">
-                                <tr class="border-t border-border-light">
-                                    <td class="py-4 px-4 font-medium text-text-main-light text-sm">#{b.id}</td>
-                                    <td class="py-4 px-4 text-text-secondary-light text-sm">#{b.customer}</td>
-                                    <td class="py-4 px-4 text-text-secondary-light text-sm">#{b.date}</td>
-                                    <td class="py-4 px-4 text-center">
-                                        <div class="inline-flex items-center py-1 px-3 rounded-full #{b.statusClass}">
-                                            <div class="w-2 h-2 rounded-full bg-current mr-2"></div>
-                                            <span class="text-sm font-medium">#{b.statusLabel}</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </ui:repeat>
+                                <ui:repeat value="#{restaurantDashboardBean.recentBookings}" var="b">
+                                    <tr class="border-t border-border-light">
+                                        <td class="py-4 px-4 font-medium text-text-main-light text-sm">
+                                            <!-- Link qua trang chi tiết -->
+                                            <h:link outcome="/Restaurant/booking-detail"
+                                                    styleClass="hover:underline">
+                                                #{b.id}
+                                                <!-- code chính là BookingCode, truyền xuống dạng query param -->
+                                                <f:param name="code" value="#{b.id}" />
+                                            </h:link>
+                                        </td>
+                                        <td class="py-4 px-4 text-text-secondary-light text-sm">#{b.customer}</td>
+                                        <td class="py-4 px-4 text-text-secondary-light text-sm">#{b.date}</td>
+                                        <td class="py-4 px-4 text-center">
+                                            <div class="inline-flex items-center py-1 px-3 rounded-full #{b.statusClass}">
+                                                <div class="w-2 h-2 rounded-full bg-current mr-2"></div>
+                                                <span class="text-sm font-medium">#{b.statusLabel}</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </ui:repeat>
                             </tbody>
                         </table>
                     </div>

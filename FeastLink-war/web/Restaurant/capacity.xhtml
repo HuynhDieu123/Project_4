@@ -36,10 +36,9 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
             <!-- ================= LEFT: CALENDAR CARD ================= -->
-            <!-- ================= LEFT: CALENDAR CARD ================= -->
             <section class="lg:col-span-2 bg-card-light border border-border-light rounded-2xl shadow-subtle p-6">
 
-                <!-- CẦN form để bấm prev/next month -->
+                <!-- Form calendar -->
                 <h:form id="calendarForm">
 
                     <!-- Month header + legend -->
@@ -48,6 +47,7 @@
                         <div class="flex items-center gap-2 text-sm font-semibold text-text-main-light">
                             <h:commandLink action="#{capacityAvailabilityBean.previousMonth}"
                                            styleClass="p-1 rounded-full hover:bg-gray-100">
+                                <f:ajax render=":calendarForm :dayStatusForm"/>
                                 <span class="material-symbols-outlined text-base">chevron_left</span>
                             </h:commandLink>
 
@@ -55,6 +55,7 @@
 
                             <h:commandLink action="#{capacityAvailabilityBean.nextMonth}"
                                            styleClass="p-1 rounded-full hover:bg-gray-100">
+                                <f:ajax render=":calendarForm :dayStatusForm"/>
                                 <span class="material-symbols-outlined text-base">chevron_right</span>
                             </h:commandLink>
                         </div>
@@ -94,13 +95,19 @@
                     <!-- Calendar days: 6 hàng x 7 cột -->
                     <div class="grid grid-cols-7 gap-y-6 text-xs text-text-main-light">
                         <ui:repeat value="#{capacityAvailabilityBean.calendarDays}" var="day">
-                            <div class="flex flex-col items-center #{day.inCurrentMonth ? '' : 'text-gray-400'}">
-                                <span>#{day.dayNumber}</span>
+                            <div class="flex flex-col items-center">
+                                <!-- CLICK NGÀY -->
+                                <h:commandLink action="#{capacityAvailabilityBean.selectDay(day.dateIso)}"
+                                               styleClass="flex flex-col items-center no-underline text-inherit #{day.inCurrentMonth ? '' : 'text-gray-400'} #{day.selected ? 'bg-gray-100 rounded-full px-2 py-1' : ''}">
+                                    <span>#{day.dayNumber}</span>
 
-                                <!-- chấm trạng thái -->
-                                <h:panelGroup rendered="#{day.showDot}">
-                                    <span class="w-2 h-2 rounded-full #{day.dotCss} mt-1"></span>
-                                </h:panelGroup>
+                                    <!-- chấm trạng thái -->
+                                    <h:panelGroup rendered="#{day.showDot}">
+                                        <span class="w-2 h-2 rounded-full #{day.dotCss} mt-1"></span>
+                                    </h:panelGroup>
+
+                                    <f:ajax render=":calendarForm :dayStatusForm"/>
+                                </h:commandLink>
                             </div>
                         </ui:repeat>
                     </div>
@@ -180,6 +187,44 @@
                         <h:commandButton value="Block Dates"
                                          action="#{capacityAvailabilityBean.blockDates}"
                                          styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90" />
+                    </h:form>
+                </div>
+
+                <!-- Day Status card -->
+                <div class="bg-card-light border border-border-light rounded-2xl shadow-subtle p-5 space-y-4">
+                    <h2 class="text-sm font-semibold text-text-main-light">
+                        Trạng thái ngày được chọn
+                    </h2>
+
+                    <h:form id="dayStatusForm" styleClass="space-y-3">
+                        <p class="text-xs text-text-secondary-light">
+                            Selected date:
+                            <span class="font-medium text-text-main-light">
+                                #{capacityAvailabilityBean.selectedDateLabel}
+                            </span>
+                        </p>
+
+                        <div>
+                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                Status
+                            </label>
+                            <h:selectOneMenu value="#{capacityAvailabilityBean.selectedStatus}"
+                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm">
+                                <f:selectItem itemLabel="-- No dot / Clear --" itemValue="NONE" />
+                                <f:selectItem itemLabel="Available" itemValue="AVAILABLE" />
+                                <f:selectItem itemLabel="Gần đầy" itemValue="NEAR_FULL" />
+                                <f:selectItem itemLabel="Đã đầy" itemValue="FULL" />
+                                <f:selectItem itemLabel="Bị chặn" itemValue="BLOCKED" />
+                            </h:selectOneMenu>
+                        </div>
+
+                        <!-- CHỖ NÀY LÀ MẤU CHỐT: execute='@form' -->
+                        <h:commandButton value="Apply to selected date"
+                                         action="#{capacityAvailabilityBean.applyStatusToSelectedDay}"
+                                         disabled="#{capacityAvailabilityBean.selectedDate == null}"
+                                         styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
+                            <f:ajax execute="@form" render=":calendarForm :dayStatusForm" />
+                        </h:commandButton>
                     </h:form>
                 </div>
 
