@@ -3,12 +3,18 @@ const BookingUI = (function () {
     const state = {
         currentStep: 1,
         tableCount: 20,
-        pricePerGuest: 1200000,
-        serviceCharge: 5000000,
+
+        // giá 1 bàn (sẽ bị override theo package, nên để 1200 default)
+        pricePerGuest: 1200,
+
+        // phí service cơ bản, dùng để nhân theo service level
+        baseServiceCharge: 3000,
+        serviceCharge: 3000,
+
         addOns: [
-            {id: 1, name: 'Extra dessert table', price: 50000, unit: 'guest', quantity: 0},
-            {id: 2, name: 'Premium wine pairing', price: 500000, unit: 'table', quantity: 0},
-            {id: 3, name: 'Late-night snacks', price: 35000, unit: 'guest', quantity: 0}
+            {id: 1, name: 'Extra dessert table', price: 50, unit: 'table', quantity: 0},
+            {id: 2, name: 'Premium wine pairing', price: 50, unit: 'table', quantity: 0},
+            {id: 3, name: 'Late-night snacks', price: 35, unit: 'table', quantity: 0}
         ],
         depositPercentage: 30,
         discount: 0,
@@ -22,8 +28,109 @@ const BookingUI = (function () {
         remainingAmount: 0
     };
 
+    const PACKAGE_CONFIGS = {
+        'Royal Wedding Package': {
+            badge: 'VIP',
+            guestRange: 'Ideal for 150–300 guests',
+            pricePerGuest: 1200
+        },
+        'Signature Wedding Menu': {
+            badge: 'VIP PACKAGE',
+            guestRange: 'Ideal for 10–20 guests',
+            pricePerGuest: 890
+        },
+        'Corporate Gala Menu': {
+            badge: 'PACKAGE',
+            guestRange: 'Ideal for 10–20 guests',
+            pricePerGuest: 750
+        }
+    };
+
+    // Cấu hình giá cho từng service level (theo phí service)
+    const SERVICE_LEVEL_CONFIGS = {
+        standard: {
+            label: 'Standard',
+            feeMultiplier: 0.8   // ~80% base service fee
+        },
+        premium: {
+            label: 'Premium',
+            feeMultiplier: 1.0   // = base
+        },
+        vip: {
+            label: 'VIP',
+            feeMultiplier: 1.25  // cao hơn 25%
+        },
+        exclusive: {
+            label: 'Exclusive',
+            feeMultiplier: 1.5   // cao nhất
+        }
+    };
+
+    // Hiển thị giá service fee cho từng service level trên UI
+    function updateServiceLevelPriceLabels() {
+        const base = state.baseServiceCharge || state.serviceCharge || 0;
+
+        Object.keys(SERVICE_LEVEL_CONFIGS).forEach(key => {
+            const cfg = SERVICE_LEVEL_CONFIGS[key];
+            const el = document.getElementById('service-level-price-' + key);
+            if (!el)
+                return;
+
+            const price = Math.round(base * cfg.feeMultiplier);
+            el.textContent = '$' + formatNumber(price) + ' service fee';
+        });
+    }
+
+
     function formatNumber(n) {
         return n.toLocaleString('en-US');
+    }
+
+    function applyPackageFromParam(packageName) {
+        const packageCardEl = document.getElementById('package-card');
+        const noPackageEl = document.getElementById('no-package-selected');
+        const packageNameEl = document.getElementById('package-name');
+        const summaryPkgNameEl = document.getElementById('summary-package-name');
+        const badgeEl = document.getElementById('package-badge');
+        const guestRangeEl = document.getElementById('package-guest-range');
+        const priceEl = document.getElementById('package-price');
+
+        // Không có package hoặc không map trong config -> ẩn card, hiện empty-state
+        if (!packageName || !PACKAGE_CONFIGS[packageName]) {
+            if (packageCardEl)
+                packageCardEl.classList.add('hidden');
+            if (noPackageEl)
+                noPackageEl.classList.remove('hidden');
+            if (summaryPkgNameEl)
+                summaryPkgNameEl.textContent = 'No package selected';
+            return;
+        }
+
+        const cfg = PACKAGE_CONFIGS[packageName];
+
+        if (packageCardEl)
+            packageCardEl.classList.remove('hidden');
+        if (noPackageEl)
+            noPackageEl.classList.add('hidden');
+
+        if (packageNameEl)
+            packageNameEl.textContent = packageName;
+        if (summaryPkgNameEl)
+            summaryPkgNameEl.textContent = packageName;
+        if (badgeEl && cfg.badge)
+            badgeEl.textContent = cfg.badge;
+        if (guestRangeEl && cfg.guestRange)
+            guestRangeEl.textContent = cfg.guestRange;
+        if (priceEl && cfg.pricePerGuest != null) {
+            priceEl.textContent = '$' + formatNumber(cfg.pricePerGuest);
+        }
+
+        // Cập nhật số dùng để tính tiền (giá 1 bàn)
+        state.pricePerGuest = cfg.pricePerGuest;
+
+        // Re-calc với giá mới
+        updateCapacity();
+        updateSummary();
     }
 
     function updateCapacity() {
@@ -47,8 +154,13 @@ const BookingUI = (function () {
         }
 
         capacityEl.style.color = color;
-        capacityEl.querySelector('span') && (capacityEl.querySelector('span').textContent = '');
-        capacityEl.lastChild && (capacityEl.lastChild.textContent = message);
+        if (capacityEl.querySelector('span')) {
+            capacityEl.querySelector('span').textContent = '';
+        }
+        if (capacityEl.lastChild) {
+            capacityEl.lastChild.textContent = message;
+        }
+
         guestLabel.textContent = '(~' + totalGuests + ' guests at 10 per table)';
 
         // summary table + guests
@@ -58,12 +170,13 @@ const BookingUI = (function () {
             summaryLabel.textContent = state.tableCount + ' tables (~' + totalGuests + ' guests)';
         }
         if (packageLabel) {
-            packageLabel.textContent = 'Package (' + state.tableCount + ' tables, ~' + totalGuests + ' guests)';
+            packageLabel.textContent =
+                    'Package (' + state.tableCount + ' tables, ~' + totalGuests + ' guests)';
         }
+
         const guestHidden = document.getElementById('hf-guest-count');
-        if (guestHidden) {
+        if (guestHidden)
             guestHidden.value = totalGuests;
-        }
     }
 
     function collectAddonQuantities() {
@@ -80,9 +193,12 @@ const BookingUI = (function () {
 
     function updateSummary() {
         collectAddonQuantities();
-        const totalGuests = state.tableCount * 10;
-        const packageSubtotal = state.pricePerGuest * totalGuests;
-        const addOnsSubtotal = state.addOns.reduce((sum, a) => sum + a.price * a.quantity, 0);
+
+        const packageSubtotal = state.pricePerGuest * state.tableCount; // giá theo bàn
+        const addOnsSubtotal = state.addOns.reduce(
+                (sum, a) => sum + a.price * a.quantity,
+                0
+                );
         const subtotal = packageSubtotal + addOnsSubtotal;
         const tax = Math.round((subtotal + state.serviceCharge) * 0.1);
         const discount = state.discount;
@@ -136,17 +252,23 @@ const BookingUI = (function () {
         const container = document.getElementById('summary-addons-container');
         if (container) {
             container.innerHTML = '';
-            state.addOns.filter(a => a.quantity > 0).forEach(addon => {
-                const row = document.createElement('div');
-                row.className = 'flex justify-between';
-                row.innerHTML =
-                        '<span class="text-[#4B5563]">' +
-                        addon.name + ' (' + addon.quantity + ')</span>' +
-                        '<span class="font-medium text-[#111827]">$' +
-                        formatNumber(addon.price * addon.quantity) + '</span>';
+            state.addOns
+                    .filter(a => a.quantity > 0)
+                    .forEach(addon => {
+                        const row = document.createElement('div');
+                        row.className = 'flex justify-between';
+                        row.innerHTML =
+                                '<span class="text-[#4B5563]">' +
+                                addon.name +
+                                ' (' +
+                                addon.quantity +
+                                ')</span>' +
+                                '<span class="font-medium text-[#111827]">$' +
+                                formatNumber(addon.price * addon.quantity) +
+                                '</span>';
 
-                container.appendChild(row);
-            });
+                        container.appendChild(row);
+                    });
         }
 
         const totalEl = document.getElementById('summary-total-amount');
@@ -161,11 +283,25 @@ const BookingUI = (function () {
     }
 
     function setServiceLevel(level) {
-        state.serviceLevel = level;
+        const key = (level || '').toLowerCase();
+        const cfg = SERVICE_LEVEL_CONFIGS[key] || SERVICE_LEVEL_CONFIGS.standard;
+
+        // lưu lại dưới dạng lowercase để sau này dễ map xuống DB nếu cần
+        // lưu lại dưới dạng lowercase để sau này dễ map xuống DB nếu cần
+        state.serviceLevel = key;
+
+// đẩy service level xuống hidden để server đọc
+        const serviceHidden = document.getElementById('hf-service-level');
+        if (serviceHidden) {
+            serviceHidden.value = key; // standard / premium / vip / exclusive
+        }
+
+
+        // Toggle UI cho các button
         const buttons = document.querySelectorAll('.service-level-btn');
         buttons.forEach(btn => {
-            const val = btn.getAttribute('data-level');
-            if (val === level) {
+            const val = (btn.getAttribute('data-level') || '').toLowerCase();
+            if (val === key) {
                 btn.className =
                         'service-level-btn px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 bg-[#020617] text-white border-2 border-[#D4AF37]';
             } else {
@@ -173,9 +309,18 @@ const BookingUI = (function () {
                         'service-level-btn px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 bg-white text-[#4B5563] border-2 border-[#E5E7EB] hover:border-[#D4AF37]';
             }
         });
+
+        // Cập nhật text ở summary
         const summary = document.getElementById('summary-service-level');
         if (summary)
-            summary.textContent = level;
+            summary.textContent = cfg.label;
+
+        // Tính lại serviceCharge theo level
+        const base = state.baseServiceCharge || state.serviceCharge || 0;
+        state.serviceCharge = Math.round(base * cfg.feeMultiplier);
+
+        // Re-calc bảng tiền
+        updateSummary();
     }
 
     function setLocationType(type) {
@@ -199,12 +344,11 @@ const BookingUI = (function () {
             }
         }
 
-        state.locationType = (type === 'outside') ? 'OUTSIDE' : 'AT_RESTAURANT';
+        state.locationType = type === 'outside' ? 'OUTSIDE' : 'AT_RESTAURANT';
 
         const locHidden = document.getElementById('hf-location-type');
-        if (locHidden) {
+        if (locHidden)
             locHidden.value = state.locationType;
-        }
     }
 
     function setPaymentMethod(method) {
@@ -245,152 +389,146 @@ const BookingUI = (function () {
             }
         });
         // nếu trả full thì depositPercentage = 100, còn lại 30
-        state.depositPercentage = (type === 'full') ? 100 : 30;
+        state.depositPercentage = type === 'full' ? 100 : 30;
         updateSummary();
     }
 
     function goToStep(step) {
         state.currentStep = step;
-        const s1 = document.getElementById('step-1');
-        const s2 = document.getElementById('step-2');
-        const s3 = document.getElementById('step-3');
-        const sections = [s1, s2, s3];
-        sections.forEach((sec, idx) => {
+
+        // Ẩn / hiện 3 section
+        ['step-1', 'step-2', 'step-3'].forEach((id, index) => {
+            const sec = document.getElementById(id);
             if (!sec)
                 return;
-            const index = idx + 1;
-            if (index === step) {
-                sec.classList.remove('hidden', 'opacity-0');
-                sec.classList.add('opacity-100');
+
+            if (index + 1 === step) {
+                sec.classList.remove('hidden');
+                sec.classList.remove('opacity-0');
             } else {
                 sec.classList.add('hidden');
-                sec.classList.remove('opacity-100');
             }
         });
 
-        // Stepper UI
+        // Cập nhật stepper
         const stepper = document.getElementById('stepper');
-        if (!stepper)
-            return;
-        const circles = stepper.querySelectorAll('.step-circle');
-        const titles = stepper.querySelectorAll('span.mt-3');
-        const lines = stepper.querySelectorAll('.step-line');
+        if (stepper) {
+            const circles = stepper.querySelectorAll('.step-circle');
+            const titles = stepper.querySelectorAll('span.mt-3');
+            const lines = stepper.querySelectorAll('.step-line');
 
-        circles.forEach((c, idx) => {
-            const index = idx + 1;
-            if (index < step) {
-                c.className =
-                        'step-circle w-12 h-12 rounded-full flex items-center justify-center font-semibold text-base transition-all duration-300 relative bg-[#D4AF37] text-white shadow-lg shadow-[#D4AF37]/30';
-                c.textContent = '✓';
-            } else if (index === step) {
-                c.className =
-                        'step-circle w-12 h-12 rounded-full flex items-center justify-center font-semibold text-base transition-all duration-300 relative bg-[#020617] text-white ring-4 ring-[#D4AF37]/30 shadow-lg';
-                c.textContent = String(index);
-            } else {
-                c.className =
-                        'step-circle w-12 h-12 rounded-full flex items-center justify-center font-semibold text-base transition-all duration-300 relative bg-white text-[#9CA3AF] border-2 border-[#E5E7EB]';
-                c.textContent = String(index);
-            }
-        });
+            circles.forEach((circle, idx) => {
+                const index = idx + 1;
+                if (index < step) {
+                    circle.className =
+                            'step-circle w-12 h-12 rounded-full flex items-center justify-center font-semibold text-base transition-all duration-300 relative bg-[#D4AF37] text-[#020617] shadow-lg';
+                    circle.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i>';
+                } else if (index === step) {
+                    circle.className =
+                            'step-circle w-12 h-12 rounded-full flex items-center justify-center font-semibold text-base transition-all duration-300 relative bg-[#020617] text-white ring-4 ring-[#D4AF37]/30 shadow-lg';
+                    circle.textContent = String(index);
+                } else {
+                    circle.className =
+                            'step-circle w-12 h-12 rounded-full flex items-center justify-center font-semibold text-base transition-all duration-300 relative bg-white text-[#9CA3AF] border-2 border-[#E5E7EB]';
+                    circle.textContent = String(index);
+                }
+            });
 
-        titles.forEach((t, idx) => {
-            const index = idx + 1;
-            if (index === step)
-                t.classList.add('text-[#111827]');
-            else
-                t.classList.remove('text-[#111827]');
-        });
+            titles.forEach((title, idx) => {
+                const index = idx + 1;
+                if (index === step) {
+                    title.classList.remove('text-[#4B5563]');
+                    title.classList.add('text-[#111827]');
+                } else {
+                    title.classList.remove('text-[#111827]');
+                    title.classList.add('text-[#4B5563]');
+                }
+            });
 
-        lines.forEach((line, idx) => {
-            const srcIndex = idx + 1; // line between step srcIndex and srcIndex+1
-            if (srcIndex < step) {
-                line.classList.remove('step-line-zero');
-                line.classList.add('step-line-full');
-            } else {
-                line.classList.remove('step-line-full');
-                line.classList.add('step-line-zero');
-            }
-        });
+            lines.forEach((line, idx) => {
+                const index = idx + 1;
+                if (index < step) {
+                    line.classList.remove('step-line-zero');
+                    line.classList.add('step-line-full');
+                } else {
+                    line.classList.remove('step-line-full');
+                    line.classList.add('step-line-zero');
+                }
+            });
+        }
+
+        // Cập nhật lại bảng tính tiền
+        updateSummary();
+
+        // Re-init icon
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
     }
 
+    // ====== CONTACT VALIDATION ======
     function validateContact() {
-        const full = document.getElementById('contact-fullname').value.trim();
-        const email = document.getElementById('contact-email').value.trim();
-        const phone = document.getElementById('contact-phone').value.trim();
-        const accept = document.getElementById('accept-policies').checked;
+        const fullNameEl = document.getElementById('contact-fullname');
+        const emailEl = document.getElementById('contact-email');
+        const phoneEl = document.getElementById('contact-phone');
+        const acceptEl = document.getElementById('accept-policies');
 
-        const emailError = document.getElementById('contact-email-error');
-        const phoneError = document.getElementById('contact-phone-error');
+        let valid = true;
 
-        const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        const phoneValid = /^[\d\s\-\+\(\)]+$/.test(phone) && phone.length >= 10;
+        function mark(el, ok) {
+            if (!el)
+                return;
+            el.classList.remove('border-red-500', 'ring-1', 'ring-red-300');
+            if (!ok) {
+                el.classList.remove('border-[#E5E7EB]');
+                el.classList.add('border-red-500', 'ring-1', 'ring-red-300');
+                valid = false;
+            } else {
+                el.classList.add('border-[#E5E7EB]');
+            }
+        }
 
-        if (emailError)
-            emailError.classList.toggle('hidden', emailValid || !email);
-        if (phoneError)
-            phoneError.classList.toggle('hidden', phoneValid || !phone);
+        mark(fullNameEl, fullNameEl && fullNameEl.value.trim() !== '');
+        mark(emailEl, emailEl && emailEl.value.trim() !== '');
+        mark(phoneEl, phoneEl && phoneEl.value.trim() !== '');
 
-        const canProceed = full && emailValid && phoneValid && accept;
-        const nextBtn = document.getElementById('btn-step2-next');
-        if (nextBtn)
-            nextBtn.disabled = !canProceed;
+        if (acceptEl && !acceptEl.checked) {
+            valid = false;
+        }
+
+        // Khoá / mở nút Continue to payment
+        const step2Btn = document.getElementById('btn-step2-next');
+        if (step2Btn) {
+            if (valid) {
+                step2Btn.disabled = false;
+                step2Btn.classList.remove('opacity-60', 'cursor-not-allowed');
+            } else {
+                step2Btn.disabled = true;
+                step2Btn.classList.add('opacity-60', 'cursor-not-allowed');
+            }
+        }
+
+        return valid;
     }
 
-    // ====== CONFIRM CLICK (JSF submit) ======
+    // ====== HANDLE CONFIRM BUTTON ======
     function handleConfirmClick() {
-        // 1. Validate contact + policies
-        const accept = document.getElementById('accept-policies');
-        if (!accept || !accept.checked) {
+        const ok = validateContact();
+
+        if (!ok) {
+            // nếu đang ở step 3 thì kéo user về step 2 để sửa contact
             goToStep(2);
-            validateContact();
-            alert('Please fill your contact info and accept policies before payment.');
-            return false;
+            const step2 = document.getElementById('step-2');
+            if (step2) {
+                step2.scrollIntoView({behavior: 'smooth', block: 'start'});
+            }
+            alert(
+                    'Please fill in your contact details and accept the booking policies before confirming.'
+                    );
+            return false; // chặn form submit
         }
 
-        validateContact();
-        const nextBtn = document.getElementById('btn-step2-next');
-        if (nextBtn && nextBtn.disabled) {
-            goToStep(2);
-            alert('Please complete your contact information before payment.');
-            return false;
-        }
-
-        // 2. lấy param URL (restaurantId, date)
-        const params = new URLSearchParams(window.location.search);
-        const restaurantIdParam = params.get('restaurantId');
-        const dateParam = params.get('date');
-
-        const setVal = (id, value) => {
-            const el = document.getElementById(id);
-            if (el)
-                el.value = value != null ? value : '';
-        };
-
-        setVal('hf-restaurant-id', restaurantIdParam);
-        setVal('hf-event-date', dateParam);
-        setVal('hf-location-type', state.locationType);
-
-        // outside address
-        const street = document.getElementById('outside-street');
-        const area = document.getElementById('outside-area');
-        const city = document.getElementById('outside-city');
-        const parts = [];
-        if (street && street.value)
-            parts.push(street.value);
-        if (area && area.value)
-            parts.push(area.value);
-        if (city && city.value)
-            parts.push(city.value);
-        setVal('hf-outside-address', parts.join(', '));
-
-        // guests + money
-        const totalGuests = state.tableCount * 10;
-        setVal('hf-guest-count', totalGuests);
-        setVal('hf-total-amount', state.totalAmount);
-        setVal('hf-deposit-amount', state.depositAmount);
-        setVal('hf-remaining-amount', state.remainingAmount);
-
-        // cho JSF submit form
+        // nếu mọi thứ ok: cho submit form để JSF lưu booking
         return true;
     }
 
@@ -401,11 +539,14 @@ const BookingUI = (function () {
             window.lucide.createIcons();
         }
 
-        // ---- Lấy tham số từ URL (restaurantId, date, slot) ----
         const params = new URLSearchParams(window.location.search);
         const restaurantId = params.get('restaurantId');
-        const dateParam = params.get('date');  // dạng YYYY-MM-DD
-        const slotParam = params.get('slot');  // vd: "Dinner (18:00–22:00)"
+        const dateParam = params.get('date');
+        const slotParam = params.get('slot');
+        const packageParam = params.get('package');
+
+        // áp dụng package (tên, badge, guest range, price)
+        applyPackageFromParam(packageParam);
 
         // Format ngày cho hiển thị: 2025-11-19 -> 19 Nov 2025
         function formatDateDisplay(isoDate) {
@@ -416,8 +557,10 @@ const BookingUI = (function () {
                 return isoDate; // nếu parse lỗi thì hiện raw
             }
             const day = String(d.getDate()).padStart(2, '0');
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const monthNames = [
+                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+            ];
             const month = monthNames[d.getMonth()];
             const year = d.getFullYear();
             return day + ' ' + month + ' ' + year;
@@ -528,7 +671,6 @@ const BookingUI = (function () {
                     update(q);
                 });
             }
-            // init
             if (minus)
                 minus.disabled = true;
         });
@@ -538,11 +680,25 @@ const BookingUI = (function () {
         if (eventTypeSelect) {
             eventTypeSelect.addEventListener('change', function () {
                 state.eventType = this.value;
+
                 const summary = document.getElementById('summary-event-type');
+                const label = this.options[this.selectedIndex]
+                        ? this.options[this.selectedIndex].text
+                        : this.value;
                 if (summary)
-                    summary.textContent = this.value;
+                    summary.textContent = label;
+
+                // đẩy tên loại tiệc (label) xuống hidden để server đọc
+                const hidden = document.getElementById('hf-event-type');
+                if (hidden) {
+                    hidden.value = label; // ví dụ: "Wedding", "Birthday Party"
+                }
             });
+
+            const event = new Event('change');
+            eventTypeSelect.dispatchEvent(event);
         }
+
 
         // tax invoice checkbox
         const needTax = document.getElementById('contact-need-tax');
@@ -596,22 +752,51 @@ const BookingUI = (function () {
         const s2Back = document.getElementById('btn-step2-back');
         const s3Back = document.getElementById('btn-step3-back');
 
-        if (s1Next)
+        if (s1Next) {
             s1Next.addEventListener('click', function () {
                 goToStep(2);
             });
-        if (s2Next)
+        }
+
+        if (s2Next) {
             s2Next.addEventListener('click', function () {
+                const ok = validateContact();
+
+                if (!ok) {
+                    const contactSection = document.getElementById('contact-section');
+                    if (contactSection) {
+                        contactSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                    alert(
+                            'Please fill in your full name, email, phone number and accept the booking policies before continuing to payment.'
+                            );
+                    return;
+                }
+
                 goToStep(3);
+                const step3 = document.getElementById('step-3');
+                if (step3) {
+                    step3.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
             });
-        if (s2Back)
+        }
+
+        if (s2Back) {
             s2Back.addEventListener('click', function () {
                 goToStep(1);
             });
-        if (s3Back)
+        }
+        if (s3Back) {
             s3Back.addEventListener('click', function () {
                 goToStep(2);
             });
+        }
 
         // payment method cards
         document.querySelectorAll('.payment-method').forEach(card => {
@@ -638,7 +823,7 @@ const BookingUI = (function () {
                 const code = voucherInput.value.trim().toUpperCase();
                 state.voucherCode = code;
                 if (code) {
-                    state.discount = 2000000; // giống React
+                    state.discount = 2000000; // demo
                     if (voucherSuccess)
                         voucherSuccess.classList.remove('hidden');
                 } else {
@@ -650,27 +835,43 @@ const BookingUI = (function () {
             });
         }
 
-        // ---- Change venue: quay lại trang venue ----
+        // Change venue
         const changeVenueBtn = document.getElementById('btn-change-venue');
         if (changeVenueBtn) {
             changeVenueBtn.addEventListener('click', function () {
                 if (restaurantId) {
-                    window.location.href = 'restaurant-details.xhtml?restaurantId=' + encodeURIComponent(restaurantId);
+                    window.location.href =
+                            'restaurant-details.xhtml?restaurantId=' +
+                            encodeURIComponent(restaurantId);
                 } else {
                     window.location.href = 'restaurants.xhtml';
                 }
             });
         }
 
-        // ---- Change date & time: quay về Step 1 + scroll lên ----
+        // Change date & time: quay lại restaurant-details để chọn lại
         const changeDatetimeBtn = document.getElementById('btn-change-datetime');
         if (changeDatetimeBtn) {
             changeDatetimeBtn.addEventListener('click', function () {
-                BookingUI.goToStep(1);
-                const step1 = document.getElementById('step-1');
-                if (step1) {
-                    step1.scrollIntoView({behavior: 'smooth', block: 'start'});
+                let targetUrl = 'restaurant-details.xhtml';
+                const qs = new URLSearchParams();
+
+                if (restaurantId) {
+                    qs.set('restaurantId', restaurantId);
+                } else {
+                    const hiddenRestaurantId =
+                            document.getElementById('hf-restaurant-id');
+                    if (hiddenRestaurantId && hiddenRestaurantId.value) {
+                        qs.set('restaurantId', hiddenRestaurantId.value);
+                    }
                 }
+
+                if ([...qs.keys()].length > 0) {
+                    targetUrl += '?' + qs.toString();
+                }
+
+                targetUrl += '#availability';
+                window.location.href = targetUrl;
             });
         }
 
@@ -679,6 +880,7 @@ const BookingUI = (function () {
         updateSummary();
         validateContact();
         setLocationType('restaurant');
+        updateServiceLevelPriceLabels();
         setServiceLevel('premium');
         setPaymentMethod('card');
         setPaymentType('deposit');
@@ -691,7 +893,6 @@ const BookingUI = (function () {
         handleConfirmClick: handleConfirmClick
     };
 })();
-
 document.addEventListener('DOMContentLoaded', function () {
     BookingUI.init();
 });

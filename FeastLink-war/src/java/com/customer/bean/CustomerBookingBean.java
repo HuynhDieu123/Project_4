@@ -3,13 +3,19 @@ package com.customer.bean;
 import com.mypack.entity.Bookings;
 import com.mypack.entity.Restaurants;
 import com.mypack.entity.Users;
+import com.mypack.entity.EventTypes;
+import com.mypack.entity.ServiceTypes;
 import com.mypack.sessionbean.BookingsFacadeLocal;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
+import com.mypack.sessionbean.EventTypesFacadeLocal;
+import com.mypack.sessionbean.ServiceTypesFacadeLocal;
+
+import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.inject.Named;
-import jakarta.faces.context.FacesContext;
 import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
+import jakarta.inject.Named;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -17,6 +23,9 @@ import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 
 /**
  * Handle final booking confirmation from booking.xhtml (wizard).
@@ -33,18 +42,111 @@ public class CustomerBookingBean implements Serializable {
     @EJB
     private RestaurantsFacadeLocal restaurantsFacade;
 
-    // Fields bound from booking.xhtml (hidden inputs)
+    @EJB
+    private EventTypesFacadeLocal eventTypesFacade;
+
+    @EJB
+    private ServiceTypesFacadeLocal serviceTypesFacade;
+
+    // ====== Fields bound từ booking.xhtml (hidden inputs) ======
     private Long restaurantId;
-    private String eventDateStr;   // yyyy-MM-dd
+    private String eventDateStr;   // yyyy-MM-dd (URL / hidden field)
     private int guestCount;
-    private String locationType;   // AT_RESTAURANT / AT_HOME
+    private String locationType;   // AT_RESTAURANT / OUTSIDE
     private String outsideAddress;
 
     private BigDecimal totalAmount;
     private BigDecimal depositAmount;
     private BigDecimal remainingAmount;
 
-    // ===== Getters / setters =====
+    // ====== Thông tin hiển thị trên booking.xhtml ======
+    private Restaurants restaurant;        // venue đã load
+    private String restaurantName;
+    private String restaurantAddress;
+
+    // Loại tiệc & gói service lấy từ UI (hidden input)
+    private String eventTypeKey;  // label loại tiệc từ UI (vd: "Wedding", "Birthday")
+    private String serviceLevel;  // standard / premium / vip / exclusive
+
+    // ====== INIT: load data từ param & DB ======
+    @PostConstruct
+    public void init() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx == null) {
+            return;
+        }
+
+        Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
+
+        // ---- RestaurantId ----
+        if (restaurantId == null) {
+            String rIdParam = params.get("restaurantId");
+            if (rIdParam == null || rIdParam.isBlank()) {
+                // fallback: có thể bro lưu trong session
+                Object obj = ctx.getExternalContext().getSessionMap().get("selectedRestaurantId");
+                if (obj instanceof Long) {
+                    restaurantId = (Long) obj;
+                } else if (obj instanceof Integer) {
+                    restaurantId = ((Integer) obj).longValue();
+                }
+            } else {
+                try {
+                    restaurantId = Long.parseLong(rIdParam);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+
+        // ---- Load restaurant từ DB ----
+        if (restaurantId != null) {
+            restaurant = restaurantsFacade.find(restaurantId);
+        }
+
+        // Fallback demo: nếu vẫn null, lấy nhà hàng đầu tiên
+        if (restaurant == null) {
+            List<Restaurants> all = restaurantsFacade.findAll();
+            if (all != null && !all.isEmpty()) {
+                restaurant = all.get(0);
+                restaurantId = restaurant.getRestaurantId();
+            }
+        }
+
+        if (restaurant != null) {
+            restaurantName = safe(restaurant.getName());
+            // tuỳ entity của bro: Address / FullAddress / Location...
+            restaurantAddress = safe(restaurant.getAddress());
+        }
+
+        // ---- Event date ----
+        if (eventDateStr == null || eventDateStr.isBlank()) {
+            String dParam = params.get("date");
+            if (dParam != null && !dParam.isBlank()) {
+                eventDateStr = dParam;
+            }
+        }
+
+        // ---- Guest count ----
+        if (guestCount <= 0) {
+            String guestsParam = params.get("guests");
+            if (guestsParam != null && !guestsParam.isBlank()) {
+                try {
+                    guestCount = Integer.parseInt(guestsParam);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+        if (guestCount <= 0) {
+            // default demo: 20 bàn * 10 khách
+            guestCount = 200;
+        }
+
+        // ---- Location type ----
+        if (locationType == null || locationType.isBlank()) {
+            locationType = "AT_RESTAURANT";
+        }
+    }
+
+    // ====== Getters / setters cho JSF ======
     public Long getRestaurantId() {
         return restaurantId;
     }
@@ -109,7 +211,36 @@ public class CustomerBookingBean implements Serializable {
         this.remainingAmount = remainingAmount;
     }
 
-    // ===== Main action: save booking =====
+    // ====== Getters dùng cho booking.xhtml (hiển thị) ======
+    public String getRestaurantName() {
+        return restaurantName;
+    }
+
+    public String getRestaurantAddress() {
+        return restaurantAddress;
+    }
+
+    public Restaurants getRestaurant() {
+        return restaurant;
+    }
+
+    public String getEventTypeKey() {
+        return eventTypeKey;
+    }
+
+    public void setEventTypeKey(String eventTypeKey) {
+        this.eventTypeKey = eventTypeKey;
+    }
+
+    public String getServiceLevel() {
+        return serviceLevel;
+    }
+
+    public void setServiceLevel(String serviceLevel) {
+        this.serviceLevel = serviceLevel;
+    }
+
+    // ====== Main action: save booking ======
     public String confirmBooking() {
         FacesContext ctx = FacesContext.getCurrentInstance();
 
@@ -122,23 +253,21 @@ public class CustomerBookingBean implements Serializable {
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
                     "Please sign in",
-                    "You need to log in before making a booking."
+                    "You need to log in before making a booking. After signing in, you can view your booking history, manage or cancel reservations, and track payments easily."
             ));
-            // quay về login (không faces-redirect)
-            return "login";
+            return "login"; // hoặc "/Customer/login?faces-redirect=true" nếu navigation của bro dùng full path
         }
 
         try {
-            // 2. Đọc request params làm fallback
             Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
 
-            // restaurantId: ưu tiên field bind -> hidden -> query string
+            // ===== Fallback đọc thêm từ request params khi field chưa bind =====
+            // restaurantId
             if (restaurantId == null) {
-                String rIdHidden = params.get("hf-restaurant-id");
-                String rIdQuery = params.get("restaurantId");
-
-                String raw = (rIdHidden != null && !rIdHidden.isBlank()) ? rIdHidden : rIdQuery;
-                if (raw != null && !raw.isBlank()) {
+                String rHidden = params.get("hf-restaurant-id");
+                String rQuery = params.get("restaurantId");
+                String raw = (notBlank(rHidden)) ? rHidden : rQuery;
+                if (notBlank(raw)) {
                     try {
                         restaurantId = Long.parseLong(raw);
                     } catch (NumberFormatException ignored) {
@@ -146,29 +275,82 @@ public class CustomerBookingBean implements Serializable {
                 }
             }
 
-            // eventDateStr: ưu tiên field bind -> hidden -> ?date=
-            if (eventDateStr == null || eventDateStr.isBlank()) {
+            // eventDateStr
+            if (!notBlank(eventDateStr)) {
                 String dHidden = params.get("hf-event-date");
                 String dQuery = params.get("date");
-                if (dHidden != null && !dHidden.isBlank()) {
+                if (notBlank(dHidden)) {
                     eventDateStr = dHidden;
-                } else if (dQuery != null && !dQuery.isBlank()) {
+                } else if (notBlank(dQuery)) {
                     eventDateStr = dQuery;
                 }
             }
 
-            // guest count default
+            // guestCount
             if (guestCount <= 0) {
-                guestCount = 200; // demo: 20 bàn * 10 khách
+                String gHidden = params.get("hf-guest-count");
+                if (notBlank(gHidden)) {
+                    try {
+                        guestCount = Integer.parseInt(gHidden);
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+            if (guestCount <= 0) {
+                guestCount = 200;
             }
 
-            if (locationType == null || locationType.isBlank()) {
-                locationType = "AT_RESTAURANT";
+            // locationType
+            if (!notBlank(locationType)) {
+                String locHidden = params.get("hf-location-type");
+                if (notBlank(locHidden)) {
+                    locationType = locHidden;
+                } else {
+                    locationType = "AT_RESTAURANT";
+                }
             }
 
-            // 3. Load restaurant
-            Restaurants restaurant = null;
-            if (restaurantId != null) {
+            // outsideAddress
+            if (!notBlank(outsideAddress)) {
+                String addrHidden = params.get("hf-outside-address");
+                if (notBlank(addrHidden)) {
+                    outsideAddress = addrHidden;
+                }
+            }
+
+            // total / deposit / remaining
+            if (totalAmount == null) {
+                String tHidden = params.get("hf-total-amount");
+                totalAmount = parseBigDecimalSafe(tHidden);
+            }
+
+            // eventTypeKey (label loại tiệc, lấy từ hidden hf-event-type)
+            if (!notBlank(eventTypeKey)) {
+                String eHidden = params.get("hf-event-type");
+                if (notBlank(eHidden)) {
+                    eventTypeKey = eHidden;
+                }
+            }
+
+            // serviceLevel (standard / premium / vip / exclusive, lấy từ hidden hf-service-level)
+            if (!notBlank(serviceLevel)) {
+                String sHidden = params.get("hf-service-level");
+                if (notBlank(sHidden)) {
+                    serviceLevel = sHidden;
+                }
+            }
+
+            if (depositAmount == null) {
+                String dHidden = params.get("hf-deposit-amount");
+                depositAmount = parseBigDecimalSafe(dHidden);
+            }
+            if (remainingAmount == null) {
+                String rHidden = params.get("hf-remaining-amount");
+                remainingAmount = parseBigDecimalSafe(rHidden);
+            }
+
+            // 2. Load restaurant (nếu chưa có)
+            if (restaurant == null && restaurantId != null) {
                 restaurant = restaurantsFacade.find(restaurantId);
             }
 
@@ -177,6 +359,7 @@ public class CustomerBookingBean implements Serializable {
                 List<Restaurants> all = restaurantsFacade.findAll();
                 if (all != null && !all.isEmpty()) {
                     restaurant = all.get(0);
+                    restaurantId = restaurant.getRestaurantId();
                 }
             }
 
@@ -189,22 +372,37 @@ public class CustomerBookingBean implements Serializable {
                 return null;
             }
 
-            // 4. Event date
-            Date eventDate;
-            if (eventDateStr != null && !eventDateStr.isBlank()) {
+            // 3. Event date
+            // 3. Event date + default time 18:00–22:00
+            LocalDate eventLocalDate;
+            if (notBlank(eventDateStr)) {
                 try {
-                    LocalDate ld = LocalDate.parse(eventDateStr);
-                    eventDate = java.sql.Date.valueOf(ld);
+                    eventLocalDate = LocalDate.parse(eventDateStr);
                 } catch (Exception ex) {
-                    LocalDate ld = LocalDate.now().plusDays(7);
-                    eventDate = java.sql.Date.valueOf(ld);
+                    eventLocalDate = LocalDate.now().plusDays(7);
                 }
             } else {
-                LocalDate ld = LocalDate.now().plusDays(7);
-                eventDate = java.sql.Date.valueOf(ld);
+                eventLocalDate = LocalDate.now().plusDays(7);
             }
 
-            // 5. Build entity Bookings
+// ngày tiệc
+            Date eventDate = java.sql.Date.valueOf(eventLocalDate);
+
+// giờ mặc định 18:00–22:00 cho demo
+            ZoneId zone = ZoneId.systemDefault();
+            LocalDateTime startLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(18, 0));
+            LocalDateTime endLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(22, 0));
+            Date startTime = Date.from(startLdt.atZone(zone).toInstant());
+            Date endTime = Date.from(endLdt.atZone(zone).toInstant());
+
+            // 3.1 Resolve EventTypes & ServiceTypes từ DB
+            EventTypes selectedEventType = resolveEventType();
+            ServiceTypes selectedServiceType = resolveServiceType();
+
+            // special requests từ step 2
+            String specialRequests = params.get("special-requests");
+
+            // 4. Build entity Bookings
             Bookings booking = new Bookings();
             booking.setBookingCode(generateBookingCode());
             booking.setCustomerId(currentUser);
@@ -212,11 +410,24 @@ public class CustomerBookingBean implements Serializable {
             booking.setEventDate(eventDate);
             booking.setGuestCount(guestCount);
             booking.setLocationType(locationType);
+            booking.setStartTime(startTime);
+            booking.setEndTime(endTime);
+
+            // lưu special requests vào Note
+            if (notBlank(specialRequests)) {
+                booking.setNote(specialRequests.trim());
+            }
+
+            // Gán loại tiệc & gói dịch vụ nếu tìm được
+            if (selectedEventType != null) {
+                booking.setEventTypeId(selectedEventType);
+            }
+            if (selectedServiceType != null) {
+                booking.setServiceTypeId(selectedServiceType);
+            }
 
             booking.setOutsideAddress(
-                    (outsideAddress != null && !outsideAddress.isBlank())
-                    ? outsideAddress
-                    : null
+                    notBlank(outsideAddress) ? outsideAddress : null
             );
 
             if (totalAmount != null) {
@@ -233,10 +444,10 @@ public class CustomerBookingBean implements Serializable {
             booking.setPaymentStatus("UNPAID");
             booking.setCreatedAt(new Date());
 
-            // 6. Lưu DB
+            // 5. Lưu DB
             bookingsFacade.create(booking);
 
-            // 7. Thông báo (ở lại hoặc tự điều hướng)
+            // 6. Message + điều hướng
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
                     "Booking request sent",
@@ -258,5 +469,70 @@ public class CustomerBookingBean implements Serializable {
 
     private String generateBookingCode() {
         return "BK" + System.currentTimeMillis();
+    }
+
+    // ====== Helpers ======
+    private boolean notBlank(String s) {
+        return s != null && !s.trim().isEmpty();
+    }
+
+    private String safe(String s) {
+        return s == null ? "" : s;
+    }
+
+    private BigDecimal parseBigDecimalSafe(String raw) {
+        if (!notBlank(raw)) {
+            return null;
+        }
+        try {
+            // booking.js có thể gửi số có dấu phẩy, nên bỏ ký tự không phải số / dấu chấm
+            String normalized = raw.replaceAll("[^0-9.]", "");
+            if (normalized.isEmpty()) {
+                return null;
+            }
+            return new BigDecimal(normalized);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private EventTypes resolveEventType() {
+        if (!notBlank(eventTypeKey) || eventTypesFacade == null) {
+            return null;
+        }
+        String key = eventTypeKey.trim().toLowerCase();
+
+        for (EventTypes et : eventTypesFacade.findAll()) {
+            if (et.getName() == null) {
+                continue;
+            }
+            String name = et.getName().trim().toLowerCase();
+
+            // tuỳ em chỉnh, tạm thời so sánh "chứa"
+            if (name.equals(key) || name.contains(key) || key.contains(name)) {
+                return et;
+            }
+        }
+        return null;
+    }
+
+    private ServiceTypes resolveServiceType() {
+        if (!notBlank(serviceLevel) || serviceTypesFacade == null) {
+            return null;
+        }
+        String key = serviceLevel.trim().toLowerCase(); // standard/premium/vip/exclusive
+
+        for (ServiceTypes st : serviceTypesFacade.findAll()) {
+            if (st.getName() == null) {
+                continue;
+            }
+            String name = st.getName().trim().toLowerCase();
+
+            // ví dụ DB để "Standard", "Premium", "VIP", "Exclusive"
+            if (name.equals(key) || name.contains(key) || key.contains(name)) {
+                return st;
+            }
+        }
+        return null;
     }
 }
