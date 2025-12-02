@@ -651,7 +651,26 @@
             window.FEASTLINK_RESTAURANTS = #{customerRestaurantsBean.restaurantsJson};
             //]]>
         </h:outputScript>
+ <!-- ===== FORM ẨN ĐỂ JSF LƯU YÊU THÍCH ===== -->
+        <h:form id="favoriteForm">
+            <!-- restaurantId sẽ được JS gán vào -->
+            <h:inputHidden id="restaurantId"
+                           value="#{restaurantFavoritesBean.selectedRestaurantId}" />
+            <!-- nút submit ẩn, JS sẽ gọi click() -->
+            <h:commandButton id="submitFavorite"
+                             style="display:none"
+                             action="#{restaurantFavoritesBean.addFavoriteById}" />
+        </h:form>
+        <!-- ===== HẾT FORM ẨN ===== -->
 
+        <!-- Đẩy data từ bean ra JS (JSON) -->
+        <h:outputScript>
+            //<![CDATA[
+            window.FEASTLINK_RESTAURANTS = #{customerRestaurantsBean.restaurantsJson};
+            //]]>
+        </h:outputScript>
+
+        <!-- JS render card + filter -->
         <script type="text/javascript" src="#{request.contextPath}/js/restaurants.js"></script>
     </h:body>
 </html>

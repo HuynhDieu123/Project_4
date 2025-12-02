@@ -665,26 +665,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-action]');
-        if (!btn)
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+
+    const action = btn.dataset.action;
+
+    if (action === 'favorite') {
+        // lấy id nhà hàng từ card
+        const card = btn.closest('article[data-restaurant-id]');
+        const restaurantId = card ? card.dataset.restaurantId : null;
+
+        if (!restaurantId) {
+            console.warn('Không tìm thấy data-restaurant-id trên card');
             return;
-
-        const action = btn.dataset.action;
-
-        if (action === 'favorite') {
-            alert('Added to favorites (demo).');
-        } else if (action === 'book') {
-            const card = btn.closest('article[data-restaurant-id]');
-            const restaurantId = card ? card.dataset.restaurantId : null;
-
-            if (restaurantId) {
-                window.location.href = 'booking.xhtml?restaurantId=' + encodeURIComponent(restaurantId);
-            } else {
-                window.location.href = 'booking.xhtml';
-            }
         }
-    });
+
+        // lấy component JSF trong form ẩn
+        const hiddenInput = document.getElementById('favoriteForm:restaurantId');
+        const submitBtn   = document.getElementById('favoriteForm:submitFavorite');
+
+        if (!hiddenInput || !submitBtn) {
+            console.error('Không tìm thấy favoriteForm hoặc các phần tử bên trong');
+            return;
+        }
+
+        // gán giá trị rồi submit form JSF
+        hiddenInput.value = restaurantId;
+        submitBtn.click();  // gọi action #{restaurantFavoritesBean.addFavoriteById}
+
+    } else if (action === 'book') {
+        const card = btn.closest('article[data-restaurant-id]');
+        const restaurantId = card ? card.dataset.restaurantId : null;
+
+        if (restaurantId) {
+            window.location.href = 'booking.xhtml?restaurantId=' + encodeURIComponent(restaurantId);
+        } else {
+            window.location.href = 'booking.xhtml';
+        }
+    }
+});
+
 
     function openSheet() {
         mobileSheet.classList.remove('hidden');
