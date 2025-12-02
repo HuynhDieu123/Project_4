@@ -20,11 +20,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.TreeSet;
 
-/**
- * Bean dùng cho trang Customer/restaurants.xhtml Đọc dữ liệu nhà hàng từ DB và
- * chuyển thành JSON để restaurants.js sử dụng.
- */
 @Named("customerRestaurantsBean")
 @RequestScoped
 public class CustomerRestaurantsBean implements Serializable {
@@ -33,6 +30,9 @@ public class CustomerRestaurantsBean implements Serializable {
     private RestaurantsFacadeLocal restaurantsFacade;
 
     private List<RestaurantCard> restaurantCards;
+    private List<String> cityOptions;
+    private List<String> areaOptions;
+    private List<String> eventTypeOptions;
 
     @PostConstruct
     public void init() {
@@ -109,8 +109,8 @@ public class CustomerRestaurantsBean implements Serializable {
             }
             card.setImage(imageUrl);
 
-            // Giá từ combo: min(PriceTotal / MinGuests)
-            double pricePerGuest = 0d;
+            // Giá / bàn từ combo: lấy combo có PriceTotal nhỏ nhất
+            double pricePerTable = 0d;
             try {
                 Collection<MenuCombos> combos = r.getMenuCombosCollection();
                 if (combos != null) {
@@ -119,21 +119,20 @@ public class CustomerRestaurantsBean implements Serializable {
                             continue;
                         }
                         BigDecimal total = combo.getPriceTotal();
-                        Integer guests = combo.getMinGuests();
-                        if (total != null && guests != null && guests > 0) {
-                            double p = total.doubleValue() / guests;
-                            if (pricePerGuest == 0d || p < pricePerGuest) {
-                                pricePerGuest = p;
+                        if (total != null) {
+                            double p = total.doubleValue(); // giá 1 bàn (combo cho 1 bàn)
+                            if (pricePerTable == 0d || p < pricePerTable) {
+                                pricePerTable = p;
                             }
                         }
                     }
                 }
             } catch (Exception ignore) {
             }
-            if (pricePerGuest <= 0d) {
-                pricePerGuest = 75d; // demo default USD
+            if (pricePerTable <= 0d) {
+                pricePerTable = 75d; // demo default USD
             }
-            card.setPricePerGuest(pricePerGuest);
+            card.setPricePerGuest(pricePerTable); // tạm reuse field này, ý nghĩa là "price per table"
 
             // Rating & reviews từ RestaurantReviews
             double sumRating = 0d;
@@ -161,10 +160,6 @@ public class CustomerRestaurantsBean implements Serializable {
                             countRating++;
                         }
 
-                        if (rating != null && rating > 0) {
-                            sumRating += rating;
-                            countRating++;
-                        }
                     }
                 }
             } catch (Exception ignore) {
@@ -216,6 +211,40 @@ public class CustomerRestaurantsBean implements Serializable {
 
             restaurantCards.add(card);
         }
+        buildFilterOptions();
+
+    }
+
+    private void buildFilterOptions() {
+        Set<String> cities = new TreeSet<>();
+        Set<String> areas = new TreeSet<>();
+        Set<String> events = new TreeSet<>();
+
+        if (restaurantCards != null) {
+            for (RestaurantCard c : restaurantCards) {
+                if (c == null) {
+                    continue;
+                }
+
+                if (c.getCity() != null && !c.getCity().isBlank()) {
+                    cities.add(c.getCity());
+                }
+                if (c.getDistrict() != null && !c.getDistrict().isBlank()) {
+                    areas.add(c.getDistrict());
+                }
+                if (c.getEventTypes() != null) {
+                    for (String et : c.getEventTypes()) {
+                        if (et != null && !et.isBlank()) {
+                            events.add(et);
+                        }
+                    }
+                }
+            }
+        }
+
+        cityOptions = new ArrayList<>(cities);
+        areaOptions = new ArrayList<>(areas);
+        eventTypeOptions = new ArrayList<>(events);
     }
 
     private int nvlInt(Integer v, int dft) {
@@ -480,5 +509,19 @@ public class CustomerRestaurantsBean implements Serializable {
         public void setAvailability(String availability) {
             this.availability = availability;
         }
+
     }
+
+    public List<String> getCityOptions() {
+        return cityOptions;
+    }
+
+    public List<String> getAreaOptions() {
+        return areaOptions;
+    }
+
+    public List<String> getEventTypeOptions() {
+        return eventTypeOptions;
+    }
+
 }
