@@ -5,8 +5,10 @@
 package com.mypack.sessionbean;
 
 import com.mypack.entity.RestaurantCapacitySettings;
+import com.mypack.entity.Restaurants;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
 
 /**
@@ -26,6 +28,21 @@ public class RestaurantCapacitySettingsFacade extends AbstractFacade<RestaurantC
 
     public RestaurantCapacitySettingsFacade() {
         super(RestaurantCapacitySettings.class);
+    }
+    
+    @Override
+    public RestaurantCapacitySettings findByRestaurant(Restaurants restaurant) {
+        try {
+            return em.createQuery(
+                            "SELECT r FROM RestaurantCapacitySettings r " +
+                                    "WHERE r.restaurantId = :rest",
+                            RestaurantCapacitySettings.class)
+                    .setParameter("rest", restaurant)
+                    .setMaxResults(1)
+                    .getSingleResult();
+        } catch (NoResultException ex) {
+            return null;
+        }
     }
     
 }

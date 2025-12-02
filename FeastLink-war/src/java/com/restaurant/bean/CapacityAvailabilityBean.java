@@ -1,12 +1,22 @@
 package com.restaurant.bean;
 
+import com.mypack.entity.RestaurantCapacitySettings;
+import com.mypack.entity.RestaurantDayCapacity;
+import com.mypack.entity.Restaurants;
+import com.mypack.sessionbean.RestaurantCapacitySettingsFacadeLocal;
+import com.mypack.sessionbean.RestaurantDayCapacityFacadeLocal;
+import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import jakarta.annotation.PostConstruct;
+import jakarta.ejb.EJB;
+import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -14,160 +24,398 @@ import java.util.*;
 @ViewScoped
 public class CapacityAvailabilityBean implements Serializable {
 
-    // --- default limits (bên phải) ---
+    // ========= EJB =========
+    @EJB
+    private RestaurantsFacadeLocal restaurantsFacade;
+
+    @EJB
+    private RestaurantCapacitySettingsFacadeLocal capacitySettingsFacade;
+
+    @EJB
+    private RestaurantDayCapacityFacadeLocal dayCapacityFacade;
+
+    // ========= FIELDS =========
+    private Restaurants currentRestaurant;
+    private RestaurantCapacitySettings currentSettings;
+
+    // limit mặc định
     private int defaultMaxGuestsPerDay;
     private int defaultMaxBookingsPerDay;
 
-    // form chặn theo range
-    private String blockStartDate; // yyyy-MM-dd
-    private String blockEndDate;
-    private String blockHall;
+    // form block range
+    private String blockStartDate;   // yyyy-MM-dd
+    private String blockEndDate;     // yyyy-MM-dd
+    private String blockHall;        // chưa dùng
 
-    // --- calendar state ---
+    // calendar
     private YearMonth currentMonth;
     private List<CalendarDay> calendarDays;
-
-    // trạng thái từng ngày
     private Map<LocalDate, StatusType> dayStatusMap = new HashMap<>();
 
-    // --- chọn 1 ngày để chỉnh trạng thái ---
+    // selected day + input
     private LocalDate selectedDate;
-    private String selectedStatus; // map với enum StatusType
+    private String selectedStatus;       // label hiển thị
+    private Integer inputGuestCount;     // CurrentGuestCount
+    private Integer inputBookingCount;   // CurrentBookingCount
 
+    // ========= INIT =========
     @PostConstruct
     public void init() {
-        defaultMaxGuestsPerDay = 150;
-        defaultMaxBookingsPerDay = 10;
+        try {
+            // TODO: sau này lấy RestaurantId từ session
+            currentRestaurant = restaurantsFacade.find(1L);
 
-        currentMonth = YearMonth.now();
+            currentMonth = YearMonth.now();
+            inputGuestCount = 0;
+            inputBookingCount = 0;
+            selectedStatus = "--";
 
-        // DEMO một vài ngày trong tháng hiện tại
-        YearMonth demoMonth = currentMonth;
-        setStatus(demoMonth.atDay(3), StatusType.AVAILABLE);
-        setStatus(demoMonth.atDay(5), StatusType.NEAR_FULL);
-        setStatus(demoMonth.atDay(7), StatusType.FULL);
-
-        buildCalendar();
+            loadSettingsFromDb();
+            loadCalendarFromDb();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    // ========= CALENDAR LOGIC =========
-    private void setStatus(LocalDate date, StatusType status) {
-        dayStatusMap.put(date, status);
+    // ----------------------------------------------------
+    // LOAD SETTINGS + CALENDAR FROM DB
+    // ----------------------------------------------------
+    private void loadSettingsFromDb() {
+        currentSettings = capacitySettingsFacade.findByRestaurant(currentRestaurant);
+
+        if (currentSettings != null) {
+            // dùng đúng getter trong entity
+            defaultMaxGuestsPerDay = Optional.ofNullable(currentSettings.getMaxGuestsPerSlot())
+                                             .orElse(150);
+            defaultMaxBookingsPerDay = Optional.ofNullable(currentSettings.getMaxBookingsPerDay())
+                                               .orElse(10);
+        } else {
+            defaultMaxGuestsPerDay = 150;
+            defaultMaxBookingsPerDay = 10;
+        }
+    }
+
+    private void loadCalendarFromDb() {
+        dayStatusMap.clear();
+
+        LocalDate first = currentMonth.atDay(1);
+        LocalDate last  = currentMonth.atEndOfMonth();
+
+        List<RestaurantDayCapacity> list =
+                dayCapacityFacade.findByRestaurantAndDateRange(
+                        currentRestaurant,
+                        java.sql.Date.valueOf(first),
+                        java.sql.Date.valueOf(last)
+                );
+
+        for (RestaurantDayCapacity d : list) {
+            LocalDate date = toLocalDate(d.getEventDate());
+            StatusType st = computeStatusForRow(d);
+
+            if (st != StatusType.NONE) {
+                dayStatusMap.put(date, st);
+            }
+        }
+
+        buildCalendar();
     }
 
     private void buildCalendar() {
         calendarDays = new ArrayList<>();
 
         LocalDate firstOfMonth = currentMonth.atDay(1);
-        // Monday=1..Sunday=7  -> Sunday=0
-        int shift = firstOfMonth.getDayOfWeek().getValue() % 7;
+        int shift = firstOfMonth.getDayOfWeek().getValue() % 7; // Sun=0
         LocalDate start = firstOfMonth.minusDays(shift);
 
-        for (int i = 0; i < 42; i++) { // 6 hàng x 7 cột
+        for (int i = 0; i < 42; i++) { // 6 tuần
             LocalDate date = start.plusDays(i);
             boolean inMonth = date.getMonthValue() == currentMonth.getMonthValue();
             StatusType status = dayStatusMap.getOrDefault(date, StatusType.NONE);
             boolean isSelected = (selectedDate != null && selectedDate.equals(date));
+
             calendarDays.add(new CalendarDay(date, inMonth, status, isSelected));
         }
     }
 
+    // ----------------------------------------------------
+    // ACTIONS (calendar)
+    // ----------------------------------------------------
     public void nextMonth() {
         currentMonth = currentMonth.plusMonths(1);
-        buildCalendar();
+        loadCalendarFromDb();
     }
 
     public void previousMonth() {
         currentMonth = currentMonth.minusMonths(1);
+        loadCalendarFromDb();
+    }
+
+    public void selectDay(String dateIso) {
+        if (dateIso == null || dateIso.isBlank()) return;
+
+        selectedDate = LocalDate.parse(dateIso); // yyyy-MM-dd
+
+        RestaurantDayCapacity row = dayCapacityFacade.findByRestaurantAndDate(
+                currentRestaurant,
+                java.sql.Date.valueOf(selectedDate)
+        );
+
+        if (row != null) {
+            inputGuestCount = row.getCurrentGuestCount();
+            inputBookingCount = row.getCurrentBookingCount();
+            StatusType st = computeStatusForRow(row);
+            selectedStatus = translateStatus(st);
+        } else {
+            inputGuestCount = 0;
+            inputBookingCount = 0;
+            selectedStatus = "--";
+        }
+
         buildCalendar();
     }
 
-    public String getCurrentMonthLabel() {
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
-        return currentMonth.format(fmt);
-    }
+    // ----------------------------------------------------
+    // ACTIONS (right panel)
+    // ----------------------------------------------------
 
-    public List<CalendarDay> getCalendarDays() {
-        return calendarDays;
-    }
-
-    // ========== CLICK 1 NGÀY TRÊN LỊCH ==========
-    public void selectDay(String dateIso) {
+    // Lưu limit mặc định vào bảng RestaurantCapacitySettings
+    public void saveLimits() {
         try {
-            if (dateIso == null || dateIso.isBlank()) {
-                selectedDate = null;
-                selectedStatus = null;
-            } else {
-                selectedDate = LocalDate.parse(dateIso); // yyyy-MM-dd
-                StatusType st = dayStatusMap.getOrDefault(selectedDate, StatusType.NONE);
-                selectedStatus = st.name(); // bind cho dropdown
+            if (currentSettings == null) {
+                currentSettings = new RestaurantCapacitySettings();
+                currentSettings.setRestaurantId(currentRestaurant);
+                currentSettings.setCreatedAt(new Date());
             }
+
+            currentSettings.setMaxGuestsPerSlot(defaultMaxGuestsPerDay);
+            currentSettings.setMaxBookingsPerDay(defaultMaxBookingsPerDay);
+            currentSettings.setDefaultSlotDurationMin(120);
+
+            if (currentSettings.getCapacityId() == null) {
+                capacitySettingsFacade.create(currentSettings);
+            } else {
+                capacitySettingsFacade.edit(currentSettings);
+            }
+
+            System.out.println("✅ Limits saved to DB");
         } catch (Exception e) {
             e.printStackTrace();
         }
-        buildCalendar(); // để highlight ngày được chọn
     }
 
-    // áp dụng trạng thái từ dropdown xuống ngày đã chọn
+    // Lưu currentGuestCount + currentBookingCount cho ngày được chọn
+    // và tự tính trạng thái dựa trên % sử dụng
     public void applyStatusToSelectedDay() {
-        // log cho chắc là hàm có chạy và nhận được value mới
-        System.out.println("Apply status: date=" + selectedDate + ", status=" + selectedStatus);
-
-        if (selectedDate == null || selectedStatus == null || selectedStatus.isBlank()) {
+        if (selectedDate == null) {
             return;
         }
-        StatusType st;
-        try {
-            st = StatusType.valueOf(selectedStatus);
-        } catch (IllegalArgumentException ex) {
-            st = StatusType.NONE;
+
+        if (inputGuestCount == null)  inputGuestCount = 0;
+        if (inputBookingCount == null) inputBookingCount = 0;
+
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        boolean hasError = false;
+
+        // validate: không vượt quá limit
+        if (defaultMaxGuestsPerDay > 0 && inputGuestCount > defaultMaxGuestsPerDay) {
+            ctx.addMessage("dayStatusForm:guestCount",
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                            "Số khách không được lớn hơn " + defaultMaxGuestsPerDay, null));
+            hasError = true;
+        }
+        if (defaultMaxBookingsPerDay > 0 && inputBookingCount > defaultMaxBookingsPerDay) {
+            ctx.addMessage("dayStatusForm:bookingCount",
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                            "Số booking không được lớn hơn " + defaultMaxBookingsPerDay, null));
+            hasError = true;
         }
 
-        if (st == StatusType.NONE) {
-            dayStatusMap.remove(selectedDate); // xóa chấm
-        } else {
-            dayStatusMap.put(selectedDate, st);
+        if (hasError) return;
+
+        RestaurantDayCapacity row = dayCapacityFacade.findByRestaurantAndDate(
+                currentRestaurant,
+                java.sql.Date.valueOf(selectedDate)
+        );
+
+        if (row == null) {
+            row = new RestaurantDayCapacity();
+            row.setRestaurantId(currentRestaurant);
+            row.setEventDate(java.sql.Date.valueOf(selectedDate));
+            row.setSlotCode("ALLDAY");
         }
+
+        row.setMaxGuests(defaultMaxGuestsPerDay);
+        row.setMaxBookings(defaultMaxBookingsPerDay);
+        row.setCurrentGuestCount(inputGuestCount);
+        row.setCurrentBookingCount(inputBookingCount);
+
+        StatusType st = computeStatus(
+                inputGuestCount,
+                inputBookingCount,
+                defaultMaxGuestsPerDay,
+                defaultMaxBookingsPerDay
+        );
+
+        row.setIsFull(st == StatusType.FULL);
+
+        if (row.getDayCapacityId() == null) {
+            dayCapacityFacade.create(row);
+        } else {
+            dayCapacityFacade.edit(row);
+        }
+
+        dayStatusMap.put(selectedDate, st);
+        selectedStatus = translateStatus(st);
+
         buildCalendar();
+    }
+
+    // Block nhiều ngày liên tục
+    public void blockDates() {
+        try {
+            if (blockStartDate == null || blockStartDate.isBlank()
+                    || blockEndDate == null || blockEndDate.isBlank()) {
+                return;
+            }
+
+            LocalDate start = LocalDate.parse(blockStartDate);
+            LocalDate end   = LocalDate.parse(blockEndDate);
+
+            while (!end.isBefore(start)) {
+                RestaurantDayCapacity d = dayCapacityFacade.findByRestaurantAndDate(
+                        currentRestaurant,
+                        java.sql.Date.valueOf(start)
+                );
+
+                if (d == null) {
+                    d = new RestaurantDayCapacity();
+                    d.setRestaurantId(currentRestaurant);
+                    d.setEventDate(java.sql.Date.valueOf(start));
+                    d.setSlotCode("ALLDAY");
+                }
+
+                d.setMaxGuests(0);
+                d.setMaxBookings(0);
+                d.setCurrentGuestCount(0);
+                d.setCurrentBookingCount(0);
+                d.setIsFull(false);
+
+                if (d.getDayCapacityId() == null) {
+                    dayCapacityFacade.create(d);
+                } else {
+                    dayCapacityFacade.edit(d);
+                }
+
+                dayStatusMap.put(start, StatusType.BLOCKED);
+
+                if (selectedDate != null && selectedDate.equals(start)) {
+                    inputGuestCount = 0;
+                    inputBookingCount = 0;
+                    selectedStatus = translateStatus(StatusType.BLOCKED);
+                }
+
+                start = start.plusDays(1);
+            }
+
+            buildCalendar();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ----------------------------------------------------
+    // UTIL
+    // ----------------------------------------------------
+    private LocalDate toLocalDate(Date date) {
+        return date.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+    }
+
+    private StatusType computeStatusForRow(RestaurantDayCapacity d) {
+        Integer maxGuests   = d.getMaxGuests();
+        Integer maxBookings = d.getMaxBookings();
+
+        // BLOCKED: MaxGuests = 0 & MaxBookings = 0
+        if (maxGuests != null && maxBookings != null
+                && maxGuests == 0 && maxBookings == 0) {
+            return StatusType.BLOCKED;
+        }
+
+        return computeStatus(
+                d.getCurrentGuestCount(),
+                d.getCurrentBookingCount(),
+                maxGuests,
+                maxBookings
+        );
+    }
+
+    // 0% -> AVAILABLE, 50%–<100% -> NEAR_FULL, 100% -> FULL
+    private StatusType computeStatus(int guestCount, int bookingCount,
+                                     Integer maxGuests, Integer maxBookings) {
+        if (maxGuests == null || maxGuests <= 0) {
+            maxGuests = defaultMaxGuestsPerDay;
+        }
+        if (maxBookings == null || maxBookings <= 0) {
+            maxBookings = defaultMaxBookingsPerDay;
+        }
+
+        if ((maxGuests == null || maxGuests <= 0) &&
+            (maxBookings == null || maxBookings <= 0)) {
+            return StatusType.NONE;
+        }
+
+        if (guestCount < 0) guestCount = 0;
+        if (bookingCount < 0) bookingCount = 0;
+
+        if (guestCount == 0 && bookingCount == 0) {
+            return StatusType.AVAILABLE;
+        }
+
+        double guestRatio = 0.0;
+        if (maxGuests != null && maxGuests > 0) {
+            guestRatio = (double) guestCount / maxGuests;
+        }
+
+        double bookingRatio = 0.0;
+        if (maxBookings != null && maxBookings > 0) {
+            bookingRatio = (double) bookingCount / maxBookings;
+        }
+
+        double ratio = Math.max(guestRatio, bookingRatio);
+
+        if (ratio >= 1.0) {
+            return StatusType.FULL;
+        } else if (ratio >= 0.5) {
+            return StatusType.NEAR_FULL;
+        } else {
+            return StatusType.AVAILABLE;
+        }
+    }
+
+    private String translateStatus(StatusType st) {
+        switch (st) {
+            case AVAILABLE:
+                return "Available (0% - <50%)";
+            case NEAR_FULL:
+                return "Gần đầy (≥50%)";
+            case FULL:
+                return "Đã đầy (100%)";
+            case BLOCKED:
+                return "Bị chặn";
+            default:
+                return "--";
+        }
     }
 
     public String getSelectedDateLabel() {
-        if (selectedDate == null) {
-            return "Chưa chọn ngày";
-        }
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        return selectedDate.format(fmt);
+        if (selectedDate == null) return "Chưa chọn ngày";
+        return selectedDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
-    // ========= ACTIONS BÊN PHẢI =========
-    public void saveLimits() {
-        System.out.println("Saving default limits: guests=" + defaultMaxGuestsPerDay
-                + ", bookings=" + defaultMaxBookingsPerDay);
-    }
-
-    public void blockDates() {
-        try {
-            if (blockStartDate != null && !blockStartDate.isBlank()
-                    && blockEndDate != null && !blockEndDate.isBlank()) {
-
-                LocalDate start = LocalDate.parse(blockStartDate);
-                LocalDate end = LocalDate.parse(blockEndDate);
-
-                if (!end.isBefore(start)) {
-                    LocalDate d = start;
-                    while (!d.isAfter(end)) {
-                        dayStatusMap.put(d, StatusType.BLOCKED);
-                        d = d.plusDays(1);
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        buildCalendar();
-    }
-
-    // ========= GET / SET =========
+    // ----------------------------------------------------
+    // GET / SET
+    // ----------------------------------------------------
     public int getDefaultMaxGuestsPerDay() {
         return defaultMaxGuestsPerDay;
     }
@@ -220,28 +468,50 @@ public class CapacityAvailabilityBean implements Serializable {
         this.selectedStatus = selectedStatus;
     }
 
-    // ========= INNER TYPES =========
+    public Integer getInputGuestCount() {
+        return inputGuestCount;
+    }
+
+    public void setInputGuestCount(Integer inputGuestCount) {
+        this.inputGuestCount = inputGuestCount;
+    }
+
+    public Integer getInputBookingCount() {
+        return inputBookingCount;
+    }
+
+    public void setInputBookingCount(Integer inputBookingCount) {
+        this.inputBookingCount = inputBookingCount;
+    }
+
+    public List<CalendarDay> getCalendarDays() {
+        return calendarDays;
+    }
+
+    public String getCurrentMonthLabel() {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
+        return currentMonth.format(fmt);
+    }
+
+    // ----------------------------------------------------
+    // INNER TYPES
+    // ----------------------------------------------------
     public enum StatusType {
         NONE, AVAILABLE, NEAR_FULL, FULL, BLOCKED
     }
 
     public static class CalendarDay implements Serializable {
-
         private final LocalDate date;
         private final boolean inCurrentMonth;
         private final StatusType status;
         private final boolean selected;
 
         public CalendarDay(LocalDate date, boolean inCurrentMonth,
-                StatusType status, boolean selected) {
+                           StatusType status, boolean selected) {
             this.date = date;
             this.inCurrentMonth = inCurrentMonth;
             this.status = status;
             this.selected = selected;
-        }
-
-        public boolean isInCurrentMonth() {
-            return inCurrentMonth;
         }
 
         public String getDayNumber() {
@@ -271,13 +541,12 @@ public class CapacityAvailabilityBean implements Serializable {
             return date.toString(); // yyyy-MM-dd
         }
 
-        public boolean isSelected() {
-            return selected;
+        public boolean isInCurrentMonth() {
+            return inCurrentMonth;
         }
 
-        // nếu cần dùng trong EL: #{day.selectedBorderCss}
-        public String getSelectedBorderCss() {
-            return selected ? "bg-gray-100 rounded-full" : "";
+        public boolean isSelected() {
+            return selected;
         }
     }
 }

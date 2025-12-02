@@ -159,51 +159,52 @@
                     </label>
 
                     <p class="text-xs text-text-secondary-light mb-3">
-                        Add the cities/areas where your restaurant provides catering.
+                        Select the main city and area where your restaurant is located.
                     </p>
 
-                    <!-- Danh sách các khu vực đã chọn (hiển thị dạng chip) -->
-                    <div class="flex flex-wrap gap-2 mb-3">
-                        <ui:repeat value="#{restaurantProfileBean.serviceAreas}" var="area">
-                            <span
-                                class="inline-flex items-center rounded-full border border-border-light bg-background-soft px-3 py-1 text-xs text-text-secondary-light">
-                                <span>
-                                    #{area.cityId.name} - #{area.name}
-                                </span>
-
-                                <!-- nút remove -->
-                                <h:commandLink action="#{restaurantProfileBean.removeServiceArea(area.areaId)}"
-                                               styleClass="ml-2 text-[11px] font-bold leading-none">
-                                    ✕
-                                    <f:ajax render="@form"/>
-                                </h:commandLink>
-                            </span>
-                        </ui:repeat>
-
-                        <!-- Nếu chưa chọn khu vực nào -->
-                        <h:panelGroup rendered="#{empty restaurantProfileBean.serviceAreas}">
-                            <span class="text-xs text-text-secondary-light italic">
-                                No service areas selected yet.
-                            </span>
-                        </h:panelGroup>
-                    </div>
-
-                    <!-- Hàng chọn thêm khu vực (dropdown + nút Add) -->
+                    <!-- Hàng chọn City + Area, KHÔNG còn nút Add -->
                     <div class="flex flex-wrap items-center gap-3">
-                        <h:selectOneMenu value="#{restaurantProfileBean.selectedAreaId}"
-                                         styleClass="min-w-[260px] border border-dashed border-border-light rounded-full px-3 py-1.5 text-xs text-text-main-light bg-background-soft focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
-                            <f:selectItem itemValue="" itemLabel="Select an area..." noSelectionOption="true"/>
-                            <f:selectItems value="#{restaurantProfileBean.allAreas}"
-                                           var="a"
-                                           itemValue="#{a.areaId}"
-                                           itemLabel="#{a.cityId.name} - #{a.name}"/>
+
+                        <!-- 1) Chọn City -->
+                        <h:selectOneMenu value="#{restaurantProfileBean.selectedCityId}"
+                                         styleClass="min-w-[200px] border border-dashed border-border-light rounded-full px-3 py-1.5 text-xs text-text-main-light bg-background-soft focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:selectItem itemValue="" itemLabel="Select a city..." noSelectionOption="true" />
+                            <f:selectItems value="#{restaurantProfileBean.allCities}"
+                                           var="c"
+                                           itemValue="#{c.cityId}"
+                                           itemLabel="#{c.name}" />
+                            <!-- Khi đổi city thì render lại dropdown area -->
+                            <f:ajax render="areaSelect" />
                         </h:selectOneMenu>
 
-                        <h:commandButton value="Add"
-                                         action="#{restaurantProfileBean.addServiceArea}"
-                                         styleClass="inline-flex items-center rounded-full bg-cta-orange text-white text-xs font-semibold px-4 py-1.5 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-cta-orange">
-                            <f:ajax render="@form"/>
-                        </h:commandButton>
+                        <!-- 2) Chọn Area trong city đã chọn -->
+                        <h:selectOneMenu id="areaSelect"
+                                         value="#{restaurantProfileBean.selectedAreaId}"
+                                         disabled="#{empty restaurantProfileBean.filteredAreas}"
+                                         styleClass="min-w-[260px] border border-dashed border-border-light rounded-full px-3 py-1.5 text-xs text-text-main-light bg-background-soft focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:selectItem itemValue=""
+                                          itemLabel="#{empty restaurantProfileBean.filteredAreas ? 'Select city first...' : 'Select an area...'}"
+                                          noSelectionOption="true" />
+                            <f:selectItems value="#{restaurantProfileBean.filteredAreas}"
+                                           var="a"
+                                           itemValue="#{a.areaId}"
+                                           itemLabel="#{a.name}" />
+                        </h:selectOneMenu>
+                    </div>
+
+                    <!-- Hiển thị dòng summary nhỏ -->
+                    <div class="mt-2">
+                        <h:panelGroup rendered="#{not empty restaurantProfileBean.selectedAreaId}">
+                            <span class="text-xs text-text-secondary-light">
+                                Selected area will be saved for this restaurant when you click
+                                <span class="font-semibold">Save Changes</span>.
+                            </span>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{empty restaurantProfileBean.selectedAreaId}">
+                            <span class="text-xs text-text-secondary-light italic">
+                                No area selected yet.
+                            </span>
+                        </h:panelGroup>
                     </div>
                 </div>
             </section>

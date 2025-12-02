@@ -5,7 +5,9 @@
 package com.mypack.sessionbean;
 
 import com.mypack.entity.RestaurantDayCapacity;
+import com.mypack.entity.Restaurants;
 import jakarta.ejb.Local;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -28,5 +30,12 @@ public interface RestaurantDayCapacityFacadeLocal {
     List<RestaurantDayCapacity> findRange(int[] range);
 
     int count();
+    
+    // === custom ===
+    List<RestaurantDayCapacity> findByRestaurantAndDateRange(
+            Restaurants restaurant, Date start, Date end);
+
+    RestaurantDayCapacity findByRestaurantAndDate(
+            Restaurants restaurant, Date date);
     
 }

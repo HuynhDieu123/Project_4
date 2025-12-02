@@ -1,9 +1,11 @@
 package com.restaurant.bean;
 
 import com.mypack.entity.Cuisines;
+import com.mypack.entity.MenuCategories;
 import com.mypack.entity.MenuItems;
 import com.mypack.entity.Restaurants;
 import com.mypack.sessionbean.CuisinesFacadeLocal;
+import com.mypack.sessionbean.MenuCategoriesFacadeLocal;
 import com.mypack.sessionbean.MenuItemsFacadeLocal;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import jakarta.annotation.PostConstruct;
@@ -11,6 +13,7 @@ import jakarta.ejb.EJB;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +21,8 @@ import java.util.Map;
 @Named("menuItemFormBean")
 @ViewScoped
 public class MenuItemFormBean implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @EJB
     private MenuItemsFacadeLocal menuItemsFacade;
@@ -28,14 +33,20 @@ public class MenuItemFormBean implements Serializable {
     @EJB
     private CuisinesFacadeLocal cuisinesFacade;
 
+    @EJB
+    private MenuCategoriesFacadeLocal menuCategoriesFacade;
+
     private MenuItems newItem;
     private boolean editMode;
 
-    // id cuisine được chọn trên form (INT giống DB)
+    // Cuisines.CuisineId = INT  -> Integer
     private Integer cuisineId;
+    // MenuCategories.CategoryId = BIGINT -> Long
+    private Long categoryId;
 
     // list cho dropdown
     private List<Cuisines> cuisines;
+    private List<MenuCategories> categories;
 
     public MenuItemFormBean() {
     }
@@ -43,7 +54,8 @@ public class MenuItemFormBean implements Serializable {
     @PostConstruct
     public void init() {
         // load list cho dropdown
-        cuisines = cuisinesFacade.findAll();
+        cuisines   = cuisinesFacade.findAll();
+        categories = menuCategoriesFacade.findAll();
 
         // đọc itemId từ query string (?itemId=...)
         Map<String, String> params = FacesContext.getCurrentInstance()
@@ -56,9 +68,14 @@ public class MenuItemFormBean implements Serializable {
             newItem = menuItemsFacade.find(id);
             editMode = true;
 
-            // set sẵn value cho dropdown cuisine
-            if (newItem != null && newItem.getCuisineId() != null) {
-                cuisineId = newItem.getCuisineId().getCuisineId(); // INT -> Integer
+            // set sẵn value cho dropdown cuisine & category
+            if (newItem != null) {
+                if (newItem.getCuisineId() != null) {
+                    cuisineId = newItem.getCuisineId().getCuisineId();    // Integer
+                }
+                if (newItem.getCategoryId() != null) {
+                    categoryId = newItem.getCategoryId().getCategoryId(); // Long
+                }
             }
         } else {
             // ---- NEW MODE ----
@@ -81,6 +98,14 @@ public class MenuItemFormBean implements Serializable {
             newItem.setCuisineId(c);
         } else {
             newItem.setCuisineId(null);
+        }
+
+        // gán Category từ id
+        if (categoryId != null) {
+            MenuCategories cat = menuCategoriesFacade.find(categoryId);
+            newItem.setCategoryId(cat);
+        } else {
+            newItem.setCategoryId(null);
         }
 
         if (editMode) {
@@ -122,11 +147,27 @@ public class MenuItemFormBean implements Serializable {
         this.cuisineId = cuisineId;
     }
 
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
     public List<Cuisines> getCuisines() {
         return cuisines;
     }
 
     public void setCuisines(List<Cuisines> cuisines) {
         this.cuisines = cuisines;
+    }
+
+    public List<MenuCategories> getCategories() {
+        return categories;
+    }
+
+    public void setCategories(List<MenuCategories> categories) {
+        this.categories = categories;
     }
 }
