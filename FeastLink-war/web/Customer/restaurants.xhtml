@@ -1,624 +1,657 @@
 <?xml version='1.0' encoding='UTF-8' ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
       xmlns:ui="jakarta.faces.facelets"
       lang="en">
 
-  <h:head>
-    <meta charset="UTF-8" />
-    <title>FeastLink – Restaurants Listing</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- Tailwind CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <h:head>
+        <meta charset="UTF-8" />
+        <title>FeastLink – Restaurants Listing</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>         
-    <style>
-      :root {
-        --primary: #05081a;
-        --primary-dark: #020617;
-        --secondary: #d4af37;
-        --secondary-soft: #e6c77f;
-        --bg: #ffffff;
-        --bg-soft: #f9fafb;
-        --border: #e5e7eb;
-        --text: #111827;
-        --text-muted: #6b7280;
-        --accent: #f97316;
-        --accent-gold: #eab308;
-        --success: #22c55e;
-        --danger: #ef4444;
-        --bg-alt: #f5f5f4;
-        --surface-dark: #020617;
-        --surface-dark-soft: #040717;
-        --warning: #facc15;
-        --info: #38bdf8;
-        --disabled: #9ca3af;
-      }
+        <!-- Tailwind CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
 
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        background-color: #ffffff;
-      }
+        <!-- Lucide Icons CDN -->
+        <script src="https://unpkg.com/lucide@latest"></script>         
+        <style>
+            :root {
+                --primary: #05081a;
+                --primary-dark: #020617;
+                --secondary: #d4af37;
+                --secondary-soft: #e6c77f;
+                --bg: #ffffff;
+                --bg-soft: #f9fafb;
+                --border: #e5e7eb;
+                --text: #111827;
+                --text-muted: #6b7280;
+                --accent: #f97316;
+                --accent-gold: #eab308;
+                --success: #22c55e;
+                --danger: #ef4444;
+                --bg-alt: #f5f5f4;
+                --surface-dark: #020617;
+                --surface-dark-soft: #040717;
+                --warning: #facc15;
+                --info: #38bdf8;
+                --disabled: #9ca3af;
+            }
 
-      @keyframes float {
+            body {
+                margin: 0;
+                padding: 0;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                    sans-serif;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                background-color: #ffffff;
+            }
 
-        0%,
-        100% {
-          transform: translateY(0);
-        }
+            @keyframes float {
 
-        50% {
-          transform: translateY(-10px);
-        }
-      }
+                0%,
+                100% {
+                    transform: translateY(0);
+                }
 
-      .animate-float {
-        animation: float 3s ease-in-out infinite;
-      }
+                50% {
+                    transform: translateY(-10px);
+                }
+            }
 
-      @keyframes shimmer {
-        0% {
-          background-position: -1000px 0;
-        }
+            .animate-float {
+                animation: float 3s ease-in-out infinite;
+            }
 
-        100% {
-          background-position: 1000px 0;
-        }
-      }
+            @keyframes shimmer {
+                0% {
+                    background-position: -1000px 0;
+                }
 
-      .animate-shimmer {
-        animation: shimmer 2s infinite;
-        background-size: 1000px 100%;
-      }
+                100% {
+                    background-position: 1000px 0;
+                }
+            }
 
-      /* Optional: highlight for active pills */
-      .filter-pill-selected {
-        background-color: #0b1120 !important;
-        color: #ffffff !important;
-        border-color: #d4af37 !important;
-      }
-    </style>
-  </h:head>
+            .animate-shimmer {
+                animation: shimmer 2s infinite;
+                background-size: 1000px 100%;
+            }
 
-  <h:body class="bg-white">
-    <ui:include src="/layout/header.xhtml" />  
-      
-    <div id="top"></div>
+            /* Optional: highlight for active pills */
+            .filter-pill-selected {
+                background-color: #0b1120 !important;
+                color: #ffffff !important;
+                border-color: #d4af37 !important;
+            }
+        </style>
+    </h:head>
 
-    <!-- MAIN PAGE -->
-    <main class="min-h-screen bg-gradient-to-b from-[#F9FAFB] via-white to-[#F9FAFB] relative overflow-hidden">
-      <!-- Decorative blobs -->
-      <div
-        class="absolute top-0 right-0 w-[700px] h-[700px] bg-[radial-gradient(circle_at_top,_rgba(230,199,127,0.08),_transparent_60%)] pointer-events-none animate-float">
-      </div>
-      <div
-        class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_bottom,_rgba(212,175,55,0.08),_transparent_60%)] pointer-events-none animate-float">
-      </div>
-      <div
-        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,_rgba(230,199,127,0.25),_transparent_60%)] pointer-events-none opacity-30">
-      </div>
+    <h:body class="bg-white">
+        <ui:include src="/layout/header.xhtml" />  
 
-      <div class="relative max-w-[1280px] mx-auto px-6 py-8" id="restaurants">
-        <!-- SEARCH STRIP -->
-        <section
-          class="relative bg-white/95 backdrop-blur-md rounded-3xl border border-[#E5E7EB] shadow-xl p-6 overflow-hidden group hover:shadow-2xl transition-shadow duration-500">
-          <!-- Decorative gradient accent -->
-          <div
-            class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4AF37] via-[#E6C77F] to-[#D4AF37] opacity-50">
-          </div>
+        <div id="top"></div>
 
-          <!-- Subtle shimmer -->
-          <div
-            class="absolute inset-0 bg-gradient-to-r from-transparent via-[#E6C77F]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none">
-          </div>
-
-          <div class="relative">
-            <!-- Search Fields -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <!-- City -->
-              <div class="space-y-2 group/field">
-                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
-                  <i data-lucide="map-pin" class="w-4 h-4 text-[#D4AF37]"></i>
-                  City <span class="text-[#EF4444]">*</span>
-                </label>
-                <select id="citySelect"
-                        class="w-full px-4 py-3 rounded-xl border-2 border-[#E5E7EB] bg-white text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] hover:border-[#E6C77F] transition-all cursor-pointer">
-                  <option value="">All cities</option>
-                  <option>Ho Chi Minh City</option>
-                  <option>Hanoi</option>
-                  <option>Da Nang</option>
-                </select>
-              </div>
-
-              <!-- Area -->
-              <div class="space-y-2 group/field">
-                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
-                  <i data-lucide="map-pin" class="w-4 h-4 text-[#E6C77F]"></i>
-                  Area
-                </label>
-                <select id="areaSelect"
-                        class="w-full px-4 py-3 rounded-xl border-2 border-[#E5E7EB] bg-white text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] hover:border-[#E6C77F] transition-all cursor-pointer">
-                  <option value="">All areas</option>
-                  <option>District 1</option>
-                  <option>District 2</option>
-                  <option>District 3</option>
-                  <option>District 7</option>
-                  <option>District 9</option>
-                </select>
-              </div>
-
-              <!-- Date & Time -->
-              <div class="space-y-2 group/field">
-                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
-                  <i data-lucide="calendar" class="w-4 h-4 text-[#D4AF37]"></i>
-                  Date &amp; Time
-                </label>
-                <input id="datetimeInput" type="datetime-local"
-                       class="w-full px-4 py-3 rounded-xl border-2 border-[#E5E7EB] bg-white text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] hover:border-[#E6C77F] transition-all" />
-              </div>
-
-              <!-- Guests -->
-              <div class="space-y-2 group/field">
-                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
-                  <i data-lucide="users" class="w-4 h-4 text-[#D4AF37]"></i>
-                  Guests
-                </label>
-                <input id="guestsInput" type="number" placeholder="Number of guests" min="1"
-                       class="w-full px-4 py-3 rounded-xl border-2 border-[#E5E7EB] bg-white text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] hover:border-[#E6C77F] transition-all" />
-              </div>
-
-              <!-- Event Type -->
-              <div class="space-y-2 group/field">
-                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
-                  <i data-lucide="tag" class="w-4 h-4 text-[#D4AF37]"></i>
-                  Event Type
-                </label>
-                <select id="eventTypeSelect"
-                        class="w-full px-4 py-3 rounded-xl border-2 border-[#E5E7EB] bg-white text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] hover:border-[#E6C77F] transition-all cursor-pointer">
-                  <option value="">All events</option>
-                  <option>Wedding</option>
-                  <option>Birthday</option>
-                  <option>Corporate</option>
-                  <option>Gala</option>
-                  <option>Graduation</option>
-                  <option>Anniversary</option>
-                </select>
-              </div>
-
-              <!-- Budget -->
-              <div class="space-y-2 group/field">
-                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
-                  <i data-lucide="dollar-sign" class="w-4 h-4 text-[#D4AF37]"></i>
-                  Budget per table
-                </label>
-                <input id="budgetInput" type="text" placeholder="e.g., 5,000 $"
-                       class="w-full px-4 py-3 rounded-xl border-2 border-[#E5E7EB] bg-white text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] hover:border-[#E6C77F] transition-all" />
-              </div>
+        <!-- MAIN PAGE -->
+        <main class="min-h-screen bg-gradient-to-b from-[#F9FAFB] via-white to-[#F9FAFB] relative overflow-hidden">
+            <!-- Decorative blobs -->
+            <div
+                class="absolute top-0 right-0 w-[700px] h-[700px] bg-[radial-gradient(circle_at_top,_rgba(230,199,127,0.08),_transparent_60%)] pointer-events-none animate-float">
+            </div>
+            <div
+                class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_bottom,_rgba(212,175,55,0.08),_transparent_60%)] pointer-events-none animate-float">
+            </div>
+            <div
+                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,_rgba(230,199,127,0.25),_transparent_60%)] pointer-events-none opacity-30">
             </div>
 
-            <!-- Search Action -->
-            <div class="mt-6 flex justify-center">
-              <button id="searchButton" type="button"
-                      class="group/search px-12 py-3.5 bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#F97316] text-white font-bold rounded-full shadow-xl hover:shadow-2xl hover:shadow-[#EAB308]/30 transition-all duration-300 transform hover:scale-105 active:scale-95 relative overflow-hidden">
-                <span class="relative z-10 flex items-center justify-center gap-2">
-                  <i data-lucide="sparkles" class="w-5 h-5"></i>
-                  Search venues
-                </span>
-                <div
-                  class="absolute inset-0 bg-gradient-to-r from-[#EAB308] to-[#F97316] opacity-0 group-hover/search:opacity-100 transition-opacity duration-300">
-                </div>
-              </button>
+            <div class="relative max-w-[1280px] mx-auto px-6 py-8" id="restaurants">
+                <!-- SEARCH STRIP -->
+                <section
+                    class="relative bg-white/95 backdrop-blur-md rounded-3xl border border-[#E5E7EB] shadow-xl p-6 overflow-hidden group hover:shadow-2xl transition-shadow duration-500">
+                    <!-- Decorative gradient accent -->
+                    <div
+                        class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4AF37] via-[#E6C77F] to-[#D4AF37] opacity-50">
+                    </div>
+
+                    <!-- Subtle shimmer -->
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-transparent via-[#E6C77F]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none">
+                    </div>
+
+                    <div class="relative">
+                        <!-- Search Fields -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                            <!-- Keyword Search -->
+                            <div class="space-y-2 group/field">
+                                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
+                                    <i data-lucide="search" class="w-4 h-4 text-[#D4AF37]"></i>
+                                    Search
+                                </label>
+                                <input id="keywordInput"
+                                       type="text"
+                                       placeholder="Search by restaurant, city, area..."
+                                       class="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-white/80 text-sm text-[#111827] placeholder:text-[#9CA3AF]
+                                       focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/70 focus:border-[#D4AF37] transition-all" />
+                            </div>
+
+                            <!-- City -->
+                            <div class="space-y-2 group/field">
+                                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
+                                    <i data-lucide="map-pin" class="w-4 h-4 text-[#D4AF37]"></i>
+                                    City <span class="text-[#EF4444]">*</span>
+                                </label>
+                                <select id="citySelect"
+                                        class="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-white/80 text-sm text-[#111827]
+                                        focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/70 focus:border-[#D4AF37] transition-all cursor-pointer">
+                                    <option value="">All cities</option>
+                                    <ui:repeat value="#{customerRestaurantsBean.cityOptions}" var="c">
+                                        <option value="#{c}">#{c}</option>
+                                    </ui:repeat>
+                                </select>
+
+                            </div>
+
+
+                            <!-- Area -->
+                            <div class="space-y-2 group/field">
+                                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
+                                    <i data-lucide="map-pin" class="w-4 h-4 text-[#E6C77F]"></i>
+                                    Area
+                                </label>
+                                <select id="areaSelect"
+                                        class="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-white/80 text-sm text-[#111827]
+                                        focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/70 focus:border-[#D4AF37] transition-all cursor-pointer">
+                                    <option value="">All areas</option>
+                                    <ui:repeat value="#{customerRestaurantsBean.areaOptions}" var="a">
+                                        <option value="#{a}">#{a}</option>
+                                    </ui:repeat>
+                                </select>
+
+
+                            </div>
+
+                            <!-- Date & Time -->
+                            <div class="space-y-2 group/field">
+                                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
+                                    <i data-lucide="calendar" class="w-4 h-4 text-[#D4AF37]"></i>
+                                    Date &amp; Time
+                                </label>
+                                <input id="datetimeInput" type="datetime-local"
+                                       class="w-full px-4 py-3 rounded-xl border-2 border-[#E5E7EB] bg-white text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] hover:border-[#E6C77F] transition-all" />
+                            </div>
+
+                            <!-- Guests -->
+                            <div class="space-y-2 group/field">
+                                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
+                                    <i data-lucide="users" class="w-4 h-4 text-[#D4AF37]"></i>
+                                    Guests
+                                </label>
+                                <input id="guestsInput" type="number" placeholder="Number of guests" min="1"
+                                       class="w-full px-4 py-3 rounded-xl border-2 border-[#E5E7EB] bg-white text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] hover:border-[#E6C77F] transition-all" />
+                            </div>
+
+                            <!-- Event Type -->
+                            <div class="space-y-2 group/field">
+                                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
+                                    <i data-lucide="tag" class="w-4 h-4 text-[#D4AF37]"></i>
+                                    Event Type
+                                </label>
+                                <select id="eventTypeSelect"
+                                        class="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-white/80 text-sm text-[#111827]
+                                        focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/70 focus:border-[#D4AF37] transition-all cursor-pointer">
+                                    <option value="">All events</option>
+                                    <ui:repeat value="#{customerRestaurantsBean.eventTypeOptions}" var="e">
+                                        <option value="#{e}">#{e}</option>
+                                    </ui:repeat>
+                                </select>
+
+
+                            </div>
+
+                            <!-- Budget -->
+                            <div class="space-y-2 group/field">
+                                <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
+                                    <i data-lucide="dollar-sign" class="w-4 h-4 text-[#D4AF37]"></i>
+                                    Budget per table
+                                </label>
+                                <input id="budgetInput" type="text" placeholder="e.g., 5,000 $"
+                                       class="w-full px-4 py-3 rounded-xl border-2 border-[#E5E7EB] bg-white text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] hover:border-[#E6C77F] transition-all" />
+                            </div>
+                        </div>
+
+                        <!-- Search Action -->
+                        <div class="mt-6 flex flex-wrap justify-center gap-3">
+                            <!-- Search button -->
+                            <button id="searchButton" type="button"
+                                    class="group/search px-12 py-3.5 bg-gradient-to-r from-[#EA580C] via-[#F97316] to-[#EAB308]
+                                    text-white font-semibold rounded-full shadow-lg shadow-[#F97316]/30
+                                    transform hover:scale-105 active:scale-95 relative overflow-hidden">
+                                <span class="relative z-10 flex items-center justify-center gap-2">
+                                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                                    Search venues
+                                </span>
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-r from-[#EAB308] to-[#F97316]
+                                    opacity-0 group-hover/search:opacity-100 transition-opacity duration-300">
+                                </div>
+                            </button>
+
+                            <!-- Reset search button -->
+                            <button id="resetSearchButton" type="button"
+                                    class="px-6 py-3 rounded-full border-2 border-[#E5E7EB] bg-white/90
+                                    text-sm font-medium text-[#111827] shadow-sm hover:shadow-md
+                                    hover:border-[#D4AF37] hover:text-[#0B1120] transition-all
+                                    flex items-center gap-2">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4 text-[#4B5563]"></i>
+                                Reset search
+                            </button>
+                        </div>
+
+
+                        <!-- Helper text -->
+                        <p class="mt-4 text-center text-sm text-[#4B5563]">
+                            Use the filters panel on the left to refine your search results
+                        </p>
+                    </div>
+                </section>
+
+                <!-- TWO COLUMN LAYOUT -->
+                <section class="mt-8 flex gap-8">
+                    <!-- Left: Filters Panel (desktop) -->
+                    <aside class="hidden lg:block w-[300px] flex-shrink-0">
+                        <div class="sticky top-8">
+                            <div class="bg-white rounded-2xl border border-[#E5E7EB] p-6 shadow-sm">
+                                <!-- Header -->
+                                <div class="mb-6">
+                                    <h2 class="text-lg font-bold text-[#111827]">Filters</h2>
+                                    <div class="h-1 w-12 bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] rounded-full mt-2"></div>
+                                </div>
+
+                                <!-- Quick Tags -->
+                                <div class="mb-6">
+                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Quick filters</h3>
+                                    <div class="flex flex-wrap gap-2 text-xs">
+                                        <button type="button"
+                                                class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-quick-filter"
+                                                data-filter-quick="Top rated">
+                                            Top rated
+                                        </button>
+
+                                        <button type="button"
+                                                class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-quick-filter"
+                                                data-filter-quick="VIP venues">
+                                            VIP venues
+                                        </button>
+                                        <button type="button"
+                                                class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-quick-filter"
+                                                data-filter-quick="New">
+                                            New
+                                        </button>
+                                        <button type="button"
+                                                class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-quick-filter"
+                                                data-filter-quick="Big capacity 300+">
+                                            Big capacity 300+
+                                        </button>
+                                        <button type="button"
+                                                class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-quick-filter"
+                                                data-filter-quick="Has combos">
+                                            Has combos
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Price Range -->
+                                <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
+                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Price per table</h3>
+                                    <input id="priceRangeDesktop" type="range" min="0" max="10000" step="100" value="10000"
+                                           class="js-price-range w-full h-2 bg-[#F5F5F4] rounded-full appearance-none cursor-pointer accent-[#E6C77F]" />
+                                    <div class="flex justify-between mt-2 text-xs text-[#4B5563]">
+                                        <span>0 $</span>
+                                        <span class="js-price-label">10,000 $</span>
+                                    </div>
+                                    <p class="mt-1 text-[11px] text-[#6B7280] italic">
+                                        *1 table ≈ 10   guests (estimated)
+                                    </p>
+                                </div>
+
+                                <!-- Event Types (multi-select) -->
+                                <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
+                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Event Types</h3>
+                                    <div class="flex flex-wrap gap-2 text-xs">
+                                        <button type="button"
+                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
+                                                data-event-type="Wedding">Wedding</button>
+                                        <button type="button"
+                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
+                                                data-event-type="Birthday">Birthday</button>
+                                        <button type="button"
+                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
+                                                data-event-type="Corporate">Corporate</button>
+                                        <button type="button"
+                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
+                                                data-event-type="Gala">Gala</button>
+                                        <button type="button"
+                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
+                                                data-event-type="Graduation">Graduation</button>
+                                        <button type="button"
+                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
+                                                data-event-type="Anniversary">Anniversary</button>
+                                    </div>
+                                </div>
+
+                                <!-- Cuisine (visual only) -->
+                                <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
+                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Cuisine (visual only)</h3>
+                                    <div class="space-y-2 text-sm text-[#4B5563]">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox"
+                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
+                                            <span>Vietnamese</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox"
+                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
+                                            <span>Asian Fusion</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox"
+                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
+                                            <span>Western</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox"
+                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
+                                            <span>Buffet</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox"
+                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
+                                            <span>Italian</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox"
+                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
+                                            <span>Japanese</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Capacity -->
+                                <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
+                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Capacity</h3>
+                                    <div class="grid grid-cols-2 gap-2 text-xs">
+                                        <button type="button"
+                                                class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-capacity"
+                                                data-capacity="&lt;50">&lt; 50</button>
+                                        <button type="button"
+                                                class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-capacity"
+                                                data-capacity="50-150">50–150</button>
+                                        <button type="button"
+                                                class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-capacity"
+                                                data-capacity="150-300">150–300</button>
+                                        <button type="button"
+                                                class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-capacity"
+                                                data-capacity="300+">300+</button>
+                                    </div>
+                                </div>
+
+                                <!-- Status -->
+                                <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
+                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Status</h3>
+                                    <div class="grid grid-cols-1 gap-2 text-xs">
+                                        <button type="button"
+                                                class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-status"
+                                                data-status="available">
+                                            Available
+                                        </button>
+                                        <button type="button"
+                                                class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-status"
+                                                data-status="limited">
+                                            Limited slots
+                                        </button>
+                                        <button type="button"
+                                                class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-status"
+                                                data-status="full">
+                                            Fully booked
+                                        </button>
+                                    </div>
+                                    <p class="mt-2 text-[11px] text-[#6B7280]">
+                                        <span class="font-semibold text-[#D4AF37]">Limited slots</span> means this venue is still accepting
+                                        bookings, but only a few tables or time slots are left. Peak dates and popular time ranges may sell out
+                                        soon, so we recommend booking early.
+                                    </p>
+                                </div>
+
+                                <!-- Rating -->
+                                <div class="mb-6">
+                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Rating</h3>
+                                    <div class="space-y-2 text-sm">
+                                        <button type="button"
+                                                class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#4B5563] hover:bg-[#F5F5F4] js-rating"
+                                                data-rating="4">
+                                            <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
+                                            <span>4.0+ stars</span>
+                                        </button>
+                                        <button type="button"
+                                                class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#4B5563] hover:bg-[#F5F5F4] js-rating"
+                                                data-rating="4.5">
+                                            <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
+                                            <span>4.5+ stars</span>
+                                        </button>
+                                        <button type="button"
+                                                class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#4B5563] hover:bg-[#F5F5F4] js-rating"
+                                                data-rating="5">
+                                            <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
+                                            <span>5.0 stars</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Clear Filters -->
+                                <button id="clearFiltersDesktop" type="button"
+                                        class="w-full px-4 py-2 text-sm font-medium text-[#4B5563] hover:text-[#D4AF37] border border-[#E5E7EB] hover:border-[#D4AF37] rounded-xl transition-all">
+                                    Clear all filters
+                                </button>
+
+                                <p class="mt-3 text-xs text-center text-[#4B5563]" id="matchCountText">
+                                    12 venues match your filters
+                                </p>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Right: Results -->
+                    <div class="flex-1 min-w-0">
+                        <!-- Toolbar -->
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                            <p id="resultsSummary" class="text-sm text-[#4B5563]">
+                                <!-- will be filled by JS -->
+                            </p>
+
+                            <div class="flex items-center gap-3">
+                                <!-- Sort -->
+                                <select id="sortSelect"
+                                        class="px-4 py-2 rounded-full border border-[#E5E7EB] bg-white text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition-all">
+                                    <option value="recommended">Recommended</option>
+                                    <option value="rating">Highest rating</option>
+                                    <option value="price-low">Price (low to high)</option>
+                                    <option value="price-high">Price (high to low)</option>
+                                    <option value="capacity">Capacity</option>
+                                    <option value="newest">Newest</option>
+                                </select>
+
+                                <!-- View mode -->
+                                <div class="flex items-center gap-1 p-1 bg-[#F5F5F4] rounded-full">
+                                    <button id="viewGridBtn" type="button" class="p-2 rounded-full bg-[#0B1120] text-white shadow-sm">
+                                        <i data-lucide="grid-3x3" class="w-4 h-4"></i>
+                                    </button>
+                                    <button id="viewListBtn" type="button" class="p-2 rounded-full text-[#9CA3AF] hover:text-[#111827]">
+                                        <i data-lucide="list" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RESTAURANT GRID (dynamic) -->
+                        <div id="restaurantGrid" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- JS sẽ render card vào đây -->
+                        </div>
+
+                        <!-- Pagination (dynamic) -->
+                        <div id="pagination" class="mt-12 mb-8 flex items-center justify-center gap-2">
+                            <!-- JS sẽ render pagination -->
+                        </div>
+                    </div>
+                </section>
             </div>
 
-            <!-- Helper text -->
-            <p class="mt-4 text-center text-sm text-[#4B5563]">
-              Use the filters panel on the left to refine your search results
-            </p>
-          </div>
-        </section>
-
-        <!-- TWO COLUMN LAYOUT -->
-        <section class="mt-8 flex gap-8">
-          <!-- Left: Filters Panel (desktop) -->
-          <aside class="hidden lg:block w-[300px] flex-shrink-0">
-            <div class="sticky top-8">
-              <div class="bg-white rounded-2xl border border-[#E5E7EB] p-6 shadow-sm">
-                <!-- Header -->
-                <div class="mb-6">
-                  <h2 class="text-lg font-bold text-[#111827]">Filters</h2>
-                  <div class="h-1 w-12 bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] rounded-full mt-2"></div>
-                </div>
-
-                <!-- Quick Tags -->
-                <div class="mb-6">
-                  <h3 class="text-sm font-semibold text-[#111827] mb-3">Quick filters</h3>
-                  <div class="flex flex-wrap gap-2 text-xs">
-                    <button type="button"
-                            class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-quick-filter"
-                            data-filter-quick="Top rated">
-                      Top rated
-                    </button>
-
-                    <button type="button"
-                            class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-quick-filter"
-                            data-filter-quick="VIP venues">
-                      VIP venues
-                    </button>
-                    <button type="button"
-                            class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-quick-filter"
-                            data-filter-quick="New">
-                      New
-                    </button>
-                    <button type="button"
-                            class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-quick-filter"
-                            data-filter-quick="Big capacity 300+">
-                      Big capacity 300+
-                    </button>
-                    <button type="button"
-                            class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-quick-filter"
-                            data-filter-quick="Has combos">
-                      Has combos
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Price Range -->
-                <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-                  <h3 class="text-sm font-semibold text-[#111827] mb-3">Price per table</h3>
-                  <input id="priceRangeDesktop" type="range" min="0" max="10000" step="100" value="10000"
-                         class="js-price-range w-full h-2 bg-[#F5F5F4] rounded-full appearance-none cursor-pointer accent-[#E6C77F]" />
-                  <div class="flex justify-between mt-2 text-xs text-[#4B5563]">
-                    <span>0 $</span>
-                    <span class="js-price-label">10,000 $</span>
-                  </div>
-                  <p class="mt-1 text-[11px] text-[#6B7280] italic">
-                    *1 table ≈ 10   guests (estimated)
-                  </p>
-                </div>
-
-                <!-- Event Types (multi-select) -->
-                <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-                  <h3 class="text-sm font-semibold text-[#111827] mb-3">Event Types</h3>
-                  <div class="flex flex-wrap gap-2 text-xs">
-                    <button type="button"
-                            class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                            data-event-type="Wedding">Wedding</button>
-                    <button type="button"
-                            class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                            data-event-type="Birthday">Birthday</button>
-                    <button type="button"
-                            class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                            data-event-type="Corporate">Corporate</button>
-                    <button type="button"
-                            class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                            data-event-type="Gala">Gala</button>
-                    <button type="button"
-                            class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                            data-event-type="Graduation">Graduation</button>
-                    <button type="button"
-                            class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                            data-event-type="Anniversary">Anniversary</button>
-                  </div>
-                </div>
-
-                <!-- Cuisine (visual only) -->
-                <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-                  <h3 class="text-sm font-semibold text-[#111827] mb-3">Cuisine (visual only)</h3>
-                  <div class="space-y-2 text-sm text-[#4B5563]">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox"
-                             class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                      <span>Vietnamese</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox"
-                             class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                      <span>Asian Fusion</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox"
-                             class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                      <span>Western</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox"
-                             class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                      <span>Buffet</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox"
-                             class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                      <span>Italian</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox"
-                             class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                      <span>Japanese</span>
-                    </label>
-                  </div>
-                </div>
-
-                <!-- Capacity -->
-                <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-                  <h3 class="text-sm font-semibold text-[#111827] mb-3">Capacity</h3>
-                  <div class="grid grid-cols-2 gap-2 text-xs">
-                    <button type="button"
-                            class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-capacity"
-                            data-capacity="&lt;50">&lt; 50</button>
-                    <button type="button"
-                            class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-capacity"
-                            data-capacity="50-150">50–150</button>
-                    <button type="button"
-                            class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-capacity"
-                            data-capacity="150-300">150–300</button>
-                    <button type="button"
-                            class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-capacity"
-                            data-capacity="300+">300+</button>
-                  </div>
-                </div>
-
-                <!-- Status -->
-                <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-                  <h3 class="text-sm font-semibold text-[#111827] mb-3">Status</h3>
-                  <div class="grid grid-cols-1 gap-2 text-xs">
-                    <button type="button"
-                            class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-status"
-                            data-status="available">
-                      Available
-                    </button>
-                    <button type="button"
-                            class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-status"
-                            data-status="limited">
-                      Limited slots
-                    </button>
-                    <button type="button"
-                            class="px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-status"
-                            data-status="full">
-                      Fully booked
-                    </button>
-                  </div>
-                  <p class="mt-2 text-[11px] text-[#6B7280]">
-                    <span class="font-semibold text-[#D4AF37]">Limited slots</span> means this venue is still accepting
-                    bookings, but only a few tables or time slots are left. Peak dates and popular time ranges may sell out
-                    soon, so we recommend booking early.
-                  </p>
-                </div>
-
-                <!-- Rating -->
-                <div class="mb-6">
-                  <h3 class="text-sm font-semibold text-[#111827] mb-3">Rating</h3>
-                  <div class="space-y-2 text-sm">
-                    <button type="button"
-                            class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#4B5563] hover:bg-[#F5F5F4] js-rating"
-                            data-rating="4">
-                      <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                      <span>4.0+ stars</span>
-                    </button>
-                    <button type="button"
-                            class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#4B5563] hover:bg-[#F5F5F4] js-rating"
-                            data-rating="4.5">
-                      <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                      <span>4.5+ stars</span>
-                    </button>
-                    <button type="button"
-                            class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#4B5563] hover:bg-[#F5F5F4] js-rating"
-                            data-rating="5">
-                      <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                      <span>5.0 stars</span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Clear Filters -->
-                <button id="clearFiltersDesktop" type="button"
-                        class="w-full px-4 py-2 text-sm font-medium text-[#4B5563] hover:text-[#D4AF37] border border-[#E5E7EB] hover:border-[#D4AF37] rounded-xl transition-all">
-                  Clear all filters
-                </button>
-
-                <p class="mt-3 text-xs text-center text-[#4B5563]" id="matchCountText">
-                  12 venues match your filters
-                </p>
-              </div>
-            </div>
-          </aside>
-
-          <!-- Right: Results -->
-          <div class="flex-1 min-w-0">
-            <!-- Toolbar -->
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-              <p id="resultsSummary" class="text-sm text-[#4B5563]">
-                <!-- will be filled by JS -->
-              </p>
-
-              <div class="flex items-center gap-3">
-                <!-- Sort -->
-                <select id="sortSelect"
-                        class="px-4 py-2 rounded-full border border-[#E5E7EB] bg-white text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition-all">
-                  <option value="recommended">Recommended</option>
-                  <option value="rating">Highest rating</option>
-                  <option value="price-low">Price (low to high)</option>
-                  <option value="price-high">Price (high to low)</option>
-                  <option value="capacity">Capacity</option>
-                  <option value="newest">Newest</option>
-                </select>
-
-                <!-- View mode -->
-                <div class="flex items-center gap-1 p-1 bg-[#F5F5F4] rounded-full">
-                  <button id="viewGridBtn" type="button" class="p-2 rounded-full bg-[#0B1120] text-white shadow-sm">
-                    <i data-lucide="grid-3x3" class="w-4 h-4"></i>
-                  </button>
-                  <button id="viewListBtn" type="button" class="p-2 rounded-full text-[#9CA3AF] hover:text-[#111827]">
-                    <i data-lucide="list" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- RESTAURANT GRID (dynamic) -->
-            <div id="restaurantGrid" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- JS sẽ render card vào đây -->
-            </div>
-
-            <!-- Pagination (dynamic) -->
-            <div id="pagination" class="mt-12 mb-8 flex items-center justify-center gap-2">
-              <!-- JS sẽ render pagination -->
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- MOBILE FILTER SHEET -->
-      <button id="mobileFilterToggle" type="button"
-              class="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-6 py-3 bg-[#0B1120] text-white font-semibold rounded-full shadow-2xl border-2 border-[#D4AF37]">
-        <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
-        Filters
-      </button>
-
-      <div id="mobileFilterSheet" class="lg:hidden fixed inset-0 z-50 hidden items-end">
-        <!-- Backdrop -->
-        <div id="mobileFilterBackdrop" class="absolute inset-0 bg-[#0B1120]/60 backdrop-blur-sm"></div>
-
-        <!-- Sheet -->
-        <div class="relative w-full bg-white rounded-t-[32px] shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
-          <div class="sticky top-0 bg-white border-b border-[#E5E7EB] px-6 py-4 flex items-center justify-between z-10">
-            <h2 class="text-lg font-bold text-[#111827]">Filters</h2>
-            <button id="mobileFilterClose" type="button" class="p-2 hover:bg-[#F5F5F4] rounded-full transition-colors">
-              <i data-lucide="x" class="w-5 h-5 text-[#4B5563]"></i>
+            <!-- MOBILE FILTER SHEET -->
+            <button id="mobileFilterToggle" type="button"
+                    class="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-6 py-3 bg-[#0B1120] text-white font-semibold rounded-full shadow-2xl border-2 border-[#D4AF37]">
+                <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+                Filters
             </button>
-          </div>
 
-          <div class="overflow-y-auto px-6 py-4" style="max-height: calc(85vh - 73px);">
-            <!-- Quick filters (mobile) -->
-            <div class="mb-6">
-              <h3 class="text-sm font-semibold text-[#111827] mb-3">Quick filters</h3>
-              <div class="flex flex-wrap gap-2 text-xs">
-                <button type="button"
-                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-quick-filter"
-                        data-filter-quick="Top rated">
-                  Top rated
-                </button>
+            <div id="mobileFilterSheet" class="lg:hidden fixed inset-0 z-50 hidden items-end">
+                <!-- Backdrop -->
+                <div id="mobileFilterBackdrop" class="absolute inset-0 bg-[#0B1120]/60 backdrop-blur-sm"></div>
 
-                <button type="button"
-                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-quick-filter"
-                        data-filter-quick="VIP venues">
-                  VIP venues
-                </button>
-                <button type="button"
-                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-quick-filter"
-                        data-filter-quick="New">
-                  New
-                </button>
-              </div>
+                <!-- Sheet -->
+                <div class="relative w-full bg-white rounded-t-[32px] shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                    <div class="sticky top-0 bg-white border-b border-[#E5E7EB] px-6 py-4 flex items-center justify-between z-10">
+                        <h2 class="text-lg font-bold text-[#111827]">Filters</h2>
+                        <button id="mobileFilterClose" type="button" class="p-2 hover:bg-[#F5F5F4] rounded-full transition-colors">
+                            <i data-lucide="x" class="w-5 h-5 text-[#4B5563]"></i>
+                        </button>
+                    </div>
+
+                    <div class="overflow-y-auto px-6 py-4" style="max-height: calc(85vh - 73px);">
+                        <!-- Quick filters (mobile) -->
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-[#111827] mb-3">Quick filters</h3>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <button type="button"
+                                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-quick-filter"
+                                        data-filter-quick="Top rated">
+                                    Top rated
+                                </button>
+
+                                <button type="button"
+                                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-quick-filter"
+                                        data-filter-quick="VIP venues">
+                                    VIP venues
+                                </button>
+                                <button type="button"
+                                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-quick-filter"
+                                        data-filter-quick="New">
+                                    New
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
+                            <h3 class="text-sm font-semibold text-[#111827] mb-3">Price per table</h3>
+                            <input id="priceRangeMobile" type="range" min="0" max="2000000" step="50000" value="2000000"
+                                   class="js-price-range w-full h-2 bg-[#F5F5F4] rounded-full appearance-none cursor-pointer accent-[#E6C77F]" />
+                            <div class="flex justify-between mt-2 text-xs text-[#4B5563]">
+                                <span>0 ₫</span>
+                                <span class="js-price-label">2,000,000 ₫</span>
+                            </div>
+                            <p class="mt-1 text-[11px] text-[#6B7280] italic">
+                                *1 table ≈ 10 guests (estimated)
+                            </p>
+                        </div>
+
+                        <!-- Event Types (mobile) -->
+                        <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
+                            <h3 class="text-sm font-semibold text-[#111827] mb-3">Event Types</h3>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <button type="button"
+                                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-event-type"
+                                        data-event-type="Wedding">Wedding</button>
+                                <button type="button"
+                                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-event-type"
+                                        data-event-type="Birthday">Birthday</button>
+                                <button type="button"
+                                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-event-type"
+                                        data-event-type="Corporate">Corporate</button>
+                            </div>
+                        </div>
+
+                        <!-- Rating (mobile) -->
+                        <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
+                            <h3 class="text-sm font-semibold text-[#111827] mb-3">Rating</h3>
+                            <div class="space-y-2 text-sm">
+                                <button type="button"
+                                        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#4B5563] hover:bg-[#F5F5F4] js-rating"
+                                        data-rating="4">
+                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
+                                    <span>4.0+ stars</span>
+                                </button>
+                                <button type="button"
+                                        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#4B5563] hover:bg-[#F5F5F4] js-rating"
+                                        data-rating="4.5">
+                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
+                                    <span>4.5+ stars</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Status (mobile) -->
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-[#111827] mb-3">Status</h3>
+                            <div class="space-y-2 text-xs">
+                                <button type="button"
+                                        class="w-full px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] js-status"
+                                        data-status="available">
+                                    Available
+                                </button>
+                                <button type="button"
+                                        class="w-full px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] js-status"
+                                        data-status="limited">
+                                    Limited slots
+                                </button>
+                                <button type="button"
+                                        class="w-full px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] js-status"
+                                        data-status="full">
+                                    Fully booked
+                                </button>
+                            </div>
+                            <p class="mt-2 text-[11px] text-[#6B7280]">
+                                <span class="font-semibold text-[#D4AF37]">Limited slots</span> indicates that availability is almost full – only a few tables or time slots remain, especially on popular dates and peak hours.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="sticky bottom-0 bg-white border-t border-[#E5E7EB] px-6 py-4">
+                        <div class="flex gap-3">
+                            <button type="button" id="clearFiltersMobile"
+                                    class="w-1/3 px-4 py-3 border border-[#E5E7EB] rounded-xl text-sm text-[#4B5563] hover:text-[#D4AF37] hover:border-[#D4AF37] transition-all">
+                                Clear
+                            </button>
+                            <button type="button" id="mobileFilterApply"
+                                    class="w-2/3 px-6 py-3 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                                Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </main>
+        <ui:include src="/layout/footer.xhtml" />
+        <!-- JS: tách ra file riêng để JSF không bị lỗi -->
+        <!-- Đẩy data từ bean ra JS (JSON) -->
+        <h:outputScript>
+            //<![CDATA[
+            window.FEASTLINK_RESTAURANTS = #{customerRestaurantsBean.restaurantsJson};
+            //]]>
+        </h:outputScript>
 
-            <!-- Price -->
-            <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-              <h3 class="text-sm font-semibold text-[#111827] mb-3">Price per table</h3>
-              <input id="priceRangeMobile" type="range" min="0" max="2000000" step="50000" value="2000000"
-                     class="js-price-range w-full h-2 bg-[#F5F5F4] rounded-full appearance-none cursor-pointer accent-[#E6C77F]" />
-              <div class="flex justify-between mt-2 text-xs text-[#4B5563]">
-                <span>0 ₫</span>
-                <span class="js-price-label">2,000,000 ₫</span>
-              </div>
-              <p class="mt-1 text-[11px] text-[#6B7280] italic">
-                *1 table ≈ 10 guests (estimated)
-              </p>
-            </div>
-
-            <!-- Event Types (mobile) -->
-            <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-              <h3 class="text-sm font-semibold text-[#111827] mb-3">Event Types</h3>
-              <div class="flex flex-wrap gap-2 text-xs">
-                <button type="button"
-                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-event-type"
-                        data-event-type="Wedding">Wedding</button>
-                <button type="button"
-                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-event-type"
-                        data-event-type="Birthday">Birthday</button>
-                <button type="button"
-                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-event-type"
-                        data-event-type="Corporate">Corporate</button>
-              </div>
-            </div>
-
-            <!-- Rating (mobile) -->
-            <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-              <h3 class="text-sm font-semibold text-[#111827] mb-3">Rating</h3>
-              <div class="space-y-2 text-sm">
-                <button type="button"
-                        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#4B5563] hover:bg-[#F5F5F4] js-rating"
-                        data-rating="4">
-                  <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                  <span>4.0+ stars</span>
-                </button>
-                <button type="button"
-                        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#4B5563] hover:bg-[#F5F5F4] js-rating"
-                        data-rating="4.5">
-                  <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                  <span>4.5+ stars</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Status (mobile) -->
-            <div class="mb-6">
-              <h3 class="text-sm font-semibold text-[#111827] mb-3">Status</h3>
-              <div class="space-y-2 text-xs">
-                <button type="button"
-                        class="w-full px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] js-status"
-                        data-status="available">
-                  Available
-                </button>
-                <button type="button"
-                        class="w-full px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] js-status"
-                        data-status="limited">
-                  Limited slots
-                </button>
-                <button type="button"
-                        class="w-full px-3 py-2 rounded-xl bg-white text-[#4B5563] border border-[#E5E7EB] js-status"
-                        data-status="full">
-                  Fully booked
-                </button>
-              </div>
-              <p class="mt-2 text-[11px] text-[#6B7280]">
-                <span class="font-semibold text-[#D4AF37]">Limited slots</span> indicates that availability is almost full – only a few tables or time slots remain, especially on popular dates and peak hours.
-              </p>
-            </div>
-          </div>
-
-          <div class="sticky bottom-0 bg-white border-t border-[#E5E7EB] px-6 py-4">
-            <div class="flex gap-3">
-              <button type="button" id="clearFiltersMobile"
-                      class="w-1/3 px-4 py-3 border border-[#E5E7EB] rounded-xl text-sm text-[#4B5563] hover:text-[#D4AF37] hover:border-[#D4AF37] transition-all">
-                Clear
-              </button>
-              <button type="button" id="mobileFilterApply"
-                      class="w-2/3 px-6 py-3 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all">
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-    <ui:include src="/layout/footer.xhtml" />
-    <!-- JS: tách ra file riêng để JSF không bị lỗi -->
-          <!-- Đẩy data từ bean ra JS (JSON) -->
-      <h:outputScript>
-        //<![CDATA[
-        window.FEASTLINK_RESTAURANTS = #{customerRestaurantsBean.restaurantsJson};
-        //]]>
-      </h:outputScript>
-
-      <script type="text/javascript" src="#{request.contextPath}/js/restaurants.js"></script>
-  </h:body>
+        <script type="text/javascript" src="#{request.contextPath}/js/restaurants.js"></script>
+    </h:body>
 </html>
