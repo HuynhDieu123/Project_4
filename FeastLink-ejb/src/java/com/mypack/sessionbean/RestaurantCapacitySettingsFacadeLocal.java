@@ -5,6 +5,7 @@
 package com.mypack.sessionbean;
 
 import com.mypack.entity.RestaurantCapacitySettings;
+import com.mypack.entity.Restaurants;
 import jakarta.ejb.Local;
 import java.util.List;
 
@@ -28,5 +29,8 @@ public interface RestaurantCapacitySettingsFacadeLocal {
     List<RestaurantCapacitySettings> findRange(int[] range);
 
     int count();
+    
+    // === custom ===
+    RestaurantCapacitySettings findByRestaurant(Restaurants restaurant);
     
 }

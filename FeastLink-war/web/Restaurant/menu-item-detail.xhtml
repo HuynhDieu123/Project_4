@@ -24,6 +24,7 @@
     <!-- CONTENT -->
     <ui:define name="content">
 
+        <!-- Khi tìm thấy item -->
         <h:panelGroup rendered="#{menuItemDetailBean.found}">
             <div class="max-w-4xl bg-card-light rounded-2xl shadow-subtle p-8 space-y-6">
 
@@ -38,16 +39,29 @@
                         </p>
 
                         <div class="mt-4 text-sm text-text-secondary-light space-y-1">
+                            <!-- Cuisine -->
                             <p>
                                 <span class="font-medium text-text-main-light">Cuisine:</span>
                                 #{menuItemDetailBean.item.cuisineId != null 
                                    ? menuItemDetailBean.item.cuisineId.name 
                                    : 'Not specified'}
                             </p>
+
+                            <!-- NEW: Category -->
+                            <p>
+                                <span class="font-medium text-text-main-light">Category:</span>
+                                #{menuItemDetailBean.item.categoryId != null
+                                   ? menuItemDetailBean.item.categoryId.name
+                                   : 'Not specified'}
+                            </p>
+
+                            <!-- Vegetarian -->
                             <p>
                                 <span class="font-medium text-text-main-light">Vegetarian:</span>
                                 #{menuItemDetailBean.item.isVegetarian ? 'Yes' : 'No'}
                             </p>
+
+                            <!-- Status -->
                             <p>
                                 <span class="font-medium text-text-main-light">Status:</span>
                                 #{menuItemDetailBean.item.status}
@@ -66,13 +80,13 @@
                     </div>
                 </div>
 
-                <!-- Image preview (tạm placeholder) -->
+                <!-- Image preview -->
                 <div class="mt-4">
                     <p class="text-sm font-medium text-text-main-light mb-2">
                         Image
                     </p>
                     <div class="w-full h-64 rounded-xl bg-gray-100 flex items-center justify-center text-text-secondary-light text-sm">
-                        <!-- sau này thay bằng <h:graphicImage> -->
+                        <!-- sau này có thể đổi thành <h:graphicImage> -->
                         #{menuItemDetailBean.item.imageUrl != null 
                            ? menuItemDetailBean.item.imageUrl 
                            : 'No image set'}
@@ -116,4 +130,3 @@
 
     </ui:define>
 </ui:composition>
-

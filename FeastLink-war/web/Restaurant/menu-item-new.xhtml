@@ -87,6 +87,7 @@
 
                 <!-- Cuisine -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Cuisine -->
                     <div>
                         <label for="cuisine" class="block text-sm font-medium text-text-main-light">
                             Cuisine
@@ -94,14 +95,33 @@
                         <h:selectOneMenu id="cuisine"
                                          value="#{menuItemFormBean.cuisineId}"
                                          styleClass="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
-                            <f:selectItem itemLabel="-- Select cuisine --" itemValue="#{null}" noSelectionOption="true" />
+                            <f:selectItem itemLabel="-- Select cuisine --"
+                                          itemValue="#{null}"
+                                          noSelectionOption="true" />
                             <f:selectItems value="#{menuItemFormBean.cuisines}"
                                            var="c"
                                            itemValue="#{c.cuisineId}"
                                            itemLabel="#{c.name}" />
                         </h:selectOneMenu>
                     </div>
-                    <div></div>
+
+                    <!-- Category -->
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-text-main-light">
+                            Category
+                        </label>
+                        <h:selectOneMenu id="category"
+                                         value="#{menuItemFormBean.categoryId}"
+                                         styleClass="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:selectItem itemLabel="-- Select category --"
+                                          itemValue="#{null}"
+                                          noSelectionOption="true" />
+                            <f:selectItems value="#{menuItemFormBean.categories}"
+                                           var="cat"
+                                           itemValue="#{cat.categoryId}"
+                                           itemLabel="#{cat.name}" />
+                        </h:selectOneMenu>
+                    </div>
                 </div>
 
                 <!-- Vegetarian + Status -->

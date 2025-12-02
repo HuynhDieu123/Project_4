@@ -25,7 +25,6 @@
 
     <!-- CONTENT -->
     <ui:define name="content">
-
         <h:form id="comboForm" styleClass="max-w-4xl">
 
             <div class="bg-card-light rounded-2xl shadow-subtle p-8 space-y-6">
@@ -109,22 +108,138 @@
                 </div>
 
                 <!-- Select items for this package -->
-                <div>
-                    <label class="block text-sm font-medium text-text-main-light mb-2">
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-text-main-light mb-1">
                         Included dishes
                     </label>
-                    <p class="text-xs text-text-secondary-light mb-2">
-                        Choose one or more existing menu items to include in this package.
+                    <p class="text-xs text-text-secondary-light mb-3">
+                        Search and filter your menu items, then select which dishes are included in this package.
                     </p>
 
-                    <h:selectManyCheckbox value="#{menuComboFormBean.selectedItemIds}"
-                                          layout="pageDirection"
-                                          styleClass="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                        <f:selectItems value="#{menuComboFormBean.availableItems}"
-                                       var="mi"
-                                       itemValue="#{mi.menuItemId}"
-                                       itemLabel="#{mi.name} (#{mi.pricePerPerson})" />
-                    </h:selectManyCheckbox>
+                    <div class="bg-card-light rounded-2xl border border-border-light p-4 space-y-3">
+
+                        <!-- FILTER BAR: search + dropdown filters -->
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+
+                            <!-- Search -->
+                            <div class="relative w-full md:max-w-xs">
+                                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary-light text-sm">
+                                    search
+                                </span>
+                                <h:inputText id="search"
+                                             value="#{menuComboFormBean.searchKeyword}"
+                                             styleClass="w-full pl-9 pr-3 py-2 rounded-lg border border-border-light bg-white text-xs text-text-main-light placeholder:text-text-secondary-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                    <f:passThroughAttribute name="placeholder" value="Search by name or description..." />
+                                    <f:ajax event="keyup" execute="@this" render="itemsListPanel" />
+                                </h:inputText>
+                            </div>
+
+                            <!-- Dropdown filters -->
+                            <div class="flex flex-wrap gap-3">
+
+                                <!-- Cuisine filter -->
+                                <div class="min-w-[160px]">
+                                    <label class="block text-[11px] font-medium text-text-secondary-light mb-1">
+                                        Cuisine
+                                    </label>
+                                    <h:selectOneMenu id="cuisineFilter"
+                                                     value="#{menuComboFormBean.filterCuisineId}"
+                                                     styleClass="w-full rounded-lg border border-border-light bg-white px-3 py-1.5 text-xs text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                        <f:selectItem itemLabel="All cuisines" itemValue="" noSelectionOption="true" />
+                                        <f:selectItems value="#{menuComboFormBean.cuisineFilters}"
+                                                       var="c"
+                                                       itemValue="#{c.cuisineId}"
+                                                       itemLabel="#{c.name}" />
+                                        <f:ajax execute="@this" render="itemsListPanel" />
+                                    </h:selectOneMenu>
+                                </div>
+
+                                <!-- Category filter -->
+                                <div class="min-w-[160px]">
+                                    <label class="block text-[11px] font-medium text-text-secondary-light mb-1">
+                                        Category
+                                    </label>
+                                    <h:selectOneMenu id="categoryFilter"
+                                                     value="#{menuComboFormBean.filterCategoryId}"
+                                                     styleClass="w-full rounded-lg border border-border-light bg-white px-3 py-1.5 text-xs text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                        <f:selectItem itemLabel="All categories" itemValue="" noSelectionOption="true" />
+                                        <f:selectItems value="#{menuComboFormBean.categoryFilters}"
+                                                       var="cat"
+                                                       itemValue="#{cat.categoryId}"
+                                                       itemLabel="#{cat.name}" />
+                                        <f:ajax execute="@this" render="itemsListPanel" />
+                                    </h:selectOneMenu>
+                                </div>
+
+                                <!-- Vegetarian filter -->
+                                <div class="min-w-[160px]">
+                                    <label class="block text-[11px] font-medium text-text-secondary-light mb-1">
+                                        Dietary
+                                    </label>
+                                    <h:selectOneMenu id="vegFilter"
+                                                     value="#{menuComboFormBean.filterVegetarian}"
+                                                     styleClass="w-full rounded-lg border border-border-light bg-white px-3 py-1.5 text-xs text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                        <f:selectItem itemLabel="All dishes" itemValue="ALL" />
+                                        <f:selectItem itemLabel="Vegetarian only" itemValue="VEG" />
+                                        <f:selectItem itemLabel="Non-vegetarian" itemValue="NON_VEG" />
+                                        <f:ajax execute="@this" render="itemsListPanel" />
+                                    </h:selectOneMenu>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LIST ITEMS: card style, checkbox + info + price -->
+                        <h:panelGroup id="itemsListPanel" layout="block" styleClass="mt-3 space-y-2">
+
+                            <ui:repeat value="#{menuComboFormBean.filteredItems}" var="mi">
+
+                                <label class="flex items-center justify-between w-full rounded-2xl border border-border-light bg-white px-4 py-3 cursor-pointer hover:border-champagne-gold/70">
+
+                                    <!-- checkbox + text -->
+                                    <div class="flex items-center gap-3">
+                                        <h:selectBooleanCheckbox value="#{menuComboFormBean.itemSelection[mi.menuItemId]}"
+                                                                 styleClass="h-4 w-4 rounded border border-border-light" />
+
+                                        <div>
+                                            <p class="text-sm font-semibold text-text-main-light">
+                                                #{mi.name}
+                                            </p>
+                                            <p class="text-xs text-text-secondary-light">
+                                                <h:panelGroup rendered="#{mi.cuisineId != null}">
+                                                    #{mi.cuisineId.name}
+                                                </h:panelGroup>
+
+                                                <h:panelGroup rendered="#{mi.isVegetarian}">
+                                                    &#8226; Vegetarian
+                                                </h:panelGroup>
+
+                                                <h:panelGroup rendered="#{mi.categoryId != null}">
+                                                    &#8226; #{mi.categoryId.name}
+                                                </h:panelGroup>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- price -->
+                                    <p class="text-sm font-semibold text-champagne-gold">
+                                        <h:outputText value="#{mi.pricePerPerson}">
+                                            <f:convertNumber groupingUsed="true" maxFractionDigits="0" />
+                                        </h:outputText>
+                                        VND
+                                    </p>
+                                </label>
+
+                            </ui:repeat>
+
+                            <h:panelGroup rendered="#{empty menuComboFormBean.filteredItems}">
+                                <p class="text-xs text-text-secondary-light italic">
+                                    No menu items match the current filters.
+                                </p>
+                            </h:panelGroup>
+
+                        </h:panelGroup>
+
+                    </div>
                 </div>
 
                 <!-- Buttons -->
@@ -142,6 +257,6 @@
             </div>
 
         </h:form>
-
     </ui:define>
+
 </ui:composition>
