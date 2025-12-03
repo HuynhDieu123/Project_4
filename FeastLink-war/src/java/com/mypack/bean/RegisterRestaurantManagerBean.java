@@ -122,7 +122,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
         }
 
         // Prefill từ Users
-        managerName  = currentUser.getFullName();
+        managerName = currentUser.getFullName();
         managerPhone = currentUser.getPhone();
         managerEmail = currentUser.getEmail();
 
@@ -143,12 +143,18 @@ public class RegisterRestaurantManagerBean implements Serializable {
         }
 
         for (Areas a : allAreas) {
-            if (a == null) continue;
+            if (a == null) {
+                continue;
+            }
             Cities c = a.getCityId();
-            if (c == null || c.getName() == null) continue;
+            if (c == null || c.getName() == null) {
+                continue;
+            }
 
             String name = c.getName().trim();
-            if (name.isEmpty()) continue;
+            if (name.isEmpty()) {
+                continue;
+            }
 
             boolean exists = false;
             for (String s : cityList) {
@@ -169,8 +175,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
     private void loadExistingRestaurant() {
         List<RestaurantManagers> rms = restaurantManagersFacade.findAll();
         for (RestaurantManagers rm : rms) {
-            if (rm.getUserId() != null &&
-                rm.getUserId().getUserId().equals(currentUser.getUserId())) {
+            if (rm.getUserId() != null
+                    && rm.getUserId().getUserId().equals(currentUser.getUserId())) {
                 existingRestaurant = rm.getRestaurantId();
                 managerStatus = rm.getStatus();
                 break;
@@ -185,18 +191,18 @@ public class RegisterRestaurantManagerBean implements Serializable {
             parseMainEventFromDescription(fullDesc);
 
             restaurantAddress = existingRestaurant.getAddress();
-            managerPhone      = existingRestaurant.getPhone() != null
-                                ? existingRestaurant.getPhone()
-                                : managerPhone;
-            managerEmail      = existingRestaurant.getEmail() != null
-                                ? existingRestaurant.getEmail()
-                                : managerEmail;
-            managerName       = existingRestaurant.getContactPerson() != null
-                                ? existingRestaurant.getContactPerson()
-                                : managerName;
+            managerPhone = existingRestaurant.getPhone() != null
+                    ? existingRestaurant.getPhone()
+                    : managerPhone;
+            managerEmail = existingRestaurant.getEmail() != null
+                    ? existingRestaurant.getEmail()
+                    : managerEmail;
+            managerName = existingRestaurant.getContactPerson() != null
+                    ? existingRestaurant.getContactPerson()
+                    : managerName;
 
             minGuests = existingRestaurant.getMinGuestCount();
-            minDays   = existingRestaurant.getMinDaysInAdvance();
+            minDays = existingRestaurant.getMinDaysInAdvance();
 
             // Logo: đường dẫn đã lưu trong DB
             logoUrl = existingRestaurant.getLogoUrl();
@@ -218,18 +224,18 @@ public class RegisterRestaurantManagerBean implements Serializable {
     }
 
     /**
-     * Tách loại tiệc chính & phần description hiển thị từ chuỗi description lưu trong DB.
-     * Format lưu: [Main Event: Wedding] Mô tả nhà hàng...
+     * Tách loại tiệc chính & phần description hiển thị từ chuỗi description lưu
+     * trong DB. Format lưu: [Main Event: Wedding] Mô tả nhà hàng...
      */
     private void parseMainEventFromDescription(String fullDesc) {
         if (isBlank(fullDesc)) {
-            this.description   = null;
+            this.description = null;
             this.mainEventType = null;
             return;
         }
 
         String trimmed = fullDesc.trim();
-        String prefix  = "[Main Event:";
+        String prefix = "[Main Event:";
         if (trimmed.startsWith(prefix)) {
             int end = trimmed.indexOf(']');
             if (end > prefix.length()) {
@@ -246,7 +252,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
         }
 
         // Không match pattern → chỉ là mô tả
-        this.description   = fullDesc;
+        this.description = fullDesc;
         this.mainEventType = null;
     }
 
@@ -269,9 +275,13 @@ public class RegisterRestaurantManagerBean implements Serializable {
         }
 
         for (Areas a : allAreas) {
-            if (a == null || a.getName() == null) continue;
+            if (a == null || a.getName() == null) {
+                continue;
+            }
             Cities c = a.getCityId();
-            if (c == null || c.getName() == null) continue;
+            if (c == null || c.getName() == null) {
+                continue;
+            }
 
             if (c.getName().trim().equalsIgnoreCase(cityName)) {
                 String areaName = a.getName().trim();
@@ -293,7 +303,9 @@ public class RegisterRestaurantManagerBean implements Serializable {
     }
 
     private boolean isApprovedManager() {
-        if (managerStatus == null) return false;
+        if (managerStatus == null) {
+            return false;
+        }
         String st = managerStatus.trim();
         return st.equalsIgnoreCase("Active") || st.equalsIgnoreCase("Approved");
     }
@@ -315,11 +327,17 @@ public class RegisterRestaurantManagerBean implements Serializable {
         }
 
         for (Areas a : all) {
-            if (a == null || a.getName() == null) continue;
-            if (!a.getName().trim().equalsIgnoreCase(areaName)) continue;
+            if (a == null || a.getName() == null) {
+                continue;
+            }
+            if (!a.getName().trim().equalsIgnoreCase(areaName)) {
+                continue;
+            }
 
             Cities c = a.getCityId();
-            if (c == null || c.getName() == null) continue;
+            if (c == null || c.getName() == null) {
+                continue;
+            }
 
             if (c.getName().trim().equalsIgnoreCase(cityName)) {
                 return a;
@@ -355,17 +373,17 @@ public class RegisterRestaurantManagerBean implements Serializable {
         }
 
         // Kiểm tra logo: nếu không có file mới và cũng không có logo cũ → lỗi
-        boolean noNewLogo      = (logoFile == null || logoFile.getSize() <= 0);
+        boolean noNewLogo = (logoFile == null || logoFile.getSize() <= 0);
         boolean noExistingLogo = isBlank(logoUrl);
 
         // Validate bắt buộc
-        if (isBlank(managerName) || isBlank(managerPhone) || isBlank(managerEmail) ||
-            isBlank(restaurantName) || isBlank(restaurantAddress) ||
-            isBlank(city) || isBlank(area) ||
-            (noNewLogo && noExistingLogo) ||
-            isBlank(mainEventType) ||
-            minGuests == null || minGuests < 0 ||
-            minDays == null   || minDays   < 0) {
+        if (isBlank(managerName) || isBlank(managerPhone) || isBlank(managerEmail)
+                || isBlank(restaurantName) || isBlank(restaurantAddress)
+                || isBlank(city) || isBlank(area)
+                || (noNewLogo && noExistingLogo)
+                || isBlank(mainEventType)
+                || minGuests == null || minGuests < 0
+                || minDays == null || minDays < 0) {
 
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
@@ -394,7 +412,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
             Date now = new Date();
 
             if (isNewRestaurant) {
-                restaurant.setStatus("Pending");
+                restaurant.setStatus("PENDING_APPROVAL");
                 restaurant.setCreatedAt(now);
             }
             restaurant.setUpdatedAt(now);
@@ -452,11 +470,11 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 }
 
                 String submitted = logoFile.getSubmittedFileName();
-                String baseName  = submitted;
+                String baseName = submitted;
                 if (submitted != null) {
                     int slash = submitted.lastIndexOf('/');
-                    int back  = submitted.lastIndexOf('\\');
-                    int idx   = Math.max(slash, back);
+                    int back = submitted.lastIndexOf('\\');
+                    int idx = Math.max(slash, back);
                     if (idx >= 0 && idx < submitted.length() - 1) {
                         baseName = submitted.substring(idx + 1);
                     }
@@ -470,8 +488,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 String savedName = "logo_" + currentUser.getUserId() + "_" + System.currentTimeMillis() + ext;
                 File dest = new File(folder, savedName);
 
-                try (InputStream in = logoFile.getInputStream();
-                     FileOutputStream out = new FileOutputStream(dest)) {
+                try (InputStream in = logoFile.getInputStream(); FileOutputStream out = new FileOutputStream(dest)) {
                     byte[] buf = new byte[8192];
                     int len;
                     while ((len = in.read(buf)) != -1) {
@@ -505,10 +522,21 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 rm.setUserId(currentUser);
                 rm.setRestaurantId(restaurant);
                 rm.setIsPrimary(true);
-                rm.setStatus("Pending");
+                rm.setStatus("PENDING_APPROVAL");      // trạng thái hồ sơ manager
                 rm.setCreatedAt(now);
 
                 restaurantManagersFacade.create(rm);
+
+                // >>> CẬP NHẬT STATUS USER SANG PENDING <<<
+                // Giả sử Users có field 'status'
+                currentUser.setStatus("PENDING");          // hoặc "PENDING_MANAGER" tùy bạn định nghĩa
+                usersFacade.edit(currentUser);
+
+                // Cập nhật lại vào session để các trang khác thấy status mới
+                FacesContext.getCurrentInstance()
+                        .getExternalContext()
+                        .getSessionMap()
+                        .put("currentUser", currentUser);
 
                 existingRestaurant = restaurant;
                 managerStatus = "Pending";
@@ -573,76 +601,195 @@ public class RegisterRestaurantManagerBean implements Serializable {
     }
 
     // ================== GETTER / SETTER ==================
+    public String getManagerName() {
+        return managerName;
+    }
 
-    public String getManagerName() { return managerName; }
-    public void setManagerName(String managerName) { this.managerName = managerName; }
+    public void setManagerName(String managerName) {
+        this.managerName = managerName;
+    }
 
-    public String getManagerPhone() { return managerPhone; }
-    public void setManagerPhone(String managerPhone) { this.managerPhone = managerPhone; }
+    public String getManagerPhone() {
+        return managerPhone;
+    }
 
-    public String getManagerEmail() { return managerEmail; }
-    public void setManagerEmail(String managerEmail) { this.managerEmail = managerEmail; }
+    public void setManagerPhone(String managerPhone) {
+        this.managerPhone = managerPhone;
+    }
 
-    public String getManagerRole() { return managerRole; }
-    public void setManagerRole(String managerRole) { this.managerRole = managerRole; }
+    public String getManagerEmail() {
+        return managerEmail;
+    }
 
-    public String getRestaurantName() { return restaurantName; }
-    public void setRestaurantName(String restaurantName) { this.restaurantName = restaurantName; }
+    public void setManagerEmail(String managerEmail) {
+        this.managerEmail = managerEmail;
+    }
 
-    public String getRestaurantBrandName() { return restaurantBrandName; }
-    public void setRestaurantBrandName(String restaurantBrandName) { this.restaurantBrandName = restaurantBrandName; }
+    public String getManagerRole() {
+        return managerRole;
+    }
 
-    public String getRestaurantAddress() { return restaurantAddress; }
-    public void setRestaurantAddress(String restaurantAddress) { this.restaurantAddress = restaurantAddress; }
+    public void setManagerRole(String managerRole) {
+        this.managerRole = managerRole;
+    }
 
-    public String getCity() { return city; }
-    public void setCity(String city) { this.city = city; }
+    public String getRestaurantName() {
+        return restaurantName;
+    }
 
-    public String getArea() { return area; }
-    public void setArea(String area) { this.area = area; }
+    public void setRestaurantName(String restaurantName) {
+        this.restaurantName = restaurantName;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getRestaurantBrandName() {
+        return restaurantBrandName;
+    }
 
-    public String getTaxCode() { return taxCode; }
-    public void setTaxCode(String taxCode) { this.taxCode = taxCode; }
+    public void setRestaurantBrandName(String restaurantBrandName) {
+        this.restaurantBrandName = restaurantBrandName;
+    }
 
-    public String getFanpage() { return fanpage; }
-    public void setFanpage(String fanpage) { this.fanpage = fanpage; }
+    public String getRestaurantAddress() {
+        return restaurantAddress;
+    }
 
-    public String getOpenTime() { return openTime; }
-    public void setOpenTime(String openTime) { this.openTime = openTime; }
+    public void setRestaurantAddress(String restaurantAddress) {
+        this.restaurantAddress = restaurantAddress;
+    }
 
-    public String getCloseTime() { return closeTime; }
-    public void setCloseTime(String closeTime) { this.closeTime = closeTime; }
+    public String getCity() {
+        return city;
+    }
 
-    public String getServingStyle() { return servingStyle; }
-    public void setServingStyle(String servingStyle) { this.servingStyle = servingStyle; }
+    public void setCity(String city) {
+        this.city = city;
+    }
 
-    public String getLogoUrl() { return logoUrl; }
-    public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
+    public String getArea() {
+        return area;
+    }
 
-    public Part getLogoFile() { return logoFile; }
-    public void setLogoFile(Part logoFile) { this.logoFile = logoFile; }
+    public void setArea(String area) {
+        this.area = area;
+    }
 
-    public Integer getMinGuests() { return minGuests; }
-    public void setMinGuests(Integer minGuests) { this.minGuests = minGuests; }
+    public String getDescription() {
+        return description;
+    }
 
-    public Integer getMaxGuests() { return maxGuests; }
-    public void setMaxGuests(Integer maxGuests) { this.maxGuests = maxGuests; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public Integer getMinDays() { return minDays; }
-    public void setMinDays(Integer minDays) { this.minDays = minDays; }
+    public String getTaxCode() {
+        return taxCode;
+    }
 
-    public boolean isAcceptedTerms() { return acceptedTerms; }
-    public void setAcceptedTerms(boolean acceptedTerms) { this.acceptedTerms = acceptedTerms; }
+    public void setTaxCode(String taxCode) {
+        this.taxCode = taxCode;
+    }
 
-    public String getMainEventType() { return mainEventType; }
-    public void setMainEventType(String mainEventType) { this.mainEventType = mainEventType; }
+    public String getFanpage() {
+        return fanpage;
+    }
 
-    public List<String> getCityList() { return cityList; }
-    public void setCityList(List<String> cityList) { this.cityList = cityList; }
+    public void setFanpage(String fanpage) {
+        this.fanpage = fanpage;
+    }
 
-    public List<String> getAreaList() { return areaList; }
-    public void setAreaList(List<String> areaList) { this.areaList = areaList; }
+    public String getOpenTime() {
+        return openTime;
+    }
+
+    public void setOpenTime(String openTime) {
+        this.openTime = openTime;
+    }
+
+    public String getCloseTime() {
+        return closeTime;
+    }
+
+    public void setCloseTime(String closeTime) {
+        this.closeTime = closeTime;
+    }
+
+    public String getServingStyle() {
+        return servingStyle;
+    }
+
+    public void setServingStyle(String servingStyle) {
+        this.servingStyle = servingStyle;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
+    }
+
+    public Part getLogoFile() {
+        return logoFile;
+    }
+
+    public void setLogoFile(Part logoFile) {
+        this.logoFile = logoFile;
+    }
+
+    public Integer getMinGuests() {
+        return minGuests;
+    }
+
+    public void setMinGuests(Integer minGuests) {
+        this.minGuests = minGuests;
+    }
+
+    public Integer getMaxGuests() {
+        return maxGuests;
+    }
+
+    public void setMaxGuests(Integer maxGuests) {
+        this.maxGuests = maxGuests;
+    }
+
+    public Integer getMinDays() {
+        return minDays;
+    }
+
+    public void setMinDays(Integer minDays) {
+        this.minDays = minDays;
+    }
+
+    public boolean isAcceptedTerms() {
+        return acceptedTerms;
+    }
+
+    public void setAcceptedTerms(boolean acceptedTerms) {
+        this.acceptedTerms = acceptedTerms;
+    }
+
+    public String getMainEventType() {
+        return mainEventType;
+    }
+
+    public void setMainEventType(String mainEventType) {
+        this.mainEventType = mainEventType;
+    }
+
+    public List<String> getCityList() {
+        return cityList;
+    }
+
+    public void setCityList(List<String> cityList) {
+        this.cityList = cityList;
+    }
+
+    public List<String> getAreaList() {
+        return areaList;
+    }
+
+    public void setAreaList(List<String> areaList) {
+        this.areaList = areaList;
+    }
 }

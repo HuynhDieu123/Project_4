@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<ui:composition 
+    template="template.xhtml"
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="jakarta.faces.html"
+    xmlns:ui="jakarta.faces.facelets"
+    xmlns:f="jakarta.faces.core"
+    xmlns:pass="jakarta.faces.passthrough">
+
+    <ui:define name="title">Restaurant Approval</ui:define>
+
+    <ui:define name="content">
+
+        <!-- HEADER -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Restaurant &amp; Manager Approval
+                </h1>
+                <p class="text-sm text-gray-500">
+                    Review and approve pending restaurants and manager upgrade requests.
+                </p>
+            </div>
+        </div>
+
+        <!-- MAIN FORM -->
+        <h:form id="approveRestaurantForm">
+
+            <!-- FILTER CARD (dùng chung) -->
+            <div class="bg-white p-5 rounded-2xl shadow border border-gray-200 mb-6">
+
+                <div class="flex flex-wrap gap-4 items-end justify-between">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+
+                        <!-- Search -->
+                        <div class="rounded-xl border border-gray-200 px-3 py-3 bg-gray-50/60">
+                            <label class="block text-xs font-medium text-gray-600 mb-2">
+                                Search (restaurant / user)
+                            </label>
+                            <h:inputText value="#{restaurantApproveBean.keyword}"
+                                         styleClass="w-full rounded-lg border border-gray-300 text-sm px-3 py-2
+                                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                         pass:placeholder="Search by name, email, phone..." />
+                        </div>
+
+                        <!-- City -->
+                        <div class="rounded-xl border border-gray-200 px-3 py-3 bg-gray-50/60">
+                            <label class="block text-xs font-medium text-gray-600 mb-2">
+                                City
+                            </label>
+                            <h:selectOneMenu value="#{restaurantApproveBean.cityFilterId}"
+                                             styleClass="w-full rounded-lg border border-gray-300 text-sm px-3 py-2
+                                                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                <f:selectItem itemValue="#{null}" itemLabel="All cities" noSelectionOption="true" />
+                                <f:selectItems value="#{restaurantApproveBean.cityList}"
+                                               var="c"
+                                               itemValue="#{c.cityId}"
+                                               itemLabel="#{c.name}" />
+                            </h:selectOneMenu>
+                        </div>
+
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="flex gap-3">
+                        <h:commandButton value="Filter"
+                                         action="#{restaurantApproveBean.loadPending}"
+                                         styleClass="px-5 py-2 rounded-2xl bg-blue-600 text-white text-sm font-semibold
+                                                     hover:bg-blue-700 shadow-sm">
+                            <f:ajax execute="@form" render="@form" />
+                        </h:commandButton>
+
+                        <h:commandButton value="Reset"
+                                         action="#{restaurantApproveBean.resetFilter}"
+                                         styleClass="px-4 py-2 rounded-2xl border border-gray-200 bg-gray-50
+                                                     text-gray-700 text-sm font-medium hover:bg-gray-100">
+                            <f:ajax execute="@form" render="@form" />
+                        </h:commandButton>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ========== BẢNG 1: PENDING RESTAURANTS ========== -->
+            <div class="bg-white p-6 rounded-2xl shadow border border-gray-200 overflow-x-auto mb-8">
+
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Pending restaurants</h2>
+                        <p class="text-xs text-gray-500">
+                            Restaurants waiting for approval (status = PENDING_APPROVAL).
+                        </p>
+                    </div>
+                    <span class="text-xs text-gray-500">
+                        Total: #{restaurantApproveBean.pendingRestaurants.size()}
+                    </span>
+                </div>
+
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <th class="px-4 py-3">Name</th>
+                            <th class="px-4 py-3">Address</th>
+                            <th class="px-4 py-3">Area</th>
+                            <th class="px-4 py-3">Contact</th>
+                            <th class="px-4 py-3">Email</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+
+                        <!-- dùng pageRestaurants để phân trang -->
+                        <ui:repeat value="#{restaurantApproveBean.pageRestaurants}" var="r">
+
+                            <tr class="bg-white hover:bg-gray-50">
+
+                                <!-- Name -->
+                                <td class="px-4 py-3">
+                                    <div class="font-semibold text-gray-900">
+                                        #{r.name}
+                                    </div>
+                                </td>
+
+                                <!-- Address -->
+                                <td class="px-4 py-3 text-gray-700">
+                                    #{r.address}
+                                </td>
+
+                                <!-- Area -->
+                                <td class="px-4 py-3 text-gray-700">
+                                    #{r.areaId != null ? r.areaId.name : '—'}
+                                </td>
+
+                                <!-- Contact -->
+                                <td class="px-4 py-3">
+                                    <div class="flex flex-col">
+                                        <span>#{r.contactPerson}</span>
+                                        <span class="text-xs text-gray-500">#{r.phone}</span>
+                                    </div>
+                                </td>
+
+                                <!-- Email -->
+                                <td class="px-4 py-3 text-gray-700">
+                                    #{r.email}
+                                </td>
+
+                                <!-- Status -->
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium
+                                                 #{restaurantApproveBean.statusCssClass(r.status)}">
+                                        #{restaurantApproveBean.statusLabel(r.status)}
+                                    </span>
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="px-4 py-3 text-right">
+                                    <div class="flex justify-end gap-2">
+
+                                        <!-- Approve -->
+                                        <h:commandLink action="#{restaurantApproveBean.approveRestaurant}"
+                                                       styleClass="inline-flex items-center px-3 py-1.5 rounded-full border
+                                                                   border-green-300 text-xs font-medium text-green-700
+                                                                   hover:bg-green-50">
+                                            <f:setPropertyActionListener value="#{r.restaurantId}"
+                                                                         target="#{restaurantApproveBean.selectedRestaurantId}" />
+                                            <f:ajax execute="@this" render=":approveRestaurantForm" />
+                                            <span>Approve</span>
+                                        </h:commandLink>
+
+                                        <!-- Reject -->
+                                        <h:commandLink action="#{restaurantApproveBean.rejectRestaurant}"
+                                                       styleClass="inline-flex items-center px-3 py-1.5 rounded-full border
+                                                                   border-red-300 text-xs font-medium text-red-700
+                                                                   hover:bg-red-50">
+                                            <f:setPropertyActionListener value="#{r.restaurantId}"
+                                                                         target="#{restaurantApproveBean.selectedRestaurantId}" />
+                                            <f:ajax execute="@this" render=":approveRestaurantForm" />
+                                            <span>Reject</span>
+                                        </h:commandLink>
+
+                                    </div>
+                                </td>
+
+                            </tr>
+
+                        </ui:repeat>
+
+                        <!-- NO DATA -->
+                        <ui:fragment rendered="#{empty restaurantApproveBean.pageRestaurants}">
+                            <tr>
+                                <td colspan="7"
+                                    class="px-4 py-6 text-center text-sm text-gray-500">
+                                    No pending restaurants.
+                                </td>
+                            </tr>
+                        </ui:fragment>
+
+                    </tbody>
+                </table>
+
+                <!-- Pagination for Restaurants -->
+                <div class="flex items-center justify-between mt-4 text-sm text-gray-600">
+                    <span>
+                        Page #{restaurantApproveBean.restaurantCurrentPage}
+                        /
+                        #{restaurantApproveBean.restaurantTotalPages}
+                    </span>
+
+                    <div class="flex gap-2">
+                        <h:commandButton value="Previous"
+                                         action="#{restaurantApproveBean.prevRestaurantPage}"
+                                         disabled="#{restaurantApproveBean.restaurantCurrentPage le 1}"
+                                         styleClass="px-3 py-1.5 rounded-xl border border-gray-300
+                                                     bg-white hover:bg-gray-50 disabled:opacity-40">
+                            <f:ajax execute="@this" render=":approveRestaurantForm" />
+                        </h:commandButton>
+
+                        <h:commandButton value="Next"
+                                         action="#{restaurantApproveBean.nextRestaurantPage}"
+                                         disabled="#{restaurantApproveBean.restaurantCurrentPage ge restaurantApproveBean.restaurantTotalPages}"
+                                         styleClass="px-3 py-1.5 rounded-xl border border-gray-300
+                                                     bg-white hover:bg-gray-50 disabled:opacity-40">
+                            <f:ajax execute="@this" render=":approveRestaurantForm" />
+                        </h:commandButton>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ========== BẢNG 2: MANAGER UPGRADE REQUESTS ========== -->
+            <div class="bg-white p-6 rounded-2xl shadow border border-gray-200 overflow-x-auto">
+
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Manager upgrade requests</h2>
+                        <p class="text-xs text-gray-500">
+                            Users asking to upgrade to Restaurant Manager (status = PENDING, role = CUSTOMER).
+                        </p>
+                    </div>
+                    <span class="text-xs text-gray-500">
+                        Total: #{restaurantApproveBean.pendingManagerUsers.size()}
+                    </span>
+                </div>
+
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <th class="px-4 py-3">Full name</th>
+                            <th class="px-4 py-3">Email</th>
+                            <th class="px-4 py-3">Phone</th>
+                            <th class="px-4 py-3">City</th>
+                            <th class="px-4 py-3">Current Role</th>
+                            <th class="px-4 py-3">Request</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+
+                        <!-- dùng pageManagerUsers để phân trang -->
+                        <ui:repeat value="#{restaurantApproveBean.pageManagerUsers}" var="u">
+
+                            <tr class="bg-white hover:bg-gray-50">
+
+                                <!-- Name -->
+                                <td class="px-4 py-3">
+                                    <div class="font-semibold text-gray-900">
+                                        #{u.fullName}
+                                    </div>
+                                </td>
+
+                                <!-- Email -->
+                                <td class="px-4 py-3 text-gray-700">
+                                    #{u.email}
+                                </td>
+
+                                <!-- Phone -->
+                                <td class="px-4 py-3 text-gray-700">
+                                    #{u.phone}
+                                </td>
+
+                                <!-- City -->
+                                <td class="px-4 py-3 text-gray-700">
+                                    #{u.cityId != null ? u.cityId.name : '—'}
+                                </td>
+
+                                <!-- Current role -->
+                                <td class="px-4 py-3 text-gray-700">
+                                    #{u.role}
+                                </td>
+
+                                <!-- Request (always Manager) -->
+                                <td class="px-4 py-3 text-gray-700">
+                                    Restaurant Manager
+                                </td>
+
+                                <!-- Status -->
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium
+                                                 #{restaurantApproveBean.statusCssClass(u.status)}">
+                                        #{restaurantApproveBean.statusLabel(u.status)}
+                                    </span>
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="px-4 py-3 text-right">
+                                    <div class="flex justify-end gap-2">
+
+                                        <!-- Approve upgrade -->
+                                        <h:commandLink action="#{restaurantApproveBean.approveManager}"
+                                                       styleClass="inline-flex items-center px-3 py-1.5 rounded-full border
+                                                                   border-green-300 text-xs font-medium text-green-700
+                                                                   hover:bg-green-50">
+                                            <f:setPropertyActionListener value="#{u.userId}"
+                                                                         target="#{restaurantApproveBean.selectedUserId}" />
+                                            <f:ajax execute="@this" render=":approveRestaurantForm" />
+                                            <span>Approve</span>
+                                        </h:commandLink>
+
+                                        <!-- Reject upgrade -->
+                                        <h:commandLink action="#{restaurantApproveBean.rejectManager}"
+                                                       styleClass="inline-flex items-center px-3 py-1.5 rounded-full border
+                                                                   border-red-300 text-xs font-medium text-red-700
+                                                                   hover:bg-red-50">
+                                            <f:setPropertyActionListener value="#{u.userId}"
+                                                                         target="#{restaurantApproveBean.selectedUserId}" />
+                                            <f:ajax execute="@this" render=":approveRestaurantForm" />
+                                            <span>Reject</span>
+                                        </h:commandLink>
+
+                                    </div>
+                                </td>
+
+                            </tr>
+
+                        </ui:repeat>
+
+                        <!-- NO DATA -->
+                        <ui:fragment rendered="#{empty restaurantApproveBean.pageManagerUsers}">
+                            <tr>
+                                <td colspan="8"
+                                    class="px-4 py-6 text-center text-sm text-gray-500">
+                                    No manager upgrade requests.
+                                </td>
+                            </tr>
+                        </ui:fragment>
+
+                    </tbody>
+                </table>
+
+                <!-- Pagination for Manager Users -->
+                <div class="flex items-center justify-between mt-4 text-sm text-gray-600">
+                    <span>
+                        Page #{restaurantApproveBean.managerCurrentPage}
+                        /
+                        #{restaurantApproveBean.managerTotalPages}
+                    </span>
+
+                    <div class="flex gap-2">
+                        <h:commandButton value="Previous"
+                                         action="#{restaurantApproveBean.prevManagerPage}"
+                                         disabled="#{restaurantApproveBean.managerCurrentPage le 1}"
+                                         styleClass="px-3 py-1.5 rounded-xl border border-gray-300
+                                                     bg-white hover:bg-gray-50 disabled:opacity-40">
+                            <f:ajax execute="@this" render=":approveRestaurantForm" />
+                        </h:commandButton>
+
+                        <h:commandButton value="Next"
+                                         action="#{restaurantApproveBean.nextManagerPage}"
+                                         disabled="#{restaurantApproveBean.managerCurrentPage ge restaurantApproveBean.managerTotalPages}"
+                                         styleClass="px-3 py-1.5 rounded-xl border border-gray-300
+                                                     bg-white hover:bg-gray-50 disabled:opacity-40">
+                            <f:ajax execute="@this" render=":approveRestaurantForm" />
+                        </h:commandButton>
+                    </div>
+                </div>
+
+            </div>
+
+        </h:form>
+
+    </ui:define>
+</ui:composition>
