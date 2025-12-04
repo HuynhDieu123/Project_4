@@ -3,31 +3,36 @@
       xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="http://xmlns.jcp.org/jsf/html"
       xmlns:f="http://xmlns.jcp.org/jsf/core"
-      xmlns:ui="jakarta.faces.facelets">
+      xmlns:ui="jakarta.faces.facelets"
+        encoding="UTF-8"
+        contentType="text/html">
 
     <h:head>
         <meta charset="UTF-8" />
-        <title>FeastLink – Đăng ký nâng cấp tài khoản Nhà hàng</title>
+        <title>FeastLink – Register for Restaurant Account Upgrade</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
         <link rel="stylesheet"
               type="text/css"
               href="#{request.contextPath}/css/register_manager.css" />
-          <!-- Tailwind CDN -->
+
+        <!-- Tailwind CDN -->
         <script src="https://cdn.tailwindcss.com"></script>
 
         <!-- Lucide Icons CDN -->
         <script src="https://unpkg.com/lucide@latest"></script>
     </h:head>
+
     <h:body>
         <div id="top"></div>
 
         <!-- HEADER -->
         <ui:include src="layout/header.xhtml" />
+
         <div class="shell">
 
             <!-- SIDEBAR -->
             <aside class="sidebar">
-                
                 <div class="logo-row">
                     <h:graphicImage library="images"
                                     name="feastlink-logo.png"
@@ -38,9 +43,9 @@
                     </div>
                 </div>
 
-                <div class="sidebar-title">Nâng cấp tài khoản</div>
+                <div class="sidebar-title">Upgrade your account</div>
                 <div class="sidebar-caption">
-                    Gửi yêu cầu trở thành <span>Restaurant Manager</span> để quản lý hồ sơ và đơn đặt tiệc của nhà hàng bạn.
+                    Submit a request to become <span>Restaurant Manager</span> to manage your restaurant's records and party orders.
                 </div>
 
                 <div class="sidebar-steps">
@@ -48,8 +53,8 @@
                         <div class="sidebar-step">
                             <div class="step-badge step-badge--active">1</div>
                             <div>
-                                <div class="step-label-main">Thông tin quản lý</div>
-                                <div class="step-label-sub">Họ tên, email đăng nhập</div>
+                                    <div class="step-label-main">Management information</div>
+                                <div class="step-label-sub">Full name, login email</div>
                             </div>
                         </div>
                     </a>
@@ -57,8 +62,8 @@
                         <div class="sidebar-step">
                             <div class="step-badge">2</div>
                             <div>
-                                <div class="step-label-main">Thông tin nhà hàng</div>
-                                <div class="step-label-sub">Tên, logo, địa điểm</div>
+                                <div class="step-label-main">Restaurant information</div>
+                                <div class="step-label-sub">Name, logo, location</div>
                             </div>
                         </div>
                     </a>
@@ -66,8 +71,8 @@
                         <div class="sidebar-step">
                             <div class="step-badge">3</div>
                             <div>
-                                <div class="step-label-main">Điều kiện nhận tiệc</div>
-                                <div class="step-label-sub">Số khách, ngày đặt trước</div>
+                                <div class="step-label-main">Party conditions</div>
+                                <div class="step-label-sub">Number of guests, date of reservation</div>
                             </div>
                         </div>
                     </a>
@@ -75,15 +80,15 @@
                         <div class="sidebar-step">
                             <div class="step-badge">4</div>
                             <div>
-                                <div class="step-label-main">Gửi Admin duyệt</div>
-                                <div class="step-label-sub">Kiểm duyệt &amp; kích hoạt</div>
+                                <div class="step-label-main">Send to Admin for approval</div>
+                                <div class="step-label-sub">Censor &amp; activate</div>
                             </div>
                         </div>
                     </a>
                 </div>
 
                 <div class="sidebar-footer">
-                    Sau khi gửi yêu cầu, <span>Admin FeastLink</span> sẽ xem xét và duyệt trong 1–3 ngày làm việc.
+                   After submitting the request, <span>Admin FeastLink</span> will review and approve within 1–3 business days.
                 </div>
             </aside>
 
@@ -95,59 +100,62 @@
                     <h:messages id="globalMsg"
                                 layout="list"
                                 globalOnly="true"
-                                infoClass="msg msg-info"
-                                errorClass="msg msg-error"
-                                warnClass="msg msg-warn" />
+                                infoClass="msg msg-info msg-lg"
+                                errorClass="msg msg-error msg-lg"
+                                warnClass="msg msg-warn msg-lg" />
 
                     <div class="content-header">
                         <div class="content-title-block">
-                            <h1>Đăng ký nâng cấp tài khoản Nhà hàng</h1>
-                            <p>Điền thông tin bên dưới để yêu cầu nâng cấp tài khoản hiện tại của bạn lên Restaurant Manager.</p>
+                            <h1>Register to upgrade your Restaurant account</h1>
+                            <p>Fill out the information below to request an upgrade of your current account to Restaurant Manager.</p>
                         </div>
-                        <div class="status-pill">Trạng thái: Draft request</div>
+                        <div class="status-pill">Status: Draft request</div>
                     </div>
 
                     <div class="info-banner">
                         <div class="info-text">
-                            <strong>Quy trình duyệt hồ sơ:</strong> Sau khi gửi yêu cầu, đội ngũ FeastLink sẽ xem xét thông tin nhà hàng, có thể liên hệ lại để xác minh thêm 
-                            (qua email hoặc điện thoại). Khi hồ sơ được duyệt, tài khoản hiện tại của bạn sẽ được <strong>nâng cấp lên Restaurant Manager</strong>.
+                            <strong>Application review process:</strong> After submitting your request, the FeastLink team will review your restaurant information and may contact you for further verification. 
+                            (via email or phone). Once your application is approved, your current account will be <strong>upgrade to Restaurant Manager</strong>.
                         </div>
                     </div>
 
-                    <!-- QUAN TRỌNG: multipart/form-data để upload file -->
+                    <!-- FORM -->
                     <h:form id="registerForm" enctype="multipart/form-data">
+
                         <!-- 1. THÔNG TIN QUẢN LÝ -->
                         <section class="section-card" id="s1">
                             <div class="section-header">
                                 <div>
-                                    <div class="section-title">1. Thông tin Quản lý nhà hàng</div>
-                                    <div class="section-caption">Thông tin này dùng để đăng nhập và nhận thông báo từ FeastLink.</div>
+                                    <div class="section-title">1. Restaurant Management Information</div>
+                                        <div class="section-caption">This information is used to log in and receive notifications from FeastLink.</div>
                                 </div>
                             </div>
 
                             <div class="field-grid-2">
                                 <div class="field">
-                                    <label for="managerName">Họ và tên quản lý *</label>
+                                    <label for="managerName">Manager's name *</label>
                                     <h:inputText id="managerName"
                                                  value="#{registerRestaurantManagerBean.managerName}"
                                                  required="true"
                                                  requiredMessage="Vui lòng nhập Họ và tên quản lý.">
-                                        <f:passThroughAttribute name="placeholder" value="Ví dụ: Alex Tran" />
+                                        <f:passThroughAttribute name="placeholder" value="Example: Alex Tran" />
                                     </h:inputText>
                                     <h:message for="managerName" styleClass="msg-field-error" />
                                 </div>
+
                                 <div class="field">
-                                    <label for="managerPhone">Số điện thoại *</label>
+                                    <label for="managerPhone">Phone number "RESTAURANT ZALO NUMBER" *</label>
                                     <h:inputText id="managerPhone"
                                                  value="#{registerRestaurantManagerBean.managerPhone}"
                                                  required="true"
                                                  requiredMessage="Vui lòng nhập Số điện thoại.">
-                                        <f:passThroughAttribute name="placeholder" value="Ví dụ: 0901 234 567" />
+                                        <f:passThroughAttribute name="placeholder" value="Example: 0901 234 567" />
                                     </h:inputText>
                                     <h:message for="managerPhone" styleClass="msg-field-error" />
                                 </div>
+
                                 <div class="field">
-                                    <label for="managerEmail">Email đăng nhập *</label>
+                                    <label for="managerEmail">Login Email *</label>
                                     <h:inputText id="managerEmail"
                                                  value="#{registerRestaurantManagerBean.managerEmail}"
                                                  required="true"
@@ -155,14 +163,15 @@
                                         <f:passThroughAttribute name="type" value="email" />
                                         <f:passThroughAttribute name="placeholder" value="example@restaurant.com" />
                                     </h:inputText>
-                                    <div class="hint">Sẽ dùng email hiện tại của bạn nếu bạn đang đăng nhập.</div>
+                                    <div class="hint">Will use your current email if you are logged in.</div>
                                     <h:message for="managerEmail" styleClass="msg-field-error" />
                                 </div>
+
                                 <div class="field">
-                                    <label for="managerRole">Chức vụ tại nhà hàng</label>
+                                    <label for="managerRole">Position at the restaurant</label>
                                     <h:inputText id="managerRole"
                                                  value="#{registerRestaurantManagerBean.managerRole}">
-                                        <f:passThroughAttribute name="placeholder" value="Ví dụ: General Manager" />
+                                        <f:passThroughAttribute name="placeholder" value="Example: General Manager" />
                                     </h:inputText>
                                 </div>
                             </div>
@@ -172,24 +181,25 @@
                         <section class="section-card" id="s2">
                             <div class="section-header">
                                 <div>
-                                    <div class="section-title">2. Thông tin nhà hàng</div>
-                                    <div class="section-caption">Thông tin hiển thị cho khách khi nhà hàng được kích hoạt trên FeastLink.</div>
+                                    <div class="section-title">2. Restaurant information</div>
+                                    <div class="section-caption">Information displayed to guests when the restaurant is activated on FeastLink.</div>
                                 </div>
                             </div>
 
                             <div class="field-grid-2">
                                 <div class="field">
-                                    <label for="restaurantName">Tên nhà hàng *</label>
+                                    <label for="restaurantName">Restaurant name *</label>
                                     <h:inputText id="restaurantName"
                                                  value="#{registerRestaurantManagerBean.restaurantName}"
                                                  required="true"
-                                                 requiredMessage="Vui lòng nhập Tên nhà hàng.">
-                                        <f:passThroughAttribute name="placeholder" value="Tên nhà hàng của bạn" />
+                                                 requiredMessage="Please enter Restaurant Name.">
+                                        <f:passThroughAttribute name="placeholder" value="Your restaurant name" />
                                     </h:inputText>
                                     <h:message for="restaurantName" styleClass="msg-field-error" />
                                 </div>
+
                                 <div class="field">
-                                    <label for="restaurantBrandName">Tên thương hiệu (nếu có)</label>
+                                    <label for="restaurantBrandName">Brand name (if any)</label>
                                     <h:inputText id="restaurantBrandName"
                                                  value="#{registerRestaurantManagerBean.restaurantBrandName}">
                                         <f:passThroughAttribute name="placeholder" value="Brand / Group" />
@@ -199,23 +209,24 @@
 
                             <div class="field-grid-2 margin-top-12">
                                 <div class="field">
-                                    <label for="restaurantAddress">Địa chỉ chi tiết *</label>
+                                    <label for="restaurantAddress">Detailed address "Area" *</label>
                                     <h:inputText id="restaurantAddress"
                                                  value="#{registerRestaurantManagerBean.restaurantAddress}"
                                                  required="true"
-                                                 requiredMessage="Vui lòng nhập Địa chỉ chi tiết.">
-                                        <f:passThroughAttribute name="placeholder" value="Số nhà, đường, phường/xã" />
+                                                 requiredMessage="Please enter detailed Address.">
+                                        <f:passThroughAttribute name="placeholder" value="House number, street, ward/commune" />
                                     </h:inputText>
                                     <h:message for="restaurantAddress" styleClass="msg-field-error" />
                                 </div>
+
                                 <div class="field-grid-2">
                                     <div class="field">
-                                        <label for="city">Thành phố *</label>
+                                        <label for="city">City *</label>
                                         <h:selectOneMenu id="city"
                                                          value="#{registerRestaurantManagerBean.city}"
                                                          required="true"
-                                                         requiredMessage="Vui lòng chọn Thành phố.">
-                                            <f:selectItem itemLabel="Chọn thành phố" itemValue="" />
+                                                         requiredMessage="Please select City.">
+                                            <f:selectItem itemLabel="Select city" itemValue="" />
                                             <f:selectItems value="#{registerRestaurantManagerBean.cityList}"
                                                            var="c"
                                                            itemLabel="#{c}"
@@ -225,8 +236,9 @@
                                         </h:selectOneMenu>
                                         <h:message for="city" styleClass="msg-field-error" />
                                     </div>
+
                                     <div class="field">
-                                        <label for="area">Khu vực *</label>
+                                        <label for="area">"Ward" *</label>
                                         <h:selectOneMenu id="area"
                                                          value="#{registerRestaurantManagerBean.area}"
                                                          required="true"
@@ -244,30 +256,30 @@
 
                             <div class="field-grid-2 margin-top-12">
                                 <div class="field">
-                                    <label for="description">Mô tả nhà hàng</label>
+                                    <label for="description">Restaurant description</label>
                                     <h:inputTextarea id="description"
                                                      value="#{registerRestaurantManagerBean.description}">
                                         <f:passThroughAttribute name="placeholder"
-                                                                value="Giới thiệu ngắn về phong cách, không gian và điểm nổi bật của nhà hàng." />
+                                                                value="Brief introduction about the restaurant's style, space and highlights." />
                                     </h:inputTextarea>
                                 </div>
 
                                 <!-- UPLOAD LOGO -->
                                 <div class="field">
-                                    <label for="logoFile">Logo nhà hàng *</label>
+                                    <label for="logoFile">Restaurant logo *</label>
                                     <div class="upload-logo">
-                                        <div>Ảnh vuông tối thiểu <strong>600 x 600px</strong></div>
+                                        <div>Minimum square photo <strong>600 x 600px</strong></div>
 
                                         <h:inputFile id="logoFile"
                                                      value="#{registerRestaurantManagerBean.logoFile}">
                                         </h:inputFile>
                                         <div class="hint">
-                                            Chọn file JPG/PNG từ máy. Logo sẽ được lưu vào thư mục
-                                            <code>resources/images/upload_file</code> của hệ thống.
+                                            Select JPG/PNG file from your computer. The logo will be saved to the folder
+                                            <code>resources/images/upload_file</code> of the system.
                                         </div>
                                         <h:message for="logoFile" styleClass="msg-field-error" />
 
-                                        <!-- PREVIEW LOGO: KHUNG CỐ ĐỊNH -->
+                                        <!-- PREVIEW LOGO -->
                                         <h:panelGroup rendered="#{not empty registerRestaurantManagerBean.logoUrl}">
                                             <div class="logo-preview">
                                                 <div class="logo-preview-inner">
@@ -275,7 +287,7 @@
                                                          alt="Logo preview" />
                                                 </div>
                                                 <div class="logo-preview-caption">
-                                                    Xem trước logo (tự thu nhỏ theo khung)
+                                                   Logo preview (auto-resize according to frame)
                                                 </div>
                                             </div>
                                         </h:panelGroup>
@@ -285,72 +297,19 @@
 
                             <div class="field-grid-3 margin-top-12">
                                 <div class="field">
-                                    <label for="taxCode">Mã số thuế doanh nghiệp (nếu có)</label>
-                                    <h:inputText id="taxCode"
-                                                 value="#{registerRestaurantManagerBean.taxCode}">
-                                        <f:passThroughAttribute name="placeholder" value="Ví dụ: 0312 xxx xxx" />
-                                    </h:inputText>
-                                    <div class="hint">Thông tin dùng để xuất hóa đơn và đối soát thanh toán.</div>
-                                </div>
-                                <div class="field">
-                                    <label for="fanpage">Fanpage / Mạng xã hội</label>
-                                    <h:inputText id="fanpage"
-                                                 value="#{registerRestaurantManagerBean.fanpage}">
-                                        <f:passThroughAttribute name="placeholder"
-                                                                value="Link Facebook / Instagram / TikTok" />
-                                    </h:inputText>
-                                </div>
-                            </div>
-
-                            <div class="field-grid-3 margin-top-12">
-                                <div class="field">
-                                    <label for="openTime">Giờ mở cửa</label>
+                                    <label for="openTime">Opening Hours</label>
                                     <h:inputText id="openTime"
                                                  value="#{registerRestaurantManagerBean.openTime}">
-                                        <f:passThroughAttribute name="placeholder" value="Ví dụ: 09:00" />
+                                        <f:passThroughAttribute name="placeholder" value="Example: 09:00" />
                                     </h:inputText>
                                 </div>
+
                                 <div class="field">
-                                    <label for="closeTime">Giờ đóng cửa</label>
+                                    <label for="closeTime">Closing Hours</label>
                                     <h:inputText id="closeTime"
                                                  value="#{registerRestaurantManagerBean.closeTime}">
-                                        <f:passThroughAttribute name="placeholder" value="Ví dụ: 22:00" />
+                                        <f:passThroughAttribute name="placeholder" value="Example: 22:00" />
                                     </h:inputText>
-                                </div>
-                                <div class="field">
-                                    <label for="servingStyle">Hình thức phục vụ chính</label>
-                                    <h:selectOneMenu id="servingStyle"
-                                                     value="#{registerRestaurantManagerBean.servingStyle}">
-                                        <f:selectItem itemLabel="Chọn hình thức" itemValue="#{null}" />
-                                        <f:selectItem itemLabel="Buffet" itemValue="Buffet" />
-                                        <f:selectItem itemLabel="Set menu" itemValue="Set menu" />
-                                        <f:selectItem itemLabel="A la carte" itemValue="A la carte" />
-                                        <f:selectItem itemLabel="Tea break / Cocktail" itemValue="Tea break / Cocktail" />
-                                    </h:selectOneMenu>
-                                </div>
-                            </div>
-
-                            <div class="field margin-top-12">
-                                <label>Loại tiệc phục vụ chính *</label>
-
-                                <!-- Hidden bind với bean, JS sẽ set value vào đây -->
-                                <h:inputHidden id="mainEventTypeInput"
-                                               value="#{registerRestaurantManagerBean.mainEventType}"
-                                               required="true"
-                                               requiredMessage="Vui lòng chọn Loại tiệc phục vụ chính." />
-
-                                <div class="tags-row" id="eventTypeTags">
-                                    <button type="button" class="tag" data-value="Wedding">Wedding</button>
-                                    <button type="button" class="tag" data-value="Birthday">Birthday</button>
-                                    <button type="button" class="tag" data-value="Corporate / Gala">Corporate / Gala</button>
-                                    <button type="button" class="tag" data-value="Conference">Conference</button>
-                                    <button type="button" class="tag" data-value="Private Dining">Private Dining</button>
-                                </div>
-
-                                <h:message for="mainEventTypeInput" styleClass="msg-field-error" />
-
-                                <div class="hint">
-                                    Bạn có thể cập nhật chi tiết loại sự kiện, sảnh tiệc và menu sau khi được duyệt.
                                 </div>
                             </div>
                         </section>
@@ -359,44 +318,46 @@
                         <section class="section-card" id="s3">
                             <div class="section-header">
                                 <div>
-                                    <div class="section-title">3. Điều kiện nhận tiệc (tóm tắt)</div>
-                                    <div class="section-caption">Thiết lập các điều kiện cơ bản để FeastLink gợi ý phù hợp cho khách.</div>
+                                    <div class="section-title">3. Party conditions (summary)</div>
+                                    <div class="section-caption">Set up the basic conditions for FeastLink to make suitable suggestions to customers.</div>
                                 </div>
                             </div>
 
                             <div class="field-grid-3">
                                 <div class="field">
-                                    <label for="minGuests">Số khách tối thiểu *</label>
+                                    <label for="minGuests">Minimum number of guests *</label>
                                     <h:inputText id="minGuests"
                                                  value="#{registerRestaurantManagerBean.minGuests}"
                                                  required="true"
                                                  requiredMessage="Vui lòng nhập Số khách tối thiểu.">
                                         <f:passThroughAttribute name="type" value="number" />
                                         <f:passThroughAttribute name="min" value="0" />
-                                        <f:passThroughAttribute name="placeholder" value="Ví dụ: 50" />
+                                        <f:passThroughAttribute name="placeholder" value="Example: 50" />
                                     </h:inputText>
                                     <h:message for="minGuests" styleClass="msg-field-error" />
                                 </div>
+
                                 <div class="field">
-                                    <label for="maxGuests">Số khách tối đa (dự kiến)</label>
+                                    <label for="maxGuests">Maximum number of guests (expected)</label>
                                     <h:inputText id="maxGuests"
                                                  value="#{registerRestaurantManagerBean.maxGuests}">
                                         <f:passThroughAttribute name="type" value="number" />
                                         <f:passThroughAttribute name="min" value="0" />
-                                        <f:passThroughAttribute name="placeholder" value="Ví dụ: 300" />
+                                        <f:passThroughAttribute name="placeholder" value="Example: 300" />
                                     </h:inputText>
                                 </div>
+
                                 <div class="field">
-                                    <label for="minDays">Số ngày đặt trước tối thiểu *</label>
+                                    <label for="minDays">Minimum number of booking days *</label>
                                     <h:inputText id="minDays"
                                                  value="#{registerRestaurantManagerBean.minDays}"
                                                  required="true"
                                                  requiredMessage="Vui lòng nhập Số ngày đặt trước tối thiểu.">
                                         <f:passThroughAttribute name="type" value="number" />
                                         <f:passThroughAttribute name="min" value="0" />
-                                        <f:passThroughAttribute name="placeholder" value="Ví dụ: 7" />
+                                        <f:passThroughAttribute name="placeholder" value="Example: 7" />
                                     </h:inputText>
-                                    <div class="hint">Tính theo ngày trước ngày diễn ra tiệc.</div>
+                                    <div class="hint">Calculated by days before the party date.</div>
                                     <h:message for="minDays" styleClass="msg-field-error" />
                                 </div>
                             </div>
@@ -406,22 +367,22 @@
                         <section class="section-card" id="s4">
                             <div class="section-header">
                                 <div>
-                                    <div class="section-title">4. Điều khoản &amp; Cam kết</div>
-                                    <div class="section-caption">Vui lòng đọc kỹ các điều khoản trước khi gửi yêu cầu nâng cấp tài khoản.</div>
+                                    <div class="section-title">4. Terms &amp; Commit</div>
+                                    <div class="section-caption">Please read the terms carefully before submitting an account upgrade request.</div>
                                 </div>
                             </div>
 
                             <div class="field">
                                 <div class="hint" style="margin-bottom:8px;">
-                                    Khi gửi yêu cầu trở thành <strong>Restaurant Manager</strong> trên FeastLink, bạn xác nhận và đồng ý rằng:
+                                   When submitting a request to become <strong>Restaurant Manager</strong>On FeastLink, you acknowledge and agree that:
                                 </div>
                                 <ul class="terms-list">
-                                    <li>Thông tin nhà hàng và thông tin liên hệ bạn cung cấp là <strong>chính xác, đầy đủ và cập nhật</strong>.</li>
-                                    <li>Nhà hàng của bạn tuân thủ các quy định pháp luật hiện hành về <strong>an toàn vệ sinh thực phẩm, phòng cháy chữa cháy</strong> và các giấy phép kinh doanh liên quan.</li>
-                                    <li>Bạn chịu trách nhiệm về <strong>chất lượng dịch vụ, thực đơn, giá cả</strong> và trải nghiệm của khách hàng.</li>
-                                    <li>Bạn đồng ý với <strong>chính sách hủy / hoàn tiền</strong> và các quy định xử lý khiếu nại, đánh giá của khách hàng theo quy định của FeastLink.</li>
-                                    <li>Bạn cho phép FeastLink sử dụng thông tin, hình ảnh và nội dung mô tả nhà hàng để <strong>hiển thị, quảng bá</strong> trên nền tảng.</li>
-                                    <li>FeastLink có quyền <strong>xem xét, tạm ẩn hoặc ngừng hiển thị</strong> nhà hàng nếu phát hiện thông tin sai lệch hoặc vi phạm chính sách.</li>
+                                    <li>The restaurant information and contact information you provide is <strong>accurate, complete and up-to-date</strong>.</li>
+                                    <li>Your restaurant complies with current legal regulations on<strong>food safety and hygiene, fire prevention and fighting</strong> and related business licenses.</li>
+                                    <li>You are responsible for <strong>service quality, menu, price</strong> and customer experience.</li>
+                                    <li>You agree to <strong>cancellation/refund policy</strong> and regulations on handling customer complaints and reviews according to FeastLink's regulations.</li>
+                                    <li>You authorize FeastLink to use your restaurant information, images and descriptions for<strong>display, promote</strong> on the platform.</li>
+                                    <li>FeastLink reserves the right to <strong>review, hide, or unhide </strong> restaurant if found to have false information or policy violations.</li>
                                 </ul>
                             </div>
 
@@ -430,26 +391,27 @@
                                     <h:selectBooleanCheckbox id="termsCheckbox"
                                                              value="#{registerRestaurantManagerBean.acceptedTerms}" />
                                     <span>
-                                        Tôi xác nhận đã đọc, hiểu và đồng ý với Điều khoản &amp; Cam kết dành cho
-                                        <strong>Đối tác Nhà hàng FeastLink</strong>.
+                                        I confirm that I have read, understood and agree to the Terms &amp; Commitment to
+                                        <strong>FeastLink Restaurant Partner</strong>.
                                     </span>
                                 </label>
                             </div>
                         </section>
 
+                        <!-- FOOTER BUTTONS -->
                         <div class="form-footer">
                             <div class="security-note">
                                 <div class="shield">✓</div>
                                 <div>
-                                    Yêu cầu sẽ được gửi đến Admin FeastLink. Nhà hàng chỉ hiển thị sau khi được <strong>phê duyệt.</strong>
+                                   The request will be sent to Admin FeastLink. The restaurant will only be displayed after being approved. <strong>approve.</strong>
                                 </div>
                             </div>
                             <div class="btn-row">
-                                <h:commandButton value="Hủy"
+                                <h:commandButton value="Cancel"
                                                  styleClass="btn-secondary"
                                                  action="#{registerRestaurantManagerBean.cancel}" />
                                 <h:commandButton id="submitBtn"
-                                                 value="Gửi yêu cầu nâng cấp"
+                                                 value="Submit an upgrade request"
                                                  styleClass="btn-primary"
                                                  action="#{registerRestaurantManagerBean.submit}" />
                             </div>
@@ -461,21 +423,22 @@
                 <div class="faq-wrapper">
                     <div class="faq-card">
                         <div class="faq-title">
-                            Câu hỏi thường gặp khi đăng ký làm đối tác FeastLink
+                            Frequently asked questions when registering as a FeastLink partner
                         </div>
                         <ul class="faq-list">
-                            <li><strong>Mất bao lâu để được duyệt?</strong> Thông thường 1–3 ngày làm việc. Trường hợp cần bổ sung giấy tờ, đội ngũ FeastLink sẽ liên hệ trực tiếp.</li>
-                            <li><strong>Nhà hàng được tính phí / hoa hồng như thế nào?</strong> Phí hoa hồng cố định là <strong>2% trên tổng giá trị đơn đặt tiệc</strong> đã thanh toán thành công thông qua FeastLink.</li>
-                            <li><strong>Tôi có thể chỉnh sửa thông tin nhà hàng sau này không?</strong> Có. Sau khi được nâng cấp, bạn có thể cập nhật hình ảnh, menu, giá, sảnh tiệc và các điều kiện đặt chỗ.</li>
-                            <li><strong>Khi nào nhà hàng của tôi hiển thị cho khách?</strong> Sau khi hồ sơ được duyệt và bạn cấu hình ít nhất một gói tiệc / menu hợp lệ, nhà hàng sẽ được bật trạng thái hiển thị.</li>
+                            <li><strong>How long does it take to get approved?</strong>Normally 1–3 business days. If additional documents are required, the FeastLink team will contact you directly.</li>
+                            <li><strong>How are restaurants charged/commissioned?</strong> The fixed commission fee is <strong>2% of total party order value</strong> Payment successfully made through FeastLink.</li>
+                            <li><strong>Can I edit my restaurant information later?</strong> Yes. Once upgraded, you can update images, menus, prices, banquet halls and booking conditions.</li>
+                            <li><strong>When is my restaurant visible to guests?</strong> Once your profile is approved and you configure at least one valid party package/menu, your restaurant will be enabled for visibility.</li>
                         </ul>
                     </div>
                 </div>
             </main>
         </div>
-          <ui:include src="layout/footer.xhtml" />
 
-        <!-- JS: step highlight, khóa nút nếu chưa tick điều khoản, chọn loại tiệc -->
+        <ui:include src="layout/footer.xhtml" />
+
+        <!-- JS: step highlight, khóa nút nếu chưa tick điều khoản -->
         <script type="text/javascript">
             //<![CDATA[
             function initStepHighlight() {
@@ -500,8 +463,7 @@
             function initTermsLock() {
                 var cb = document.querySelector('input[id$="termsCheckbox"]');
                 var btn = document.querySelector('input[id$="submitBtn"]');
-                if (!cb || !btn)
-                    return;
+                if (!cb || !btn) return;
 
                 function sync() {
                     btn.disabled = !cb.checked;
@@ -518,44 +480,9 @@
                 sync();
             }
 
-            function initEventTypeTags() {
-                var container = document.getElementById('eventTypeTags');
-                var hiddenInput = document.querySelector('input[id$="mainEventTypeInput"]');
-                if (!container || !hiddenInput)
-                    return;
-
-                var buttons = container.querySelectorAll('button.tag');
-
-                function syncFromHidden() {
-                    var val = hiddenInput.value;
-                    for (var i = 0; i < buttons.length; i++) {
-                        var bVal = buttons[i].getAttribute('data-value');
-                        if (bVal === val) {
-                            buttons[i].classList.add('tag--active');
-                        } else {
-                            buttons[i].classList.remove('tag--active');
-                        }
-                    }
-                }
-
-                for (var i = 0; i < buttons.length; i++) {
-                    (function (btn) {
-                        btn.addEventListener('click', function () {
-                            var v = btn.getAttribute('data-value');
-                            hiddenInput.value = v;
-                            syncFromHidden();
-                        });
-                    })(buttons[i]);
-                }
-
-                // Sync lại khi page load (trường hợp đã có dữ liệu)
-                syncFromHidden();
-            }
-
             window.addEventListener('load', function () {
                 initStepHighlight();
                 initTermsLock();
-                initEventTypeTags();
             });
             //]]>
         </script>

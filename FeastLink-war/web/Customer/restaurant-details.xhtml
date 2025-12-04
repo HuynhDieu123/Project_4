@@ -4,7 +4,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
       xmlns:ui="jakarta.faces.facelets"  
-      xmlns:f="jakarta.faces.core">
+      xmlns:f="jakarta.faces.core"
+        encoding="UTF-8"
+        contentType="text/html">
     
     <h:head>
         <meta charset="UTF-8"/>
@@ -131,6 +133,7 @@
     </h:head>
 
     <h:body>
+        <ui:include src="/ChatBox/support-chat.xhtml" />
         <!-- Header & Footer tách riêng -->
         <ui:include src="/layout/header.xhtml"/>
 
