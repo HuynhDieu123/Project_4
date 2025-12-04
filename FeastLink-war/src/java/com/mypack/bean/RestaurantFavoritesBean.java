@@ -85,7 +85,7 @@ public class RestaurantFavoritesBean implements Serializable {
                 // Đã tồn tại rồi -> chỉ báo, không redirect
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_INFO,
-                        "Nhà hàng này đã nằm trong danh sách yêu thích.",
+                        "This restaurant is already on my favorites list.",
                         null));
                 return null;
             }
@@ -94,7 +94,7 @@ public class RestaurantFavoritesBean implements Serializable {
             if (restaurant == null) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
-                        "Không tìm thấy nhà hàng.",
+                        "Restaurant not found.",
                         null));
                 return null;
             }
@@ -109,7 +109,7 @@ public class RestaurantFavoritesBean implements Serializable {
             // Thông báo thành công + giữ message sau redirect
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
-                    "Thêm vào danh sách yêu thích thành công.",
+                    "Added to favorites successfully.",
                     null));
             ctx.getExternalContext().getFlash().setKeepMessages(true);
 
@@ -120,7 +120,7 @@ public class RestaurantFavoritesBean implements Serializable {
             ex.printStackTrace();
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Có lỗi khi lưu nhà hàng yêu thích.",
+                    "There was an error saving the favorite restaurant.",
                     ex.getMessage()));
         }
 

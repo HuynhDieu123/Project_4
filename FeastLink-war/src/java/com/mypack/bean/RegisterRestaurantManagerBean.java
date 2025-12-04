@@ -68,8 +68,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
     // KHÔNG còn dùng taxCode, fanpage, servingStyle trên form, bỏ luôn cho sạch
 
-    private String openTime;           // "09:00"
-    private String closeTime;          // "22:00"
+    private String openTime;           // "HH:mm"
+    private String closeTime;          // "HH:mm"
 
     // Logo: đường dẫn tương đối lưu trong DB
     private String logoUrl;
@@ -108,7 +108,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
         // Nếu chưa đăng nhập → về trang login
         if (currentUser == null) {
             try {
-                String loginUrl = ctx.getExternalContext().getRequestContextPath() +  "/login.xhtml?target=register_manager";
+                String loginUrl = ctx.getExternalContext().getRequestContextPath()
+                        + "/login.xhtml?target=register_manager";
                 ctx.getExternalContext().redirect(loginUrl);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -207,6 +208,18 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 // Khi đã có city → load areaList tương ứng
                 onCityChange();
             }
+
+            // Prefill giờ mở / đóng cửa nếu đã có trong DB
+            if (existingRestaurant.getOpenTime() != null
+                    || existingRestaurant.getCloseTime() != null) {
+                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+                if (existingRestaurant.getOpenTime() != null) {
+                    openTime = timeFormat.format(existingRestaurant.getOpenTime());
+                }
+                if (existingRestaurant.getCloseTime() != null) {
+                    closeTime = timeFormat.format(existingRestaurant.getCloseTime());
+                }
+            }
         }
     }
 
@@ -289,6 +302,12 @@ public class RegisterRestaurantManagerBean implements Serializable {
     public String submit() {
         FacesContext ctx = FacesContext.getCurrentInstance();
 
+        // Luôn khóa 2 trường name + email theo currentUser (chống sửa tay)
+        if (currentUser != null) {
+            managerName  = currentUser.getFullName();
+            managerEmail = currentUser.getEmail();
+        }
+
         // Nếu hồ sơ đang Pending → không cho gửi lại
         if (isPendingManager()) {
             ctx.addMessage(null, new FacesMessage(
@@ -313,17 +332,18 @@ public class RegisterRestaurantManagerBean implements Serializable {
         boolean noNewLogo      = (logoFile == null || logoFile.getSize() <= 0);
         boolean noExistingLogo = isBlank(logoUrl);
 
-        // Validate bắt buộc (đã bỏ mainEventType ra khỏi điều kiện)
+        // Validate bắt buộc (thêm openTime / closeTime)
         if (isBlank(managerName) || isBlank(managerPhone) || isBlank(managerEmail)
                 || isBlank(restaurantName) || isBlank(restaurantAddress)
                 || isBlank(city) || isBlank(area)
+                || isBlank(openTime) || isBlank(closeTime)
                 || (noNewLogo && noExistingLogo)
                 || minGuests == null || minGuests < 0
                 || minDays == null   || minDays   < 0) {
 
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Please fill in all required fields (including Logo, City and Region)).",
+                    "Please fill in all required fields (including Logo, City, Region and Opening/Closing hours).",
                     null
             ));
             return null;
@@ -355,7 +375,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
             restaurant.setName(restaurantName);
 
-            // Lưu description nguyên bản (không gắn [Main Event: ...] nữa)
+            // Lưu description nguyên bản
             restaurant.setDescription(description);
 
             // Address text (hiển thị)

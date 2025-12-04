@@ -4,8 +4,8 @@
       xmlns:h="http://xmlns.jcp.org/jsf/html"
       xmlns:f="http://xmlns.jcp.org/jsf/core"
       xmlns:ui="jakarta.faces.facelets"
-        encoding="UTF-8"
-        contentType="text/html">
+      encoding="UTF-8"
+      contentType="text/html">
 
     <h:head>
         <meta charset="UTF-8" />
@@ -53,7 +53,7 @@
                         <div class="sidebar-step">
                             <div class="step-badge step-badge--active">1</div>
                             <div>
-                                    <div class="step-label-main">Management information</div>
+                                <div class="step-label-main">Management information</div>
                                 <div class="step-label-sub">Full name, login email</div>
                             </div>
                         </div>
@@ -88,7 +88,7 @@
                 </div>
 
                 <div class="sidebar-footer">
-                   After submitting the request, <span>Admin FeastLink</span> will review and approve within 1–3 business days.
+                    After submitting the request, <span>Admin FeastLink</span> will review and approve within 1–3 business days.
                 </div>
             </aside>
 
@@ -112,9 +112,15 @@
                         <div class="status-pill">Status: Draft request</div>
                     </div>
 
+                    <!-- NOTE: required fields -->
+                    <div class="required-note">
+                        Các trường có dấu <strong>*</strong> là bắt buộc. Vui lòng điền đầy đủ thông tin
+                        (bao gồm Logo nhà hàng, Thành phố, Phường/Khu vực và Giờ mở/đóng cửa) trước khi gửi yêu cầu nâng cấp.
+                    </div>
+
                     <div class="info-banner">
                         <div class="info-text">
-                            <strong>Application review process:</strong> After submitting your request, the FeastLink team will review your restaurant information and may contact you for further verification. 
+                            <strong>Application review process:</strong> After submitting your request, the FeastLink team will review your restaurant information and may contact you for further verification 
                             (via email or phone). Once your application is approved, your current account will be <strong>upgrade to Restaurant Manager</strong>.
                         </div>
                     </div>
@@ -127,7 +133,7 @@
                             <div class="section-header">
                                 <div>
                                     <div class="section-title">1. Restaurant Management Information</div>
-                                        <div class="section-caption">This information is used to log in and receive notifications from FeastLink.</div>
+                                    <div class="section-caption">This information is used to log in and receive notifications from FeastLink.</div>
                                 </div>
                             </div>
 
@@ -137,7 +143,8 @@
                                     <h:inputText id="managerName"
                                                  value="#{registerRestaurantManagerBean.managerName}"
                                                  required="true"
-                                                 requiredMessage="Vui lòng nhập Họ và tên quản lý.">
+                                                 requiredMessage="Vui lòng nhập Họ và tên quản lý."
+                                                 readonly="true">
                                         <f:passThroughAttribute name="placeholder" value="Example: Alex Tran" />
                                     </h:inputText>
                                     <h:message for="managerName" styleClass="msg-field-error" />
@@ -159,7 +166,8 @@
                                     <h:inputText id="managerEmail"
                                                  value="#{registerRestaurantManagerBean.managerEmail}"
                                                  required="true"
-                                                 requiredMessage="Vui lòng nhập Email.">
+                                                 requiredMessage="Vui lòng nhập Email."
+                                                 readonly="true">
                                         <f:passThroughAttribute name="type" value="email" />
                                         <f:passThroughAttribute name="placeholder" value="example@restaurant.com" />
                                     </h:inputText>
@@ -287,7 +295,7 @@
                                                          alt="Logo preview" />
                                                 </div>
                                                 <div class="logo-preview-caption">
-                                                   Logo preview (auto-resize according to frame)
+                                                    Logo preview (auto-resize according to frame)
                                                 </div>
                                             </div>
                                         </h:panelGroup>
@@ -295,21 +303,28 @@
                                 </div>
                             </div>
 
+                            <!-- GIỜ MỞ / ĐÓNG CỬA: DÙNG INPUT TYPE=TIME + REQUIRED -->
                             <div class="field-grid-3 margin-top-12">
                                 <div class="field">
-                                    <label for="openTime">Opening Hours</label>
+                                    <label for="openTime">Opening Hours *</label>
                                     <h:inputText id="openTime"
-                                                 value="#{registerRestaurantManagerBean.openTime}">
-                                        <f:passThroughAttribute name="placeholder" value="Example: 09:00" />
+                                                 value="#{registerRestaurantManagerBean.openTime}"
+                                                 required="true"
+                                                 requiredMessage="Please select opening time.">
+                                        <f:passThroughAttribute name="type" value="time" />
                                     </h:inputText>
+                                    <h:message for="openTime" styleClass="msg-field-error" />
                                 </div>
 
                                 <div class="field">
-                                    <label for="closeTime">Closing Hours</label>
+                                    <label for="closeTime">Closing Hours *</label>
                                     <h:inputText id="closeTime"
-                                                 value="#{registerRestaurantManagerBean.closeTime}">
-                                        <f:passThroughAttribute name="placeholder" value="Example: 22:00" />
+                                                 value="#{registerRestaurantManagerBean.closeTime}"
+                                                 required="true"
+                                                 requiredMessage="Please select closing time.">
+                                        <f:passThroughAttribute name="type" value="time" />
                                     </h:inputText>
+                                    <h:message for="closeTime" styleClass="msg-field-error" />
                                 </div>
                             </div>
                         </section>
@@ -374,15 +389,15 @@
 
                             <div class="field">
                                 <div class="hint" style="margin-bottom:8px;">
-                                   When submitting a request to become <strong>Restaurant Manager</strong>On FeastLink, you acknowledge and agree that:
+                                    When submitting a request to become <strong>Restaurant Manager</strong> on FeastLink, you acknowledge and agree that:
                                 </div>
                                 <ul class="terms-list">
                                     <li>The restaurant information and contact information you provide is <strong>accurate, complete and up-to-date</strong>.</li>
-                                    <li>Your restaurant complies with current legal regulations on<strong>food safety and hygiene, fire prevention and fighting</strong> and related business licenses.</li>
+                                    <li>Your restaurant complies with current legal regulations on <strong>food safety and hygiene, fire prevention and fighting</strong> and related business licenses.</li>
                                     <li>You are responsible for <strong>service quality, menu, price</strong> and customer experience.</li>
                                     <li>You agree to <strong>cancellation/refund policy</strong> and regulations on handling customer complaints and reviews according to FeastLink's regulations.</li>
-                                    <li>You authorize FeastLink to use your restaurant information, images and descriptions for<strong>display, promote</strong> on the platform.</li>
-                                    <li>FeastLink reserves the right to <strong>review, hide, or unhide </strong> restaurant if found to have false information or policy violations.</li>
+                                    <li>You authorize FeastLink to use your restaurant information, images and descriptions for <strong>display, promote</strong> on the platform.</li>
+                                    <li>FeastLink reserves the right to <strong>review, hide, or unhide</strong> restaurant if found to have false information or policy violations.</li>
                                 </ul>
                             </div>
 
@@ -403,7 +418,7 @@
                             <div class="security-note">
                                 <div class="shield">✓</div>
                                 <div>
-                                   The request will be sent to Admin FeastLink. The restaurant will only be displayed after being approved. <strong>approve.</strong>
+                                    The request will be sent to Admin FeastLink. The restaurant will only be displayed after being <strong>approved.</strong>
                                 </div>
                             </div>
                             <div class="btn-row">
@@ -426,8 +441,8 @@
                             Frequently asked questions when registering as a FeastLink partner
                         </div>
                         <ul class="faq-list">
-                            <li><strong>How long does it take to get approved?</strong>Normally 1–3 business days. If additional documents are required, the FeastLink team will contact you directly.</li>
-                            <li><strong>How are restaurants charged/commissioned?</strong> The fixed commission fee is <strong>2% of total party order value</strong> Payment successfully made through FeastLink.</li>
+                            <li><strong>How long does it take to get approved?</strong> Normally 1–3 business days. If additional documents are required, the FeastLink team will contact you directly.</li>
+                            <li><strong>How are restaurants charged/commissioned?</strong> The fixed commission fee is <strong>2% of total party order value</strong> payment successfully made through FeastLink.</li>
                             <li><strong>Can I edit my restaurant information later?</strong> Yes. Once upgraded, you can update images, menus, prices, banquet halls and booking conditions.</li>
                             <li><strong>When is my restaurant visible to guests?</strong> Once your profile is approved and you configure at least one valid party package/menu, your restaurant will be enabled for visibility.</li>
                         </ul>
