@@ -1,0 +1,191 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:f="jakarta.faces.core"
+                template="/Restaurant/layout-manager.xhtml">
+
+    <!-- TITLE -->
+    <ui:define name="title">
+        FeastLink - Package Detail
+    </ui:define>
+
+    <!-- HEADER -->
+    <ui:define name="header">
+        <div class="flex flex-col">
+            <h1 class="text-2xl font-bold text-text-main-light">
+                Menu &amp; Packages
+            </h1>
+            <p class="text-sm text-text-secondary-light">
+                View detailed information of this catering package.
+            </p>
+        </div>
+    </ui:define>
+
+    <!-- CONTENT -->
+    <ui:define name="content">
+
+        <!-- ====== FOUND ====== -->
+        <h:panelGroup rendered="#{menuComboDetailBean.found}">
+            <div class="max-w-5xl bg-card-light rounded-2xl shadow-subtle p-8 space-y-8">
+
+                <!-- TOP ROW -->
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                    <div class="flex-1">
+                        <p class="text-[11px] font-semibold tracking-wide text-text-secondary-light uppercase mb-1">
+                            Catering Package
+                        </p>
+                        <h2 class="text-2xl font-semibold text-text-main-light">
+                            #{menuComboDetailBean.combo.name}
+                        </h2>
+                        <p class="mt-2 text-sm text-text-secondary-light">
+                            #{menuComboDetailBean.combo.description}
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col items-end">
+                        <span class="text-sm text-text-secondary-light mb-1">
+                            Total package price
+                        </span>
+                        <span class="text-3xl font-bold text-champagne-gold">
+                            <h:outputText value="#{menuComboDetailBean.combo.priceTotal}">
+                                <f:convertNumber type="currency" currencySymbol="$"/>
+                            </h:outputText>
+                        </span>
+                        <span class="mt-2 text-xs text-text-secondary-light">
+                            For minimum
+                            <span class="font-semibold text-text-main-light">
+                                #{menuComboDetailBean.combo.minGuests}
+                            </span>
+                            guests
+                        </span>
+                    </div>
+                </div>
+
+                <!-- META GRID -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-text-secondary-light">
+                    <div class="bg-background-soft rounded-xl px-4 py-3">
+                        <p class="text-[11px] uppercase tracking-wide text-text-secondary-light">
+                            Package ID
+                        </p>
+                        <p class="mt-1 font-mono text-sm text-text-main-light">
+                            #{menuComboDetailBean.combo.comboId}
+                        </p>
+                    </div>
+
+                    <div class="bg-background-soft rounded-xl px-4 py-3">
+                        <p class="text-[11px] uppercase tracking-wide text-text-secondary-light">
+                            Minimum guests
+                        </p>
+                        <p class="mt-1 font-semibold text-text-main-light">
+                            #{menuComboDetailBean.combo.minGuests}
+                        </p>
+                    </div>
+
+                    <div class="bg-background-soft rounded-xl px-4 py-3">
+                        <p class="text-[11px] uppercase tracking-wide text-text-secondary-light">
+                            Serving style
+                        </p>
+                        <p class="mt-1 font-semibold text-text-main-light">
+                            Curated set menu
+                        </p>
+                    </div>
+                </div>
+
+                <!-- SUMMARY / NOTE (sau này bạn có thể thay bằng list món) -->
+                <section class="bg-background-soft rounded-xl px-5 py-4">
+                    <h3 class="text-sm font-semibold text-text-main-light mb-2">
+                        Package summary
+                    </h3>
+                    <p class="text-sm text-text-secondary-light">
+                        This catering package is designed as a fixed menu for events with at least
+                        #{menuComboDetailBean.combo.minGuests} guests. You can edit the package to
+                        adjust included dishes and pricing.
+                    </p>
+                </section>
+
+                <!-- INCLUDED DISHES -->
+                <section class="bg-background-soft rounded-xl px-5 py-4">
+                    <h3 class="text-sm font-semibold text-text-main-light mb-3">
+                        Included dishes
+                    </h3>
+
+                    <!-- Có món -->
+                    <h:panelGroup rendered="#{not empty menuComboDetailBean.comboItems}">
+                        <div class="space-y-2">
+                            <ui:repeat value="#{menuComboDetailBean.comboItems}" var="mi">
+                                <div class="flex items-center justify-between rounded-2xl bg-white border border-border-light px-4 py-3">
+                                    <div>
+                                        <p class="text-sm font-semibold text-text-main-light">
+                                            #{mi.name}
+                                        </p>
+                                        <p class="text-xs text-text-secondary-light">
+                                            <h:panelGroup rendered="#{mi.cuisineId != null}">
+                                                #{mi.cuisineId.name}
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{mi.isVegetarian}">
+                                                &#8226; Vegetarian
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{mi.categoryId != null}">
+                                                &#8226; #{mi.categoryId.name}
+                                            </h:panelGroup>
+                                        </p>
+                                    </div>
+
+                                    <p class="text-sm font-semibold text-champagne-gold">
+                                        <h:outputText value="#{mi.pricePerPerson}">
+                                            <f:convertNumber groupingUsed="true" maxFractionDigits="0"/>
+                                        </h:outputText>
+                                        VND
+                                    </p>
+                                </div>
+                            </ui:repeat>
+                        </div>
+                    </h:panelGroup>
+
+                    <!-- Không có món -->
+                    <h:panelGroup rendered="#{empty menuComboDetailBean.comboItems}">
+                        <p class="text-xs text-text-secondary-light italic">
+                            This package does not have any dishes linked yet.
+                        </p>
+                    </h:panelGroup>
+                </section>
+
+                <!-- ACTIONS -->
+                <div class="flex justify-end gap-3 pt-4">
+                    <!-- Back to packages list -->
+                    <h:link outcome="/Restaurant/menu-packages"
+                            styleClass="px-4 py-2 rounded-lg border border-border-light text-sm text-text-secondary-light hover:bg-background-soft">
+                        <f:param name="tab" value="packages"/>
+                        Back to list
+                    </h:link>
+
+                    <!-- Edit package -->
+                    <h:link outcome="/Restaurant/menu-combo-new"
+                            styleClass="px-5 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
+                        <f:param name="comboId" value="#{menuComboDetailBean.combo.comboId}"/>
+                        Edit package
+                    </h:link>
+                </div>
+
+            </div>
+        </h:panelGroup>
+
+        <!-- ====== NOT FOUND ====== -->
+        <h:panelGroup rendered="#{not menuComboDetailBean.found}">
+            <div class="max-w-2xl bg-card-light rounded-2xl shadow-subtle p-8 text-center">
+                <p class="text-lg font-semibold text-text-main-light mb-2">
+                    Package not found
+                </p>
+                <p class="text-sm text-text-secondary-light mb-4">
+                    The catering package you are looking for does not exist or has been removed.
+                </p>
+                <h:link outcome="/Restaurant/menu-packages"
+                        styleClass="px-4 py-2 rounded-lg border border-border-light text-sm text-text-secondary-light hover:bg-background-soft">
+                    <f:param name="tab" value="packages"/>
+                    Back to list
+                </h:link>
+            </div>
+        </h:panelGroup>
+
+    </ui:define>
+</ui:composition>
