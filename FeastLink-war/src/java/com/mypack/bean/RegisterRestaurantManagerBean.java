@@ -293,8 +293,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
         if (isPendingManager()) {
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
-                    "Hồ sơ đã gửi chờ xét duyệt , bạn không thể gửi đơn mới",
-                    "Tài khoản này đã gửi yêu cầu nâng cấp nhà hàng và đang chờ Admin FeastLink xét duyệt. Bạn không cần gửi lại."
+                    "Your application has been submitted and is awaiting approval. You cannot submit a new application.",
+                    "This account has submitted a restaurant upgrade request and is awaiting FeastLink Admin approval. You do not need to resubmit."
             ));
             return null;
         }
@@ -303,7 +303,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
         if (!acceptedTerms) {
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_WARN,
-                    "Bạn phải đồng ý với Điều khoản & Cam kết trước khi gửi yêu cầu.",
+                    "You must agree to the Terms & Conditions before submitting a request.",
                     null
             ));
             return null;
@@ -323,7 +323,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Vui lòng điền đầy đủ các trường bắt buộc (bao gồm Logo, Thành phố và Khu vực).",
+                    "Please fill in all required fields (including Logo, City and Region)).",
                     null
             ));
             return null;
@@ -332,7 +332,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
         if (maxGuests != null && maxGuests < 0) {
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Số khách tối đa (dự kiến) phải >= 0.",
+                    "Maximum (expected) number of guests must be >= 0.",
                     null
             ));
             return null;
@@ -373,8 +373,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
             if (selectedArea == null) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
-                        "Không tìm thấy Khu vực tương ứng trong hệ thống.",
-                        "Kiểm tra lại Cities/Areas trong DB hoặc liên hệ Admin FeastLink."
+                        "No corresponding Area found in the system.",
+                        "Check Cities/Areas in DB or contact Admin FeastLink."
                 ));
                 return null;
             }
@@ -472,8 +472,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
-                    "Gửi yêu cầu xét duyệt thành công",
-                    "Hồ sơ nhà hàng đã được gửi tới Admin FeastLink và đang chờ xét duyệt."
+                    "Request for review sent successfully",
+                    "Restaurant profile has been submitted to Admin FeastLink and is awaiting approval."
             ));
 
             return null;
@@ -482,7 +482,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
             e.printStackTrace();
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Không thể lưu file logo trên máy chủ. Gửi yêu cầu xét duyệt chưa thành công.",
+                    "Unable to save logo file on server. Request for review failed.",
                     e.getMessage()
             ));
             return null;
@@ -490,7 +490,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
             e.printStackTrace();
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Có lỗi xảy ra khi lưu thông tin nhà hàng. Gửi yêu cầu xét duyệt chưa thành công.",
+                    "An error occurred while saving restaurant information. Request for approval failed.",
                     e.getMessage()
             ));
             return null;
