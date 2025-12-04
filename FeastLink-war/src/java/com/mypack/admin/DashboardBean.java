@@ -57,6 +57,25 @@ public class DashboardBean implements Serializable {
         // Booking gần nhất
         recentBookings = bookingsFacade.findRecentBookings();
     }
+    public String getFormattedMonthlyRevenue() {
+        double value = monthlyRevenue;
+
+        if (value <= 0) {
+            return "$0";
+        }
+
+        java.text.DecimalFormat normal = new java.text.DecimalFormat("$#,##0");
+        java.text.DecimalFormat million = new java.text.DecimalFormat("$#,##0.0' M'");
+
+        if (value >= 1_000_000d) {
+            // Ví dụ: 22,000,000 -> $22.0 M
+            double inMillions = value / 1_000_000d;
+            return million.format(inMillions);
+        } else {
+            // Ví dụ: 50,000 -> $50,000
+            return normal.format(value);
+        }
+    }
 
     // GETTERS
     public long getTotalUsers() { return totalUsers; }
