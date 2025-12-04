@@ -35,9 +35,11 @@ document.addEventListener('DOMContentLoaded', function () {
         searchEventType: '',
         guests: '',
         status: '',
+        keyword: '',
         page: 1,
         perPage: 6
     };
+
 
     const gridEl = document.getElementById('restaurantGrid');
     const summaryEl = document.getElementById('resultsSummary');
@@ -61,9 +63,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const eventTypeSelect = document.getElementById('eventTypeSelect');
     const guestsInput = document.getElementById('guestsInput');
     const searchButton = document.getElementById('searchButton');
+    const keywordInput = document.getElementById('keywordInput');
+    const budgetInput = document.getElementById('budgetInput');
+    const resetSearchBtn = document.getElementById('resetSearchButton');
 
     const clearDesktopBtn = document.getElementById('clearFiltersDesktop');
     const clearMobileBtn = document.getElementById('clearFiltersMobile');
+
 
     const mobileToggle = document.getElementById('mobileFilterToggle');
     const mobileSheet = document.getElementById('mobileFilterSheet');
@@ -75,6 +81,16 @@ document.addEventListener('DOMContentLoaded', function () {
     function formatCurrency(v) {
         return '$' + v.toLocaleString('en-US');
     }
+
+    function parseBudgetInput(value) {
+        if (!value)
+            return null;
+        const cleaned = value.replace(/[^0-9]/g, '');
+        if (!cleaned)
+            return null;
+        return Number(cleaned);
+    }
+
 
     function applyQuickFilterCondition(r, tag) {
         switch (tag) {
@@ -94,6 +110,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function matchesFilters(r) {
+        if (state.keyword) {
+            const kw = state.keyword.toLowerCase();
+            const text = [
+                r.name || '',
+                r.city || '',
+                r.district || '',
+                r.description || ''
+            ].join(' ').toLowerCase();
+
+            if (!text.includes(kw)) {
+                return false;
+            }
+        }
+
         if (state.city && r.city !== state.city)
             return false;
         if (state.area && r.district !== state.area)
@@ -179,9 +209,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 arr.sort((a, b) => {
                     const score = (r) =>
                         r.rating * 2 +
-                        r.reviews / 100 +
-                        (r.badge === 'TOP RATED' ? 1 : 0) +
-                        (r.badge === 'VIP' ? 0.5 : 0);
+                                r.reviews / 100 +
+                                (r.badge === 'TOP RATED' ? 1 : 0) +
+                                (r.badge === 'VIP' ? 0.5 : 0);
                     return score(b) - score(a);
                 });
         }
@@ -204,15 +234,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const badgeHtml = r.badge
-            ? `<span class="inline-block px-3 py-1 bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] text-[#0B1120] text-xs font-bold rounded-full shadow-lg">${r.badge}</span>`
-            : '';
+                ? `<span class="inline-block px-3 py-1 bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] text-[#0B1120] text-xs font-bold rounded-full shadow-lg">${r.badge}</span>`
+                : '';
 
         const eventTypesHtml = r.eventTypes
-            .map(
-                (t) =>
-                    `<span class="px-2.5 py-1 text-xs font-medium text-[#D4AF37] border border-[#E6C77F] rounded-full">${t}</span>`
-            )
-            .join('');
+                .map(
+                        (t) =>
+                        `<span class="px-2.5 py-1 text-xs font-medium text-[#D4AF37] border border-[#E6C77F] rounded-full">${t}</span>`
+                )
+                .join('');
 
         return `
 <article
@@ -352,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function () {
         prevBtn.dataset.page = String(state.page - 1);
         prevBtn.disabled = state.page === 1;
         prevBtn.className =
-            'p-3 rounded-full border-2 border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed';
+                'p-3 rounded-full border-2 border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed';
         prevBtn.innerHTML = '<i data-lucide="chevron-left" class="w-5 h-5"></i>';
         paginationEl.appendChild(prevBtn);
 
@@ -362,10 +392,10 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.dataset.page = String(i);
             if (i === state.page) {
                 btn.className =
-                    'min-w-[44px] h-11 px-4 rounded-full font-semibold text-sm bg-gradient-to-br from-[#0B1120] to-[#020617] text-white border-2 border-[#D4AF37] shadow-xl shadow-[#D4AF37]/20';
+                        'min-w-[44px] h-11 px-4 rounded-full font-semibold text-sm bg-gradient-to-br from-[#0B1120] to-[#020617] text-white border-2 border-[#D4AF37] shadow-xl shadow-[#D4AF37]/20';
             } else {
                 btn.className =
-                    'min-w-[44px] h-11 px-4 rounded-full font-semibold text-sm bg-white text-[#4B5563] border-2 border-[#E5E7EB] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg';
+                        'min-w-[44px] h-11 px-4 rounded-full font-semibold text-sm bg-white text-[#4B5563] border-2 border-[#E5E7EB] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg';
             }
             btn.textContent = String(i);
             paginationEl.appendChild(btn);
@@ -376,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function () {
         nextBtn.dataset.page = String(state.page + 1);
         nextBtn.disabled = state.page === totalPages;
         nextBtn.className =
-            'p-3 rounded-full border-2 border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed';
+                'p-3 rounded-full border-2 border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#E6C77F]/5 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed';
         nextBtn.innerHTML = '<i data-lucide="chevron-right" class="w-5 h-5"></i>';
         paginationEl.appendChild(nextBtn);
 
@@ -517,13 +547,59 @@ document.addEventListener('DOMContentLoaded', function () {
         state.page = 1;
         render();
     });
-    guestsInput.addEventListener('input', () => {
-        state.guests = guestsInput.value;
-    });
+    if (guestsInput) {
+        guestsInput.addEventListener('input', () => {
+            state.guests = guestsInput.value;
+            state.page = 1;
+            render();
+        });
+
+        if (budgetInput) {
+            budgetInput.addEventListener('input', () => {
+                const parsed = parseBudgetInput(budgetInput.value);
+                if (parsed != null) {
+                    state.priceMax = parsed;
+                    // Đồng bộ với slider bên trái
+                    priceRangeInputs.forEach((i) => (i.value = String(parsed)));
+                    priceLabels.forEach((lab) => (lab.textContent = formatCurrency(parsed)));
+                    state.page = 1;
+                    render();
+                }
+            });
+        }
+
+    }
+
     searchButton.addEventListener('click', () => {
+        if (keywordInput) {
+            state.keyword = keywordInput.value.trim();
+        }
+        if (guestsInput) {
+            state.guests = guestsInput.value;
+        }
+        if (budgetInput) {
+            const parsed = parseBudgetInput(budgetInput.value);
+            if (parsed != null) {
+                state.priceMax = parsed;
+                priceRangeInputs.forEach((i) => (i.value = String(parsed)));
+                priceLabels.forEach((lab) => (lab.textContent = formatCurrency(parsed)));
+            }
+        }
         state.page = 1;
         render();
     });
+
+
+    // Gõ Enter trong ô search cũng apply luôn
+    if (keywordInput) {
+        keywordInput.addEventListener('input', () => {
+            state.keyword = keywordInput.value.trim();
+            state.page = 1;
+            render();
+        });
+    }
+
+
 
     function resetFilters() {
         state.quickTags = new Set();
@@ -536,7 +612,12 @@ document.addEventListener('DOMContentLoaded', function () {
         state.searchEventType = '';
         state.guests = '';
         state.status = '';
+        state.keyword = '';
         state.page = 1;
+
+        if (keywordInput) {
+            keywordInput.value = '';
+        }
 
         quickFilterButtons.forEach((btn) => btn.classList.remove('filter-pill-selected'));
         eventTypeButtons.forEach((btn) => btn.classList.remove('filter-pill-selected'));
@@ -551,6 +632,9 @@ document.addEventListener('DOMContentLoaded', function () {
         areaSelect.value = '';
         eventTypeSelect.value = '';
         guestsInput.value = '';
+        if (budgetInput) {
+            budgetInput.value = '';
+        }
     }
 
     clearDesktopBtn.addEventListener('click', () => {
@@ -561,6 +645,14 @@ document.addEventListener('DOMContentLoaded', function () {
         resetFilters();
         render();
     });
+
+    if (resetSearchBtn) {
+        resetSearchBtn.addEventListener('click', () => {
+            resetFilters();
+            render();
+        });
+    }
+
 
     paginationEl.addEventListener('click', (e) => {
         const btn = e.target.closest('button[data-page]');
@@ -573,26 +665,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-action]');
-        if (!btn)
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+
+    const action = btn.dataset.action;
+
+    if (action === 'favorite') {
+        // lấy id nhà hàng từ card
+        const card = btn.closest('article[data-restaurant-id]');
+        const restaurantId = card ? card.dataset.restaurantId : null;
+
+        if (!restaurantId) {
+            console.warn('Không tìm thấy data-restaurant-id trên card');
             return;
-
-        const action = btn.dataset.action;
-
-        if (action === 'favorite') {
-            alert('Added to favorites (demo).');
-        } else if (action === 'book') {
-            const card = btn.closest('article[data-restaurant-id]');
-            const restaurantId = card ? card.dataset.restaurantId : null;
-
-            if (restaurantId) {
-                window.location.href = 'booking.xhtml?restaurantId=' + encodeURIComponent(restaurantId);
-            } else {
-                window.location.href = 'booking.xhtml';
-            }
         }
-    });
+
+        // lấy component JSF trong form ẩn
+        const hiddenInput = document.getElementById('favoriteForm:restaurantId');
+        const submitBtn   = document.getElementById('favoriteForm:submitFavorite');
+
+        if (!hiddenInput || !submitBtn) {
+            console.error('Không tìm thấy favoriteForm hoặc các phần tử bên trong');
+            return;
+        }
+
+        // gán giá trị rồi submit form JSF
+        hiddenInput.value = restaurantId;
+        submitBtn.click();  // gọi action #{restaurantFavoritesBean.addFavoriteById}
+
+    } else if (action === 'book') {
+        const card = btn.closest('article[data-restaurant-id]');
+        const restaurantId = card ? card.dataset.restaurantId : null;
+
+        if (restaurantId) {
+            window.location.href = 'booking.xhtml?restaurantId=' + encodeURIComponent(restaurantId);
+        } else {
+            window.location.href = 'booking.xhtml';
+        }
+    }
+});
+
 
     function openSheet() {
         mobileSheet.classList.remove('hidden');

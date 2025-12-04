@@ -1,0 +1,203 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:h="jakarta.faces.html"
+        xmlns:ui="jakarta.faces.facelets">
+
+    <style type="text/css">
+        /* ====== Luxury FeastLink chat widget ====== */
+        .fl-chat-widget {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 9999;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .fl-chat-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            max-width: 360px;
+            background:
+                radial-gradient(circle at 0% 0%, rgba(248, 250, 252, 0.10), transparent 55%),
+                radial-gradient(circle at 120% 0%, rgba(212, 175, 55, 0.32), transparent 60%),
+                linear-gradient(135deg, #020617, #0B1120);
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.55);
+            box-shadow:
+                0 22px 60px rgba(15, 23, 42, 0.95),
+                0 0 0 1px rgba(15, 23, 42, 0.9);
+            color: #F9FAFB;
+            backdrop-filter: blur(14px);
+        }
+
+        .fl-chat-avatar-wrap {
+            position: relative;
+        }
+
+        .fl-chat-avatar-glow {
+            position: absolute;
+            inset: -4px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 30% 0,
+                        rgba(234, 179, 8, 0.55),
+                        transparent 60%);
+            opacity: 0.9;
+            filter: blur(6px);
+            z-index: 0;
+        }
+
+        .fl-chat-avatar {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            background:
+                radial-gradient(circle at 30% 0, #FACC15, #EAB308 45%, #78350F 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 700;
+            color: #020617;
+            box-shadow:
+                0 0 0 2px #020617,
+                0 0 0 3px rgba(212, 175, 55, 0.85);
+            z-index: 1;
+        }
+
+        .fl-chat-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .fl-chat-label {
+            font-size: 10px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #E5E7EB;
+            opacity: 0.85;
+        }
+
+        .fl-chat-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #F9FAFB;
+        }
+
+        .fl-chat-subtitle {
+            font-size: 11px;
+            color: #E5E7EB;
+            opacity: 0.9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .fl-chat-status {
+            font-size: 11px;
+            margin-top: 2px;
+            color: #BBF7D0;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .fl-chat-status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: #22C55E;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
+        }
+
+        .fl-chat-button {
+            flex-shrink: 0;
+            margin-left: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: none;
+            background: linear-gradient(135deg, #F97316, #EAB308);
+            color: #111827;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 12px 26px rgba(248, 143, 30, 0.7);
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+        }
+
+        .fl-chat-button::after {
+            content: "↗";
+            font-size: 11px;
+        }
+
+        .fl-chat-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 38px rgba(248, 143, 30, 0.85);
+            filter: brightness(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .fl-chat-widget {
+                right: 12px;
+                bottom: 12px;
+            }
+            .fl-chat-card {
+                max-width: 280px;
+                padding: 10px 12px;
+            }
+            .fl-chat-subtitle {
+                display: none;
+            }
+            .fl-chat-title {
+                font-size: 13px;
+            }
+        }
+    </style>
+
+    <h:panelGroup layout="block" rendered="#{restaurantChatBean.chatAvailable}">
+        <div class="fl-chat-widget">
+            <div class="fl-chat-card">
+                <div class="fl-chat-avatar-wrap">
+                    <div class="fl-chat-avatar-glow"></div>
+                    <div class="fl-chat-avatar">
+                          <h:graphicImage value="#{resource['images/feastlink-logo.png']}"
+                                        styleClass="fl-chat-avatar-img" />
+                    </div>
+                </div>
+
+                <div class="fl-chat-content">
+                    <div class="fl-chat-label">FeastLink concierge</div>
+                    <div class="fl-chat-title">
+                        Chat Zalo with Manager
+                    </div>
+                    <div class="fl-chat-subtitle">
+                       Messages
+                    </div>
+                    <div class="fl-chat-status">
+                        <span class="fl-chat-status-dot"></span>
+                        <span>We will respond to you within 24 hours.</span>
+                    </div>
+                </div>
+
+                <!-- DÙNG LINK TỪ BEAN: MỖI NHÀ HÀNG CÓ SỐ KHÁC NHAU -->
+                <a href="#{restaurantChatBean.zaloLink}"
+                   target="_blank"
+                   rel="noopener"
+                   class="fl-chat-button">
+                    Chat Zalo
+                </a>
+            </div>
+        </div>
+    </h:panelGroup>
+
+</ui:composition>

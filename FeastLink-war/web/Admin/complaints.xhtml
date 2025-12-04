@@ -19,7 +19,7 @@
                 <div>
                     <h2 class="text-xl font-semibold text-gray-900">Complaints &amp; System Feedback</h2>
                     <p class="text-sm text-gray-500">
-                        Quản lý feedback hệ thống từ Customer &amp; Restaurant Manager.
+                        Manage system feedback from Customers &amp; Restaurant Manager.
                     </p>
                 </div>
             </div>
@@ -59,12 +59,12 @@
                 <table class="w-full text-sm">
                     <thead>
                     <tr class="border-b text-gray-500">
-                        <th class="py-3 text-left">Tiêu đề</th>
-                        <th class="text-left">Người gửi / Booking</th>
-                        <th class="text-left">Nhà hàng</th>
-                        <th class="text-left">Trạng thái</th>
-                        <th class="text-left">Tạo lúc</th>
-                        <th class="text-left">Cập nhật</th>
+                        <th class="py-3 text-left">Title</th>
+                        <th class="text-left">Sender / Booking</th>
+                        <th class="text-left">Restaurant</th>
+                        <th class="text-left">Status</th>
+                        <th class="text-left">Created at</th>
+                        <th class="text-left">Update</th>
                         <th class="text-center">Actions</th>
                     </tr>
                     </thead>
@@ -129,19 +129,19 @@
                     <hr class="my-4" />
 
                     <h3 class="text-sm font-semibold mb-2">
-                        Cập nhật feedback ##{adminFeedbackBean.selectedFeedback.feedbackId}
+                        Update feedback ##{adminFeedbackBean.selectedFeedback.feedbackId}
                     </h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                         <div>
-                            <span class="text-xs text-gray-500">Tiêu đề</span>
+                            <span class="text-xs text-gray-500">Title</span>
                             <div class="text-sm font-medium">
                                 #{adminFeedbackBean.selectedFeedback.title}
                             </div>
                         </div>
 
                         <div>
-                            <span class="text-xs text-gray-500">Người gửi</span>
+                            <span class="text-xs text-gray-500">Sender</span>
                             <div class="text-sm">
                                 #{adminFeedbackBean.selectedFeedback.reporterUserId != null
                                   ? adminFeedbackBean.selectedFeedback.reporterUserId.fullName : ''}
@@ -149,7 +149,7 @@
                         </div>
 
                         <div>
-                            <span class="text-xs text-gray-500">Trạng thái hiện tại</span>
+                            <span class="text-xs text-gray-500">Current status</span>
                             <div class="text-sm">
                                 #{adminFeedbackBean.selectedFeedback.status}
                             </div>

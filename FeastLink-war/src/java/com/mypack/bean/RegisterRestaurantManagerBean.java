@@ -3,7 +3,6 @@ package com.mypack.bean;
 import com.mypack.entity.RestaurantManagers;
 import com.mypack.entity.Restaurants;
 import com.mypack.entity.Users;
-
 import com.mypack.entity.Areas;
 import com.mypack.entity.Cities;
 
@@ -67,11 +66,10 @@ public class RegisterRestaurantManagerBean implements Serializable {
     private String area;               // tên khu vực (từ DB)
     private String description;
 
-    private String taxCode;
-    private String fanpage;
+    // KHÔNG còn dùng taxCode, fanpage, servingStyle trên form, bỏ luôn cho sạch
+
     private String openTime;           // "09:00"
     private String closeTime;          // "22:00"
-    private String servingStyle;
 
     // Logo: đường dẫn tương đối lưu trong DB
     private String logoUrl;
@@ -83,11 +81,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
     private Integer maxGuests;
     private Integer minDays;
 
-    // ========= 4. Điều khoản & Loại tiệc =========
+    // ========= 4. Điều khoản =========
     private boolean acceptedTerms;
-
-    // Loại tiệc phục vụ chính (bind từ hidden input)
-    private String mainEventType;
 
     // ========= Thành phố / Khu vực (lấy từ DB) =========
     private List<String> cityList;
@@ -113,7 +108,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
         // Nếu chưa đăng nhập → về trang login
         if (currentUser == null) {
             try {
-                String loginUrl = ctx.getExternalContext().getRequestContextPath() + "/login.xhtml";
+                String loginUrl = ctx.getExternalContext().getRequestContextPath() +  "/login.xhtml?target=register_manager";
                 ctx.getExternalContext().redirect(loginUrl);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -162,15 +157,14 @@ public class RegisterRestaurantManagerBean implements Serializable {
             }
         }
 
-        // Sort nhẹ cho đẹp
         cityList.sort(String::compareToIgnoreCase);
     }
 
     private void loadExistingRestaurant() {
         List<RestaurantManagers> rms = restaurantManagersFacade.findAll();
         for (RestaurantManagers rm : rms) {
-            if (rm.getUserId() != null &&
-                rm.getUserId().getUserId().equals(currentUser.getUserId())) {
+            if (rm.getUserId() != null
+                    && rm.getUserId().getUserId().equals(currentUser.getUserId())) {
                 existingRestaurant = rm.getRestaurantId();
                 managerStatus = rm.getStatus();
                 break;
@@ -180,9 +174,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
         if (existingRestaurant != null) {
             restaurantName = existingRestaurant.getName();
 
-            // Tách description + loại tiệc chính
-            String fullDesc = existingRestaurant.getDescription();
-            parseMainEventFromDescription(fullDesc);
+            // KHÔNG còn dùng mainEventType → chỉ lấy thẳng description
+            description = existingRestaurant.getDescription();
 
             restaurantAddress = existingRestaurant.getAddress();
             managerPhone      = existingRestaurant.getPhone() != null
@@ -215,39 +208,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 onCityChange();
             }
         }
-    }
-
-    /**
-     * Tách loại tiệc chính & phần description hiển thị từ chuỗi description lưu trong DB.
-     * Format lưu: [Main Event: Wedding] Mô tả nhà hàng...
-     */
-    private void parseMainEventFromDescription(String fullDesc) {
-        if (isBlank(fullDesc)) {
-            this.description   = null;
-            this.mainEventType = null;
-            return;
-        }
-
-        String trimmed = fullDesc.trim();
-        String prefix  = "[Main Event:";
-        if (trimmed.startsWith(prefix)) {
-            int end = trimmed.indexOf(']');
-            if (end > prefix.length()) {
-                String inside = trimmed.substring(prefix.length(), end).trim(); // "Wedding"
-                if (inside.startsWith(":")) {
-                    inside = inside.substring(1).trim();
-                }
-                mainEventType = inside;
-
-                String rest = trimmed.substring(end + 1).trim();
-                description = rest.isEmpty() ? null : rest;
-                return;
-            }
-        }
-
-        // Không match pattern → chỉ là mô tả
-        this.description   = fullDesc;
-        this.mainEventType = null;
     }
 
     // --------------------------------------------------------
@@ -289,13 +249,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
     // Helper: trạng thái manager
     // --------------------------------------------------------
     private boolean isPendingManager() {
-        return managerStatus != null && managerStatus.trim().equalsIgnoreCase("Pending");
-    }
-
-    private boolean isApprovedManager() {
-        if (managerStatus == null) return false;
-        String st = managerStatus.trim();
-        return st.equalsIgnoreCase("Active") || st.equalsIgnoreCase("Approved");
+        return managerStatus != null && managerStatus.trim().equalsIgnoreCase("Pending")
+               || managerStatus != null && managerStatus.trim().equalsIgnoreCase("PENDING_APPROVAL");
     }
 
     // --------------------------------------------------------
@@ -338,7 +293,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
         if (isPendingManager()) {
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
-                    "Hồ sơ đã gửi thành công và đang chờ xét duyệt",
+                    "Hồ sơ đã gửi chờ xét duyệt , bạn không thể gửi đơn mới",
                     "Tài khoản này đã gửi yêu cầu nâng cấp nhà hàng và đang chờ Admin FeastLink xét duyệt. Bạn không cần gửi lại."
             ));
             return null;
@@ -358,18 +313,17 @@ public class RegisterRestaurantManagerBean implements Serializable {
         boolean noNewLogo      = (logoFile == null || logoFile.getSize() <= 0);
         boolean noExistingLogo = isBlank(logoUrl);
 
-        // Validate bắt buộc
-        if (isBlank(managerName) || isBlank(managerPhone) || isBlank(managerEmail) ||
-            isBlank(restaurantName) || isBlank(restaurantAddress) ||
-            isBlank(city) || isBlank(area) ||
-            (noNewLogo && noExistingLogo) ||
-            isBlank(mainEventType) ||
-            minGuests == null || minGuests < 0 ||
-            minDays == null   || minDays   < 0) {
+        // Validate bắt buộc (đã bỏ mainEventType ra khỏi điều kiện)
+        if (isBlank(managerName) || isBlank(managerPhone) || isBlank(managerEmail)
+                || isBlank(restaurantName) || isBlank(restaurantAddress)
+                || isBlank(city) || isBlank(area)
+                || (noNewLogo && noExistingLogo)
+                || minGuests == null || minGuests < 0
+                || minDays == null   || minDays   < 0) {
 
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Vui lòng điền đầy đủ các trường bắt buộc (bao gồm Logo, Thành phố, Khu vực và Loại tiệc chính).",
+                    "Vui lòng điền đầy đủ các trường bắt buộc (bao gồm Logo, Thành phố và Khu vực).",
                     null
             ));
             return null;
@@ -394,24 +348,15 @@ public class RegisterRestaurantManagerBean implements Serializable {
             Date now = new Date();
 
             if (isNewRestaurant) {
-                restaurant.setStatus("Pending");
+                restaurant.setStatus("PENDING_APPROVAL");
                 restaurant.setCreatedAt(now);
             }
             restaurant.setUpdatedAt(now);
 
             restaurant.setName(restaurantName);
 
-            // Gộp description + loại tiệc chính
-            String descToSave = description;
-            if (!isBlank(mainEventType)) {
-                String marker = "[Main Event: " + mainEventType + "]";
-                if (isBlank(descToSave)) {
-                    descToSave = marker;
-                } else {
-                    descToSave = marker + " " + descToSave.trim();
-                }
-            }
-            restaurant.setDescription(descToSave);
+            // Lưu description nguyên bản (không gắn [Main Event: ...] nữa)
+            restaurant.setDescription(description);
 
             // Address text (hiển thị)
             String fullAddr = restaurantAddress;
@@ -505,30 +450,31 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 rm.setUserId(currentUser);
                 rm.setRestaurantId(restaurant);
                 rm.setIsPrimary(true);
-                rm.setStatus("Pending");
+                rm.setStatus("PENDING_APPROVAL");
                 rm.setCreatedAt(now);
 
                 restaurantManagersFacade.create(rm);
 
+                // update status user
+                currentUser.setStatus("PENDING");
+                usersFacade.edit(currentUser);
+
+                FacesContext.getCurrentInstance()
+                        .getExternalContext()
+                        .getSessionMap()
+                        .put("currentUser", currentUser);
+
                 existingRestaurant = restaurant;
-                managerStatus = "Pending";
+                managerStatus = "PENDING_APPROVAL";
             } else {
                 restaurantsFacade.edit(restaurant);
             }
 
-            if (isNewRestaurant) {
-                ctx.addMessage(null, new FacesMessage(
-                        FacesMessage.SEVERITY_INFO,
-                        "Gửi yêu cầu xét duyệt thành công",
-                        "Hồ sơ nhà hàng đã được gửi tới Admin FeastLink và đang chờ xét duyệt."
-                ));
-            } else {
-                ctx.addMessage(null, new FacesMessage(
-                        FacesMessage.SEVERITY_INFO,
-                        "Cập nhật thông tin nhà hàng thành công",
-                        "Thông tin nhà hàng đã được lưu lại."
-                ));
-            }
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_INFO,
+                    "Gửi yêu cầu xét duyệt thành công",
+                    "Hồ sơ nhà hàng đã được gửi tới Admin FeastLink và đang chờ xét duyệt."
+            ));
 
             return null;
 
@@ -565,6 +511,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
     }
 
     public String cancel() {
+        // index.xhtml ở root
         return "index?faces-redirect=true";
     }
 
@@ -604,20 +551,11 @@ public class RegisterRestaurantManagerBean implements Serializable {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public String getTaxCode() { return taxCode; }
-    public void setTaxCode(String taxCode) { this.taxCode = taxCode; }
-
-    public String getFanpage() { return fanpage; }
-    public void setFanpage(String fanpage) { this.fanpage = fanpage; }
-
     public String getOpenTime() { return openTime; }
     public void setOpenTime(String openTime) { this.openTime = openTime; }
 
     public String getCloseTime() { return closeTime; }
     public void setCloseTime(String closeTime) { this.closeTime = closeTime; }
-
-    public String getServingStyle() { return servingStyle; }
-    public void setServingStyle(String servingStyle) { this.servingStyle = servingStyle; }
 
     public String getLogoUrl() { return logoUrl; }
     public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
@@ -636,9 +574,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
     public boolean isAcceptedTerms() { return acceptedTerms; }
     public void setAcceptedTerms(boolean acceptedTerms) { this.acceptedTerms = acceptedTerms; }
-
-    public String getMainEventType() { return mainEventType; }
-    public void setMainEventType(String mainEventType) { this.mainEventType = mainEventType; }
 
     public List<String> getCityList() { return cityList; }
     public void setCityList(List<String> cityList) { this.cityList = cityList; }
