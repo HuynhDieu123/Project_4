@@ -4,127 +4,162 @@
                 xmlns:ui="jakarta.faces.facelets"
                 template="/Restaurant/layout-manager.xhtml">
 
+    <!-- PAGE TITLE (trên tab trình duyệt) -->
     <ui:define name="title">
         FeastLink - Capacity &amp; Availability
     </ui:define>
 
-    <!-- ===== TOP BAR LEFT (giống figma) ===== -->
+    <!-- ===== TOP BAR (thanh header trong layout) ===== -->
     <ui:define name="header">
-        <div class="flex flex-col">
+        <div class="flex flex-col gap-1">
             <h1 class="text-2xl font-bold text-text-main-light">
-                Restaurant Profile Management
+                Capacity &amp; Availability
             </h1>
             <p class="text-sm text-text-secondary-light">
-                Manage your restaurant&apos;s information and policies.
+                Control how many bookings you accept and block dates when needed.
             </p>
         </div>
     </ui:define>
 
+    <!-- ===== MAIN CONTENT ===== -->
     <ui:define name="content">
 
-        <!-- PAGE TITLE + SUBTITLE -->
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold text-text-main-light">
-                Capacity &amp; Availability Management
-            </h1>
-            <p class="text-sm text-text-secondary-light">
-                Manage your booking limits, view calendar and block dates.
-            </p>
+        <!-- PAGE TITLE + MINI BADGES -->
+        <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-text-main-light">
+                    Capacity &amp; Availability Management
+                </h1>
+                <p class="text-sm text-text-secondary-light mt-1">
+                    Manage your booking limits, check the calendar, and quickly block special dates.
+                </p>
+            </div>
+
+            <!-- Small “hint” chips -->
+            <div class="flex flex-wrap gap-2 text-[11px]">
+                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-background-soft border border-border-light text-text-secondary-light">
+                    <span class="material-symbols-outlined text-xs text-champagne-gold">info</span>
+                    Click a date to update its status
+                </span>
+                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-background-soft border border-border-light text-text-secondary-light">
+                    <span class="material-symbols-outlined text-xs text-champagne-gold">calendar_month</span>
+                    Use arrows to move between months
+                </span>
+            </div>
         </div>
 
         <!-- MAIN GRID: CALENDAR LEFT, SETTINGS RIGHT -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
             <!-- ================= LEFT: CALENDAR CARD ================= -->
-            <section class="lg:col-span-2 bg-card-light border border-border-light rounded-2xl shadow-subtle p-6">
+            <section class="lg:col-span-2 bg-card-light border border-border-light rounded-2xl shadow-subtle overflow-hidden">
 
-                <!-- Form calendar -->
-                <h:form id="calendarForm">
-
+                <!-- Gradient header của card calendar -->
+                <div class="px-6 pt-5 pb-4 bg-gradient-to-r from-[#FFF7E6] via-white to-[#FFF4D8] border-b border-border-light">
                     <!-- Month header + legend -->
-                    <div class="flex items-center justify-between mb-6">
-                        <!-- Month + arrows -->
-                        <div class="flex items-center gap-2 text-sm font-semibold text-text-main-light">
-                            <h:commandLink action="#{capacityAvailabilityBean.previousMonth}"
-                                           styleClass="p-1 rounded-full hover:bg-gray-100">
-                                <f:ajax render=":calendarForm :dayStatusForm"/>
-                                <span class="material-symbols-outlined text-base">chevron_left</span>
-                            </h:commandLink>
+                    <h:form id="calendarForm">
+                        <div class="flex items-center justify-between mb-3">
 
-                            <span>#{capacityAvailabilityBean.currentMonthLabel}</span>
-
-                            <h:commandLink action="#{capacityAvailabilityBean.nextMonth}"
-                                           styleClass="p-1 rounded-full hover:bg-gray-100">
-                                <f:ajax render=":calendarForm :dayStatusForm"/>
-                                <span class="material-symbols-outlined text-base">chevron_right</span>
-                            </h:commandLink>
-                        </div>
-
-                        <!-- Legend -->
-                        <div class="flex items-center gap-4 text-xs text-text-secondary-light">
-                            <span class="inline-flex items-center gap-1">
-                                <span class="w-2 h-2 rounded-full bg-success-green"></span>
-                                Available
-                            </span>
-                            <span class="inline-flex items-center gap-1">
-                                <span class="w-2 h-2 rounded-full bg-champagne-gold"></span>
-                                Gần đầy
-                            </span>
-                            <span class="inline-flex items-center gap-1">
-                                <span class="w-2 h-2 rounded-full bg-error-red"></span>
-                                Đã đầy
-                            </span>
-                            <span class="inline-flex items-center gap-1">
-                                <span class="w-2 h-2 rounded-full bg-gray-400"></span>
-                                Bị chặn
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Weekday row -->
-                    <div class="grid grid-cols-7 text-center text-xs font-medium text-text-secondary-light mb-4">
-                        <div>Sun</div>
-                        <div>Mon</div>
-                        <div>Tue</div>
-                        <div>Wed</div>
-                        <div>Thu</div>
-                        <div>Fri</div>
-                        <div>Sat</div>
-                    </div>
-
-                    <!-- Calendar days: 6 hàng x 7 cột -->
-                    <div class="grid grid-cols-7 gap-y-6 text-xs text-text-main-light">
-                        <ui:repeat value="#{capacityAvailabilityBean.calendarDays}" var="day">
-                            <div class="flex flex-col items-center">
-                                <!-- CLICK NGÀY -->
-                                <h:commandLink action="#{capacityAvailabilityBean.selectDay(day.dateIso)}"
-                                               styleClass="flex flex-col items-center no-underline text-inherit #{day.inCurrentMonth ? '' : 'text-gray-400'} #{day.selected ? 'bg-gray-100 rounded-full px-2 py-1' : ''}">
-                                    <span>#{day.dayNumber}</span>
-
-                                    <!-- chấm trạng thái -->
-                                    <h:panelGroup rendered="#{day.showDot}">
-                                        <span class="w-2 h-2 rounded-full #{day.dotCss} mt-1"></span>
-                                    </h:panelGroup>
-
+                            <!-- Month + arrows -->
+                            <div class="inline-flex items-center gap-2 text-sm font-semibold text-text-main-light bg-white/70 px-3 py-1.5 rounded-full shadow-subtle">
+                                <h:commandLink action="#{capacityAvailabilityBean.previousMonth}"
+                                               styleClass="p-1 rounded-full hover:bg-background-soft">
                                     <f:ajax render=":calendarForm :dayStatusForm"/>
+                                    <span class="material-symbols-outlined text-base">chevron_left</span>
+                                </h:commandLink>
+
+                                <span class="px-1">
+                                    #{capacityAvailabilityBean.currentMonthLabel}
+                                </span>
+
+                                <h:commandLink action="#{capacityAvailabilityBean.nextMonth}"
+                                               styleClass="p-1 rounded-full hover:bg-background-soft">
+                                    <f:ajax render=":calendarForm :dayStatusForm"/>
+                                    <span class="material-symbols-outlined text-base">chevron_right</span>
                                 </h:commandLink>
                             </div>
-                        </ui:repeat>
-                    </div>
 
-                </h:form>
+                            <!-- Legend -->
+                            <div class="flex flex-wrap items-center gap-3 text-[11px] text-text-secondary-light">
+                                <span class="inline-flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-success-green"></span>
+                                    Available
+                                </span>
+                                <span class="inline-flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-champagne-gold"></span>
+                                    Gần đầy
+                                </span>
+                                <span class="inline-flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-error-red"></span>
+                                    Đã đầy
+                                </span>
+                                <span class="inline-flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                                    Bị chặn
+                                </span>
+                            </div>
+                        </div>
+
+                        <p class="text-[11px] text-text-secondary-light">
+                            Tip: use this mini heatmap to quickly see which dates are almost full or blocked.
+                        </p>
+
+                        <!-- Weekday row -->
+                        <div class="mt-4 grid grid-cols-7 text-center text-[11px] font-medium text-text-secondary-light">
+                            <div>Sun</div>
+                            <div>Mon</div>
+                            <div>Tue</div>
+                            <div>Wed</div>
+                            <div>Thu</div>
+                            <div>Fri</div>
+                            <div>Sat</div>
+                        </div>
+
+                        <!-- Calendar body -->
+                        <div class="mt-3 px-1 pb-5 grid grid-cols-7 gap-y-4 text-xs">
+                            <ui:repeat value="#{capacityAvailabilityBean.calendarDays}" var="day">
+                                <div class="flex justify-center">
+                                    <!-- CLICK NGÀY -->
+                                    <h:commandLink action="#{capacityAvailabilityBean.selectDay(day.dateIso)}"
+                                                   styleClass="group flex flex-col items-center justify-center w-10 h-10 rounded-xl border border-transparent cursor-pointer no-underline #{day.inCurrentMonth ? 'text-text-main-light' : 'text-gray-400'} #{day.selected ? 'bg-[#0B1120] text-white border-[#0B1120] shadow-subtle' : 'hover:bg-background-soft hover:border-champagne-gold/50'}">
+                                        <span class="text-[11px] font-medium">
+                                            #{day.dayNumber}
+                                        </span>
+
+                                        <!-- chấm trạng thái -->
+                                        <h:panelGroup rendered="#{day.showDot}">
+                                            <span class="mt-1 w-1.5 h-1.5 rounded-full #{day.dotCss} block"></span>
+                                        </h:panelGroup>
+
+                                        <f:ajax render=":calendarForm :dayStatusForm"/>
+                                    </h:commandLink>
+                                </div>
+                            </ui:repeat>
+                        </div>
+
+                    </h:form>
+                </div>
             </section>
 
 
             <!-- ================= RIGHT: SETTINGS CARDS ================= -->
-
             <section class="space-y-6">
 
                 <!-- Default Limits card -->
                 <div class="bg-card-light border border-border-light rounded-2xl shadow-subtle p-5 space-y-4">
-                    <h2 class="text-sm font-semibold text-text-main-light">
-                        Thiết lập giới hạn mặc định
-                    </h2>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-sm font-semibold text-text-main-light">
+                                Default capacity limits
+                            </h2>
+                            <p class="text-[11px] text-text-secondary-light mt-0.5">
+                                These limits are used for all days unless you override them.
+                            </p>
+                        </div>
+                        <span class="material-symbols-outlined text-lg text-champagne-gold bg-background-soft rounded-full p-2">
+                            tune
+                        </span>
+                    </div>
 
                     <h:form id="limitsForm" styleClass="space-y-3">
                         <div>
@@ -143,7 +178,7 @@
                                          styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
                         </div>
 
-                        <h:commandButton value="Save Limits"
+                        <h:commandButton value="Save limits"
                                          action="#{capacityAvailabilityBean.saveLimits}"
                                          styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90" />
                     </h:form>
@@ -151,29 +186,41 @@
 
                 <!-- Manual Block card -->
                 <div class="bg-card-light border border-border-light rounded-2xl shadow-subtle p-5 space-y-4">
-                    <h2 class="text-sm font-semibold text-text-main-light">
-                        Chặn thủ công
-                    </h2>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-sm font-semibold text-text-main-light">
+                                Manual date blocking
+                            </h2>
+                            <p class="text-[11px] text-text-secondary-light mt-0.5">
+                                Block a range of dates for private events, maintenance, or holidays.
+                            </p>
+                        </div>
+                        <span class="material-symbols-outlined text-lg text-champagne-gold bg-background-soft rounded-full p-2">
+                            block
+                        </span>
+                    </div>
 
                     <h:form id="blockForm" styleClass="space-y-3">
-                        <div>
-                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                Start Date
-                            </label>
-                            <h:inputText value="#{capacityAvailabilityBean.blockStartDate}"
-                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
-                                <f:passThroughAttribute name="type" value="date" />
-                            </h:inputText>
-                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                    Start date
+                                </label>
+                                <h:inputText value="#{capacityAvailabilityBean.blockStartDate}"
+                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                    <f:passThroughAttribute name="type" value="date" />
+                                </h:inputText>
+                            </div>
 
-                        <div>
-                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                End Date
-                            </label>
-                            <h:inputText value="#{capacityAvailabilityBean.blockEndDate}"
-                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
-                                <f:passThroughAttribute name="type" value="date" />
-                            </h:inputText>
+                            <div>
+                                <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                    End date
+                                </label>
+                                <h:inputText value="#{capacityAvailabilityBean.blockEndDate}"
+                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                    <f:passThroughAttribute name="type" value="date" />
+                                </h:inputText>
+                            </div>
                         </div>
 
                         <div>
@@ -184,17 +231,27 @@
                                          styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
                         </div>
 
-                        <h:commandButton value="Block Dates"
+                        <h:commandButton value="Block dates"
                                          action="#{capacityAvailabilityBean.blockDates}"
-                                         styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90" />
+                                         styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-[#0B1120] text-white text-sm font-semibold shadow-subtle hover:opacity-95" />
                     </h:form>
                 </div>
 
                 <!-- Day Status card -->
                 <div class="bg-card-light border border-border-light rounded-2xl shadow-subtle p-5 space-y-4">
-                    <h2 class="text-sm font-semibold text-text-main-light">
-                        Trạng thái ngày được chọn
-                    </h2>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-sm font-semibold text-text-main-light">
+                                Selected day status
+                            </h2>
+                            <p class="text-[11px] text-text-secondary-light mt-0.5">
+                                Update the real-time capacity usage of the selected date.
+                            </p>
+                        </div>
+                        <span class="material-symbols-outlined text-lg text-champagne-gold bg-background-soft rounded-full p-2">
+                            insights
+                        </span>
+                    </div>
 
                     <h:form id="dayStatusForm" styleClass="space-y-4">
                         <p class="text-xs text-text-secondary-light">
@@ -236,11 +293,13 @@
                         </div>
 
                         <!-- Status tự tính -->
-                        <div class="text-xs text-text-secondary-light">
-                            <span>Auto status (dựa trên % sử dụng): </span>
-                            <span class="font-semibold text-text-main-light">
-                                #{capacityAvailabilityBean.selectedStatus}
-                            </span>
+                        <div class="rounded-xl bg-background-soft px-3 py-2 text-xs text-text-secondary-light">
+                            <div>
+                                Auto status (dựa trên % sử dụng):
+                                <span class="font-semibold text-text-main-light">
+                                    #{capacityAvailabilityBean.selectedStatus}
+                                </span>
+                            </div>
                             <div class="mt-1 text-[11px]">
                                 Quy tắc: 0% = Available, ≥50% = Gần đầy, 100% = Đã đầy.
                             </div>
