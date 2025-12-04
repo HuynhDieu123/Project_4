@@ -553,46 +553,46 @@
                 <!-- HEADER -->
                 <div class="fl-header">
                     <div class="fl-header-main">
-                        <div class="fl-badge">Danh sách yêu thích</div>
-                        <h2 class="fl-title">Nhà hàng bạn đã lưu lại</h2>
+                        <div class="fl-badge">Favorites list</div>
+                        <h2 class="fl-title">Restaurants you have saved</h2>
                         <p class="fl-subtitle">
-                            Xem nhanh các địa điểm ưa thích để đặt tiệc cho những dịp quan trọng.
+                          Quickly view favorite venues to book parties for important occasions.
                         </p>
                     </div>
                     <div class="fl-summary">
-                        <div class="fl-summary-label">Tổng số</div>
+                        <div class="fl-summary-label">Total</div>
                         <div class="fl-summary-value">
                             #{customerFavoritesBean.favoriteRestaurants.size()}
                         </div>
-                        <div class="fl-summary-caption">nhà hàng yêu thích</div>
+                        <div class="fl-summary-caption">favorite restaurant</div>
                     </div>
                 </div>
 
                 <!-- TOOLBAR FILTER -->
                 <div class="fl-toolbar">
                     <div class="fl-toolbar-left">
-                        <span class="fl-toolbar-label">Bộ lọc nhanh</span>
+                        <span class="fl-toolbar-label">Quick filter</span>
                         <div class="fl-toolbar-pills">
                             <h:commandLink action="#{customerFavoritesBean.filterAll}"
                                            styleClass="#{customerFavoritesBean.activeFilter eq 'ALL' ? 'fl-pill-toggle fl-pill-toggle-active' : 'fl-pill-toggle'}">
-                                Tất cả
+                               All
                             </h:commandLink>
 
                             <h:commandLink action="#{customerFavoritesBean.filterRecent}"
                                            styleClass="#{customerFavoritesBean.activeFilter eq 'RECENT' ? 'fl-pill-toggle fl-pill-toggle-active' : 'fl-pill-toggle'}">
-                                Mới thêm gần đây
+                                Recently added
                             </h:commandLink>
 
                             <h:commandLink action="#{customerFavoritesBean.filterTopRated}"
                                            styleClass="#{customerFavoritesBean.activeFilter eq 'TOP_RATED' ? 'fl-pill-toggle fl-pill-toggle-active' : 'fl-pill-toggle'}">
-                                Đánh giá cao
+                                Highly appreciated
                             </h:commandLink>
                         </div>
                     </div>
                     <div class="fl-toolbar-right">
-                        Bạn đang theo dõi
+                        You are following
                         <span class="fl-toolbar-highlight">
-                            #{customerFavoritesBean.favoriteRestaurants.size()} nhà hàng
+                            #{customerFavoritesBean.favoriteRestaurants.size()} restaurant
                         </span>.
                     </div>
                 </div>
@@ -600,12 +600,12 @@
                 <!-- EMPTY STATE -->
                 <h:panelGroup rendered="#{empty customerFavoritesBean.favoriteRestaurants}">
                     <div class="fl-empty">
-                        <div class="fl-empty-title">Bạn chưa lưu nhà hàng nào</div>
+                        <div class="fl-empty-title">You have not saved any restaurants yet.</div>
                         <p class="fl-empty-text">
-                            Hãy quay lại trang danh sách nhà hàng và nhấn biểu tượng trái tim để thêm vào yêu thích.
+                           Go back to the restaurant listing page and tap the heart icon to add to favorites.
                         </p>
                         <h:link outcome="/Customer/restaurants" styleClass="fl-btn-primary">
-                            Khám phá nhà hàng
+                         Explore the restaurant
                         </h:link>
                     </div>
                 </h:panelGroup>
@@ -684,7 +684,7 @@
                                         <div class="fl-divider"></div>
 
                                         <div class="fl-tag-row">
-                                            <span class="fl-pill">Hội nghị / Tiệc</span>
+                                            <span class="fl-pill">Conference / Party</span>
                                             <span class="fl-pill-muted">ID ##{restaurant.restaurantId}</span>
                                         </div>
 
