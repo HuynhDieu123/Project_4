@@ -272,35 +272,35 @@
                                     </h:inputTextarea>
                                 </div>
 
-                                <!-- UPLOAD LOGO -->
                                 <div class="field">
-                                    <label for="logoFile">Restaurant logo *</label>
-                                    <div class="upload-logo">
-                                        <div>Minimum square photo <strong>600 x 600px</strong></div>
+    <label for="logoFile">Restaurant logo *</label>
+    <div class="upload-logo">
+        <div>Minimum square photo <strong>600 x 600px</strong></div>
 
-                                        <h:inputFile id="logoFile"
-                                                     value="#{registerRestaurantManagerBean.logoFile}">
-                                        </h:inputFile>
-                                        <div class="hint">
-                                            Select JPG/PNG file from your computer. The logo will be saved to the folder
-                                            <code>resources/images/upload_file</code> of the system.
-                                        </div>
-                                        <h:message for="logoFile" styleClass="msg-field-error" />
+        <h:inputFile id="logoFile"
+                     value="#{registerRestaurantManagerBean.logoFile}">
+        </h:inputFile>
+        <div class="hint">
+            Select JPG/PNG file from your computer. The logo will be uploaded securely to FeastLink's cloud storage
+            and used across your restaurant profile.
+        </div>
+        <h:message for="logoFile" styleClass="msg-field-error" />
 
-                                        <!-- PREVIEW LOGO -->
-                                        <h:panelGroup rendered="#{not empty registerRestaurantManagerBean.logoUrl}">
-                                            <div class="logo-preview">
-                                                <div class="logo-preview-inner">
-                                                    <img src="#{request.contextPath}#{registerRestaurantManagerBean.logoUrl}"
-                                                         alt="Logo preview" />
-                                                </div>
-                                                <div class="logo-preview-caption">
-                                                    Logo preview (auto-resize according to frame)
-                                                </div>
-                                            </div>
-                                        </h:panelGroup>
-                                    </div>
-                                </div>
+        <!-- PREVIEW LOGO -->
+        <h:panelGroup rendered="#{not empty registerRestaurantManagerBean.logoUrl}">
+            <div class="logo-preview">
+                <div class="logo-preview-inner">
+                    <img src="#{registerRestaurantManagerBean.logoUrl}"
+                         alt="Logo preview" />
+                </div>
+                <div class="logo-preview-caption">
+                    Logo preview (auto-resize according to frame)
+                </div>
+            </div>
+        </h:panelGroup>
+    </div>
+</div>
+
                             </div>
 
                             <!-- GIỜ MỞ / ĐÓNG CỬA: DÙNG INPUT TYPE=TIME + REQUIRED -->
