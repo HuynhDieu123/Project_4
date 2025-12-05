@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mypack.entity;
 
 import jakarta.persistence.Basic;
@@ -29,10 +25,6 @@ import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Date;
 
-/**
- *
- * @author Laptop
- */
 @Entity
 @Table(name = "Bookings")
 @XmlRootElement
@@ -56,106 +48,156 @@ import java.util.Date;
     @NamedQuery(name = "Bookings.findByCancelTime", query = "SELECT b FROM Bookings b WHERE b.cancelTime = :cancelTime"),
     @NamedQuery(name = "Bookings.findByRejectReason", query = "SELECT b FROM Bookings b WHERE b.rejectReason = :rejectReason"),
     @NamedQuery(name = "Bookings.findByCreatedAt", query = "SELECT b FROM Bookings b WHERE b.createdAt = :createdAt"),
-    @NamedQuery(name = "Bookings.findByUpdatedAt", query = "SELECT b FROM Bookings b WHERE b.updatedAt = :updatedAt")})
+    @NamedQuery(name = "Bookings.findByUpdatedAt", query = "SELECT b FROM Bookings b WHERE b.updatedAt = :updatedAt"),
+    // optional: named query cho contact info
+    @NamedQuery(name = "Bookings.findByContactFullName", query = "SELECT b FROM Bookings b WHERE b.contactFullName = :contactFullName"),
+    @NamedQuery(name = "Bookings.findByContactEmail", query = "SELECT b FROM Bookings b WHERE b.contactEmail = :contactEmail"),
+    @NamedQuery(name = "Bookings.findByContactPhone", query = "SELECT b FROM Bookings b WHERE b.contactPhone = :contactPhone")
+})
 public class Bookings implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
     @Column(name = "BookingId")
     private Long bookingId;
+
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 30)
     @Column(name = "BookingCode")
     private String bookingCode;
+
     @Basic(optional = false)
     @NotNull
     @Column(name = "EventDate")
     @Temporal(TemporalType.DATE)
     private Date eventDate;
+
     @Column(name = "StartTime")
     @Temporal(TemporalType.TIME)
     private Date startTime;
+
     @Column(name = "EndTime")
     @Temporal(TemporalType.TIME)
     private Date endTime;
+
     @Basic(optional = false)
     @NotNull
     @Column(name = "GuestCount")
     private int guestCount;
+
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 20)
     @Column(name = "LocationType")
     private String locationType;
+
     @Size(max = 255)
     @Column(name = "OutsideAddress")
     private String outsideAddress;
+
     @Size(max = 2147483647)
     @Column(name = "Note")
     private String note;
-    // @Max(value=?)  @Min(value=?)//if you know range of your decimal fields consider using these annotations to enforce field validation
+
+    // ==== Contact information (mới thêm) ====
+    @Size(max = 100)
+    @Column(name = "ContactFullName")
+    private String contactFullName;
+
+    @Size(max = 100)
+    @Column(name = "ContactEmail")
+    private String contactEmail;
+
+    @Size(max = 20)
+    @Column(name = "ContactPhone")
+    private String contactPhone;
+    // ========================================
+
+    // @Max/@Min nếu cần range
     @Column(name = "TotalAmount")
     private BigDecimal totalAmount;
+
     @Column(name = "DepositAmount")
     private BigDecimal depositAmount;
+
     @Column(name = "RemainingAmount")
     private BigDecimal remainingAmount;
+
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 20)
     @Column(name = "BookingStatus")
     private String bookingStatus;
+
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 20)
     @Column(name = "PaymentStatus")
     private String paymentStatus;
+
     @Size(max = 2147483647)
     @Column(name = "CancelReason")
     private String cancelReason;
+
     @Column(name = "CancelTime")
     @Temporal(TemporalType.TIMESTAMP)
     private Date cancelTime;
+
     @Size(max = 2147483647)
     @Column(name = "RejectReason")
     private String rejectReason;
+
     @Basic(optional = false)
     @NotNull
     @Column(name = "CreatedAt")
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
+
     @Column(name = "UpdatedAt")
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
+
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "bookingId")
     private Collection<RestaurantReviews> restaurantReviewsCollection;
+
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "bookingId")
     private Collection<BookingStatusHistory> bookingStatusHistoryCollection;
+
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "bookingId")
     private Collection<Payments> paymentsCollection;
+
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "bookingId")
     private Invoices invoices;
+
     @OneToMany(mappedBy = "bookingId")
     private Collection<Messages> messagesCollection;
+
     @OneToMany(mappedBy = "bookingId")
     private Collection<Feedbacks> feedbacksCollection;
+
     @JoinColumn(name = "EventTypeId", referencedColumnName = "EventTypeId")
     @ManyToOne
     private EventTypes eventTypeId;
+
     @JoinColumn(name = "RestaurantId", referencedColumnName = "RestaurantId")
     @ManyToOne(optional = false)
     private Restaurants restaurantId;
+
     @JoinColumn(name = "ServiceTypeId", referencedColumnName = "ServiceTypeId")
     @ManyToOne
     private ServiceTypes serviceTypeId;
+
     @JoinColumn(name = "CustomerId", referencedColumnName = "UserId")
     @ManyToOne(optional = false)
     private Users customerId;
+
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "bookings")
     private Collection<BookingCombos> bookingCombosCollection;
+
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "bookings")
     private Collection<BookingMenuItems> bookingMenuItemsCollection;
 
@@ -166,7 +208,9 @@ public class Bookings implements Serializable {
         this.bookingId = bookingId;
     }
 
-    public Bookings(Long bookingId, String bookingCode, Date eventDate, int guestCount, String locationType, String bookingStatus, String paymentStatus, Date createdAt) {
+    public Bookings(Long bookingId, String bookingCode, Date eventDate,
+                    int guestCount, String locationType,
+                    String bookingStatus, String paymentStatus, Date createdAt) {
         this.bookingId = bookingId;
         this.bookingCode = bookingCode;
         this.eventDate = eventDate;
@@ -247,6 +291,30 @@ public class Bookings implements Serializable {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public String getContactFullName() {
+        return contactFullName;
+    }
+
+    public void setContactFullName(String contactFullName) {
+        this.contactFullName = contactFullName;
+    }
+
+    public String getContactEmail() {
+        return contactEmail;
+    }
+
+    public void setContactEmail(String contactEmail) {
+        this.contactEmail = contactEmail;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
     }
 
     public BigDecimal getTotalAmount() {
@@ -441,12 +509,12 @@ public class Bookings implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        // TODO: Warning - this method won't work in the case the id fields are not set
         if (!(object instanceof Bookings)) {
             return false;
         }
         Bookings other = (Bookings) object;
-        if ((this.bookingId == null && other.bookingId != null) || (this.bookingId != null && !this.bookingId.equals(other.bookingId))) {
+        if ((this.bookingId == null && other.bookingId != null)
+                || (this.bookingId != null && !this.bookingId.equals(other.bookingId))) {
             return false;
         }
         return true;
@@ -456,5 +524,4 @@ public class Bookings implements Serializable {
     public String toString() {
         return "com.mypack.entity.Bookings[ bookingId=" + bookingId + " ]";
     }
-    
 }

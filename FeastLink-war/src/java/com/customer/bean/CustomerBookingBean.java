@@ -20,12 +20,12 @@ import jakarta.inject.Named;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Handle final booking confirmation from booking.xhtml (wizard).
@@ -48,7 +48,7 @@ public class CustomerBookingBean implements Serializable {
     @EJB
     private ServiceTypesFacadeLocal serviceTypesFacade;
 
-    // ====== Fields bound từ booking.xhtml (hidden inputs) ======
+    // ====== Fields bound từ booking.xhtml (hidden inputs / form) ======
     private Long restaurantId;
     private String eventDateStr;   // yyyy-MM-dd (URL / hidden field)
     private int guestCount;
@@ -68,6 +68,11 @@ public class CustomerBookingBean implements Serializable {
     private String eventTypeKey;  // label loại tiệc từ UI (vd: "Wedding", "Birthday")
     private String serviceLevel;  // standard / premium / vip / exclusive
 
+    // Contact information (step 2)
+    private String contactFullName;
+    private String contactEmail;
+    private String contactPhone;
+
     // ====== INIT: load data từ param & DB ======
     @PostConstruct
     public void init() {
@@ -78,11 +83,28 @@ public class CustomerBookingBean implements Serializable {
 
         Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
 
+        // Lấy current user để prefill contact
+        Users currentUser = (Users) ctx.getExternalContext()
+                .getSessionMap()
+                .get("currentUser");
+
+        if (currentUser != null) {
+            if (!notBlank(contactFullName)) {
+                contactFullName = safe(currentUser.getFullName());
+            }
+            if (!notBlank(contactEmail)) {
+                contactEmail = safe(currentUser.getEmail());
+            }
+            if (!notBlank(contactPhone)) {
+                contactPhone = safe(currentUser.getPhone());
+            }
+        }
+
         // ---- RestaurantId ----
         if (restaurantId == null) {
             String rIdParam = params.get("restaurantId");
             if (rIdParam == null || rIdParam.isBlank()) {
-                // fallback: có thể bro lưu trong session
+                // fallback: có thể lưu trong session
                 Object obj = ctx.getExternalContext().getSessionMap().get("selectedRestaurantId");
                 if (obj instanceof Long) {
                     restaurantId = (Long) obj;
@@ -113,7 +135,7 @@ public class CustomerBookingBean implements Serializable {
 
         if (restaurant != null) {
             restaurantName = safe(restaurant.getName());
-            // tuỳ entity của bro: Address / FullAddress / Location...
+            // tuỳ entity: Address / FullAddress / ...
             restaurantAddress = safe(restaurant.getAddress());
         }
 
@@ -240,6 +262,31 @@ public class CustomerBookingBean implements Serializable {
         this.serviceLevel = serviceLevel;
     }
 
+    // Contact info
+    public String getContactFullName() {
+        return contactFullName;
+    }
+
+    public void setContactFullName(String contactFullName) {
+        this.contactFullName = contactFullName;
+    }
+
+    public String getContactEmail() {
+        return contactEmail;
+    }
+
+    public void setContactEmail(String contactEmail) {
+        this.contactEmail = contactEmail;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
+    }
+
     // ====== Main action: save booking ======
     public String confirmBooking() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -255,7 +302,7 @@ public class CustomerBookingBean implements Serializable {
                     "Please sign in",
                     "You need to log in before making a booking. After signing in, you can view your booking history, manage or cancel reservations, and track payments easily."
             ));
-            return "login"; // hoặc "/Customer/login?faces-redirect=true" nếu navigation của bro dùng full path
+            return "login"; // hoặc "/Customer/login?faces-redirect=true"
         }
 
         try {
@@ -324,7 +371,7 @@ public class CustomerBookingBean implements Serializable {
                 totalAmount = parseBigDecimalSafe(tHidden);
             }
 
-            // eventTypeKey (label loại tiệc, lấy từ hidden hf-event-type)
+            // eventTypeKey
             if (!notBlank(eventTypeKey)) {
                 String eHidden = params.get("hf-event-type");
                 if (notBlank(eHidden)) {
@@ -332,7 +379,7 @@ public class CustomerBookingBean implements Serializable {
                 }
             }
 
-            // serviceLevel (standard / premium / vip / exclusive, lấy từ hidden hf-service-level)
+            // serviceLevel
             if (!notBlank(serviceLevel)) {
                 String sHidden = params.get("hf-service-level");
                 if (notBlank(sHidden)) {
@@ -347,6 +394,51 @@ public class CustomerBookingBean implements Serializable {
             if (remainingAmount == null) {
                 String rHidden = params.get("hf-remaining-amount");
                 remainingAmount = parseBigDecimalSafe(rHidden);
+            }
+
+            // ===== Contact information từ form =====
+            // (giả sử 3 input trong booking.xhtml có name: contact-fullname, contact-email, contact-phone)
+            if (!notBlank(contactFullName)) {
+                String cName = params.get("contact-fullname");
+                if (!notBlank(cName)) {
+                    cName = params.get("contactFullName");
+                }
+                if (notBlank(cName)) {
+                    contactFullName = cName.trim();
+                }
+            }
+
+            if (!notBlank(contactEmail)) {
+                String cEmail = params.get("contact-email");
+                if (!notBlank(cEmail)) {
+                    cEmail = params.get("contactEmail");
+                }
+                if (notBlank(cEmail)) {
+                    contactEmail = cEmail.trim();
+                }
+            }
+
+            if (!notBlank(contactPhone)) {
+                String cPhone = params.get("contact-phone");
+                if (!notBlank(cPhone)) {
+                    cPhone = params.get("contactPhone");
+                }
+                if (notBlank(cPhone)) {
+                    contactPhone = cPhone.trim();
+                }
+            }
+
+            // fallback cuối: nếu vẫn rỗng thì lấy từ profile
+            if (currentUser != null) {
+                if (!notBlank(contactFullName)) {
+                    contactFullName = safe(currentUser.getFullName());
+                }
+                if (!notBlank(contactEmail)) {
+                    contactEmail = safe(currentUser.getEmail());
+                }
+                if (!notBlank(contactPhone)) {
+                    contactPhone = safe(currentUser.getPhone());
+                }
             }
 
             // 2. Load restaurant (nếu chưa có)
@@ -372,7 +464,6 @@ public class CustomerBookingBean implements Serializable {
                 return null;
             }
 
-            // 3. Event date
             // 3. Event date + default time 18:00–22:00
             LocalDate eventLocalDate;
             if (notBlank(eventDateStr)) {
@@ -385,10 +476,8 @@ public class CustomerBookingBean implements Serializable {
                 eventLocalDate = LocalDate.now().plusDays(7);
             }
 
-// ngày tiệc
             Date eventDate = java.sql.Date.valueOf(eventLocalDate);
 
-// giờ mặc định 18:00–22:00 cho demo
             ZoneId zone = ZoneId.systemDefault();
             LocalDateTime startLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(18, 0));
             LocalDateTime endLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(22, 0));
@@ -440,6 +529,11 @@ public class CustomerBookingBean implements Serializable {
                 booking.setRemainingAmount(remainingAmount);
             }
 
+            // *** GÁN CONTACT INFO VÀO BOOKING ***
+            booking.setContactFullName(notBlank(contactFullName) ? contactFullName.trim() : null);
+            booking.setContactEmail(notBlank(contactEmail) ? contactEmail.trim() : null);
+            booking.setContactPhone(notBlank(contactPhone) ? contactPhone.trim() : null);
+
             booking.setBookingStatus("PENDING");
             booking.setPaymentStatus("UNPAID");
             booking.setCreatedAt(new Date());
@@ -454,7 +548,6 @@ public class CustomerBookingBean implements Serializable {
                     "Your booking has been created successfully. Our team will contact you for confirmation."
             ));
 
-            // Về trang index customer
             return "/Customer/index";
 
         } catch (Exception ex) {
@@ -485,7 +578,6 @@ public class CustomerBookingBean implements Serializable {
             return null;
         }
         try {
-            // booking.js có thể gửi số có dấu phẩy, nên bỏ ký tự không phải số / dấu chấm
             String normalized = raw.replaceAll("[^0-9.]", "");
             if (normalized.isEmpty()) {
                 return null;
@@ -507,8 +599,6 @@ public class CustomerBookingBean implements Serializable {
                 continue;
             }
             String name = et.getName().trim().toLowerCase();
-
-            // tuỳ em chỉnh, tạm thời so sánh "chứa"
             if (name.equals(key) || name.contains(key) || key.contains(name)) {
                 return et;
             }
@@ -520,15 +610,13 @@ public class CustomerBookingBean implements Serializable {
         if (!notBlank(serviceLevel) || serviceTypesFacade == null) {
             return null;
         }
-        String key = serviceLevel.trim().toLowerCase(); // standard/premium/vip/exclusive
+        String key = serviceLevel.trim().toLowerCase();
 
         for (ServiceTypes st : serviceTypesFacade.findAll()) {
             if (st.getName() == null) {
                 continue;
             }
             String name = st.getName().trim().toLowerCase();
-
-            // ví dụ DB để "Standard", "Premium", "VIP", "Exclusive"
             if (name.equals(key) || name.contains(key) || key.contains(name)) {
                 return st;
             }
