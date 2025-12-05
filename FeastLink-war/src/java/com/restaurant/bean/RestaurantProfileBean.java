@@ -12,6 +12,7 @@ import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 
 import java.io.Serializable;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class RestaurantProfileBean implements Serializable {
     // ======== ENTITY CHÍNH ========
     private Restaurants restaurant;   // hàng trong bảng Restaurants
 
-    // ======== BASIC PROFILE FIELDS (bind với xhtml) =========
+    // ======== BASIC PROFILE FIELDS =========
     private String name;
     private String description;
     private String phone;
@@ -32,7 +33,18 @@ public class RestaurantProfileBean implements Serializable {
     private String address;
     private String contactPerson;
 
-    // Mấy field booking policy tạm thời vẫn là demo (chưa có cột trong DB)
+    // Status lấy từ cột Status trong bảng Restaurants
+    // PENDING / ACTIVE / PRIVATE
+    private String status;
+
+    // Operating hours (bind với input type="time", format: HH:mm)
+    private String openTimeText;   // ví dụ "08:00"
+    private String closeTimeText;  // ví dụ "22:00"
+
+    // Booking policy: LƯU THẬT vào DB
+    // MinGuests  -> cột MinGuestCount
+    // MinDays... -> cột MinDaysInAdvance
+    // cancelPolicy: vẫn demo, chưa có cột DB
     private Integer minGuests;
     private Integer minDaysBeforeBooking;
     private String cancelPolicy;
@@ -79,6 +91,40 @@ public class RestaurantProfileBean implements Serializable {
             address       = restaurant.getAddress();
             contactPerson = restaurant.getContactPerson();
 
+            status        = restaurant.getStatus(); // lấy từ DB
+
+            // ====== GIỜ MỞ / ĐÓNG ======
+            if (restaurant.getOpenTime() != null) {
+                // "08:00:00" -> "08:00"
+                String t = restaurant.getOpenTime().toString();
+                openTimeText = t.length() >= 5 ? t.substring(0, 5) : t;
+            } else {
+                openTimeText = "08:00";
+            }
+
+            if (restaurant.getCloseTime() != null) {
+                String t = restaurant.getCloseTime().toString();
+                closeTimeText = t.length() >= 5 ? t.substring(0, 5) : t;
+            } else {
+                closeTimeText = "22:00";
+            }
+
+            // ====== BOOKING POLICY (LẤY TỪ DB) ======
+            // MinGuests
+            if (restaurant.getMinGuestCount() != null) {
+                minGuests = restaurant.getMinGuestCount();
+            } else {
+                minGuests = 20; // default nếu DB null
+            }
+
+            // MinDaysInAdvance
+            if (restaurant.getMinDaysInAdvance() != null) {
+                minDaysBeforeBooking = restaurant.getMinDaysInAdvance();
+            } else {
+                minDaysBeforeBooking = 7; // default nếu DB null
+            }
+
+
             // Nếu nhà hàng đã có AreaId => set city/area đã chọn
             Areas currentArea = restaurant.getAreaId();
             if (currentArea != null) {
@@ -90,13 +136,16 @@ public class RestaurantProfileBean implements Serializable {
         } else {
             // Trường hợp chưa có restaurant trong DB (hiếm gặp)
             restaurant = new Restaurants();
-        }
+            status = "PENDING";
+            openTimeText = "08:00";
+            closeTimeText = "22:00";
 
-        // 2. Demo booking policy (chưa lưu DB)
-        minGuests = 20;
-        minDaysBeforeBooking = 7;
-        cancelPolicy = "Full refund if cancelled 14 days before the event. "
-                + "50% refund between 7–13 days. No refund within 7 days.";
+            // Default booking policy cho nhà hàng mới
+            minGuests = 20;
+            minDaysBeforeBooking = 7;
+            cancelPolicy = "Full refund if cancelled 14 days before the event. "
+                    + "50% refund between 7–13 days. No refund within 7 days.";
+        }
 
         // 3. Lấy dữ liệu dùng chung
         allCities = citiesFacade.findAll();
@@ -128,10 +177,7 @@ public class RestaurantProfileBean implements Serializable {
             }
         }
 
-        /*
-         * Nếu area hiện tại không thuộc city mới nữa thì reset.
-         * Còn nếu còn nằm trong filteredAreas thì giữ nguyên.
-         */
+        // Nếu area hiện tại không thuộc city mới nữa thì reset.
         if (selectedAreaId != null) {
             boolean stillValid = false;
             for (Areas a : filteredAreas) {
@@ -146,6 +192,61 @@ public class RestaurantProfileBean implements Serializable {
         }
     }
 
+    // ==========================================================
+    // STATUS: PUBLIC / PRIVATE
+    // ==========================================================
+
+    /** Toggle giữa ACTIVE (Public) và PRIVATE, không cho đổi khi PENDING. */
+    public void toggleVisibility() {
+        if (status == null || status.isBlank()) {
+            status = "ACTIVE";
+        }
+
+        // Nếu đang pending duyệt thì không cho tự đổi
+        if ("PENDING".equalsIgnoreCase(status)) {
+            return;
+        }
+
+        if ("ACTIVE".equalsIgnoreCase(status)) {
+            status = "PRIVATE";
+        } else if ("PRIVATE".equalsIgnoreCase(status)) {
+            status = "ACTIVE";
+        } else {
+            // các giá trị khác treat như ACTIVE
+            status = "ACTIVE";
+        }
+
+        restaurant.setStatus(status);
+        restaurantsFacade.edit(restaurant);
+    }
+
+    /** Dùng trong EL: restaurantProfileBean.publicVisible */
+    public boolean isPublicVisible() {
+        return "ACTIVE".equalsIgnoreCase(status);
+    }
+
+    // ==========================================================
+    // SAVE PROFILE
+    // ==========================================================
+
+    /** Parse string HH:mm (hoặc HH:mm:ss) sang java.sql.Time */
+    private Time parseTime(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String s = text.trim();
+        // nếu chỉ có HH:mm thì thêm :00
+        if (s.length() == 5) {
+            s = s + ":00";
+        }
+        try {
+            return Time.valueOf(s);
+        } catch (IllegalArgumentException ex) {
+            // nếu sai format thì trả null, bạn có thể log hoặc validate thêm
+            return null;
+        }
+    }
+
     /** Lưu profile: cập nhật lại entity Restaurants và ghi xuống DB */
     public String saveProfile() {
         // Map dữ liệu từ form sang entity
@@ -155,6 +256,19 @@ public class RestaurantProfileBean implements Serializable {
         restaurant.setEmail(email);
         restaurant.setAddress(address);
         restaurant.setContactPerson(contactPerson);
+
+        // Lưu status về DB (giữ nguyên nếu đang PENDING / ACTIVE / PRIVATE)
+        restaurant.setStatus(status);
+
+        // ====== LƯU GIỜ MỞ / ĐÓNG ======
+        restaurant.setOpenTime(parseTime(openTimeText));
+        restaurant.setCloseTime(parseTime(closeTimeText));
+
+        // ====== LƯU BOOKING POLICY xuống DB ======
+        // map vào các cột MinGuestCount & MinDaysInAdvance
+        restaurant.setMinGuestCount(minGuests);
+        restaurant.setMinDaysInAdvance(minDaysBeforeBooking);
+        // cancelPolicy hiện chưa có cột => chưa lưu
 
         // Gán AreaId cho restaurant nếu có chọn
         if (selectedAreaId != null) {
@@ -171,7 +285,7 @@ public class RestaurantProfileBean implements Serializable {
             restaurantsFacade.edit(restaurant);
         }
 
-        // Không chuyển trang, chỉ ở lại và (nếu muốn) hiển thị growl sau này
+        // Ở lại trang
         return null;
     }
 
@@ -207,6 +321,15 @@ public class RestaurantProfileBean implements Serializable {
 
     public String getCancelPolicy() { return cancelPolicy; }
     public void setCancelPolicy(String cancelPolicy) { this.cancelPolicy = cancelPolicy; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getOpenTimeText() { return openTimeText; }
+    public void setOpenTimeText(String openTimeText) { this.openTimeText = openTimeText; }
+
+    public String getCloseTimeText() { return closeTimeText; }
+    public void setCloseTimeText(String closeTimeText) { this.closeTimeText = closeTimeText; }
 
     // ---- City / Area master data ----
     public List<Cities> getAllCities() {

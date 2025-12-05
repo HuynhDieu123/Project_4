@@ -16,15 +16,15 @@
         </div>
     </ui:define>
 
-    <!-- MAIN CONTENT: copy gần như y chang HTML Figma, chỉ gắn bean -->
+    <!-- MAIN CONTENT -->
     <ui:define name="content">
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- ==== Cột trái (2/3) ==== -->
             <div class="lg:col-span-2 space-y-8">
 
-                <!-- 3 CARD trên cùng -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- 4 CARD trên cùng -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     <!-- Restaurant Profile -->
                     <div class="bg-card-light p-6 rounded-2xl shadow-subtle flex flex-col justify-between">
                         <div class="flex items-start justify-between">
@@ -63,15 +63,29 @@
                             <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
                         </h:link>
                     </div>
+
+                    <!-- Booking Management (card thứ 4) -->
+                    <div class="bg-card-light p-6 rounded-2xl shadow-subtle flex flex-col justify-between">
+                        <div class="flex items-start justify-between">
+                            <h3 class="font-semibold text-text-main-light">Booking Management</h3>
+                            <span class="material-symbols-outlined text-champagne-gold">description</span>
+                        </div>
+                        <h:link outcome="/Restaurant/booking-management"
+                                styleClass="mt-4 flex items-center text-sm font-medium text-champagne-gold hover:underline">
+                            Manage Bookings
+                            <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
+                        </h:link>
+                    </div>
                 </div>
 
                 <!-- Recent Bookings block -->
                 <div class="bg-card-light p-6 rounded-2xl shadow-subtle">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-lg font-semibold text-text-main-light">Recent Bookings</h3>
-                        <a href="#" class="text-sm font-medium text-champagne-gold hover:underline">
+                        <h:link outcome="/Restaurant/booking-management"
+                                styleClass="text-sm font-medium text-champagne-gold hover:underline">
                             View All Bookings
-                        </a>
+                        </h:link>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -92,7 +106,6 @@
                                             <h:link outcome="/Restaurant/booking-detail"
                                                     styleClass="hover:underline">
                                                 #{b.id}
-                                                <!-- code chính là BookingCode, truyền xuống dạng query param -->
                                                 <f:param name="code" value="#{b.id}" />
                                             </h:link>
                                         </td>

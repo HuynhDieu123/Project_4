@@ -22,6 +22,10 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 
+/**
+ * Bean dùng cho trang Customer/restaurants.xhtml
+ * Đọc dữ liệu nhà hàng từ DB và chuyển thành JSON để restaurants.js sử dụng.
+ */
 @Named("customerRestaurantsBean")
 @RequestScoped
 public class CustomerRestaurantsBean implements Serializable {
@@ -47,6 +51,19 @@ public class CustomerRestaurantsBean implements Serializable {
             if (r == null) {
                 continue;
             }
+
+            // ===== CHỈ LẤY NHÀ HÀNG STATUS = 'ACTIVE' =====
+            try {
+                String status = r.getStatus();
+                if (status == null || !"ACTIVE".equalsIgnoreCase(status)) {
+                    // Nếu không phải ACTIVE (PENDING / PRIVATE / v.v...) thì bỏ qua
+                    continue;
+                }
+            } catch (Exception ignore) {
+                // Nếu đọc status lỗi thì cũng bỏ qua nhà hàng này
+                continue;
+            }
+            // ===============================================
 
             RestaurantCard card = new RestaurantCard();
             card.setId(r.getRestaurantId());
