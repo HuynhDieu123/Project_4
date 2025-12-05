@@ -70,14 +70,14 @@
                             <span class="absolute bottom-0 left-0 h-[2px] w-0 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
                         </h:link>
                     </li>
-                      <li>
+                    <li>
                         <h:link outcome="/Customer/favorites.xhtml"
                                 styleClass="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
                             <span class="relative z-10">FAVORITES</span>
                             <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
                         </h:link>
                     </li>
-                      <li>
+                    <li>
                         <h:link outcome="/Customer/feedback.xhtml"
                                 styleClass="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
                             <span class="relative z-10">FEEDBACK</span>
@@ -107,11 +107,13 @@
                         <li class="relative">
                             <button type="button"
                                     id="userMenuToggle"
-                                    onclick="var e=event||window.event; e.stopPropagation(); var m=document.getElementById('userMenuPanel'); if(m){m.classList.toggle('hidden');}"
+                                    onclick="var e = event || window.event; e.stopPropagation(); var m = document.getElementById('userMenuPanel'); if (m) {
+                                                m.classList.toggle('hidden');
+                                            }"
                                     class="inline-flex flex-col justify-center px-3 py-1 rounded-full
-                                           border border-[#facc6b]/80
-                                           bg-[#020617]
-                                           shadow-[0_0_12px_rgba(250,204,107,0.35)]">
+                                    border border-[#facc6b]/80
+                                    bg-[#020617]
+                                    shadow-[0_0_12px_rgba(250,204,107,0.35)]">
                                 <span class="leading-tight text-[11px] font-semibold text-[#facc6b]">
                                     #{sessionScope.loginIdentifier}
                                 </span>
@@ -123,8 +125,8 @@
                             <div id="userMenuPanel"
                                  onclick="event.stopPropagation();"
                                  class="hidden absolute right-0 mt-2 w-56 rounded-2xl
-                                        bg-[#020617]/95 border border-[#facc6b]/40
-                                        shadow-[0_18px_45px_rgba(0,0,0,0.75)] backdrop-blur-sm">
+                                 bg-[#020617]/95 border border-[#facc6b]/40
+                                 shadow-[0_18px_45px_rgba(0,0,0,0.75)] backdrop-blur-sm">
 
                                 <div class="px-4 py-3 border-b border-[#1f2937]/80">
                                     <p class="text-[10px] uppercase tracking-wide text-slate-400">
@@ -154,12 +156,25 @@
 
                     <!-- FOR RESTAURANTS -->
                     <li>
-                        <button type="button"
-                                onclick="window.location = '#{request.contextPath}/faces/register_manager.xhtml'"
-                                class="px-6 py-2 rounded-full border border-[#facc6b] text-xs font-semibold tracking-wide text-white bg-transparent hover:bg-[#facc6b]/10 transition-all duration-300 whitespace-nowrap">
-                            FOR RESTAURANTS
-                        </button>
+                        <!-- Chưa login: đi tới login.xhtml?target=register_manager -->
+                        <ui:fragment rendered="#{empty sessionScope.loginIdentifier}">
+                            <button type="button"
+                                    onclick="window.location = '#{request.contextPath}/faces/login.xhtml?target=register_manager'"
+                                    class="px-6 py-2 rounded-full border border-[#facc6b] text-xs font-semibold tracking-wide text-white bg-transparent hover:bg-[#facc6b]/10 transition-all duration-300 whitespace-nowrap">
+                                FOR RESTAURANTS
+                            </button>
+                        </ui:fragment>
+
+                        <!-- Đã login: vào thẳng trang đăng ký manager -->
+                        <ui:fragment rendered="#{not empty sessionScope.loginIdentifier}">
+                            <button type="button"
+                                    onclick="window.location = '#{request.contextPath}/faces/register_manager.xhtml'"
+                                    class="px-6 py-2 rounded-full border border-[#facc6b] text-xs font-semibold tracking-wide text-white bg-transparent hover:bg-[#facc6b]/10 transition-all duration-300 whitespace-nowrap">
+                                FOR RESTAURANTS
+                            </button>
+                        </ui:fragment>
                     </li>
+
                 </ul>
             </div>
 
@@ -209,17 +224,18 @@
                             FAVORITES
                         </a>
                     </li>
-                     <li>
+                    <li>
                         <a href="#{request.contextPath}/faces/Customer/feedback.xhtml"
                            class="block px-2 py-2 text-sm font-semibold tracking-wide text-white hover:text-[#facc6b]">
-                           FEEDBACK
+                            FEEDBACK
                         </a>
                     </li>
                     <li>
-                        <a href="#support"
-                           class="block px-2 py-2 text-sm font-semibold tracking-wide text-white hover:text-[#facc6b]">
-                            SUPPORT
-                        </a>
+                        <h:link outcome="/Customer/feedback.xhtml"
+                                styleClass="group relative text-white text-sm font-semibold tracking-wide transition-colors whitespace-nowrap">
+                            <span class="relative z-10">FEEDBACK</span>
+                            <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#d4af37] group-hover:w-full transition-all duration-300"></span>
+                        </h:link>
                     </li>
 
                     <!-- MOBILE: khi chưa login -->
@@ -244,9 +260,9 @@
                         <!-- pill email gọn + ton-sur-ton -->
                         <li class="px-3 pt-1">
                             <div class="flex items-center gap-3 px-3 py-2 rounded-2xl
-                                        border border-[#facc6b]/40
-                                        bg-black/40
-                                        shadow-[0_0_10px_rgba(0,0,0,0.6)]">
+                                 border border-[#facc6b]/40
+                                 bg-black/40
+                                 shadow-[0_0_10px_rgba(0,0,0,0.6)]">
                                 <div class="flex flex-col">
                                     <span class="text-[12px] font-semibold text-[#facc6b] leading-tight">
                                         #{sessionScope.loginIdentifier}
@@ -278,12 +294,25 @@
                     </ui:fragment>
 
                     <li class="pt-1 pb-2">
-                        <button type="button"
-                                onclick="window.location = '#{request.contextPath}/faces/register_manager.xhtml'"
-                                class="w-full px-4 py-2 rounded-full border border-[#facc6b] text-xs font-semibold tracking-wide text-white bg-transparent hover:bg-[#facc6b]/10 transition-all duration-300">
-                            FOR RESTAURANTS
-                        </button>
+                        <!-- Mobile: chưa login -->
+                        <ui:fragment rendered="#{empty sessionScope.loginIdentifier}">
+                            <button type="button"
+                                    onclick="window.location = '#{request.contextPath}/faces/login.xhtml?target=register_manager'"
+                                    class="w-full px-4 py-2 rounded-full border border-[#facc6b] text-xs font-semibold tracking-wide text-white bg-transparent hover:bg-[#facc6b]/10 transition-all duration-300">
+                                FOR RESTAURANTS
+                            </button>
+                        </ui:fragment>
+
+                        <!-- Mobile: đã login -->
+                        <ui:fragment rendered="#{not empty sessionScope.loginIdentifier}">
+                            <button type="button"
+                                    onclick="window.location = '#{request.contextPath}/faces/register_manager.xhtml'"
+                                    class="w-full px-4 py-2 rounded-full border border-[#facc6b] text-xs font-semibold tracking-wide text-white bg-transparent hover:bg-[#facc6b]/10 transition-all duration-300">
+                                FOR RESTAURANTS
+                            </button>
+                        </ui:fragment>
                     </li>
+
                 </ul>
             </nav>
         </div>

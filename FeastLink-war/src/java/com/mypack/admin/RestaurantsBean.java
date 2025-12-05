@@ -9,9 +9,9 @@ import com.mypack.sessionbean.AreasFacadeLocal;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
-import jakarta.enterprise.context.SessionScoped;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
+import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -19,7 +19,7 @@ import java.util.Date;
 import java.util.List;
 
 @Named("restaurantsBean")
-@SessionScoped
+@ViewScoped
 public class RestaurantsBean implements Serializable {
 
     private static final long serialVersionUID = 1L;

@@ -20,6 +20,7 @@
         <servlet-name>Faces Servlet</servlet-name>
         <url-pattern>/faces/*</url-pattern>
     </servlet-mapping>
+    
 
     <welcome-file-list>
         <welcome-file>faces/Customer/index.xhtml</welcome-file>
