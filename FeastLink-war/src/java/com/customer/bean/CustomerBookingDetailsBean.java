@@ -201,23 +201,52 @@ public class CustomerBookingDetailsBean implements Serializable {
                 && !booking.getCancelReason().trim().isEmpty();
     }
 
-    // ========= CONTACT INFO =========
+        // ========= CONTACT INFO =========
 
     private Users getCustomer() {
         return booking != null ? booking.getCustomerId() : null;
     }
 
     public String getContactFullName() {
+        if (booking == null) {
+            return "";
+        }
+
+        // ƯU TIÊN: tên liên hệ mà user nhập khi booking
+        String name = safe(booking.getContactFullName());
+        if (!name.isEmpty()) {
+            return name;
+        }
+
+        // Fallback: tên trong account
         Users u = getCustomer();
         return u != null ? safe(u.getFullName()) : "";
     }
 
     public String getContactEmail() {
+        if (booking == null) {
+            return "";
+        }
+
+        String email = safe(booking.getContactEmail());
+        if (!email.isEmpty()) {
+            return email;
+        }
+
         Users u = getCustomer();
         return u != null ? safe(u.getEmail()) : "";
     }
 
     public String getContactPhone() {
+        if (booking == null) {
+            return "";
+        }
+
+        String phone = safe(booking.getContactPhone());
+        if (!phone.isEmpty()) {
+            return phone;
+        }
+
         Users u = getCustomer();
         return u != null ? safe(u.getPhone()) : "";
     }
@@ -236,6 +265,7 @@ public class CustomerBookingDetailsBean implements Serializable {
         Users u = getCustomer();
         return u != null ? safe(u.getAddress()) : "";
     }
+
 
     // ========= SPECIAL REQUESTS & PAYMENT TYPE =========
 

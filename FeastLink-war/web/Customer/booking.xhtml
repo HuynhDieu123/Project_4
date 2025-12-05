@@ -5,7 +5,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
       xmlns:f="jakarta.faces.core"
-      xmlns:ui="jakarta.faces.facelets">
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:pass="jakarta.faces.passthrough">
 
     <h:head>
         <meta charset="UTF-8"/>
@@ -94,9 +95,9 @@
             <h:inputHidden id="hf-event-date"
                            value="#{customerBookingBean.eventDateStr}" />
             <h:inputHidden id="hf-event-type"
-               value="#{customerBookingBean.eventTypeKey}" />
+                           value="#{customerBookingBean.eventTypeKey}" />
             <h:inputHidden id="hf-service-level"
-               value="#{customerBookingBean.serviceLevel}" />
+                           value="#{customerBookingBean.serviceLevel}" />
             <h:inputHidden id="hf-guest-count"
                            value="#{customerBookingBean.guestCount}" />
             <h:inputHidden id="hf-location-type"
@@ -641,9 +642,16 @@
                                             <label
                                                 class="block text-sm font-medium text-[#111827] mb-2">Full
                                                 name</label>
-                                            <input id="contact-fullname" type="text"
-                                                   placeholder="Enter your full name"
-                                                   class="w-full px-4 py-3 rounded-xl border bg-white transition-all duration-200 border-[#E5E7EB] focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-none text-[#111827] placeholder:text-[#9CA3AF]"/>
+                                            <h:inputText id="contact-fullname"
+                                                         value="#{customerBookingBean.contactFullName}"
+                                                         styleClass="w-full px-4 py-3 rounded-xl border bg-white transition-all duration-200 border-[#E5E7EB] focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-none text-[#111827] placeholder:text-[#9CA3AF]"
+                                                         pass:placeholder="Enter your full name"
+                                                         required="true"
+                                                         requiredMessage="Please enter your full name"/>
+                                            <h:message for="contact-fullname"
+                                                       style="margin-top:6px;color:#EF4444;font-size:13px;display:block;"/>
+
+
                                         </div>
 
                                         <!-- Email -->
@@ -651,9 +659,18 @@
                                             <label
                                                 class="block text-sm font-medium text-[#111827] mb-2">Email
                                                 address</label>
-                                            <input id="contact-email" type="email"
-                                                   placeholder="your.email@example.com"
-                                                   class="w-full px-4 py-3 rounded-xl border bg-white transition-all duration-200 border-[#E5E7EB] focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-none text-[#111827] placeholder:text-[#9CA3AF]"/>
+                                            <h:inputText id="contact-email"
+                                                         value="#{customerBookingBean.contactEmail}"
+                                                         styleClass="w-full px-4 py-3 rounded-xl border bg-white transition-all duration-200 border-[#E5E7EB] focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-none text-[#111827] placeholder:text-[#9CA3AF]"
+                                                         pass:placeholder="your.email@example.com"
+                                                         pass:type="email"
+                                                         required="true"
+                                                         requiredMessage="Please enter your email"/>
+                                            <h:message for="contact-email"
+                                                       style="margin-top:6px;color:#EF4444;font-size:13px;display:block;"/>
+
+
+                                            <!-- có thể giữ lại helper nếu thích -->
                                             <p id="contact-email-error"
                                                class="mt-1.5 text-sm text-[#EF4444] hidden">
                                                 ⚠ Please enter a valid email address
@@ -665,18 +682,22 @@
                                             <label
                                                 class="block text-sm font-medium text-[#111827] mb-2">Phone
                                                 number</label>
-                                            <input id="contact-phone" type="tel"
-                                                   placeholder="+84 123 456 789"
-                                                   class="w-full px-4 py-3 rounded-xl border bg-white transition-all duration-200 border-[#E5E7EB] focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-none text-[#111827] placeholder:text-[#9CA3AF]"/>
+                                            <h:inputText id="contact-phone"
+                                                         value="#{customerBookingBean.contactPhone}"
+                                                         styleClass="w-full px-4 py-3 rounded-xl border bg-white transition-all duration-200 border-[#E5E7EB] focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 focus:outline-none text-[#111827] placeholder:text-[#9CA3AF]"
+                                                         pass:placeholder="+84 123 456 789"
+                                                         required="true"
+                                                         requiredMessage="Please enter your phone number"/>
+                                            <h:message for="contact-phone"
+                                                       style="margin-top:6px;color:#EF4444;font-size:13px;display:block;"/>
+
+
                                             <p id="contact-phone-helper"
                                                class="mt-1.5 text-sm text-[#4B5563]">
                                                 Include country code for international numbers
                                             </p>
-                                            <p id="contact-phone-error"
-                                               class="mt-1.5 text-sm text-[#EF4444] hidden">
-                                                ⚠ Please enter a valid phone number
-                                            </p>
                                         </div>
+
 
                                         <!-- Company -->
                                         <div class="w-full">

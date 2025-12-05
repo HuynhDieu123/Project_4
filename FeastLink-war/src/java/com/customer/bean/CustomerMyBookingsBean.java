@@ -252,17 +252,26 @@ public class CustomerMyBookingsBean implements Serializable {
         if (b == null) {
             return "";
         }
+
         Users u = b.getCustomerId();
-        if (u == null) {
-            return "";
+
+        // ƯU TIÊN lấy contact lưu trong booking
+        String fullName = safe(b.getContactFullName());
+        String phone = safe(b.getContactPhone());
+        String email = safe(b.getContactEmail());
+
+        // Nếu booking cũ chưa có contact ⇒ fallback qua account
+        if (fullName.isEmpty() && u != null) {
+            fullName = safe(u.getFullName());
+        }
+        if (phone.isEmpty() && u != null) {
+            phone = safe(u.getPhone());
+        }
+        if (email.isEmpty() && u != null) {
+            email = safe(u.getEmail());
         }
 
         StringBuilder sb = new StringBuilder();
-
-        String fullName = safe(u.getFullName());
-        String phone = safe(u.getPhone());
-        String email = safe(u.getEmail());
-
         if (!fullName.isEmpty()) {
             sb.append(fullName);
         }

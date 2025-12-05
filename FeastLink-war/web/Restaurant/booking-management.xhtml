@@ -14,16 +14,15 @@
 
     <!-- HEADER TRÊN TOP BAR -->
     <ui:define name="header">
-    <div class="flex flex-col">
-        <h1 class="text-2xl font-bold text-text-main-light">
-            Booking Management
-        </h1>
-        <p class="text-sm text-text-secondary-light">
-            Review and manage all banquet reservations for your venue.
-        </p>
-    </div>
-</ui:define>
-
+        <div class="flex flex-col">
+            <h1 class="text-2xl font-bold text-text-main-light">
+                Booking Management
+            </h1>
+            <p class="text-sm text-text-secondary-light">
+                Review and manage all banquet reservations for your venue.
+            </p>
+        </div>
+    </ui:define>
 
     <!-- NỘI DUNG -->
     <ui:define name="content">
@@ -232,12 +231,32 @@
 
                 <!-- TABLE -->
                 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="px-4 sm:px-6 py-4 border-b border-gray-100">
-                        <h2 class="text-lg sm:text-xl font-bold text-[#0B1120]">All Bookings</h2>
-                        <p class="text-xs sm:text-sm text-gray-600 mt-1">
-                            #{bookingManagementBean.totalFilteredBookings}
-                            #{bookingManagementBean.totalFilteredBookings eq 1 ? 'booking total' : 'bookings total'}
-                        </p>
+                    <!-- Header bảng + tổng doanh thu -->
+                    <div class="px-4 sm:px-6 py-4 border-b border-gray-100
+                         flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <!-- bên trái: tiêu đề + tổng số booking -->
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-bold text-[#0B1120]">All Bookings</h2>
+                            <p class="text-xs sm:text-sm text-gray-600 mt-1">
+                                #{bookingManagementBean.totalFilteredBookings}
+                                #{bookingManagementBean.totalFilteredBookings eq 1 ? 'booking total' : 'bookings total'}
+                            </p>
+                        </div>
+
+                        <!-- bên phải: tổng doanh thu -->
+                        <div class="text-right">
+                            <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                                Total revenue (COMPLETED &amp; fully paid)
+                            </p>
+                            <p class="text-base sm:text-lg font-semibold text-[#0B1120]">
+                                $
+                                <h:outputText value="#{bookingManagementBean.totalRevenue}">
+                                    <f:convertNumber type="number"
+                                                     minFractionDigits="2"
+                                                     maxFractionDigits="2"/>
+                                </h:outputText>
+                            </p>
+                        </div>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -299,15 +318,30 @@
                                             </div>
                                         </td>
 
-                                        <!-- Customer -->
+                                        <!-- Contact / Customer -->
                                         <td class="px-6 py-4">
+                                            <!-- Tên người liên hệ -->
                                             <div class="text-xs sm:text-sm font-medium text-[#0B1120]">
-                                                #{b.customerId != null ? b.customerId.fullName : '—'}
+                                                #{not empty b.contactFullName
+                                                  ? b.contactFullName
+                                                  : (b.customerId != null ? b.customerId.fullName : '—')}
                                             </div>
+
+                                            <!-- SĐT liên hệ -->
                                             <div class="text-[11px] text-gray-500 mt-0.5">
-                                                #{b.customerId != null ? b.customerId.phone : ''}
+                                                #{not empty b.contactPhone
+                                                  ? b.contactPhone
+                                                  : (b.customerId != null ? b.customerId.phone : '')}
+                                            </div>
+
+                                            <!-- Email liên hệ -->
+                                            <div class="text-[11px] text-gray-500">
+                                                #{not empty b.contactEmail
+                                                  ? b.contactEmail
+                                                  : (b.customerId != null ? b.customerId.email : '')}
                                             </div>
                                         </td>
+
 
                                         <!-- Party Size -->
                                         <td class="px-6 py-4">
@@ -338,16 +372,47 @@
 
                                         <!-- Payment -->
                                         <td class="px-6 py-4">
-                                            <span
-                                                class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium border
-                                                #{b.paymentStatus eq 'UNPAID' ? 'bg-red-50 text-red-700 border-red-200'
-                                                  : b.paymentStatus eq 'DEPOSIT_PAID' ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">
-                                                #{b.paymentStatus eq 'UNPAID' ? 'Unpaid'
-                                                  : b.paymentStatus eq 'DEPOSIT_PAID' ? 'Deposit Paid'
-                                                  : 'Paid in Full'}
-                                            </span>
+                                            <div class="space-y-1">
+                                                <!-- badge trạng thái -->
+                                                <span
+                                                    class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium border
+                                                    #{b.paymentStatus eq 'UNPAID' ? 'bg-red-50 text-red-700 border-red-200'
+                                                      : b.paymentStatus eq 'DEPOSIT_PAID' ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">
+                                                    #{b.paymentStatus eq 'UNPAID' ? 'Unpaid'
+                                                      : b.paymentStatus eq 'DEPOSIT_PAID' ? 'Deposit Paid'
+                                                      : 'Paid in Full'}
+                                                </span>
+
+                                                <!-- các nút đổi trạng thái thanh toán -->
+                                                <div class="flex flex-wrap gap-2 text-[11px]">
+                                                    <!-- UNPAID: có 2 lựa chọn -->
+                                                    <h:panelGroup rendered="#{b.paymentStatus eq 'UNPAID'}">
+                                                        <h:commandButton value="Mark deposit paid"
+                                                                         styleClass="px-2 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium"
+                                                                         action="#{bookingManagementBean.updatePaymentStatus(b,'DEPOSIT_PAID')}">
+                                                            <f:ajax render="@form"/>
+                                                        </h:commandButton>
+
+                                                        <h:commandButton value="Mark paid in full"
+                                                                         styleClass="px-2 py-1 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium"
+                                                                         action="#{bookingManagementBean.updatePaymentStatus(b,'PAID_IN_FULL')}">
+                                                            <f:ajax render="@form"/>
+                                                        </h:commandButton>
+                                                    </h:panelGroup>
+
+                                                    <!-- DEPOSIT_PAID: chỉ cho lên full -->
+                                                    <h:panelGroup rendered="#{b.paymentStatus eq 'DEPOSIT_PAID'}">
+                                                        <h:commandButton value="Mark paid in full"
+                                                                         styleClass="px-2 py-1 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium"
+                                                                         action="#{bookingManagementBean.updatePaymentStatus(b,'PAID_IN_FULL')}">
+                                                            <f:ajax render="@form"/>
+                                                        </h:commandButton>
+                                                    </h:panelGroup>
+                                                </div>
+                                            </div>
                                         </td>
+
 
                                         <!-- Total Amount -->
                                         <td class="px-6 py-4 text-right">
@@ -415,7 +480,6 @@
 
                                             </div>
                                         </td>
-
 
                                     </tr>
                                 </ui:repeat>
@@ -507,25 +571,43 @@
                                     Customer Information
                                 </h3>
                                 <div class="space-y-3 text-sm">
+                                    <!-- Full name -->
                                     <div>
                                         <p class="text-xs text-gray-500">Full name</p>
                                         <p class="font-semibold text-gray-900">
-                                            #{bookingManagementBean.selectedBooking.customerId != null ? bookingManagementBean.selectedBooking.customerId.fullName : '—'}
+                                            #{not empty bookingManagementBean.selectedBooking.contactFullName
+                                              ? bookingManagementBean.selectedBooking.contactFullName
+                                              : (bookingManagementBean.selectedBooking.customerId != null
+                                              ? bookingManagementBean.selectedBooking.customerId.fullName
+                                              : '—')}
                                         </p>
                                     </div>
+
+                                    <!-- Phone -->
                                     <div>
                                         <p class="text-xs text-gray-500">Phone</p>
                                         <p class="font-medium text-gray-900">
-                                            #{bookingManagementBean.selectedBooking.customerId != null ? bookingManagementBean.selectedBooking.customerId.phone : ''}
+                                            #{not empty bookingManagementBean.selectedBooking.contactPhone
+                                              ? bookingManagementBean.selectedBooking.contactPhone
+                                              : (bookingManagementBean.selectedBooking.customerId != null
+                                              ? bookingManagementBean.selectedBooking.customerId.phone
+                                              : '')}
                                         </p>
                                     </div>
+
+                                    <!-- Email -->
                                     <div>
                                         <p class="text-xs text-gray-500">Email</p>
                                         <p class="font-medium text-gray-900">
-                                            #{bookingManagementBean.selectedBooking.customerId != null ? bookingManagementBean.selectedBooking.customerId.email : ''}
+                                            #{not empty bookingManagementBean.selectedBooking.contactEmail
+                                              ? bookingManagementBean.selectedBooking.contactEmail
+                                              : (bookingManagementBean.selectedBooking.customerId != null
+                                              ? bookingManagementBean.selectedBooking.customerId.email
+                                              : '')}
                                         </p>
                                     </div>
                                 </div>
+
                             </section>
 
                             <!-- event info -->
@@ -663,7 +745,6 @@
                 return true;
                 }
             </h:outputScript>
-
 
         </h:form>
     </ui:define>

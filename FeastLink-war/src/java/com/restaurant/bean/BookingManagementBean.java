@@ -69,7 +69,6 @@ public class BookingManagementBean implements Serializable {
     }
 
     /* ================= FILTER + SORT ================= */
-
     private List<Bookings> getFilteredList() {
         List<Bookings> result = new ArrayList<>(bookings);
 
@@ -140,14 +139,34 @@ public class BookingManagementBean implements Serializable {
         return result;
     }
 
-    /** Kiểm tra 1 booking có match text search hay không */
+    /**
+     * Kiểm tra 1 booking có match text search hay không
+     */
     private boolean matchesSearch(Bookings b, String q) {
+        if (b == null || q == null || q.isEmpty()) {
+            return false;
+        }
+
         // Booking code
         if (containsIgnoreCase(b.getBookingCode(), q)) {
             return true;
         }
 
-        // Customer: FullName / Phone / Email (Users trong customerId)
+        // 1) Contact trên booking (ƯU TIÊN)
+        try {
+            if (containsIgnoreCase(b.getContactFullName(), q)) {
+                return true;
+            }
+            if (containsIgnoreCase(b.getContactPhone(), q)) {
+                return true;
+            }
+            if (containsIgnoreCase(b.getContactEmail(), q)) {
+                return true;
+            }
+        } catch (Exception ignore) {
+        }
+
+        // 2) Thông tin account (customerId) – fallback
         try {
             if (b.getCustomerId() != null) {
                 if (containsIgnoreCase(b.getCustomerId().getFullName(), q)) {
@@ -163,16 +182,34 @@ public class BookingManagementBean implements Serializable {
         } catch (Exception ignore) {
         }
 
-        // Tên loại tiệc: Wedding, Birthday...
+        // 3) Tên nhà hàng
         try {
-            if (b.getEventTypeId() != null &&
-                    containsIgnoreCase(b.getEventTypeId().getName(), q)) {
+            if (b.getRestaurantId() != null
+                    && containsIgnoreCase(b.getRestaurantId().getName(), q)) {
                 return true;
             }
         } catch (Exception ignore) {
         }
 
-        // Địa điểm bên ngoài (OutsideAddress) – đóng vai "venue area"
+        // 4) Loại tiệc
+        try {
+            if (b.getEventTypeId() != null
+                    && containsIgnoreCase(b.getEventTypeId().getName(), q)) {
+                return true;
+            }
+        } catch (Exception ignore) {
+        }
+
+        // 5) Dịch vụ
+        try {
+            if (b.getServiceTypeId() != null
+                    && containsIgnoreCase(b.getServiceTypeId().getName(), q)) {
+                return true;
+            }
+        } catch (Exception ignore) {
+        }
+
+        // 6) Địa điểm ngoài
         try {
             if (containsIgnoreCase(b.getOutsideAddress(), q)) {
                 return true;
@@ -187,7 +224,10 @@ public class BookingManagementBean implements Serializable {
         return value != null && q != null && value.toLowerCase().contains(q);
     }
 
-    /** Lấy ngày để sort (ưu tiên createdAt, không có thì dùng bookingId làm pseudo-date) */
+    /**
+     * Lấy ngày để sort (ưu tiên createdAt, không có thì dùng bookingId làm
+     * pseudo-date)
+     */
     private Date getSortCreatedDateSafe(Bookings b) {
         try {
             if (b.getCreatedAt() != null) {
@@ -201,7 +241,6 @@ public class BookingManagementBean implements Serializable {
     }
 
     /* ================= PAGINATION ================= */
-
     public List<Bookings> getPagedBookings() {
         List<Bookings> filtered = getFilteredList();
         if (filtered.isEmpty()) {
@@ -226,12 +265,13 @@ public class BookingManagementBean implements Serializable {
 
     public int getTotalPages() {
         int size = getTotalFilteredBookings();
-        if (size == 0) return 1;
+        if (size == 0) {
+            return 1;
+        }
         return (int) Math.ceil((double) size / (double) rowsPerPage);
     }
 
     /* ================= STATS ================= */
-
     public int getUpcomingCount() {
         Date now = truncateTime(new Date());
         int count = 0;
@@ -269,10 +309,56 @@ public class BookingManagementBean implements Serializable {
         return c;
     }
 
-    /* ================= ACTIONS ================= */
+    /**
+     * Tổng doanh thu dựa trên danh sách đang được filter (loại bỏ booking đã
+     * hủy)
+     */
+    public BigDecimal getTotalRevenue() {
+        BigDecimal sum = BigDecimal.ZERO;
 
+        // dùng danh sách đã lọc (status, search, timeFilter...)
+        for (Bookings b : getFilteredList()) {
+            if (b == null) {
+                continue;
+            }
+
+            // trạng thái booking
+            String bookingStatus = (b.getBookingStatus() != null)
+                    ? b.getBookingStatus().trim().toUpperCase()
+                    : "";
+
+            // CHỈ tính khi booking đã COMPLETED
+            if (!"COMPLETED".equals(bookingStatus)) {
+                continue;
+            }
+
+            // trạng thái payment
+            String paymentStatus = (b.getPaymentStatus() != null)
+                    ? b.getPaymentStatus().trim().toUpperCase()
+                    : "";
+
+            // CHỈ tính khi đã thanh toán đủ
+            // (nếu trong DB bạn đang để 'PAID' thì đổi chuỗi này lại cho đúng)
+            if (!"PAID_IN_FULL".equals(paymentStatus)) {
+                continue;
+            }
+
+            BigDecimal total = b.getTotalAmount();
+            if (total == null) {
+                continue;
+            }
+
+            sum = sum.add(total);
+        }
+
+        return sum;
+    }
+
+    /* ================= ACTIONS ================= */
     public String updateStatus(Bookings booking, String newStatus) {
-        if (booking == null || newStatus == null) return null;
+        if (booking == null || newStatus == null) {
+            return null;
+        }
 
         try {
             Date now = new Date();
@@ -330,6 +416,47 @@ public class BookingManagementBean implements Serializable {
         return null;
     }
 
+    /**
+     * Cập nhật trạng thái thanh toán của booking
+     */
+    public String updatePaymentStatus(Bookings booking, String newStatus) {
+        if (booking == null || newStatus == null) {
+            return null;
+        }
+
+        try {
+            Date now = new Date();
+
+            booking.setPaymentStatus(newStatus);
+            try {
+                booking.setUpdatedAt(now);
+            } catch (Exception ignore) {
+            }
+
+            bookingsFacade.edit(booking);
+            loadBookings();
+
+            FacesContext.getCurrentInstance().addMessage(
+                    null,
+                    new FacesMessage(
+                            FacesMessage.SEVERITY_INFO,
+                            "Success",
+                            "Payment status updated to " + newStatus
+                    )
+            );
+        } catch (Exception ex) {
+            FacesContext.getCurrentInstance().addMessage(
+                    null,
+                    new FacesMessage(
+                            FacesMessage.SEVERITY_ERROR,
+                            "Update payment failed",
+                            ex.getMessage()
+                    )
+            );
+        }
+        return null;
+    }
+
     // mở / đóng panel chi tiết
     public void selectBooking(Bookings booking) {
         this.selectedBooking = booking;
@@ -340,23 +467,25 @@ public class BookingManagementBean implements Serializable {
     }
 
     /* ================= Date helper ================= */
-
     private Date truncateTime(Date d) {
-        if (d == null) return null;
+        if (d == null) {
+            return null;
+        }
         @SuppressWarnings("deprecation")
         Date res = new Date(d.getYear(), d.getMonth(), d.getDate());
         return res;
     }
 
     private Date addDays(Date d, int days) {
-        if (d == null) return null;
+        if (d == null) {
+            return null;
+        }
         @SuppressWarnings("deprecation")
         Date res = new Date(d.getYear(), d.getMonth(), d.getDate() + days);
         return res;
     }
 
     /* ================= GET / SET ================= */
-
     public List<Bookings> getBookings() {
         return bookings;
     }
