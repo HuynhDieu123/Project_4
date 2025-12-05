@@ -114,8 +114,8 @@
 
                     <!-- NOTE: required fields -->
                     <div class="required-note">
-                        Các trường có dấu <strong>*</strong> là bắt buộc. Vui lòng điền đầy đủ thông tin
-                        (bao gồm Logo nhà hàng, Thành phố, Phường/Khu vực và Giờ mở/đóng cửa) trước khi gửi yêu cầu nâng cấp.
+                      Fields with marks <strong>*</strong> is required. Please fill in all information.
+                        (including Restaurant Logo, City, Ward/Area and Opening/Closing Hours) before submitting your upgrade request.
                     </div>
 
                     <div class="info-banner">
@@ -143,7 +143,7 @@
                                     <h:inputText id="managerName"
                                                  value="#{registerRestaurantManagerBean.managerName}"
                                                  required="true"
-                                                 requiredMessage="Vui lòng nhập Họ và tên quản lý."
+                                                 requiredMessage="Please enter Administrator's Full Name."
                                                  readonly="true">
                                         <f:passThroughAttribute name="placeholder" value="Example: Alex Tran" />
                                     </h:inputText>
@@ -155,7 +155,7 @@
                                     <h:inputText id="managerPhone"
                                                  value="#{registerRestaurantManagerBean.managerPhone}"
                                                  required="true"
-                                                 requiredMessage="Vui lòng nhập Số điện thoại.">
+                                                 requiredMessage="Please enter Phone Number.">
                                         <f:passThroughAttribute name="placeholder" value="Example: 0901 234 567" />
                                     </h:inputText>
                                     <h:message for="managerPhone" styleClass="msg-field-error" />
@@ -166,7 +166,7 @@
                                     <h:inputText id="managerEmail"
                                                  value="#{registerRestaurantManagerBean.managerEmail}"
                                                  required="true"
-                                                 requiredMessage="Vui lòng nhập Email."
+                                                 requiredMessage="Please enter Email."
                                                  readonly="true">
                                         <f:passThroughAttribute name="type" value="email" />
                                         <f:passThroughAttribute name="placeholder" value="example@restaurant.com" />
@@ -273,33 +273,33 @@
                                 </div>
 
                                 <div class="field">
-    <label for="logoFile">Restaurant logo *</label>
-    <div class="upload-logo">
-        <div>Minimum square photo <strong>600 x 600px</strong></div>
+                                    <label for="logoFile">Restaurant logo *</label>
+                                    <div class="upload-logo">
+                                        <div>Minimum square photo <strong>600 x 600px</strong></div>
 
-        <h:inputFile id="logoFile"
-                     value="#{registerRestaurantManagerBean.logoFile}">
-        </h:inputFile>
-        <div class="hint">
-            Select JPG/PNG file from your computer. The logo will be uploaded securely to FeastLink's cloud storage
-            and used across your restaurant profile.
-        </div>
-        <h:message for="logoFile" styleClass="msg-field-error" />
+                                        <h:inputFile id="logoFile"
+                                                     value="#{registerRestaurantManagerBean.logoFile}">
+                                        </h:inputFile>
+                                        <div class="hint">
+                                            Select JPG/PNG file from your computer. The logo will be uploaded securely to FeastLink's cloud storage
+                                            and used across your restaurant profile.
+                                        </div>
+                                        <h:message for="logoFile" styleClass="msg-field-error" />
 
-        <!-- PREVIEW LOGO -->
-        <h:panelGroup rendered="#{not empty registerRestaurantManagerBean.logoUrl}">
-            <div class="logo-preview">
-                <div class="logo-preview-inner">
-                    <img src="#{registerRestaurantManagerBean.logoUrl}"
-                         alt="Logo preview" />
-                </div>
-                <div class="logo-preview-caption">
-                    Logo preview (auto-resize according to frame)
-                </div>
-            </div>
-        </h:panelGroup>
-    </div>
-</div>
+                                        <!-- PREVIEW LOGO -->
+                                        <h:panelGroup rendered="#{not empty registerRestaurantManagerBean.logoUrl}">
+                                            <div class="logo-preview">
+                                                <div class="logo-preview-inner">
+                                                    <img src="#{registerRestaurantManagerBean.logoUrl}"
+                                                         alt="Logo preview" />
+                                                </div>
+                                                <div class="logo-preview-caption">
+                                                    Logo preview (auto-resize according to frame)
+                                                </div>
+                                            </div>
+                                        </h:panelGroup>
+                                    </div>
+                                </div>
 
                             </div>
 
@@ -344,7 +344,7 @@
                                     <h:inputText id="minGuests"
                                                  value="#{registerRestaurantManagerBean.minGuests}"
                                                  required="true"
-                                                 requiredMessage="Vui lòng nhập Số khách tối thiểu.">
+                                                 requiredMessage="Please enter Minimum Number of Guests.">
                                         <f:passThroughAttribute name="type" value="number" />
                                         <f:passThroughAttribute name="min" value="0" />
                                         <f:passThroughAttribute name="placeholder" value="Example: 50" />
@@ -367,7 +367,7 @@
                                     <h:inputText id="minDays"
                                                  value="#{registerRestaurantManagerBean.minDays}"
                                                  required="true"
-                                                 requiredMessage="Vui lòng nhập Số ngày đặt trước tối thiểu.">
+                                                 requiredMessage="Please enter Minimum Booking Days.">
                                         <f:passThroughAttribute name="type" value="number" />
                                         <f:passThroughAttribute name="min" value="0" />
                                         <f:passThroughAttribute name="placeholder" value="Example: 7" />
@@ -478,7 +478,8 @@
             function initTermsLock() {
                 var cb = document.querySelector('input[id$="termsCheckbox"]');
                 var btn = document.querySelector('input[id$="submitBtn"]');
-                if (!cb || !btn) return;
+                if (!cb || !btn)
+                    return;
 
                 function sync() {
                     btn.disabled = !cb.checked;
