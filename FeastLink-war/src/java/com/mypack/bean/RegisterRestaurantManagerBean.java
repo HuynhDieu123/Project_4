@@ -16,18 +16,34 @@ import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.Part;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+
 
 @Named("registerRestaurantManagerBean")
 @ViewScoped
@@ -45,7 +61,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
     @EJB
     private RestaurantManagersFacadeLocal restaurantManagersFacade;
 
-    // Dùng để load Cities/Areas từ DB
     @EJB
     private AreasFacadeLocal areasFacade;
 
@@ -61,19 +76,16 @@ public class RegisterRestaurantManagerBean implements Serializable {
     // ========= 2. Thông tin nhà hàng =========
     private String restaurantName;
     private String restaurantBrandName;
-    private String restaurantAddress;  // địa chỉ chi tiết
-    private String city;               // tên thành phố (từ DB)
-    private String area;               // tên khu vực (từ DB)
+    private String restaurantAddress;
+    private String city;
+    private String area;
     private String description;
 
-    // KHÔNG còn dùng taxCode, fanpage, servingStyle trên form, bỏ luôn cho sạch
+    private String openTime;   // "HH:mm"
+    private String closeTime;  // "HH:mm"
 
-    private String openTime;           // "HH:mm"
-    private String closeTime;          // "HH:mm"
-
-    // Logo: đường dẫn tương đối lưu trong DB
+    // Logo URL (Cloudinary)
     private String logoUrl;
-    // File upload từ form
     private Part logoFile;
 
     // ========= 3. Điều kiện nhận tiệc =========
@@ -84,18 +96,17 @@ public class RegisterRestaurantManagerBean implements Serializable {
     // ========= 4. Điều khoản =========
     private boolean acceptedTerms;
 
-    // ========= Thành phố / Khu vực (lấy từ DB) =========
+    // ========= Thành phố / Khu vực =========
     private List<String> cityList;
     private List<String> areaList;
 
-    // ========= Nhà hàng đã tồn tại (nếu user đã là manager) =========
+    // ========= Restaurant & Manager Status =========
     private Restaurants existingRestaurant;
-    // Trạng thái của bản ghi RestaurantManagers (Pending / Active / Approved...)
     private String managerStatus;
 
-    // --------------------------------------------------------
+    // ===================================================
     // INIT
-    // --------------------------------------------------------
+    // ===================================================
     @PostConstruct
     public void init() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -105,7 +116,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
             currentUser = (Users) obj;
         }
 
-        // Nếu chưa đăng nhập → về trang login
         if (currentUser == null) {
             try {
                 String loginUrl = ctx.getExternalContext().getRequestContextPath()
@@ -117,26 +127,23 @@ public class RegisterRestaurantManagerBean implements Serializable {
             return;
         }
 
-        // Prefill từ Users
         managerName  = currentUser.getFullName();
         managerPhone = currentUser.getPhone();
         managerEmail = currentUser.getEmail();
 
-        // Load danh sách City từ DB (dựa trên bảng Areas → CityId → Name)
         loadCitiesFromDb();
         areaList = new ArrayList<>();
 
-        // Nếu đã là manager → load nhà hàng để chỉnh sửa
         loadExistingRestaurant();
     }
 
-    // Lấy danh sách thành phố (distinct theo Cities.Name) từ bảng Areas
+    // ===================================================
+    // Load Cities / Areas
+    // ===================================================
     private void loadCitiesFromDb() {
         cityList = new ArrayList<>();
         List<Areas> allAreas = areasFacade.findAll();
-        if (allAreas == null) {
-            return;
-        }
+        if (allAreas == null) return;
 
         for (Areas a : allAreas) {
             if (a == null) continue;
@@ -153,11 +160,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
                     break;
                 }
             }
-            if (!exists) {
-                cityList.add(name);
-            }
+            if (!exists) cityList.add(name);
         }
-
         cityList.sort(String::compareToIgnoreCase);
     }
 
@@ -174,42 +178,32 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
         if (existingRestaurant != null) {
             restaurantName = existingRestaurant.getName();
-
-            // KHÔNG còn dùng mainEventType → chỉ lấy thẳng description
-            description = existingRestaurant.getDescription();
-
+            description    = existingRestaurant.getDescription();
             restaurantAddress = existingRestaurant.getAddress();
-            managerPhone      = existingRestaurant.getPhone() != null
-                                ? existingRestaurant.getPhone()
-                                : managerPhone;
-            managerEmail      = existingRestaurant.getEmail() != null
-                                ? existingRestaurant.getEmail()
-                                : managerEmail;
-            managerName       = existingRestaurant.getContactPerson() != null
-                                ? existingRestaurant.getContactPerson()
-                                : managerName;
+
+            managerPhone = existingRestaurant.getPhone() != null
+                    ? existingRestaurant.getPhone()
+                    : managerPhone;
+            managerEmail = existingRestaurant.getEmail() != null
+                    ? existingRestaurant.getEmail()
+                    : managerEmail;
+            managerName = existingRestaurant.getContactPerson() != null
+                    ? existingRestaurant.getContactPerson()
+                    : managerName;
 
             minGuests = existingRestaurant.getMinGuestCount();
             minDays   = existingRestaurant.getMinDaysInAdvance();
 
-            // Logo: đường dẫn đã lưu trong DB
             logoUrl = existingRestaurant.getLogoUrl();
 
-            // Nếu restaurant đã có AreaId → map ngược ra city/area để hiển thị
             Areas a = existingRestaurant.getAreaId();
             if (a != null) {
                 Cities c = a.getCityId();
-                if (c != null && c.getName() != null) {
-                    city = c.getName();
-                }
-                if (a.getName() != null) {
-                    area = a.getName();
-                }
-                // Khi đã có city → load areaList tương ứng
+                if (c != null && c.getName() != null) city = c.getName();
+                if (a.getName() != null) area = a.getName();
                 onCityChange();
             }
 
-            // Prefill giờ mở / đóng cửa nếu đã có trong DB
             if (existingRestaurant.getOpenTime() != null
                     || existingRestaurant.getCloseTime() != null) {
                 SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
@@ -223,12 +217,8 @@ public class RegisterRestaurantManagerBean implements Serializable {
         }
     }
 
-    // --------------------------------------------------------
-    // Thành phố / Khu vực: lấy từ DB
-    // --------------------------------------------------------
     public void onCityChange() {
         areaList = new ArrayList<>();
-
         if (isBlank(city)) {
             area = null;
             return;
@@ -248,39 +238,27 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
             if (c.getName().trim().equalsIgnoreCase(cityName)) {
                 String areaName = a.getName().trim();
-                if (!areaName.isEmpty()) {
-                    areaList.add(areaName);
-                }
+                if (!areaName.isEmpty()) areaList.add(areaName);
             }
         }
-
         areaList.sort(String::compareToIgnoreCase);
-        area = null; // reset chọn lại
+        area = null;
     }
 
-    // --------------------------------------------------------
-    // Helper: trạng thái manager
-    // --------------------------------------------------------
     private boolean isPendingManager() {
-        return managerStatus != null && managerStatus.trim().equalsIgnoreCase("Pending")
-               || managerStatus != null && managerStatus.trim().equalsIgnoreCase("PENDING_APPROVAL");
+        return (managerStatus != null &&
+                (managerStatus.trim().equalsIgnoreCase("Pending")
+                 || managerStatus.trim().equalsIgnoreCase("PENDING_APPROVAL")));
     }
 
-    // --------------------------------------------------------
-    // Map City + Area name → Areas entity (để set AreaId cho Restaurants)
-    // --------------------------------------------------------
     private Areas resolveAreaEntity() {
-        if (isBlank(city) || isBlank(area)) {
-            return null;
-        }
+        if (isBlank(city) || isBlank(area)) return null;
 
         String cityName = city.trim();
         String areaName = area.trim();
 
         List<Areas> all = areasFacade.findAll();
-        if (all == null || all.isEmpty()) {
-            return null;
-        }
+        if (all == null || all.isEmpty()) return null;
 
         for (Areas a : all) {
             if (a == null || a.getName() == null) continue;
@@ -289,26 +267,22 @@ public class RegisterRestaurantManagerBean implements Serializable {
             Cities c = a.getCityId();
             if (c == null || c.getName() == null) continue;
 
-            if (c.getName().trim().equalsIgnoreCase(cityName)) {
-                return a;
-            }
+            if (c.getName().trim().equalsIgnoreCase(cityName)) return a;
         }
         return null;
     }
 
-    // --------------------------------------------------------
-    // Submit
-    // --------------------------------------------------------
+    // ===================================================
+    // SUBMIT
+    // ===================================================
     public String submit() {
         FacesContext ctx = FacesContext.getCurrentInstance();
 
-        // Luôn khóa 2 trường name + email theo currentUser (chống sửa tay)
         if (currentUser != null) {
             managerName  = currentUser.getFullName();
             managerEmail = currentUser.getEmail();
         }
 
-        // Nếu hồ sơ đang Pending → không cho gửi lại
         if (isPendingManager()) {
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
@@ -318,7 +292,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
             return null;
         }
 
-        // Bắt buộc đồng ý điều khoản
         if (!acceptedTerms) {
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_WARN,
@@ -328,11 +301,9 @@ public class RegisterRestaurantManagerBean implements Serializable {
             return null;
         }
 
-        // Kiểm tra logo: nếu không có file mới và cũng không có logo cũ → lỗi
         boolean noNewLogo      = (logoFile == null || logoFile.getSize() <= 0);
         boolean noExistingLogo = isBlank(logoUrl);
 
-        // Validate bắt buộc (thêm openTime / closeTime)
         if (isBlank(managerName) || isBlank(managerPhone) || isBlank(managerEmail)
                 || isBlank(restaurantName) || isBlank(restaurantAddress)
                 || isBlank(city) || isBlank(area)
@@ -360,11 +331,7 @@ public class RegisterRestaurantManagerBean implements Serializable {
 
         try {
             boolean isNewRestaurant = (existingRestaurant == null);
-
-            Restaurants restaurant = isNewRestaurant
-                    ? new Restaurants()
-                    : existingRestaurant;
-
+            Restaurants restaurant = isNewRestaurant ? new Restaurants() : existingRestaurant;
             Date now = new Date();
 
             if (isNewRestaurant) {
@@ -374,21 +341,13 @@ public class RegisterRestaurantManagerBean implements Serializable {
             restaurant.setUpdatedAt(now);
 
             restaurant.setName(restaurantName);
-
-            // Lưu description nguyên bản
             restaurant.setDescription(description);
 
-            // Address text (hiển thị)
             String fullAddr = restaurantAddress;
-            if (!isBlank(area)) {
-                fullAddr += ", " + area;
-            }
-            if (!isBlank(city)) {
-                fullAddr += ", " + city;
-            }
+            if (!isBlank(area)) fullAddr += ", " + area;
+            if (!isBlank(city)) fullAddr += ", " + city;
             restaurant.setAddress(fullAddr);
 
-            // Map sang AreaId (bắt buộc không null)
             Areas selectedArea = resolveAreaEntity();
             if (selectedArea == null) {
                 ctx.addMessage(null, new FacesMessage(
@@ -407,61 +366,23 @@ public class RegisterRestaurantManagerBean implements Serializable {
             restaurant.setMinGuestCount(minGuests);
             restaurant.setMinDaysInAdvance(minDays);
 
-            // ------------------ UPLOAD LOGO ------------------
+            // ===== Upload logo lên Cloudinary (bắt lỗi riêng) =====
             if (!noNewLogo && logoFile != null) {
-                String uploadRoot = "E:\\ProjectSemIV\\Code\\Project_4\\FeastLink-war\\web\\resources\\images\\upload_file";
-
-                File folder = new File(uploadRoot);
-                if (!folder.exists()) {
-                    folder.mkdirs();
+                String secureUrl = uploadLogoToCloudinary(ctx, logoFile);
+                if (secureUrl == null) {
+                    // đã có FacesMessage cụ thể → dừng submit, không quăng Exception chung
+                    return null;
                 }
-
-                String submitted = logoFile.getSubmittedFileName();
-                String baseName  = submitted;
-                if (submitted != null) {
-                    int slash = submitted.lastIndexOf('/');
-                    int back  = submitted.lastIndexOf('\\');
-                    int idx   = Math.max(slash, back);
-                    if (idx >= 0 && idx < submitted.length() - 1) {
-                        baseName = submitted.substring(idx + 1);
-                    }
-                }
-                String ext = "";
-                int dot = baseName != null ? baseName.lastIndexOf('.') : -1;
-                if (dot != -1) {
-                    ext = baseName.substring(dot);
-                }
-
-                String savedName = "logo_" + currentUser.getUserId() + "_" + System.currentTimeMillis() + ext;
-                File dest = new File(folder, savedName);
-
-                try (InputStream in = logoFile.getInputStream();
-                     FileOutputStream out = new FileOutputStream(dest)) {
-                    byte[] buf = new byte[8192];
-                    int len;
-                    while ((len = in.read(buf)) != -1) {
-                        out.write(buf, 0, len);
-                    }
-                }
-
-                String relativePath = "/resources/images/upload_file/" + savedName;
-                logoUrl = relativePath;
-                restaurant.setLogoUrl(relativePath);
-            } else {
-                if (!isBlank(logoUrl)) {
-                    restaurant.setLogoUrl(logoUrl);
-                }
+                logoUrl = secureUrl;
+                restaurant.setLogoUrl(secureUrl);
+            } else if (!isBlank(logoUrl)) {
+                restaurant.setLogoUrl(logoUrl);
             }
 
-            // parse giờ mở/đóng cửa (HH:mm) → Date (TIME) nếu có
             Date open = parseTime(openTime);
-            if (open != null) {
-                restaurant.setOpenTime(open);
-            }
+            if (open != null) restaurant.setOpenTime(open);
             Date close = parseTime(closeTime);
-            if (close != null) {
-                restaurant.setCloseTime(close);
-            }
+            if (close != null) restaurant.setCloseTime(close);
 
             if (isNewRestaurant) {
                 restaurantsFacade.create(restaurant);
@@ -472,17 +393,11 @@ public class RegisterRestaurantManagerBean implements Serializable {
                 rm.setIsPrimary(true);
                 rm.setStatus("PENDING_APPROVAL");
                 rm.setCreatedAt(now);
-
                 restaurantManagersFacade.create(rm);
 
-                // update status user
                 currentUser.setStatus("PENDING");
                 usersFacade.edit(currentUser);
-
-                FacesContext.getCurrentInstance()
-                        .getExternalContext()
-                        .getSessionMap()
-                        .put("currentUser", currentUser);
+                ctx.getExternalContext().getSessionMap().put("currentUser", currentUser);
 
                 existingRestaurant = restaurant;
                 managerStatus = "PENDING_APPROVAL";
@@ -495,33 +410,203 @@ public class RegisterRestaurantManagerBean implements Serializable {
                     "Request for review sent successfully",
                     "Restaurant profile has been submitted to Admin FeastLink and is awaiting approval."
             ));
-
             return null;
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            ctx.addMessage(null, new FacesMessage(
-                    FacesMessage.SEVERITY_ERROR,
-                    "Unable to save logo file on server. Request for review failed.",
-                    e.getMessage()
-            ));
-            return null;
         } catch (Exception e) {
             e.printStackTrace();
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
                     "An error occurred while saving restaurant information. Request for approval failed.",
-                    e.getMessage()
+                    e.toString()
             ));
             return null;
         }
     }
 
-    // Parse "HH:mm" → Date (TIME)
-    private Date parseTime(String timeStr) {
-        if (isBlank(timeStr)) {
+   /**
+ * Upload logo lên Cloudinary bằng HTTPS nhưng TẮT kiểm tra SSL (DEV ONLY).
+ * Trả về secure_url hoặc null nếu lỗi (đã push FacesMessage rõ ràng).
+ */
+private String uploadLogoToCloudinary(FacesContext ctx, Part filePart) {
+    try {
+        // ====== 1. TẠM THỜI TẮT CHECK SSL (CHỈ DÙNG CHO DEV) ======
+        TrustManager[] trustAllCerts = new TrustManager[]{
+            new X509TrustManager() {
+                @Override
+                public void checkClientTrusted(X509Certificate[] chain, String authType) { }
+                @Override
+                public void checkServerTrusted(X509Certificate[] chain, String authType) { }
+                @Override
+                public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+            }
+        };
+
+        SSLContext sc = SSLContext.getInstance("TLS");
+        sc.init(null, trustAllCerts, new SecureRandom());
+        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+        HostnameVerifier allHostsValid = (hostname, session) -> true;
+        HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+        // ====== HẾT PHẦN TẮT SSL CHECK ======
+
+        ServletContext servletContext =
+                (ServletContext) ctx.getExternalContext().getContext();
+
+        String cloudName = servletContext.getInitParameter("cloudinary.cloud_name");
+        String apiKey    = servletContext.getInitParameter("cloudinary.api_key");
+        String apiSecret = servletContext.getInitParameter("cloudinary.api_secret");
+
+        if (isBlank(cloudName) || isBlank(apiKey) || isBlank(apiSecret)) {
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Cloudinary configuration is missing. Please contact FeastLink Admin.",
+                    null
+            ));
             return null;
         }
+
+        String folder   = "feastlink/restaurants";
+        long timestamp  = System.currentTimeMillis() / 1000L;
+        String publicId = "logo_user_" + currentUser.getUserId() + "_" + timestamp;
+
+        String toSign = "folder=" + folder
+                + "&public_id=" + publicId
+                + "&timestamp=" + timestamp
+                + apiSecret;
+
+        String signature = sha1Hex(toSign);
+
+        String urlStr = "https://api.cloudinary.com/v1_1/" + cloudName + "/image/upload";
+        URL url = new URL(urlStr);
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection(); // dùng HttpsURLConnection
+        conn.setDoOutput(true);
+        conn.setRequestMethod("POST");
+
+        String boundary = "----FeastLinkBoundary" + System.currentTimeMillis();
+        String CRLF = "\r\n";
+
+        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+        try (OutputStream out = conn.getOutputStream();
+             OutputStreamWriter osw = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
+
+            // helper: field text
+            java.util.function.BiConsumer<String, String> writeField = (name, value) -> {
+                try {
+                    osw.write("--" + boundary + CRLF);
+                    osw.write("Content-Disposition: form-data; name=\"" + name + "\"" + CRLF);
+                    osw.write(CRLF);
+                    osw.write(value + CRLF);
+                    osw.flush();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+
+            writeField.accept("api_key", apiKey);
+            writeField.accept("timestamp", String.valueOf(timestamp));
+            writeField.accept("signature", signature);
+            writeField.accept("folder", folder);
+            writeField.accept("public_id", publicId);
+
+            String submitted = filePart.getSubmittedFileName();
+            String fileName = (submitted != null && !submitted.isEmpty())
+                    ? submitted
+                    : ("logo_" + currentUser.getUserId() + ".png");
+            String contentType = filePart.getContentType();
+            if (isBlank(contentType)) {
+                contentType = "application/octet-stream";
+            }
+
+            osw.write("--" + boundary + CRLF);
+            osw.write("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"" + CRLF);
+            osw.write("Content-Type: " + contentType + CRLF);
+            osw.write(CRLF);
+            osw.flush();
+
+            try (InputStream in = filePart.getInputStream()) {
+                byte[] buf = new byte[8192];
+                int len;
+                while ((len = in.read(buf)) != -1) {
+                    out.write(buf, 0, len);
+                }
+                out.flush();
+            }
+
+            osw.write(CRLF);
+            osw.write("--" + boundary + "--" + CRLF);
+            osw.flush();
+        }
+
+        int status = conn.getResponseCode();
+        InputStream respStream = (status >= 200 && status < 300)
+                ? conn.getInputStream()
+                : conn.getErrorStream();
+
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(respStream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+        }
+
+        String response = sb.toString();
+        System.out.println("Cloudinary response: " + response);
+
+        if (status < 200 || status >= 300) {
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Cloudinary upload failed (HTTP " + status + ").",
+                    response
+            ));
+            return null;
+        }
+
+        String marker = "\"secure_url\":\"";
+        int idx = response.indexOf(marker);
+        if (idx == -1) {
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Cloudinary response does not contain secure_url.",
+                    response
+            ));
+            return null;
+        }
+        int start = idx + marker.length();
+        int end = response.indexOf('"', start);
+        if (end == -1) end = response.length();
+
+        String secureUrl = response.substring(start, end)
+                .replace("\\/", "/");
+        return secureUrl;
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        ctx.addMessage(null, new FacesMessage(
+                FacesMessage.SEVERITY_ERROR,
+                "Cloudinary upload failed due to an unexpected error.",
+                e.toString()
+        ));
+        return null;
+    }
+}
+
+    // SHA-1 hex
+    private String sha1Hex(String input) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        byte[] bytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    // Parse "HH:mm" → Date
+    private Date parseTime(String timeStr) {
+        if (isBlank(timeStr)) return null;
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
             return sdf.parse(timeStr.trim());
@@ -531,7 +616,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
     }
 
     public String cancel() {
-        // index.xhtml ở root
         return "index?faces-redirect=true";
     }
 
@@ -540,7 +624,6 @@ public class RegisterRestaurantManagerBean implements Serializable {
     }
 
     // ================== GETTER / SETTER ==================
-
     public String getManagerName() { return managerName; }
     public void setManagerName(String managerName) { this.managerName = managerName; }
 

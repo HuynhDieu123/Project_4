@@ -9,6 +9,22 @@
         <param-name>jakarta.faces.PROJECT_STAGE</param-name>
         <param-value>Development</param-value>
     </context-param>
+    
+    <context-param>
+    <param-name>cloudinary.cloud_name</param-name>
+    <param-value>dl5nuwgfl</param-value>
+</context-param>
+
+<context-param>
+    <param-name>cloudinary.api_key</param-name>
+    <param-value>472193174456539</param-value>
+</context-param>
+
+<context-param>
+    <param-name>cloudinary.api_secret</param-name>
+    <param-value>vPNOl1wvWU1NM8NPYM7NmHGriXw</param-value>
+</context-param>
+
 
     <servlet>
         <servlet-name>Faces Servlet</servlet-name>

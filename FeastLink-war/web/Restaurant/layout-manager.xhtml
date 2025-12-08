@@ -63,24 +63,40 @@
                 <!-- Phần bên trái: mỗi page tự define -->
                 <ui:insert name="header" />
 
-                <!-- Phần bên phải: bell + profile -->
-                <div class="flex items-center space-x-6">
-                    <button class="p-2 relative rounded-full hover:bg-background-soft">
+                <!-- Phần bên phải: bell + profile + LOGOUT -->
+                <!-- Dùng form để gọi action logout -->
+                <h:form styleClass="flex items-center space-x-6">
+
+                    <!-- Chuông thông báo -->
+                    <button type="button" class="p-2 relative rounded-full hover:bg-background-soft">
                         <span class="material-symbols-outlined text-text-secondary-light">notifications</span>
                         <span class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-error-red"></span>
                     </button>
 
+                    <!-- Thông tin user -->
                     <div class="flex items-center space-x-3">
                         <img alt="Restaurant manager profile picture"
                              class="w-10 h-10 rounded-full object-cover"
                              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAnKjQGks3gD9kxsvLraeSzojgLwf5Z61JrAgV9nLgVaOVJBoexk_CA3UNddMxmFdRURhXc3BMZ423UXkefu13YKsHoocOFGx2L7BWZcXRM4Rda_oBrmx3QAebrZ25VHwAy_j3FT1_7pXZBdzDhonbM8G-lZrO-xJi-0-jpgUvRkaOiMPQfCruaJdn9206ZsG3LnFCpUHU-fUr1H4fwkjszojJz9Ae7KJZdy1MtPT5VemJu0sBU4XBt5AQKKbfbZnbJNigaeyRE9Sb" />
 
                         <div>
-                            <p class="font-semibold text-sm text-text-main-light">Alex Doe</p>
-                            <p class="text-xs text-text-secondary-light">The Grand Eatery</p>
+                            <!-- Lấy tên từ sessionScope.currentUser -->
+                            <p class="font-semibold text-sm text-text-main-light">
+                                #{empty sessionScope.currentUser ? 'Manager' : sessionScope.currentUser.fullName}
+                            </p>
+                            <p class="text-xs text-text-secondary-light">
+                                Restaurant Manager
+                            </p>
                         </div>
                     </div>
-                </div>
+
+                    <!-- Nút Logout -->
+                    <h:commandLink action="#{authBean.logout}"
+                                   styleClass="inline-flex items-center text-xs font-medium text-text-secondary-light border border-border-light rounded-full px-3 py-1.5 hover:bg-background-soft hover:text-text-main-light transition">
+                        <span class="material-symbols-outlined text-sm mr-1">logout</span>
+                        Logout
+                    </h:commandLink>
+                </h:form>
             </header>
 
             <!-- MAIN: sidebar + content -->
@@ -127,7 +143,7 @@
                             <span>Event Types</span>
                         </a>
 
-                        <!-- Booking Management (MỚI THÊM) -->
+                        <!-- Booking Management -->
                         <a href="#{request.contextPath}/faces/Restaurant/booking-management.xhtml"
                            class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100">
                             <span class="material-symbols-outlined text-lg">event_note</span>
