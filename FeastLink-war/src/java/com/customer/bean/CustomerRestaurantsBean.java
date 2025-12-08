@@ -6,6 +6,7 @@ import com.mypack.entity.MenuCombos;
 import com.mypack.entity.RestaurantImages;
 import com.mypack.entity.RestaurantReviews;
 import com.mypack.entity.Restaurants;
+import com.mypack.sessionbean.EventTypesFacadeLocal;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
@@ -23,8 +24,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * Bean dùng cho trang Customer/restaurants.xhtml
- * Đọc dữ liệu nhà hàng từ DB và chuyển thành JSON để restaurants.js sử dụng.
+ * Bean dùng cho trang Customer/restaurants.xhtml Đọc dữ liệu nhà hàng từ DB và
+ * chuyển thành JSON để restaurants.js sử dụng.
  */
 @Named("customerRestaurantsBean")
 @RequestScoped
@@ -37,6 +38,9 @@ public class CustomerRestaurantsBean implements Serializable {
     private List<String> cityOptions;
     private List<String> areaOptions;
     private List<String> eventTypeOptions;
+
+    @EJB
+    private EventTypesFacadeLocal eventTypesFacade;
 
     @PostConstruct
     public void init() {
@@ -229,6 +233,7 @@ public class CustomerRestaurantsBean implements Serializable {
             restaurantCards.add(card);
         }
         buildFilterOptions();
+        loadEventTypeOptions();
 
     }
 
@@ -366,6 +371,15 @@ public class CustomerRestaurantsBean implements Serializable {
         result = result.replace("\r", "\\r");
         result = result.replace("\n", "\\n");
         return result;
+    }
+
+    private void loadEventTypeOptions() {
+        eventTypeOptions = eventTypesFacade.findAll()
+                .stream()
+                .map(EventTypes::getName) // lấy cột Name
+                .distinct()
+                .sorted()
+                .toList();
     }
 
     /**

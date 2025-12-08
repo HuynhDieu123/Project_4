@@ -23,7 +23,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +50,15 @@ public class CustomerBookingBean implements Serializable {
     @EJB
     private ServiceTypesFacadeLocal serviceTypesFacade;
 
+    private List<EventTypes> allEventTypes;
+
+    // danh sách event type cho dropdown
+    private List<EventTypes> eventTypes = new ArrayList<>();
+
+    // id event type được chọn trên form
+    private Integer selectedEventTypeId;
+    private String selectedEventTypeName;
+    private EventTypes selectedEventType;
     // ====== Fields bound từ booking.xhtml (hidden inputs / form) ======
     private Long restaurantId;
     private String eventDateStr;   // yyyy-MM-dd (URL / hidden field)
@@ -72,6 +83,8 @@ public class CustomerBookingBean implements Serializable {
     private String contactFullName;
     private String contactEmail;
     private String contactPhone;
+
+    private List<EventTypes> availableEventTypes;
 
     // ====== INIT: load data từ param & DB ======
     @PostConstruct
@@ -120,24 +133,23 @@ public class CustomerBookingBean implements Serializable {
         }
 
         // ---- Load restaurant từ DB ----
+        // ---- Load restaurant từ DB ----
         if (restaurantId != null) {
             restaurant = restaurantsFacade.find(restaurantId);
         }
 
-        // Fallback demo: nếu vẫn null, lấy nhà hàng đầu tiên
+// ❌ KHÔNG ĐƯỢC fallback lấy nhà hàng đầu tiên nữa
         if (restaurant == null) {
-            List<Restaurants> all = restaurantsFacade.findAll();
-            if (all != null && !all.isEmpty()) {
-                restaurant = all.get(0);
-                restaurantId = restaurant.getRestaurantId();
-            }
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Invalid access",
+                    "No restaurant was selected for this booking. Please go back and choose a venue again."
+            ));
+            return;
         }
 
-        if (restaurant != null) {
-            restaurantName = safe(restaurant.getName());
-            // tuỳ entity: Address / FullAddress / ...
-            restaurantAddress = safe(restaurant.getAddress());
-        }
+        restaurantName = safe(restaurant.getName());
+        restaurantAddress = safe(restaurant.getAddress());
 
         // ---- Event date ----
         if (eventDateStr == null || eventDateStr.isBlank()) {
@@ -166,6 +178,31 @@ public class CustomerBookingBean implements Serializable {
         if (locationType == null || locationType.isBlank()) {
             locationType = "AT_RESTAURANT";
         }
+
+        eventTypes = eventTypesFacade.findAll();  // nếu bạn đặt tên khác thì giữ nguyên tên cũ
+        if (eventTypes != null) {
+            for (EventTypes et : eventTypes) {
+                if (et.getEventTypeId() != null) {
+                    eventTypeNameMap.put(et.getEventTypeId(), et.getName());
+                }
+            }
+        }
+
+        // nếu muốn giá trị mặc định:
+        selectedEventTypeId = null;
+        selectedEventTypeName = null;
+    }
+
+    public void onEventTypeChange() {
+        if (selectedEventTypeId == null) {
+            selectedEventTypeName = null;
+        } else {
+            selectedEventTypeName = eventTypeNameMap.get(selectedEventTypeId);
+        }
+    }
+
+    public String getSelectedEventTypeName() {
+        return selectedEventTypeName;
     }
 
     // ====== Getters / setters cho JSF ======
@@ -286,6 +323,46 @@ public class CustomerBookingBean implements Serializable {
     public void setContactPhone(String contactPhone) {
         this.contactPhone = contactPhone;
     }
+
+    public List<EventTypes> getAvailableEventTypes() {
+        return availableEventTypes;
+    }
+
+    public List<EventTypes> getAllEventTypes() {
+        return allEventTypes;
+    }
+
+    public List<EventTypes> getEventTypes() {
+        return eventTypes;
+    }
+
+    public Integer getSelectedEventTypeId() {
+        return selectedEventTypeId;
+    }
+
+    public void setSelectedEventTypeId(Integer selectedEventTypeId) {
+        this.selectedEventTypeId = selectedEventTypeId;
+    }
+
+    public void setSelectedEventType(EventTypes selectedEventType) {
+        this.selectedEventType = selectedEventType;
+    }
+
+    // Alias cho view cũ nếu dùng eventTypeId
+    public Integer getEventTypeId() {
+        return selectedEventTypeId;
+    }
+
+    public void setEventTypeId(Integer eventTypeId) {
+        this.selectedEventTypeId = eventTypeId;
+    }
+
+// Alias cho tên hiển thị nếu view dùng eventTypeName
+    public String getEventTypeName() {
+        return getSelectedEventTypeName();
+    }
+
+    private Map<Integer, String> eventTypeNameMap = new HashMap<>();
 
     // ====== Main action: save booking ======
     public String confirmBooking() {
@@ -446,20 +523,12 @@ public class CustomerBookingBean implements Serializable {
                 restaurant = restaurantsFacade.find(restaurantId);
             }
 
-            // Fallback demo: lấy nhà hàng đầu tiên nếu vẫn null
-            if (restaurant == null) {
-                List<Restaurants> all = restaurantsFacade.findAll();
-                if (all != null && !all.isEmpty()) {
-                    restaurant = all.get(0);
-                    restaurantId = restaurant.getRestaurantId();
-                }
-            }
-
+// ❌ KHÔNG fallback lấy nhà hàng đầu tiên nữa
             if (restaurant == null) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
                         "Cannot find restaurant",
-                        "There is no available venue to attach to this booking."
+                        "We couldn't detect which venue you're booking. Please go back and choose the restaurant again."
                 ));
                 return null;
             }
@@ -589,6 +658,12 @@ public class CustomerBookingBean implements Serializable {
     }
 
     private EventTypes resolveEventType() {
+        // 1. ƯU TIÊN id chọn từ dropdown
+        if (selectedEventTypeId != null && eventTypesFacade != null) {
+            return eventTypesFacade.find(selectedEventTypeId);
+        }
+
+        // 2. Fallback cũ: dựa theo text eventTypeKey (nếu còn dùng hidden field)
         if (!notBlank(eventTypeKey) || eventTypesFacade == null) {
             return null;
         }
@@ -623,4 +698,14 @@ public class CustomerBookingBean implements Serializable {
         }
         return null;
     }
+
+    private void loadEventTypes() {
+        try {
+            availableEventTypes = eventTypesFacade.findAll();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            availableEventTypes = new ArrayList<>();
+        }
+    }
+
 }

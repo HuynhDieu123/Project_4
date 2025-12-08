@@ -40,4 +40,7 @@ public interface BookingsFacadeLocal {
 
     int count();
     
+    long countByEventType(Integer eventTypeId);
+
+    
 }
