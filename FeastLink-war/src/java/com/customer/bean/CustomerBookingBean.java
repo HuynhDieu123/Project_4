@@ -133,24 +133,23 @@ public class CustomerBookingBean implements Serializable {
         }
 
         // ---- Load restaurant từ DB ----
+        // ---- Load restaurant từ DB ----
         if (restaurantId != null) {
             restaurant = restaurantsFacade.find(restaurantId);
         }
 
-        // Fallback demo: nếu vẫn null, lấy nhà hàng đầu tiên
+// ❌ KHÔNG ĐƯỢC fallback lấy nhà hàng đầu tiên nữa
         if (restaurant == null) {
-            List<Restaurants> all = restaurantsFacade.findAll();
-            if (all != null && !all.isEmpty()) {
-                restaurant = all.get(0);
-                restaurantId = restaurant.getRestaurantId();
-            }
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Invalid access",
+                    "No restaurant was selected for this booking. Please go back and choose a venue again."
+            ));
+            return;
         }
 
-        if (restaurant != null) {
-            restaurantName = safe(restaurant.getName());
-            // tuỳ entity: Address / FullAddress / ...
-            restaurantAddress = safe(restaurant.getAddress());
-        }
+        restaurantName = safe(restaurant.getName());
+        restaurantAddress = safe(restaurant.getAddress());
 
         // ---- Event date ----
         if (eventDateStr == null || eventDateStr.isBlank()) {
@@ -524,20 +523,12 @@ public class CustomerBookingBean implements Serializable {
                 restaurant = restaurantsFacade.find(restaurantId);
             }
 
-            // Fallback demo: lấy nhà hàng đầu tiên nếu vẫn null
-            if (restaurant == null) {
-                List<Restaurants> all = restaurantsFacade.findAll();
-                if (all != null && !all.isEmpty()) {
-                    restaurant = all.get(0);
-                    restaurantId = restaurant.getRestaurantId();
-                }
-            }
-
+// ❌ KHÔNG fallback lấy nhà hàng đầu tiên nữa
             if (restaurant == null) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
                         "Cannot find restaurant",
-                        "There is no available venue to attach to this booking."
+                        "We couldn't detect which venue you're booking. Please go back and choose the restaurant again."
                 ));
                 return null;
             }
