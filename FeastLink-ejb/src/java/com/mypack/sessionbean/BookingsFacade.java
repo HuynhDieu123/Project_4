@@ -31,42 +31,43 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
     public BookingsFacade() {
         super(Bookings.class);
     }
-    
-     // Tổng booking
+
+    // Tổng booking
     @Override
     public long countAllBookings() {
         return em.createQuery("SELECT COUNT(b) FROM Bookings b", Long.class)
-                 .getSingleResult();
+                .getSingleResult();
     }
 
     // Doanh thu tháng hiện tại
     @Override
-public double calculateMonthlyRevenue() {
-    String sql = "SELECT SUM(b.totalAmount) FROM Bookings b"; // JPQL hoặc native tùy bạn
+    public double calculateMonthlyRevenue() {
+        String sql = "SELECT SUM(b.totalAmount) FROM Bookings b"; // JPQL hoặc native tùy bạn
 
-    Query q = em.createQuery(sql);  // hoặc createNativeQuery
-    Object raw = q.getSingleResult();
+        Query q = em.createQuery(sql);  // hoặc createNativeQuery
+        Object raw = q.getSingleResult();
 
-    if (raw == null) {
-        return 0d;
+        if (raw == null) {
+            return 0d;
+        }
+
+        Number num = (Number) raw;      // BigDecimal cũng là Number
+        return num.doubleValue();       // chuyển về double
     }
-
-    Number num = (Number) raw;      // BigDecimal cũng là Number
-    return num.doubleValue();       // chuyển về double
-}
-
 
     // Tỷ lệ hủy
     @Override
     public double calculateCancelRate() {
 
         long cancelled = em.createQuery(
-            "SELECT COUNT(b) FROM Bookings b WHERE b.bookingStatus = 'CANCELLED'",
-            Long.class).getSingleResult();
+                "SELECT COUNT(b) FROM Bookings b WHERE b.bookingStatus = 'CANCELLED'",
+                Long.class).getSingleResult();
 
         long total = countAllBookings();
 
-        if (total == 0) return 0;
+        if (total == 0) {
+            return 0;
+        }
 
         return ((double) cancelled / total) * 100;
     }
@@ -75,17 +76,17 @@ public double calculateMonthlyRevenue() {
     @Override
     public long countPendingApprovals() {
         return em.createQuery(
-            "SELECT COUNT(b) FROM Bookings b WHERE b.bookingStatus = 'PENDING'",
-            Long.class).getSingleResult();
+                "SELECT COUNT(b) FROM Bookings b WHERE b.bookingStatus = 'PENDING'",
+                Long.class).getSingleResult();
     }
 
     // Booking gần nhất (3 cái)
     @Override
     public List<Bookings> findRecentBookings() {
         return em.createQuery(
-            "SELECT b FROM Bookings b ORDER BY b.createdAt DESC", Bookings.class)
-            .setMaxResults(3)
-            .getResultList();
+                "SELECT b FROM Bookings b ORDER BY b.createdAt DESC", Bookings.class)
+                .setMaxResults(3)
+                .getResultList();
     }
 
     @Override
@@ -93,5 +94,17 @@ public double calculateMonthlyRevenue() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
-    
+    @Override
+    public long countByEventType(Integer eventTypeId) {
+        if (eventTypeId == null) {
+            return 0L;
+        }
+        Long count = em.createQuery(
+                "SELECT COUNT(b) FROM Bookings b WHERE b.eventTypeId.eventTypeId = :eventTypeId",
+                Long.class)
+                .setParameter("eventTypeId", eventTypeId)
+                .getSingleResult();
+        return (count != null) ? count : 0L;
+    }
+
 }

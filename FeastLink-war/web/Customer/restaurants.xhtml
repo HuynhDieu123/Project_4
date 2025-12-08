@@ -321,27 +321,19 @@
                                 <!-- Event Types (multi-select) -->
                                 <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
                                     <h3 class="text-sm font-semibold text-[#111827] mb-3">Event Types</h3>
+
                                     <div class="flex flex-wrap gap-2 text-xs">
-                                        <button type="button"
-                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                                                data-event-type="Wedding">Wedding</button>
-                                        <button type="button"
-                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                                                data-event-type="Birthday">Birthday</button>
-                                        <button type="button"
-                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                                                data-event-type="Corporate">Corporate</button>
-                                        <button type="button"
-                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                                                data-event-type="Gala">Gala</button>
-                                        <button type="button"
-                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                                                data-event-type="Graduation">Graduation</button>
-                                        <button type="button"
-                                                class="px-3 py-1.5 font-medium rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#E6C77F] js-event-type"
-                                                data-event-type="Anniversary">Anniversary</button>
+                                        <ui:repeat value="#{eventTypesBean.filteredEventTypes}" var="et">
+                                            <button type="button"
+                                                    class="px-3 py-1 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB]
+                                                    hover:border-[#E6C77F] js-event-type"
+                                                    data-event-type="#{et.name}">
+                                                #{et.name}
+                                            </button>
+                                        </ui:repeat>
                                     </div>
                                 </div>
+
 
                                 <!-- Cuisine (visual only) -->
                                 <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
@@ -567,21 +559,28 @@
                             </p>
                         </div>
 
-                        <!-- Event Types (mobile) -->
+                        <!-- Event types (mobile) -->
                         <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
                             <h3 class="text-sm font-semibold text-[#111827] mb-3">Event Types</h3>
-                            <div class="flex flex-wrap gap-2 text-xs">
+                            <div class="flex flex-wrap gap-2">
+                                <!-- Chip "Any type" giữ nguyên -->
                                 <button type="button"
-                                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-event-type"
-                                        data-event-type="Wedding">Wedding</button>
-                                <button type="button"
-                                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-event-type"
-                                        data-event-type="Birthday">Birthday</button>
-                                <button type="button"
-                                        class="px-3 py-1.5 rounded-full bg-white text-[#4B5563] border border-[#E5E7EB] js-event-type"
-                                        data-event-type="Corporate">Corporate</button>
+                                        class="px-3 py-2 rounded-full border border-[#D4AF37] text-xs text-[#111827] bg-[#FDF6E7] js-event-type"
+                                        data-event-type="">
+                                    Any type
+                                </button>
+
+                                <!-- Các event type lấy từ DB -->
+                                <ui:repeat value="#{customerRestaurantsBean.eventTypeOptions}" var="et">
+                                    <button type="button"
+                                            class="px-3 py-2 rounded-full border border-[#E5E7EB] text-xs text-[#111827] bg-white hover:border-[#D4AF37] hover:bg-[#F5F5F4] js-event-type"
+                                            data-event-type="#{et}">
+                                        #{et}
+                                    </button>
+                                </ui:repeat>
                             </div>
                         </div>
+
 
                         <!-- Rating (mobile) -->
                         <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
@@ -651,7 +650,7 @@
             window.FEASTLINK_RESTAURANTS = #{customerRestaurantsBean.restaurantsJson};
             //]]>
         </h:outputScript>
- <!-- ===== FORM ẨN ĐỂ JSF LƯU YÊU THÍCH ===== -->
+        <!-- ===== FORM ẨN ĐỂ JSF LƯU YÊU THÍCH ===== -->
         <h:form id="favoriteForm">
             <!-- restaurantId sẽ được JS gán vào -->
             <h:inputHidden id="restaurantId"
