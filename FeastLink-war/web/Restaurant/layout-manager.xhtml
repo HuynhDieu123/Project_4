@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
+      
       xmlns:ui="jakarta.faces.facelets">
 
     <h:head>
@@ -127,6 +128,13 @@
                            class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100">
                             <span class="material-symbols-outlined text-lg">menu_book</span>
                             <span>Menu &amp; Packages</span>
+                        </a>
+
+                        <!-- Manager Images (MỚI THÊM) -->
+                        <a href="#{request.contextPath}/faces/Restaurant/restaurant-images.xhtml"
+                           class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100">
+                            <span class="material-symbols-outlined text-lg">photo_library</span>
+                            <span>Manager Images</span>
                         </a>
 
                         <!-- Capacity & Availability -->
