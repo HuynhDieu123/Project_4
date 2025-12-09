@@ -87,29 +87,72 @@ public class RestaurantDetailsBean implements Serializable {
         capacityMin = (minGuests != null && minGuests > 0) ? minGuests : 30;
         capacityMax = capacityMin * 3;
 
-        // ==== Images ====
-        heroImageUrl = null;
-        galleryImages = new ArrayList<>();
-        try {
-            Collection<RestaurantImages> images = restaurant.getRestaurantImagesCollection();
-            if (images != null) {
-                RestaurantImages first = null;
-                for (RestaurantImages img : images) {
-                    if (img == null) continue;
-                    if (Boolean.TRUE.equals(img.getIsPrimary()) && heroImageUrl == null) {
-                        heroImageUrl = safe(img.getImageUrl());
-                    }
-                    galleryImages.add(safe(img.getImageUrl()));
-                    if (first == null) first = img;
-                }
-                if ((heroImageUrl == null || heroImageUrl.isEmpty()) && first != null) {
-                    heroImageUrl = safe(first.getImageUrl());
+      // =================== IMAGES (IsPrimary + SortOrder) ===================
+heroImageUrl = null;
+galleryImages = new ArrayList<>();
+try {
+    Collection<RestaurantImages> imagesCol = restaurant.getRestaurantImagesCollection();
+    if (imagesCol != null && !imagesCol.isEmpty()) {
+
+        // Chuyển sang List để sort + BỎ QUA ảnh không có URL (coi như đã xóa)
+        List<RestaurantImages> images = new ArrayList<>();
+        for (RestaurantImages img : imagesCol) {
+            if (img == null) continue;
+
+            String url = safe(img.getImageUrl()); // safe() trả "" nếu null
+            if (url.trim().isEmpty()) {
+                // ảnh này không còn đường dẫn => coi như đã xóa, không add vào
+                continue;
+            }
+
+            images.add(img);
+        }
+
+        if (!images.isEmpty()) {
+            // Sắp xếp theo SortOrder tăng dần (null sẽ nằm cuối)
+            images.sort((a, b) -> {
+                Integer sa = a.getSortOrder();   // giữ nguyên getter của bạn
+                Integer sb = b.getSortOrder();
+                if (sa == null && sb == null) return 0;
+                if (sa == null) return 1;
+                if (sb == null) return -1;
+                return sa.compareTo(sb);
+            });
+
+            // Tìm ảnh IsPrimary = 1 để làm banner (nếu không có thì lấy ảnh đầu tiên)
+            RestaurantImages primary = null;
+            for (RestaurantImages img : images) {
+                Boolean isPrimary = img.getIsPrimary(); // giữ nguyên getter hiện tại
+                if (isPrimary != null && isPrimary) {
+                    primary = img;
+                    break;
                 }
             }
-        } catch (Exception ignored) {}
-        if (heroImageUrl == null || heroImageUrl.isEmpty()) {
-            heroImageUrl = "/FeastLink-war/resources/images/restaurant-placeholder.jpg";
+            if (primary == null) {
+                primary = images.get(0);
+            }
+
+            // Ảnh banner
+            heroImageUrl = safe(primary.getImageUrl());
+
+            // Ảnh gallery dưới: lấy hết theo SortOrder
+            for (RestaurantImages img : images) {
+                String url = safe(img.getImageUrl());
+                if (!url.trim().isEmpty()) {
+                    galleryImages.add(url);
+                }
+            }
         }
+    }
+} catch (Exception e) {
+    // bạn có thể log ra để debug nếu muốn
+    e.printStackTrace();
+}
+
+if (heroImageUrl == null || heroImageUrl.isEmpty()) {
+    heroImageUrl = "/FeastLink-war/resources/images/restaurant-placeholder.jpg";
+}
+
 
         // ==== Rating & Reviews ====
         double sumRating = 0d;
