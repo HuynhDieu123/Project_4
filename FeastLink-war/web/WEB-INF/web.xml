@@ -5,26 +5,33 @@
          xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
                              https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd">
 
+    <!-- JSF dev mode -->
     <context-param>
         <param-name>jakarta.faces.PROJECT_STAGE</param-name>
         <param-value>Development</param-value>
     </context-param>
-    
+
+    <!-- BẮT JSF CHECK LẠI XHTML MỖI REQUEST (0 = luôn refresh) -->
     <context-param>
-    <param-name>cloudinary.cloud_name</param-name>
-    <param-value>dl5nuwgfl</param-value>
-</context-param>
+        <param-name>jakarta.faces.FACELETS_REFRESH_PERIOD</param-name>
+        <param-value>0</param-value>
+    </context-param>
 
-<context-param>
-    <param-name>cloudinary.api_key</param-name>
-    <param-value>472193174456539</param-value>
-</context-param>
+    <!-- Cloudinary config -->
+    <context-param>
+        <param-name>cloudinary.cloud_name</param-name>
+        <param-value>dl5nuwgfl</param-value>
+    </context-param>
 
-<context-param>
-    <param-name>cloudinary.api_secret</param-name>
-    <param-value>vPNOl1wvWU1NM8NPYM7NmHGriXw</param-value>
-</context-param>
+    <context-param>
+        <param-name>cloudinary.api_key</param-name>
+        <param-value>472193174456539</param-value>
+    </context-param>
 
+    <context-param>
+        <param-name>cloudinary.api_secret</param-name>
+        <param-value>vPNOl1wvWU1NM8NPYM7NmHGriXw</param-value>
+    </context-param>
 
     <servlet>
         <servlet-name>Faces Servlet</servlet-name>
@@ -36,7 +43,6 @@
         <servlet-name>Faces Servlet</servlet-name>
         <url-pattern>/faces/*</url-pattern>
     </servlet-mapping>
-    
 
     <welcome-file-list>
         <welcome-file>faces/Customer/index.xhtml</welcome-file>
