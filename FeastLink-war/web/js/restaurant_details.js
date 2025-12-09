@@ -510,65 +510,110 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ================== PHOTO LIGHTBOX ==================
-    const lightbox = qs('#lightbox');
-    const lightboxClose = qs('#lightbox-close');
-    const lightboxPrev = qs('#lightbox-prev');
-    const lightboxNext = qs('#lightbox-next');
-    const lightboxCounter = qs('#lightbox-counter');
-    const heroTrigger = qs('#hero-gallery-trigger');
-    const thumbs = qsa('.thumb');
-    const totalImages = 12;
-    let currentImageIndex = 0;
+// ================== PHOTO LIGHTBOX ==================
+const lightbox = qs('#lightbox');
+const lightboxClose = qs('#lightbox-close');
+const lightboxPrev = qs('#lightbox-prev');
+const lightboxNext = qs('#lightbox-next');
+const lightboxCounter = qs('#lightbox-counter');
+const heroTrigger = qs('#hero-gallery-trigger');
+const thumbs = qsa('.thumb');
+const lightboxImage = qs('#lightbox-image');
 
-    function updateLightboxCounter() {
-        if (!lightboxCounter)
-            return;
-        lightboxCounter.textContent = (currentImageIndex + 1) + ' / ' + totalImages;
+// Danh sách URL ảnh lấy từ DOM
+const imageSources = [];
+
+// Ảnh hero (đầu tiên)
+if (heroTrigger) {
+    const heroSrc = heroTrigger.getAttribute('data-src');
+    if (heroSrc) {
+        imageSources.push(heroSrc);
+    }
+}
+
+// Các thumbnail
+thumbs.forEach(thumb => {
+    const src = thumb.getAttribute('data-src');
+    if (src) {
+        imageSources.push(src);
+    }
+});
+
+let currentImageIndex = 0;
+
+function updateLightboxImage() {
+    if (!lightboxImage || !imageSources.length) return;
+    lightboxImage.src = imageSources[currentImageIndex];
+}
+
+function updateLightboxCounter() {
+    if (!lightboxCounter) return;
+    const total = imageSources.length || 0;
+    if (total === 0) {
+        lightboxCounter.textContent = '';
+    } else {
+        lightboxCounter.textContent = (currentImageIndex + 1) + ' / ' + total;
+    }
+}
+
+function openLightbox(index) {
+    if (!lightbox || !imageSources.length) return;
+
+    currentImageIndex = index;
+    if (currentImageIndex < 0 || currentImageIndex >= imageSources.length) {
+        currentImageIndex = 0;
     }
 
-    function openLightbox(index) {
-        if (!lightbox)
-            return;
-        currentImageIndex = index;
-        updateLightboxCounter();
-        lightbox.classList.remove('hidden');
-        lightbox.classList.add('flex');
-    }
+    updateLightboxImage();
+    updateLightboxCounter();
 
-    function closeLightbox() {
-        if (!lightbox)
-            return;
-        lightbox.classList.add('hidden');
-        lightbox.classList.remove('flex');
-    }
+    lightbox.classList.remove('hidden');
+    lightbox.classList.add('flex');
+}
 
-    if (heroTrigger) {
-        heroTrigger.addEventListener('click', () => openLightbox(0));
-    }
+function closeLightbox() {
+    if (!lightbox) return;
+    lightbox.classList.add('hidden');
+    lightbox.classList.remove('flex');
+}
 
-    thumbs.forEach(thumb => {
-        thumb.addEventListener('click', () => {
-            const idx = parseInt(thumb.getAttribute('data-index') || '0', 10);
-            openLightbox(idx);
-        });
+// Click hero -> mở ảnh đầu tiên
+if (heroTrigger) {
+    heroTrigger.addEventListener('click', () => openLightbox(0));
+}
+
+// Click thumbnail -> mở đúng index (hero là index 0, thumb bắt đầu từ 1)
+thumbs.forEach((thumb, idx) => {
+    thumb.addEventListener('click', () => {
+        // hero = 0, nên thumb đầu tiên = 1
+        openLightbox(idx + 1);
     });
+});
 
-    if (lightboxClose) {
-        lightboxClose.addEventListener('click', closeLightbox);
-    }
-    if (lightboxPrev) {
-        lightboxPrev.addEventListener('click', () => {
-            currentImageIndex = (currentImageIndex - 1 + totalImages) % totalImages;
-            updateLightboxCounter();
-        });
-    }
-    if (lightboxNext) {
-        lightboxNext.addEventListener('click', () => {
-            currentImageIndex = (currentImageIndex + 1) % totalImages;
-            updateLightboxCounter();
-        });
-    }
+// Nút close
+if (lightboxClose) {
+    lightboxClose.addEventListener('click', closeLightbox);
+}
+
+// Prev / Next
+if (lightboxPrev) {
+    lightboxPrev.addEventListener('click', () => {
+        if (!imageSources.length) return;
+        currentImageIndex = (currentImageIndex - 1 + imageSources.length) % imageSources.length;
+        updateLightboxImage();
+        updateLightboxCounter();
+    });
+}
+
+if (lightboxNext) {
+    lightboxNext.addEventListener('click', () => {
+        if (!imageSources.length) return;
+        currentImageIndex = (currentImageIndex + 1) % imageSources.length;
+        updateLightboxImage();
+        updateLightboxCounter();
+    });
+}
+
 
     // ================== FLOATING ACTIONS ==================
     const scrollTopBtn = qs('#scroll-top-btn');
