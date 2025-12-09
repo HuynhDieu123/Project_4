@@ -745,36 +745,37 @@
                                     </div>
 
                                     <!-- Floating drawer: Selected dishes -->
-<div id="selected-menu-drawer"
-     class="hidden lg:flex flex-col fixed
-            top-32
-            right-16
-            w-[520px]
-            rounded-2xl border border-[#FACC6B]/70
-            bg-[#020617]/95 shadow-[0_24px_60px_rgba(15,23,42,0.8)] backdrop-blur
-            px-3 py-3 text-xs text-white">
+                                    <div id="selected-menu-drawer"
+                                         class="hidden lg:flex flex-col fixed
+                                         top-32
+                                         right-16
+                                         w-[520px]
+                                         rounded-2xl border border-[#FACC6B]/70
+                                         bg-[#020617]/95 shadow-[0_24px_60px_rgba(15,23,42,0.8)] backdrop-blur
+                                         px-3 py-3 text-xs text-white"
+                                         style="display: none;">
 
-    <div class="flex items-center justify-between mb-2">
-        <p class="text-[11px] font-semibold tracking-wide uppercase text-[#FACC6B]">
-            Selected dishes
-        </p>
-        <button type="button"
-                id="selected-menu-drawer-close"
-                class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/20
-                       text-[10px] hover:bg-white/10">
-            ✕
-        </button>
-    </div>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <p class="text-[11px] font-semibold tracking-wide uppercase text-[#FACC6B]">
+                                                Selected dishes
+                                            </p>
+                                            <button type="button"
+                                                    id="selected-menu-drawer-close"
+                                                    class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/20
+                                                    text-[10px] hover:bg-white/10">
+                                                ✕
+                                            </button>
+                                        </div>
 
-    <div id="selected-menu-list"
-         class="max-h-56 space-y-1.5 overflow-y-auto pr-1">
-        <!-- Filled by JS -->
-    </div>
+                                        <div id="selected-menu-list"
+                                             class="max-h-56 space-y-1.5 overflow-y-auto pr-1">
+                                            <!-- Filled by JS -->
+                                        </div>
 
-    <p class="mt-2 text-[10px] text-[#E5E7EB]/80">
-        Tap any dish to jump back to its position in the menu.
-    </p>
-</div>
+                                        <p class="mt-2 text-[10px] text-[#E5E7EB]/80">
+                                            Tap any dish to jump back to its position in the menu.
+                                        </p>
+                                    </div>
 
                                 </div>
                             </h:panelGroup>

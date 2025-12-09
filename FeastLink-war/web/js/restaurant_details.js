@@ -20,7 +20,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // ================== A-LA-CARTE MENU STATE ==================
     const selectedMenuItemIds = new Set();
     let selectedMenuTotalPerPerson = 0;
-    let selectedDrawerVisible = true;
+
+// panel Selected dishes cho desktop
+    let selectedDrawerVisible = false;          // ban đầu: ẩn
+    let hasAutoOpenedSelectedDrawer = false;    // đã auto mở lần đầu chưa
+
 
     function updateMenuSummary() {
         const count = selectedMenuItemIds.size;
@@ -80,13 +84,24 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // Không có món nào thì ẩn drawer & clear list
+        // Không có món nào -> ẩn panel & reset auto open
         if (count === 0) {
+            selectedDrawerVisible = false;
+            hasAutoOpenedSelectedDrawer = false;
+
             drawer.style.display = 'none';
+            drawer.classList.add('hidden');
             listEl.innerHTML = '';
             return;
         }
 
+        // Có món lần đầu tiên -> tự mở panel
+        if (!hasAutoOpenedSelectedDrawer) {
+            selectedDrawerVisible = true;
+            hasAutoOpenedSelectedDrawer = true;
+        }
+
+        // Build list items
         let html = '';
         selectedMenuItemIds.forEach((id) => {
             const card = menuRoot.querySelector('[data-menu-card="' + id + '"]');
@@ -120,13 +135,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         listEl.innerHTML = html;
 
-        // Hiện / ẩn theo biến selectedDrawerVisible
+        // Hiện / ẩn panel theo state
         if (selectedDrawerVisible) {
-            drawer.style.display = '';      // dùng display mặc định (flex từ class tailwind)
+            drawer.classList.remove('hidden');
+            drawer.style.display = '';   // dùng display mặc định (flex)
         } else {
             drawer.style.display = 'none';
+            drawer.classList.add('hidden');
         }
     }
+
 
 
 
@@ -989,30 +1007,33 @@ if (lightboxNext) {
     if (menuRoot) {
         const categoryBlocks = qsa('[data-menu-category]', menuRoot);
         // Drawer: handle close & jump to dish
+        // Drawer: handle close & jump to dish
         const selectedDrawer = document.getElementById('selected-menu-drawer');
         const toggleDrawerBtn = document.getElementById('selected-menu-toggle');
         const closeDrawerBtns = qsa('#selected-menu-drawer-close');
 
-        // Toggle show / hide drawer (nếu có nút toggle)
+// Toggle show / hide drawer (nếu có nút toggle)
         if (toggleDrawerBtn && selectedDrawer) {
             toggleDrawerBtn.addEventListener('click', () => {
-                selectedDrawerVisible = !selectedDrawerVisible;
+                // chỉ cho bật/tắt khi đã có món
+                if (selectedMenuItemIds.size === 0)
+                    return;
 
-                if (selectedMenuItemIds.size > 0) {
-                    selectedDrawer.style.display = selectedDrawerVisible ? '' : 'none';
-                }
+                selectedDrawerVisible = !selectedDrawerVisible;
+                renderSelectedDrawer();
             });
         }
 
-        // Close button (X) trong drawer
+// Close button (X) trong drawer
         if (closeDrawerBtns.length && selectedDrawer) {
             closeDrawerBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
                     selectedDrawerVisible = false;
-                    selectedDrawer.style.display = 'none';
+                    renderSelectedDrawer();
                 });
             });
         }
+
 
 
 
