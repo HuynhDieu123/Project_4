@@ -3,14 +3,18 @@ package com.restaurant.bean;
 import com.mypack.entity.MenuCategories;
 import com.mypack.entity.MenuCombos;
 import com.mypack.entity.MenuItems;
+import com.mypack.entity.Restaurants;
+import com.mypack.entity.Users;
 import com.mypack.sessionbean.MenuCategoriesFacadeLocal;
 import com.mypack.sessionbean.MenuCombosFacadeLocal;
 import com.mypack.sessionbean.MenuItemsFacadeLocal;
+import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,10 +35,37 @@ public class MenuPackagesBean implements Serializable {
     @EJB
     private MenuCombosFacadeLocal menuCombosFacade;
 
+    @EJB
+    private RestaurantsFacadeLocal restaurantsFacade;
+
     private List<MenuItems> items;
     private List<MenuCategories> categories;
     private List<MenuCombos> packages;   // danh sách combo thực tế
 
+    // ================== HELPER: LẤY NHÀ HÀNG HIỆN TẠI ==================
+    private Restaurants resolveCurrentRestaurant() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx == null) return null;
+
+        Map<String, Object> session = ctx.getExternalContext().getSessionMap();
+        Users currentUser = (Users) session.get("currentUser");
+        if (currentUser == null || currentUser.getEmail() == null) {
+            return null;
+        }
+        String email = currentUser.getEmail();
+
+        // Tạm: map Users.Email == Restaurants.Email
+        List<Restaurants> all = restaurantsFacade.findAll();
+        for (Restaurants r : all) {
+            if (r.getEmail() != null &&
+                r.getEmail().equalsIgnoreCase(email)) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    // ================== INIT ==================
     @PostConstruct
     public void init() {
         // Lấy tab từ query (?tab=items/packages/categories)
@@ -56,12 +87,28 @@ public class MenuPackagesBean implements Serializable {
         refreshPackages();
     }
 
-    // ===== LOAD ITEMS (bỏ IsDeleted = true) =====
+    // ===== LOAD ITEMS (theo nhà hàng hiện tại, bỏ IsDeleted = true) =====
     private void refreshItems() {
-        List<MenuItems> all = menuItemsFacade.findAll();
         items = new ArrayList<>();
+
+        Restaurants currentRestaurant = resolveCurrentRestaurant();
+        if (currentRestaurant == null) {
+            return;   // không tìm được restaurant thì cho list rỗng
+        }
+
+        List<MenuItems> all = menuItemsFacade.findAll();
         if (all != null) {
+            Long currentRestaurantId = currentRestaurant.getRestaurantId();
             for (MenuItems m : all) {
+                if (m == null) continue;
+
+                // lọc theo restaurant
+                if (m.getRestaurantId() == null ||
+                    m.getRestaurantId().getRestaurantId() == null ||
+                    !m.getRestaurantId().getRestaurantId().equals(currentRestaurantId)) {
+                    continue;
+                }
+
                 Boolean deleted = m.getIsDeleted();
                 if (deleted == null || !deleted) {
                     items.add(m);
@@ -70,12 +117,27 @@ public class MenuPackagesBean implements Serializable {
         }
     }
 
-    // ===== LOAD CATEGORIES (IsActive = true) =====
+    // ===== LOAD CATEGORIES (theo nhà hàng hiện tại, IsActive = true) =====
     private void refreshCategories() {
-        List<MenuCategories> all = menuCategoriesFacade.findAll();
         categories = new ArrayList<>();
+
+        Restaurants currentRestaurant = resolveCurrentRestaurant();
+        if (currentRestaurant == null) {
+            return;
+        }
+
+        List<MenuCategories> all = menuCategoriesFacade.findAll();
         if (all != null) {
+            Long currentRestaurantId = currentRestaurant.getRestaurantId();
             for (MenuCategories c : all) {
+                if (c == null) continue;
+
+                if (c.getRestaurantId() == null ||
+                    c.getRestaurantId().getRestaurantId() == null ||
+                    !c.getRestaurantId().getRestaurantId().equals(currentRestaurantId)) {
+                    continue;
+                }
+
                 Boolean active = c.getIsActive();
                 if (active == null || active) {
                     categories.add(c);
@@ -84,12 +146,27 @@ public class MenuPackagesBean implements Serializable {
         }
     }
 
-    // ===== LOAD PACKAGES/COMBOS (IsDeleted = false) =====
+    // ===== LOAD PACKAGES/COMBOS (theo nhà hàng hiện tại, IsDeleted = false) =====
     private void refreshPackages() {
-        List<MenuCombos> all = menuCombosFacade.findAll();
         packages = new ArrayList<>();
+
+        Restaurants currentRestaurant = resolveCurrentRestaurant();
+        if (currentRestaurant == null) {
+            return;
+        }
+
+        List<MenuCombos> all = menuCombosFacade.findAll();
         if (all != null) {
+            Long currentRestaurantId = currentRestaurant.getRestaurantId();
             for (MenuCombos combo : all) {
+                if (combo == null) continue;
+
+                if (combo.getRestaurantId() == null ||
+                    combo.getRestaurantId().getRestaurantId() == null ||
+                    !combo.getRestaurantId().getRestaurantId().equals(currentRestaurantId)) {
+                    continue;
+                }
+
                 Boolean deleted = combo.getIsDeleted();
                 if (deleted == null || !deleted) {
                     packages.add(combo);
