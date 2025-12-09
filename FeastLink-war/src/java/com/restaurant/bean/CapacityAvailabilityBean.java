@@ -3,6 +3,7 @@ package com.restaurant.bean;
 import com.mypack.entity.RestaurantCapacitySettings;
 import com.mypack.entity.RestaurantDayCapacity;
 import com.mypack.entity.Restaurants;
+import com.mypack.entity.Users;
 import com.mypack.sessionbean.RestaurantCapacitySettingsFacadeLocal;
 import com.mypack.sessionbean.RestaurantDayCapacityFacadeLocal;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
@@ -54,16 +55,41 @@ public class CapacityAvailabilityBean implements Serializable {
 
     // selected day + input
     private LocalDate selectedDate;
-    private String selectedStatus;       // label hiển thị
-    private Integer inputGuestCount;     // CurrentGuestCount
-    private Integer inputBookingCount;   // CurrentBookingCount
+    private String selectedStatus;
+    private Integer inputGuestCount;
+    private Integer inputBookingCount;
+
+    // Helper: lấy nhà hàng theo user login
+    private Restaurants resolveCurrentRestaurant() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx == null) return null;
+
+        Map<String, Object> session = ctx.getExternalContext().getSessionMap();
+        Users currentUser = (Users) session.get("currentUser");
+        if (currentUser == null || currentUser.getEmail() == null) {
+            return null;
+        }
+        String email = currentUser.getEmail();
+
+        List<Restaurants> all = restaurantsFacade.findAll();
+        for (Restaurants r : all) {
+            if (r.getEmail() != null &&
+                r.getEmail().equalsIgnoreCase(email)) {
+                return r;
+            }
+        }
+        return null;
+    }
 
     // ========= INIT =========
     @PostConstruct
     public void init() {
         try {
-            // TODO: sau này lấy RestaurantId từ session
-            currentRestaurant = restaurantsFacade.find(1L);
+            currentRestaurant = resolveCurrentRestaurant();
+            if (currentRestaurant == null) {
+                // Không có nhà hàng tương ứng user -> không làm gì
+                return;
+            }
 
             currentMonth = YearMonth.now();
             inputGuestCount = 0;
@@ -84,7 +110,6 @@ public class CapacityAvailabilityBean implements Serializable {
         currentSettings = capacitySettingsFacade.findByRestaurant(currentRestaurant);
 
         if (currentSettings != null) {
-            // dùng đúng getter trong entity
             defaultMaxGuestsPerDay = Optional.ofNullable(currentSettings.getMaxGuestsPerSlot())
                                              .orElse(150);
             defaultMaxBookingsPerDay = Optional.ofNullable(currentSettings.getMaxBookingsPerDay())
@@ -127,7 +152,7 @@ public class CapacityAvailabilityBean implements Serializable {
         int shift = firstOfMonth.getDayOfWeek().getValue() % 7; // Sun=0
         LocalDate start = firstOfMonth.minusDays(shift);
 
-        for (int i = 0; i < 42; i++) { // 6 tuần
+        for (int i = 0; i < 42; i++) {
             LocalDate date = start.plusDays(i);
             boolean inMonth = date.getMonthValue() == currentMonth.getMonthValue();
             StatusType status = dayStatusMap.getOrDefault(date, StatusType.NONE);
@@ -177,8 +202,6 @@ public class CapacityAvailabilityBean implements Serializable {
     // ----------------------------------------------------
     // ACTIONS (right panel)
     // ----------------------------------------------------
-
-    // Lưu limit mặc định vào bảng RestaurantCapacitySettings
     public void saveLimits() {
         try {
             if (currentSettings == null) {
@@ -203,10 +226,8 @@ public class CapacityAvailabilityBean implements Serializable {
         }
     }
 
-    // Lưu currentGuestCount + currentBookingCount cho ngày được chọn
-    // và tự tính trạng thái dựa trên % sử dụng
     public void applyStatusToSelectedDay() {
-        if (selectedDate == null) {
+        if (currentRestaurant == null || selectedDate == null) {
             return;
         }
 
@@ -216,7 +237,6 @@ public class CapacityAvailabilityBean implements Serializable {
         FacesContext ctx = FacesContext.getCurrentInstance();
         boolean hasError = false;
 
-        // validate: không vượt quá limit
         if (defaultMaxGuestsPerDay > 0 && inputGuestCount > defaultMaxGuestsPerDay) {
             ctx.addMessage("dayStatusForm:guestCount",
                     new FacesMessage(FacesMessage.SEVERITY_ERROR,
@@ -270,9 +290,9 @@ public class CapacityAvailabilityBean implements Serializable {
         buildCalendar();
     }
 
-    // Block nhiều ngày liên tục
     public void blockDates() {
         try {
+            if (currentRestaurant == null) return;
             if (blockStartDate == null || blockStartDate.isBlank()
                     || blockEndDate == null || blockEndDate.isBlank()) {
                 return;
@@ -336,7 +356,6 @@ public class CapacityAvailabilityBean implements Serializable {
         Integer maxGuests   = d.getMaxGuests();
         Integer maxBookings = d.getMaxBookings();
 
-        // BLOCKED: MaxGuests = 0 & MaxBookings = 0
         if (maxGuests != null && maxBookings != null
                 && maxGuests == 0 && maxBookings == 0) {
             return StatusType.BLOCKED;
@@ -350,7 +369,6 @@ public class CapacityAvailabilityBean implements Serializable {
         );
     }
 
-    // 0% -> AVAILABLE, 50%–<100% -> NEAR_FULL, 100% -> FULL
     private StatusType computeStatus(int guestCount, int bookingCount,
                                      Integer maxGuests, Integer maxBookings) {
         if (maxGuests == null || maxGuests <= 0) {

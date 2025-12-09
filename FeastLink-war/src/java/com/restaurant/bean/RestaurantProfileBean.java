@@ -3,11 +3,13 @@ package com.restaurant.bean;
 import com.mypack.entity.Areas;
 import com.mypack.entity.Cities;
 import com.mypack.entity.Restaurants;
+import com.mypack.entity.Users;
 import com.mypack.sessionbean.AreasFacadeLocal;
 import com.mypack.sessionbean.CitiesFacadeLocal;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
+import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 
@@ -15,6 +17,7 @@ import java.io.Serializable;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Named("restaurantProfileBean")
 @ViewScoped
@@ -41,10 +44,7 @@ public class RestaurantProfileBean implements Serializable {
     private String openTimeText;   // ví dụ "08:00"
     private String closeTimeText;  // ví dụ "22:00"
 
-    // Booking policy: LƯU THẬT vào DB
-    // MinGuests  -> cột MinGuestCount
-    // MinDays... -> cột MinDaysInAdvance
-    // cancelPolicy: vẫn demo, chưa có cột DB
+    // Booking policy
     private Integer minGuests;
     private Integer minDaysBeforeBooking;
     private String cancelPolicy;
@@ -75,13 +75,38 @@ public class RestaurantProfileBean implements Serializable {
     private Integer selectedAreaId;
 
     // ==========================================================
+    // HELPER: LẤY NHÀ HÀNG TỪ USER LOGIN
+    // ==========================================================
+    private Restaurants resolveCurrentRestaurant() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx == null) return null;
+
+        Map<String, Object> session = ctx.getExternalContext().getSessionMap();
+        Users currentUser = (Users) session.get("currentUser");
+        if (currentUser == null || currentUser.getEmail() == null) {
+            return null;
+        }
+
+        String email = currentUser.getEmail();
+
+        // Không cần thêm method mới trong facade, chỉ lọc từ findAll()
+        List<Restaurants> all = restaurantsFacade.findAll();
+        for (Restaurants r : all) {
+            if (r.getEmail() != null &&
+                r.getEmail().equalsIgnoreCase(email)) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    // ==========================================================
     // INIT
     // ==========================================================
     @PostConstruct
     public void init() {
-        // 1. Lấy restaurant hiện tại (tạm thời fix cứng id = 1)
-        //    Sau này bạn thay bằng restaurantId từ session login.
-        restaurant = restaurantsFacade.find(1L);
+        // 1. Lấy restaurant theo user đang login
+        restaurant = resolveCurrentRestaurant();
 
         if (restaurant != null) {
             name          = restaurant.getName();
@@ -95,8 +120,7 @@ public class RestaurantProfileBean implements Serializable {
 
             // ====== GIỜ MỞ / ĐÓNG ======
             if (restaurant.getOpenTime() != null) {
-                // "08:00:00" -> "08:00"
-                String t = restaurant.getOpenTime().toString();
+                String t = restaurant.getOpenTime().toString(); // "08:00:00"
                 openTimeText = t.length() >= 5 ? t.substring(0, 5) : t;
             } else {
                 openTimeText = "08:00";
@@ -110,20 +134,17 @@ public class RestaurantProfileBean implements Serializable {
             }
 
             // ====== BOOKING POLICY (LẤY TỪ DB) ======
-            // MinGuests
             if (restaurant.getMinGuestCount() != null) {
                 minGuests = restaurant.getMinGuestCount();
             } else {
-                minGuests = 20; // default nếu DB null
+                minGuests = 20;
             }
 
-            // MinDaysInAdvance
             if (restaurant.getMinDaysInAdvance() != null) {
                 minDaysBeforeBooking = restaurant.getMinDaysInAdvance();
             } else {
-                minDaysBeforeBooking = 7; // default nếu DB null
+                minDaysBeforeBooking = 7;
             }
-
 
             // Nếu nhà hàng đã có AreaId => set city/area đã chọn
             Areas currentArea = restaurant.getAreaId();
@@ -134,33 +155,29 @@ public class RestaurantProfileBean implements Serializable {
                 }
             }
         } else {
-            // Trường hợp chưa có restaurant trong DB (hiếm gặp)
+            // Trường hợp chưa có restaurant trong DB cho user này
             restaurant = new Restaurants();
             status = "PENDING";
             openTimeText = "08:00";
             closeTimeText = "22:00";
 
-            // Default booking policy cho nhà hàng mới
             minGuests = 20;
             minDaysBeforeBooking = 7;
             cancelPolicy = "Full refund if cancelled 14 days before the event. "
                     + "50% refund between 7–13 days. No refund within 7 days.";
         }
 
-        // 3. Lấy dữ liệu dùng chung
+        // 3. Lấy dữ liệu dùng chung (city/area)
         allCities = citiesFacade.findAll();
         allAreas  = areasFacade.findAll();
 
         filteredAreas = new ArrayList<>();
-        // nếu đã biết city từ DB thì lọc luôn
         updateFilteredAreas();
     }
 
     // ==========================================================
     // LOGIC SERVICE AREAS
     // ==========================================================
-
-    /** Cập nhật danh sách quận/huyện khi chọn city */
     private void updateFilteredAreas() {
         filteredAreas = new ArrayList<>();
 
@@ -177,7 +194,6 @@ public class RestaurantProfileBean implements Serializable {
             }
         }
 
-        // Nếu area hiện tại không thuộc city mới nữa thì reset.
         if (selectedAreaId != null) {
             boolean stillValid = false;
             for (Areas a : filteredAreas) {
@@ -195,14 +211,11 @@ public class RestaurantProfileBean implements Serializable {
     // ==========================================================
     // STATUS: PUBLIC / PRIVATE
     // ==========================================================
-
-    /** Toggle giữa ACTIVE (Public) và PRIVATE, không cho đổi khi PENDING. */
     public void toggleVisibility() {
         if (status == null || status.isBlank()) {
             status = "ACTIVE";
         }
 
-        // Nếu đang pending duyệt thì không cho tự đổi
         if ("PENDING".equalsIgnoreCase(status)) {
             return;
         }
@@ -212,7 +225,6 @@ public class RestaurantProfileBean implements Serializable {
         } else if ("PRIVATE".equalsIgnoreCase(status)) {
             status = "ACTIVE";
         } else {
-            // các giá trị khác treat như ACTIVE
             status = "ACTIVE";
         }
 
@@ -220,7 +232,6 @@ public class RestaurantProfileBean implements Serializable {
         restaurantsFacade.edit(restaurant);
     }
 
-    /** Dùng trong EL: restaurantProfileBean.publicVisible */
     public boolean isPublicVisible() {
         return "ACTIVE".equalsIgnoreCase(status);
     }
@@ -228,28 +239,22 @@ public class RestaurantProfileBean implements Serializable {
     // ==========================================================
     // SAVE PROFILE
     // ==========================================================
-
-    /** Parse string HH:mm (hoặc HH:mm:ss) sang java.sql.Time */
     private Time parseTime(String text) {
         if (text == null || text.isBlank()) {
             return null;
         }
         String s = text.trim();
-        // nếu chỉ có HH:mm thì thêm :00
         if (s.length() == 5) {
             s = s + ":00";
         }
         try {
             return Time.valueOf(s);
         } catch (IllegalArgumentException ex) {
-            // nếu sai format thì trả null, bạn có thể log hoặc validate thêm
             return null;
         }
     }
 
-    /** Lưu profile: cập nhật lại entity Restaurants và ghi xuống DB */
     public String saveProfile() {
-        // Map dữ liệu từ form sang entity
         restaurant.setName(name);
         restaurant.setDescription(description);
         restaurant.setPhone(phone);
@@ -257,20 +262,15 @@ public class RestaurantProfileBean implements Serializable {
         restaurant.setAddress(address);
         restaurant.setContactPerson(contactPerson);
 
-        // Lưu status về DB (giữ nguyên nếu đang PENDING / ACTIVE / PRIVATE)
         restaurant.setStatus(status);
 
-        // ====== LƯU GIỜ MỞ / ĐÓNG ======
         restaurant.setOpenTime(parseTime(openTimeText));
         restaurant.setCloseTime(parseTime(closeTimeText));
 
-        // ====== LƯU BOOKING POLICY xuống DB ======
-        // map vào các cột MinGuestCount & MinDaysInAdvance
         restaurant.setMinGuestCount(minGuests);
         restaurant.setMinDaysInAdvance(minDaysBeforeBooking);
-        // cancelPolicy hiện chưa có cột => chưa lưu
 
-        // Gán AreaId cho restaurant nếu có chọn
+        // ==== LƯU AREA ====
         if (selectedAreaId != null) {
             Areas area = areasFacade.find(selectedAreaId);
             restaurant.setAreaId(area);
@@ -278,21 +278,18 @@ public class RestaurantProfileBean implements Serializable {
             restaurant.setAreaId(null);
         }
 
-        // Nếu đã có id -> edit, chưa có -> create
         if (restaurant.getRestaurantId() == null) {
             restaurantsFacade.create(restaurant);
         } else {
             restaurantsFacade.edit(restaurant);
         }
 
-        // Ở lại trang
         return null;
     }
 
     // ==========================================================
     // GETTERS / SETTERS
     // ==========================================================
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -331,7 +328,6 @@ public class RestaurantProfileBean implements Serializable {
     public String getCloseTimeText() { return closeTimeText; }
     public void setCloseTimeText(String closeTimeText) { this.closeTimeText = closeTimeText; }
 
-    // ---- City / Area master data ----
     public List<Cities> getAllCities() {
         if (allCities == null) {
             allCities = citiesFacade.findAll();
@@ -348,7 +344,7 @@ public class RestaurantProfileBean implements Serializable {
     }
     public void setSelectedCityId(Integer selectedCityId) {
         this.selectedCityId = selectedCityId;
-        updateFilteredAreas();   // mỗi lần đổi city thì lọc lại area
+        updateFilteredAreas();
     }
 
     public Integer getSelectedAreaId() {

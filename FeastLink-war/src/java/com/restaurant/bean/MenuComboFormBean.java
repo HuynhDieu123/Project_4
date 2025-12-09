@@ -7,6 +7,7 @@ import com.mypack.entity.MenuItems;
 import com.mypack.entity.MenuCategories;
 import com.mypack.entity.Cuisines;
 import com.mypack.entity.Restaurants;
+import com.mypack.entity.Users;
 import com.mypack.sessionbean.ComboItemsFacadeLocal;
 import com.mypack.sessionbean.MenuCombosFacadeLocal;
 import com.mypack.sessionbean.MenuItemsFacadeLocal;
@@ -16,13 +17,9 @@ import jakarta.ejb.EJB;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
+
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Named("menuComboFormBean")
 @ViewScoped
@@ -58,9 +55,35 @@ public class MenuComboFormBean implements Serializable {
     // map dùng cho checkbox: itemId -> checked?
     private Map<Long, Boolean> itemSelection = new HashMap<>();
 
+    // ===== Helper: lấy nhà hàng theo user login =====
+    private Restaurants resolveCurrentRestaurant() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx == null) return null;
+
+        Map<String, Object> session = ctx.getExternalContext().getSessionMap();
+        Users currentUser = (Users) session.get("currentUser");
+        if (currentUser == null || currentUser.getEmail() == null) {
+            return null;
+        }
+        String email = currentUser.getEmail();
+
+        // Tạm thời map qua email: Users.Email == Restaurants.Email
+        List<Restaurants> all = restaurantsFacade.findAll();
+        for (Restaurants r : all) {
+            if (r.getEmail() != null &&
+                r.getEmail().equalsIgnoreCase(email)) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    // ======================================================
+    // INIT
+    // ======================================================
     @PostConstruct
     public void init() {
-        // load tất cả món chưa bị xóa
+        // load tất cả món chưa bị xóa của nhà hàng hiện tại
         loadAvailableItems();
 
         FacesContext fc = FacesContext.getCurrentInstance();
@@ -82,14 +105,14 @@ public class MenuComboFormBean implements Serializable {
             combo.setStatus("ACTIVE");
             combo.setIsDeleted(false);
 
-            // TODO: sau này lấy restaurant từ account đăng nhập
-            Restaurants r = restaurantsFacade.find(1L);
+            // gán restaurant theo user login
+            Restaurants r = resolveCurrentRestaurant();
             combo.setRestaurantId(r);
 
             selectedItemIds = new ArrayList<>();
         }
 
-        // sync selectedItemIds -> itemSelection (để khi edit checkbox tự tick)
+        // sync selectedItemIds -> itemSelection
         if (selectedItemIds != null) {
             for (Long id : selectedItemIds) {
                 itemSelection.put(id, Boolean.TRUE);
@@ -98,13 +121,26 @@ public class MenuComboFormBean implements Serializable {
     }
 
     /**
-     * Lấy toàn bộ món ăn chưa bị xóa để hiển thị trong "Included dishes".
+     * Lấy toàn bộ món ăn (chưa xóa) của nhà hàng hiện tại
+     * để hiển thị trong "Included dishes".
      */
     private void loadAvailableItems() {
         availableItems = new ArrayList<>();
+        Restaurants currentRestaurant = resolveCurrentRestaurant();
         List<MenuItems> all = menuItemsFacade.findAll();
+
         if (all != null) {
             for (MenuItems m : all) {
+                if (m == null) continue;
+
+                // lọc theo nhà hàng hiện tại
+                if (currentRestaurant != null &&
+                    m.getRestaurantId() != null &&
+                    !m.getRestaurantId().getRestaurantId()
+                            .equals(currentRestaurant.getRestaurantId())) {
+                    continue;
+                }
+
                 Boolean deleted = m.getIsDeleted();
                 if (deleted == null || !deleted) {
                     availableItems.add(m);
@@ -122,7 +158,6 @@ public class MenuComboFormBean implements Serializable {
         if (all != null && comboId != null) {
             for (ComboItems ci : all) {
                 ComboItemsPK pk = ci.getComboItemsPK();
-                // pk.getComboId() là primitive long, so sánh bằng ==
                 if (pk != null && pk.getComboId() == comboId) {
                     selectedItemIds.add(pk.getMenuItemId());
                 }
@@ -131,11 +166,6 @@ public class MenuComboFormBean implements Serializable {
     }
 
     // ================== FILTERED LIST ==================
-
-    /**
-     * Danh sách món sau khi áp dụng search + filters.
-     * Được dùng trong <ui:repeat value="#{menuComboFormBean.filteredItems}">
-     */
     public List<MenuItems> getFilteredItems() {
         List<MenuItems> result = new ArrayList<>();
         if (availableItems == null) {
@@ -188,9 +218,6 @@ public class MenuComboFormBean implements Serializable {
         return result;
     }
 
-    /**
-     * Danh sách cuisine duy nhất, build từ availableItems
-     */
     public List<Cuisines> getCuisineFilters() {
         List<Cuisines> list = new ArrayList<>();
         Set<Object> seen = new HashSet<>();
@@ -210,9 +237,6 @@ public class MenuComboFormBean implements Serializable {
         return list;
     }
 
-    /**
-     * Danh sách category duy nhất, build từ availableItems
-     */
     public List<MenuCategories> getCategoryFilters() {
         List<MenuCategories> list = new ArrayList<>();
         Set<Object> seen = new HashSet<>();
@@ -233,7 +257,6 @@ public class MenuComboFormBean implements Serializable {
     }
 
     // ================== SAVE / CANCEL ==================
-
     public String save() {
         // gom checkbox -> selectedItemIds
         selectedItemIds = new ArrayList<>();
@@ -284,7 +307,6 @@ public class MenuComboFormBean implements Serializable {
     }
 
     // ================== GET / SET ==================
-
     public MenuCombos getCombo() {
         return combo;
     }

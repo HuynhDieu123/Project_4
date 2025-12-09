@@ -4,6 +4,7 @@ import com.mypack.entity.Cuisines;
 import com.mypack.entity.MenuCategories;
 import com.mypack.entity.MenuItems;
 import com.mypack.entity.Restaurants;
+import com.mypack.entity.Users;
 import com.mypack.sessionbean.CuisinesFacadeLocal;
 import com.mypack.sessionbean.MenuCategoriesFacadeLocal;
 import com.mypack.sessionbean.MenuItemsFacadeLocal;
@@ -51,6 +52,32 @@ public class MenuItemFormBean implements Serializable {
     public MenuItemFormBean() {
     }
 
+    // ===== Helper: lấy restaurant theo user đang login =====
+    private Restaurants resolveCurrentRestaurant() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx == null) return null;
+
+        Map<String, Object> session = ctx.getExternalContext().getSessionMap();
+        Users currentUser = (Users) session.get("currentUser");
+        if (currentUser == null || currentUser.getEmail() == null) {
+            return null;
+        }
+        String email = currentUser.getEmail();
+
+        // Tạm thời map qua email: Users.Email == Restaurants.Email
+        List<Restaurants> all = restaurantsFacade.findAll();
+        for (Restaurants r : all) {
+            if (r.getEmail() != null &&
+                r.getEmail().equalsIgnoreCase(email)) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    // ======================================================
+    // INIT
+    // ======================================================
     @PostConstruct
     public void init() {
         // load list cho dropdown
@@ -68,13 +95,12 @@ public class MenuItemFormBean implements Serializable {
             newItem = menuItemsFacade.find(id);
             editMode = true;
 
-            // set sẵn value cho dropdown cuisine & category
             if (newItem != null) {
                 if (newItem.getCuisineId() != null) {
-                    cuisineId = newItem.getCuisineId().getCuisineId();    // Integer
+                    cuisineId = newItem.getCuisineId().getCuisineId();
                 }
                 if (newItem.getCategoryId() != null) {
-                    categoryId = newItem.getCategoryId().getCategoryId(); // Long
+                    categoryId = newItem.getCategoryId().getCategoryId();
                 }
             }
         } else {
@@ -85,12 +111,15 @@ public class MenuItemFormBean implements Serializable {
             newItem.setStatus("ACTIVE");
             newItem.setIsDeleted(false);
 
-            // TODO: sau này lấy từ tài khoản đăng nhập
-            Restaurants r = restaurantsFacade.find(1L);
+            // Gán nhà hàng theo user đang login
+            Restaurants r = resolveCurrentRestaurant();
             newItem.setRestaurantId(r);
         }
     }
 
+    // ======================================================
+    // SAVE / CANCEL
+    // ======================================================
     public String save() {
         // gán Cuisine từ id
         if (cuisineId != null) {
@@ -122,7 +151,6 @@ public class MenuItemFormBean implements Serializable {
     }
 
     // ========== GET / SET ==========
-
     public MenuItems getNewItem() {
         return newItem;
     }
