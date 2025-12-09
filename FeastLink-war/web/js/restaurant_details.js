@@ -17,7 +17,128 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const isLoggedIn = !!(window.FEASTLINK && window.FEASTLINK.isLoggedIn);
 
+    // ================== A-LA-CARTE MENU STATE ==================
+    const selectedMenuItemIds = new Set();
+    let selectedMenuTotalPerPerson = 0;
+    let selectedDrawerVisible = true;
+
+    function updateMenuSummary() {
+        const count = selectedMenuItemIds.size;
+        const total = selectedMenuTotalPerPerson;
+
+        const countDesktop = document.getElementById('menu-selected-count');
+        const countMobile = document.getElementById('menu-selected-count-mobile');
+        const totalDesktop = document.getElementById('menu-selected-total');
+        const totalMobile = document.getElementById('menu-selected-total-mobile');
+
+        if (countDesktop)
+            countDesktop.textContent = count;
+        if (countMobile)
+            countMobile.textContent = count;
+
+        if (totalDesktop)
+            totalDesktop.textContent = total.toFixed(2);
+        if (totalMobile)
+            totalMobile.textContent = total.toFixed(2);
+
+        const boxDesktop = document.getElementById('menu-selected-summary');
+        const boxMobile = document.getElementById('menu-selected-summary-mobile');
+
+        [boxDesktop, boxMobile].forEach(box => {
+            if (!box)
+                return;
+            if (count > 0) {
+                box.classList.remove('hidden');
+            } else if (box.id === 'menu-selected-summary') {
+                box.classList.add('hidden');
+            }
+        });
+
+        // cập nhật floating drawer
+        renderSelectedDrawer();
+    }
+
+    function renderSelectedDrawer() {
+        const drawer = document.getElementById('selected-menu-drawer');
+        const listEl = document.getElementById('selected-menu-list');
+        const menuRoot = document.getElementById('menu');
+        const toggleBtn = document.getElementById('selected-menu-toggle');
+        const toggleCount = document.getElementById('selected-menu-toggle-count');
+
+        if (!drawer || !listEl || !menuRoot)
+            return;
+
+        const count = selectedMenuItemIds.size;
+
+        // Cập nhật nút toggle "Selected dishes"
+        if (toggleBtn && toggleCount) {
+            toggleCount.textContent = count;
+            if (count > 0) {
+                toggleBtn.classList.remove('hidden');
+            } else {
+                toggleBtn.classList.add('hidden');
+            }
+        }
+
+        // Không có món nào thì ẩn drawer & clear list
+        if (count === 0) {
+            drawer.style.display = 'none';
+            listEl.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        selectedMenuItemIds.forEach((id) => {
+            const card = menuRoot.querySelector('[data-menu-card="' + id + '"]');
+            if (!card)
+                return;
+
+            const name = card.getAttribute('data-menu-name') || ('Dish #' + id);
+            const category = card.getAttribute('data-menu-category') || '';
+            const price = card.getAttribute('data-menu-price') || '';
+
+            html += `
+            <div class="flex w-full items-center justify-between rounded-xl bg-white/5 px-2.5 py-1.5
+                        hover:bg-white/10 transition-all"
+                 data-selected-goto="${id}">
+                <div class="flex flex-col text-left">
+                    <span class="text-[11px] font-medium text-white line-clamp-1">${name}</span>
+                    ${category ? `<span class="text-[10px] text-gray-300">${category}</span>` : ""}
+                </div>
+                <div class="flex items-center gap-2">
+                    ${price ? `<span class="text-[11px] font-semibold text-[#FACC6B]">$${price}</span>` : ""}
+                    <button type="button"
+                            class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/30
+                                   text-[10px] text-gray-200 hover:bg-white/10 hover:text-white"
+                            data-selected-remove="${id}">
+                        ✕
+                    </button>
+                </div>
+            </div>
+        `;
+        });
+
+        listEl.innerHTML = html;
+
+        // Hiện / ẩn theo biến selectedDrawerVisible
+        if (selectedDrawerVisible) {
+            drawer.style.display = '';      // dùng display mặc định (flex từ class tailwind)
+        } else {
+            drawer.style.display = 'none';
+        }
+    }
+
+
+
+
+
+
     function handleBookingRedirect(qsParams) {
+        // Gắn menu items (nếu có chọn) vào query string để booking.xhtml xử lý
+        if (selectedMenuItemIds.size > 0) {
+            qsParams.set('menuItems', Array.from(selectedMenuItemIds).join(','));
+        }
+
         const url = 'booking.xhtml?' + qsParams.toString();
 
         if (isLoggedIn) {
@@ -35,6 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 'Please sign in or create a FeastLink account to complete your booking and unlock your booking history and faster checkout.'
                 );
     }
+
 
 
     // ================== TABS + SCROLL ==================
@@ -106,6 +228,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let selectedDate = null;
     let selectedDateMonth = currentMonth.getMonth();
     let selectedDateYear = currentMonth.getFullYear();
+    let selectedSlotTime = null;
 
     const monthLabel = qs('#calendar-month-label');
     const daysContainer = qs('#calendar-days');
@@ -148,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function () {
             div.className = 'aspect-square';
             daysContainer.appendChild(div);
         }
-        
+
         // === Constraint: không cho chọn ngày quá khứ + phải cách hiện tại tối thiểu N ngày ===
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -160,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function () {
         minDate.setDate(today.getDate() + MIN_LEAD_DAYS);
 
 
-       for (let d = 1; d <= daysInMonth; d++) {
+        for (let d = 1; d <= daysInMonth; d++) {
             const dateObj = new Date(year, month, d);
 
             // Trạng thái demo cũ (booked/limited/available)
@@ -172,16 +295,16 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const isSelected =
-                selectedDate === d &&
-                selectedDateMonth === month &&
-                selectedDateYear === year;
+                    selectedDate === d &&
+                    selectedDateMonth === month &&
+                    selectedDateYear === year;
 
             const btn = document.createElement('button');
             btn.textContent = String(d);
             btn.classList.add(
-                'relative', 'aspect-square', 'rounded-xl', 'text-sm', 'font-medium',
-                'transition-all', 'flex', 'items-center', 'justify-center'
-            );
+                    'relative', 'aspect-square', 'rounded-xl', 'text-sm', 'font-medium',
+                    'transition-all', 'flex', 'items-center', 'justify-center'
+                    );
 
             if (status === 'available') {
                 if (isSelected) {
@@ -223,10 +346,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     selectedDate = d;
                     selectedDateMonth = month;
                     selectedDateYear = year;
+                    selectedSlotTime = null; // reset time slot when change date
                     renderCalendar();
                     renderTimeSlots();
                 });
             }
+
 
             daysContainer.appendChild(btn);
         }
@@ -251,12 +376,14 @@ document.addEventListener('DOMContentLoaded', function () {
         timeSlotsList.innerHTML = '';
 
         timeSlots.forEach(slot => {
+            // base style
             const wrapper = document.createElement('div');
             wrapper.classList.add(
                     'flex', 'items-center', 'justify-between',
                     'p-4', 'rounded-xl', 'border-2', 'transition-all'
                     );
 
+// màu theo trạng thái
             if (slot.status === 'available') {
                 wrapper.classList.add(
                         'border-[#22C55E]/30',
@@ -270,12 +397,19 @@ document.addEventListener('DOMContentLoaded', function () {
                         'hover:border-[#EAB308]'
                         );
             } else {
+                // booked
                 wrapper.classList.add(
                         'border-[#EF4444]/30',
                         'bg-[#EF4444]/5',
                         'opacity-60'
                         );
             }
+
+// Highlight selected slot (không có else nữa)
+            if (selectedSlotTime === slot.time && slot.status !== 'booked') {
+                wrapper.classList.add('ring-2', 'ring-[#F97316]', 'ring-offset-2');
+            }
+
 
             const left = document.createElement('div');
             left.className = 'flex items-center gap-3';
@@ -322,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.addEventListener('click', () => {
                     if (!selectedDate)
                         return;
-
+                    selectedSlotTime = slot.time;
                     const year = selectedDateYear;
                     const month = selectedDateMonth + 1; // 1–12
                     const day = selectedDate;
@@ -366,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.addEventListener('click', () => {
                     if (!selectedDate)
                         return;
-
+                    selectedSlotTime = slot.time;
                     const year = selectedDateYear;
                     const month = selectedDateMonth + 1;
                     const day = selectedDate;
@@ -408,6 +542,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 badge.appendChild(text);
                 right.appendChild(badge);
             }
+            // Click on row (outside buttons) to select slot
+            if (slot.status !== 'booked') {
+                wrapper.addEventListener('click', (e) => {
+                    if (e.target instanceof HTMLElement && e.target.closest('button')) {
+                        // clicking on inner buttons will be handled separately
+                        return;
+                    }
+                    selectedSlotTime = slot.time;
+                    renderTimeSlots(); // re-render to update highlight
+                });
+            }
+
 
             wrapper.appendChild(left);
             wrapper.appendChild(right);
@@ -449,15 +595,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            if (!selectedSlotTime) {
+                alert('Please select a time slot before continuing.');
+                return;
+            }
+
             const year = selectedDateYear;
             const month = selectedDateMonth + 1;
             const day = selectedDate;
 
             const dateStr =
-                    year +
-                    '-' +
-                    String(month).padStart(2, '0') +
-                    '-' +
+                    year + '-' +
+                    String(month).padStart(2, '0') + '-' +
                     String(day).padStart(2, '0');
 
             const qsParams = new URLSearchParams();
@@ -465,15 +614,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 qsParams.set('restaurantId', restaurantId);
             }
             qsParams.set('date', dateStr);
+            qsParams.set('slot', selectedSlotTime); // always send chosen slot
 
             if (selectedPackageName) {
                 qsParams.set('package', selectedPackageName);
             }
 
             handleBookingRedirect(qsParams);
-
         });
     }
+
 
     // ================== FAQ TOGGLE ==================
     const faqItems = qsa('.faq-item');
@@ -788,9 +938,279 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ================== A-LA-CARTE MENU: ACCORDION, SHOW MORE & SELECTION ==================
+    const menuRoot = document.getElementById('menu');
+
+    if (menuRoot) {
+        const categoryBlocks = qsa('[data-menu-category]', menuRoot);
+        // Drawer: handle close & jump to dish
+        const selectedDrawer = document.getElementById('selected-menu-drawer');
+        const toggleDrawerBtn = document.getElementById('selected-menu-toggle');
+        const closeDrawerBtns = qsa('#selected-menu-drawer-close');
+
+        // Toggle show / hide drawer (nếu có nút toggle)
+        if (toggleDrawerBtn && selectedDrawer) {
+            toggleDrawerBtn.addEventListener('click', () => {
+                selectedDrawerVisible = !selectedDrawerVisible;
+
+                if (selectedMenuItemIds.size > 0) {
+                    selectedDrawer.style.display = selectedDrawerVisible ? '' : 'none';
+                }
+            });
+        }
+
+        // Close button (X) trong drawer
+        if (closeDrawerBtns.length && selectedDrawer) {
+            closeDrawerBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedDrawerVisible = false;
+                    selectedDrawer.style.display = 'none';
+                });
+            });
+        }
+
+
+
+        // Click trong drawer: xoá món hoặc scroll tới card
+        if (selectedDrawer && menuRoot) {
+            selectedDrawer.addEventListener('click', (e) => {
+                const target = e.target;
+                if (!(target instanceof HTMLElement))
+                    return;
+
+                // 1) Nếu bấm nút ✕ => remove món
+                const removeBtn = target.closest('[data-selected-remove]');
+                if (removeBtn) {
+                    const removeId = removeBtn.getAttribute('data-selected-remove');
+                    if (!removeId)
+                        return;
+
+                    const card = menuRoot.querySelector('[data-menu-card="' + removeId + '"]');
+                    const toggleBtn = card ? card.querySelector('button[data-role="toggle-menu-item"]') : null;
+
+                    // Giả lập click lại nút "Add to menu" để reuse toàn bộ logic
+                    if (toggleBtn) {
+                        toggleBtn.click();
+                    }
+                    return;
+                }
+
+                // 2) Nếu bấm vào row => scroll tới card
+                const goBtn = target.closest('[data-selected-goto]');
+                if (!goBtn)
+                    return;
+
+                const id = goBtn.getAttribute('data-selected-goto');
+                if (!id)
+                    return;
+
+                const card = menuRoot.querySelector('[data-menu-card="' + id + '"]');
+                if (!card)
+                    return;
+
+                card.scrollIntoView({behavior: 'smooth', block: 'center'});
+                card.classList.add('ring-2', 'ring-[#D4AF37]', 'ring-offset-2');
+            });
+        }
+
+
+        // Initial accordion + show-more state
+        categoryBlocks.forEach((block, index) => {
+            const body = qs('[data-role="menu-category-body"]', block);
+            if (!body)
+                return;
+
+            const chevron = qs('.menu-category-chevron', block);
+
+            // Open first category, collapse others
+            if (index === 0) {
+                block.dataset.open = 'true';
+                body.style.display = '';
+                if (chevron)
+                    chevron.classList.remove('rotate-180');
+            } else {
+                block.dataset.open = 'false';
+                body.style.display = 'none';
+                if (chevron)
+                    chevron.classList.add('rotate-180');
+            }
+
+            // Hide items beyond index 2 (show-more)
+            const items = qsa('[data-menu-item-index]', body);
+            items.forEach(item => {
+                const idx = parseInt(item.getAttribute('data-menu-item-index') || '0', 10);
+                if (idx >= 3) {
+                    item.classList.add('hidden');
+                }
+            });
+
+            const showMoreBtn = qs('button[data-role="menu-category-show-more"]', block);
+            if (showMoreBtn) {
+                const hasHidden = items.some(it => it.classList.contains('hidden'));
+                if (!hasHidden) {
+                    showMoreBtn.classList.add('hidden');
+                } else {
+                    showMoreBtn.dataset.expanded = 'false';
+                }
+            }
+        });
+
+        // Category pill navigation
+        qsa('button[data-role="menu-category-pill"]').forEach(pill => {
+            pill.addEventListener('click', () => {
+                const targetKey = pill.getAttribute('data-menu-category-id');
+                const targetBlock = menuRoot.querySelector('[data-menu-category="' + targetKey + '"]');
+                if (!targetBlock)
+                    return;
+
+                targetBlock.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+                qsa('button[data-role="menu-category-pill"]').forEach(p => {
+                    p.classList.remove('border-[#FACC6B]', 'text-[#111827]', 'bg-[#FFF7E6]');
+                });
+                pill.classList.add('border-[#FACC6B]', 'text-[#111827]', 'bg-[#FFF7E6]');
+            });
+        });
+
+        // Single click handler for: toggle item + show more + accordion header
+        menuRoot.addEventListener('click', e => {
+            const target = e.target;
+            if (!(target instanceof HTMLElement))
+                return;
+
+            // 1) Toggle menu item select
+            const toggleBtn = target.closest('button[data-role="toggle-menu-item"]');
+            if (toggleBtn) {
+                const menuId = toggleBtn.getAttribute('data-menu-id');
+                const priceStr = toggleBtn.getAttribute('data-menu-price') || '0';
+                const price = parseFloat(priceStr) || 0;
+
+                if (!menuId)
+                    return;
+
+                const card = toggleBtn.closest('[data-menu-card]');
+                const selectedBadge = card ? card.querySelector('[data-badge-selected]') : null;
+                const labelSpan = toggleBtn.querySelector('span');
+
+                const isSelected = selectedMenuItemIds.has(menuId);
+
+                if (isSelected) {
+                    selectedMenuItemIds.delete(menuId);
+                    selectedMenuTotalPerPerson -= price;
+
+                    toggleBtn.classList.remove('bg-[#020617]', 'text-white', 'border-[#D4AF37]');
+                    toggleBtn.classList.add('border-[#E5E7EB]', 'bg-white', 'text-[#111827]');
+
+                    if (labelSpan)
+                        labelSpan.textContent = 'Add to menu';
+                    if (selectedBadge)
+                        selectedBadge.classList.add('hidden');
+                    if (card)
+                        card.classList.remove('ring-2', 'ring-[#D4AF37]', 'ring-offset-2');
+                } else {
+                    selectedMenuItemIds.add(menuId);
+                    selectedMenuTotalPerPerson += price;
+
+                    toggleBtn.classList.remove('border-[#E5E7EB]', 'bg-white', 'text-[#111827]');
+                    toggleBtn.classList.add('bg-[#020617]', 'text-white', 'border-[#D4AF37]');
+
+                    if (labelSpan)
+                        labelSpan.textContent = 'Added';
+                    if (selectedBadge)
+                        selectedBadge.classList.remove('hidden');
+                    if (card)
+                        card.classList.add('ring-2', 'ring-[#D4AF37]', 'ring-offset-2');
+                }
+
+                if (selectedMenuTotalPerPerson < 0)
+                    selectedMenuTotalPerPerson = 0;
+
+                updateMenuSummary();
+                createIcons(); // redraw lucide icons if needed
+
+                return;
+            }
+
+            // 2) Show more / show less
+            const showMoreBtn = target.closest('button[data-role="menu-category-show-more"]');
+            if (showMoreBtn) {
+                const catKey = showMoreBtn.getAttribute('data-menu-category-id');
+                const block = menuRoot.querySelector('[data-menu-category="' + catKey + '"]');
+                if (!block)
+                    return;
+
+                const body = qs('[data-role="menu-category-body"]', block);
+                if (!body)
+                    return;
+
+                const items = qsa('[data-menu-item-index]', body);
+                const expanded = showMoreBtn.dataset.expanded === 'true';
+
+                if (!expanded) {
+                    // Show all
+                    items.forEach(it => it.classList.remove('hidden'));
+                    showMoreBtn.dataset.expanded = 'true';
+                    showMoreBtn.querySelector('span') && (showMoreBtn.querySelector('span').textContent = 'Show less');
+                    const icon = showMoreBtn.querySelector('[data-lucide="chevron-down"]');
+                    if (icon)
+                        icon.classList.add('rotate-180');
+                } else {
+                    // Collapse back to 3
+                    items.forEach(it => {
+                        const idx = parseInt(it.getAttribute('data-menu-item-index') || '0', 10);
+                        if (idx >= 3) {
+                            it.classList.add('hidden');
+                        }
+                    });
+                    showMoreBtn.dataset.expanded = 'false';
+                    showMoreBtn.querySelector('span') && (showMoreBtn.querySelector('span').textContent = 'Show all dishes');
+                    const icon = showMoreBtn.querySelector('[data-lucide="chevron-down"]');
+                    if (icon)
+                        icon.classList.remove('rotate-180');
+                }
+
+                createIcons();
+                return;
+            }
+
+            // 3) Accordion header
+            const headerBtn = target.closest('button[data-role="menu-category-toggle"]');
+            if (headerBtn) {
+                const catKey = headerBtn.getAttribute('data-menu-category-id');
+                const block = menuRoot.querySelector('[data-menu-category="' + catKey + '"]');
+                if (!block)
+                    return;
+
+                const body = qs('[data-role="menu-category-body"]', block);
+                const chevron = qs('.menu-category-chevron', block);
+                const isOpen = block.dataset.open === 'true';
+
+                if (isOpen) {
+                    block.dataset.open = 'false';
+                    if (body)
+                        body.style.display = 'none';
+                    if (chevron)
+                        chevron.classList.add('rotate-180');
+                } else {
+                    block.dataset.open = 'true';
+                    if (body)
+                        body.style.display = '';
+                    if (chevron)
+                        chevron.classList.remove('rotate-180');
+                }
+
+                return;
+            }
+        });
+    }
+
+
     // ================== REVIEWS: WRITE & LOAD MORE ==================
     const writeReviewBtn = qs('#reviews button', qs('#reviews'));
     const loadMoreBtn = qs('#reviews button:nth-of-type(2)'); // second button inside #reviews
+
+    // ================== MENU ITEM SELECTION (FROM DATABASE) ==================
+
 
     if (writeReviewBtn) {
         writeReviewBtn.addEventListener('click', () => {
@@ -837,4 +1257,5 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     });
+
 });

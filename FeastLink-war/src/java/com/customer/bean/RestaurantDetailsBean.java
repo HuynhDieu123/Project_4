@@ -7,6 +7,13 @@ import com.mypack.entity.RestaurantImages;
 import com.mypack.entity.RestaurantReviews;
 import com.mypack.entity.Restaurants;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
+import com.mypack.entity.MenuCategories;
+import com.mypack.entity.MenuItems;
+import com.mypack.sessionbean.MenuCategoriesFacadeLocal;
+import com.mypack.sessionbean.MenuItemsFacadeLocal;
+
+import java.util.ArrayList;
+import java.util.List;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.enterprise.context.RequestScoped;
@@ -23,6 +30,12 @@ public class RestaurantDetailsBean implements Serializable {
 
     @EJB
     private RestaurantsFacadeLocal restaurantsFacade;
+
+    @EJB
+    private MenuCategoriesFacadeLocal menuCategoriesFacade;
+
+    @EJB
+    private MenuItemsFacadeLocal menuItemsFacade;
 
     private Restaurants restaurant;
 
@@ -41,6 +54,9 @@ public class RestaurantDetailsBean implements Serializable {
 
     // Combos (Menu & Packages)
     private List<ComboCard> combos;
+
+    // Custom menu (á la carte): category + list of menu item cards
+    private List<MenuSection> menuSections = new ArrayList<>();
 
     @PostConstruct
     public void init() {
@@ -61,7 +77,7 @@ public class RestaurantDetailsBean implements Serializable {
             restaurant = restaurantsFacade.find(id);
         }
 
-        // fallback nếu id sai: lấy nhà hàng đầu tiên
+        // fallback if id is invalid: pick first restaurant
         if (restaurant == null) {
             List<Restaurants> all = restaurantsFacade.findAll();
             if (all != null && !all.isEmpty()) {
@@ -82,7 +98,7 @@ public class RestaurantDetailsBean implements Serializable {
             }
         } catch (Exception ignored) {}
 
-        // ==== Capacity (dùng minGuest * 3 làm max demo) ====
+        // ==== Capacity (use minGuest * 3 as max demo) ====
         Integer minGuests = restaurant.getMinGuestCount();
         capacityMin = (minGuests != null && minGuests > 0) ? minGuests : 30;
         capacityMax = capacityMin * 3;
@@ -146,7 +162,7 @@ public class RestaurantDetailsBean implements Serializable {
             badge = null;
         }
 
-        // ==== Price per guest từ combo ====
+        // ==== Price per guest from combos ====
         pricePerGuestFrom = 0d;
         combos = new ArrayList<>();
         try {
@@ -161,7 +177,7 @@ public class RestaurantDetailsBean implements Serializable {
                     double totalVal = (total != null) ? total.doubleValue() : 0d;
                     int minG = (guests != null && guests > 0) ? guests : 10;
 
-                    // tính giá / khách để dùng cho "Starting from"
+                    // price per guest for "Starting from"
                     if (totalVal > 0 && minG > 0) {
                         double perGuest = totalVal / minG;
                         if (pricePerGuestFrom == 0d || perGuest < pricePerGuestFrom) {
@@ -169,7 +185,7 @@ public class RestaurantDetailsBean implements Serializable {
                         }
                     }
 
-                    // đưa vào danh sách combo cho section "Menu & Packages"
+                    // build combo card list
                     ComboCard c = new ComboCard();
                     c.setComboId(combo.getComboId());
                     c.setName(safe(combo.getName()));
@@ -177,7 +193,6 @@ public class RestaurantDetailsBean implements Serializable {
                     c.setPriceTotal(totalVal);
                     c.setMinGuests(minG);
 
-                    // Ideal range & tag demo
                     c.setIdealRange(minG + "–" + (minG * 2) + " guests");
 
                     if (totalVal >= 800) {
@@ -197,7 +212,7 @@ public class RestaurantDetailsBean implements Serializable {
             pricePerGuestFrom = 75d; // fallback demo
         }
 
-        // ==== Event types (distinct) từ Bookings ====
+        // ==== Event types (distinct) from bookings ====
         Set<String> typeSet = new LinkedHashSet<>();
         try {
             Collection<Bookings> bookings = restaurant.getBookingsCollection();
@@ -216,13 +231,112 @@ public class RestaurantDetailsBean implements Serializable {
             typeSet.add("Corporate");
         }
         eventTypes = new ArrayList<>(typeSet);
+
+        // ==== Custom menu (MenuCategories + MenuItems) ====
+        loadMenuSections();
+    }
+
+    private void loadMenuSections() {
+        menuSections = new ArrayList<>();
+        if (restaurant == null) return;
+
+        Long restaurantId = restaurant.getRestaurantId();
+        if (restaurantId == null) return;
+
+        List<MenuCategories> allCategories = menuCategoriesFacade.findAll();
+        List<MenuItems> allItems = menuItemsFacade.findAll();
+
+        if (allCategories == null) allCategories = new ArrayList<>();
+        if (allItems == null) allItems = new ArrayList<>();
+
+        for (MenuCategories cat : allCategories) {
+            if (cat == null) continue;
+
+            // filter by restaurant
+            if (cat.getRestaurantId() == null
+                    || cat.getRestaurantId().getRestaurantId() == null
+                    || !restaurantId.equals(cat.getRestaurantId().getRestaurantId())) {
+                continue;
+            }
+
+            // only active categories if there is IsActive flag
+            try {
+                Boolean active = cat.getIsActive();
+                if (active != null && !active) {
+                    continue;
+                }
+            } catch (Exception ignored) {}
+
+            List<MenuItemCard> itemsForCategory = new ArrayList<>();
+
+            for (MenuItems mi : allItems) {
+                if (mi == null) continue;
+
+                // filter by restaurant
+                if (mi.getRestaurantId() == null
+                        || mi.getRestaurantId().getRestaurantId() == null
+                        || !restaurantId.equals(mi.getRestaurantId().getRestaurantId())) {
+                    continue;
+                }
+
+                // filter by category
+                if (mi.getCategoryId() == null
+                        || mi.getCategoryId().getCategoryId() == null
+                        || !cat.getCategoryId().equals(mi.getCategoryId().getCategoryId())) {
+                    continue;
+                }
+
+                boolean skip = false;
+                try {
+                    String status = mi.getStatus();
+                    if (status != null && !"AVAILABLE".equalsIgnoreCase(status)) {
+                        skip = true;
+                    }
+                } catch (Exception ignored) {}
+
+                try {
+                    Boolean deleted = mi.getIsDeleted();
+                    if (deleted != null && deleted) {
+                        skip = true;
+                    }
+                } catch (Exception ignored) {}
+
+                if (skip) continue;
+
+                MenuItemCard card = new MenuItemCard();
+                card.setId(mi.getMenuItemId());
+                card.setName(safe(mi.getName()));
+                card.setDescription(safe(mi.getDescription()));
+
+                try {
+                    card.setImageUrl(mi.getImageUrl());
+                } catch (Exception ignored) {}
+
+                try {
+                    card.setPricePerPerson(mi.getPricePerPerson());
+                } catch (Exception ignored) {}
+
+                try {
+                    Boolean veg = mi.getIsVegetarian();
+                    if (veg != null) {
+                        card.setVegetarian(veg);
+                    }
+                } catch (Exception ignored) {}
+
+                itemsForCategory.add(card);
+            }
+
+            if (!itemsForCategory.isEmpty()) {
+                menuSections.add(new MenuSection(cat, itemsForCategory));
+            }
+        }
     }
 
     private String safe(String s) {
         return s != null ? s : "";
     }
 
-    // ===== getters cho xhtml =====
+    // ===== getters for xhtml =====
 
     public Restaurants getRestaurant() {
         return restaurant;
@@ -280,7 +394,11 @@ public class RestaurantDetailsBean implements Serializable {
         return combos;
     }
 
-    // ====== Inner class cho combo card ======
+    public List<MenuSection> getMenuSections() {
+        return menuSections;
+    }
+
+    // ====== Inner class: combo card ======
     public static class ComboCard implements Serializable {
         private Long comboId;
         private String name;
@@ -314,5 +432,84 @@ public class RestaurantDetailsBean implements Serializable {
 
         public String getHighlightTag() { return highlightTag; }
         public void setHighlightTag(String highlightTag) { this.highlightTag = highlightTag; }
+    }
+
+    // ====== Inner class: menu item card (for UI) ======
+    public static class MenuItemCard implements Serializable {
+        private Long id;
+        private String name;
+        private String description;
+        private BigDecimal pricePerPerson;
+        private boolean vegetarian;
+        private String imageUrl;
+
+        public Long getId() {
+            return id;
+        }
+        public void setId(Long id) {
+            this.id = id;
+        }
+
+        public String getName() {
+            return name;
+        }
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public BigDecimal getPricePerPerson() {
+            return pricePerPerson;
+        }
+        public void setPricePerPerson(BigDecimal pricePerPerson) {
+            this.pricePerPerson = pricePerPerson;
+        }
+
+        public boolean isVegetarian() {
+            return vegetarian;
+        }
+        public void setVegetarian(boolean vegetarian) {
+            this.vegetarian = vegetarian;
+        }
+
+        public String getImageUrl() {
+            return imageUrl;
+        }
+        public void setImageUrl(String imageUrl) {
+            this.imageUrl = imageUrl;
+        }
+    }
+
+    // ====== Inner class: menu section (category + items) ======
+    public static class MenuSection implements Serializable {
+        private MenuCategories category;
+        private List<MenuItemCard> items;
+
+        public MenuSection(MenuCategories category, List<MenuItemCard> items) {
+            this.category = category;
+            this.items = items;
+        }
+
+        public MenuCategories getCategory() {
+            return category;
+        }
+
+        public void setCategory(MenuCategories category) {
+            this.category = category;
+        }
+
+        public List<MenuItemCard> getItems() {
+            return items;
+        }
+
+        public void setItems(List<MenuItemCard> items) {
+            this.items = items;
+        }
     }
 }
