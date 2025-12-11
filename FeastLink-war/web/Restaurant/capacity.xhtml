@@ -5,18 +5,16 @@
                 template="/Restaurant/layout-manager.xhtml">
 
     <!-- PAGE TITLE (trên tab trình duyệt) -->
-    <ui:define name="title">
-        FeastLink - Capacity &amp; Availability
-    </ui:define>
+    <ui:define name="title">FeastLink - Restaurant Profile</ui:define>
 
-    <!-- ===== TOP BAR (thanh header trong layout) ===== -->
+    <!-- ===== TOP BAR LEFT (giống figma) ===== -->
     <ui:define name="header">
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-col">
             <h1 class="text-2xl font-bold text-text-main-light">
-                Capacity &amp; Availability
+                Restaurant Profile Management
             </h1>
             <p class="text-sm text-text-secondary-light">
-                Control how many bookings you accept and block dates when needed.
+                Manage your restaurant&apos;s information and policies.
             </p>
         </div>
     </ui:define>
@@ -57,8 +55,8 @@
 
                 <!-- Header + calendar -->
                 <div class="px-6 pt-5 pb-4 
-                            bg-gradient-to-r from-[#FFF7E6] via-white to-[#FFF7E6]
-                            border-b border-border-light">
+                     bg-gradient-to-r from-[#FFF7E6] via-white to-[#FFF7E6]
+                     border-b border-border-light">
 
                     <!-- MONTH HEADER + LEGEND -->
                     <h:form id="calendarForm">
@@ -130,14 +128,14 @@
                                         <h:commandLink
                                             action="#{capacityAvailabilityBean.selectDay(day.dateIso)}"
                                             styleClass="
-                                                group flex flex-col items-center justify-center
-                                                w-10 h-10 rounded-xl cursor-pointer no-underline transition
-                                                #{day.inCurrentMonth
-                                                    ? 'text-text-main-light bg-white border border-border-light shadow-[0_3px_8px_rgba(15,23,42,0.03)]'
-                                                    : 'text-gray-400 border-transparent bg-transparent'}
-                                                #{day.selected
-                                                    ? 'bg-[#0B1120] text-white border-[#0B1120] shadow-[0_8px_20px_rgba(15,23,42,0.4)] ring-2 ring-[#F97316]/70 ring-offset-2 ring-offset-white'
-                                                    : 'hover:bg-[#FFF7E6] hover:border-[#FCD34D]'}">
+                                            group flex flex-col items-center justify-center
+                                            w-10 h-10 rounded-xl cursor-pointer no-underline transition
+                                            #{day.inCurrentMonth
+                                              ? 'text-text-main-light bg-white border border-border-light shadow-[0_3px_8px_rgba(15,23,42,0.03)]'
+                                              : 'text-gray-400 border-transparent bg-transparent'}
+                                            #{day.selected
+                                              ? 'bg-[#0B1120] text-white border-[#0B1120] shadow-[0_8px_20px_rgba(15,23,42,0.4)] ring-2 ring-[#F97316]/70 ring-offset-2 ring-offset-white'
+                                              : 'hover:bg-[#FFF7E6] hover:border-[#FCD34D]'}">
 
                                             <!-- Số ngày -->
                                             <span class="text-[11px] font-medium">

@@ -1,7 +1,10 @@
 package com.restaurant.bean;
 
 import com.mypack.entity.Bookings;
+import com.mypack.entity.RestaurantManagers;
+import com.mypack.entity.Users;
 import com.mypack.sessionbean.BookingsFacadeLocal;
+import com.mypack.sessionbean.RestaurantManagersFacadeLocal;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.faces.application.FacesMessage;
@@ -23,6 +26,13 @@ public class BookingManagementBean implements Serializable {
 
     @EJB
     private BookingsFacadeLocal bookingsFacade;
+
+    // dùng để tìm nhà hàng của manager
+    @EJB
+    private RestaurantManagersFacadeLocal restaurantManagersFacade;
+
+    // id nhà hàng hiện tại (của manager đang login)
+    private Integer currentRestaurantId;
 
     // tất cả booking của nhà hàng hiện tại
     private List<Bookings> bookings = new ArrayList<>();
@@ -48,7 +58,70 @@ public class BookingManagementBean implements Serializable {
 
     @PostConstruct
     public void init() {
+        // 1. xác định nhà hàng hiện tại từ user login
+        resolveCurrentRestaurant();
+        // 2. load booking của nhà hàng đó
         loadBookings();
+    }
+
+    /**
+     * Lấy Users đang login từ session ("currentUser")
+     * rồi tìm RestaurantManagers để lấy restaurantId
+     */
+    private void resolveCurrentRestaurant() {
+        try {
+            FacesContext ctx = FacesContext.getCurrentInstance();
+            if (ctx == null) {
+                return;
+            }
+
+            Object obj = ctx.getExternalContext()
+                    .getSessionMap()
+                    .get("currentUser"); // LoginBean set key này
+
+            if (!(obj instanceof Users)) {
+                return;
+            }
+
+            Users user = (Users) obj;
+
+            // tìm manager theo userId
+            List<RestaurantManagers> managers = restaurantManagersFacade.findAll();
+            if (managers == null) {
+                return;
+            }
+
+            for (RestaurantManagers rm : managers) {
+                if (rm == null || rm.getUserId() == null) {
+                    continue;
+                }
+                if (rm.getUserId().getUserId() == null) {
+                    continue;
+                }
+
+                if (rm.getUserId().getUserId().equals(user.getUserId())
+                        && rm.getRestaurantId() != null
+                        && rm.getRestaurantId().getRestaurantId() != null) {
+
+                    Object ridObj = rm.getRestaurantId().getRestaurantId();
+                    if (ridObj instanceof Number) {
+                        currentRestaurantId = ((Number) ridObj).intValue();
+                    } else {
+                        try {
+                            currentRestaurantId = Integer.valueOf(ridObj.toString());
+                        } catch (NumberFormatException ignore) {
+                            currentRestaurantId = null;
+                        }
+                    }
+                    break;
+                }
+            }
+
+            System.out.println("BookingManagementBean - currentRestaurantId = " + currentRestaurantId);
+
+        } catch (Exception ex) {
+            currentRestaurantId = null;
+        }
     }
 
     public void loadBookings() {
@@ -57,6 +130,26 @@ public class BookingManagementBean implements Serializable {
             if (bookings == null) {
                 bookings = new ArrayList<>();
             }
+
+            // =============== LỌC THEO NHÀ HÀNG HIỆN TẠI ===============
+            if (currentRestaurantId == null) {
+                // Manager chưa gắn với nhà hàng nào -> KHÔNG cho thấy booking
+                bookings.clear();
+            } else {
+                final String ridStr = String.valueOf(currentRestaurantId);
+
+                bookings.removeIf(b -> {
+                    if (b == null || b.getRestaurantId() == null
+                            || b.getRestaurantId().getRestaurantId() == null) {
+                        return true; // booking không gắn nhà hàng -> bỏ
+                    }
+                    String bidStr = String.valueOf(b.getRestaurantId().getRestaurantId());
+                    // khác id nhà hàng hiện tại -> bỏ
+                    return !bidStr.equals(ridStr);
+                });
+            }
+            // =========================================================
+
             lastUpdated = new Date();
         } catch (Exception ex) {
             bookings = new ArrayList<>();
@@ -66,6 +159,20 @@ public class BookingManagementBean implements Serializable {
                             "Error loading bookings", ex.getMessage())
             );
         }
+    }
+
+    // helper: kiểm tra booking thuộc nhà hàng hiện tại
+    private boolean belongsToCurrentRestaurant(Bookings b) {
+        if (currentRestaurantId == null) {
+            return false; // không có nhà hàng -> xem như không thuộc
+        }
+        if (b == null || b.getRestaurantId() == null
+                || b.getRestaurantId().getRestaurantId() == null) {
+            return false;
+        }
+        String ridStr = String.valueOf(currentRestaurantId);
+        String bidStr = String.valueOf(b.getRestaurantId().getRestaurantId());
+        return bidStr.equals(ridStr);
     }
 
     /* ================= FILTER + SORT ================= */
@@ -115,23 +222,20 @@ public class BookingManagementBean implements Serializable {
 
         // 4. Sort
         if ("oldest".equalsIgnoreCase(sortBy)) {
-            // cũ nhất trước
             Collections.sort(result, Comparator.comparing(this::getSortCreatedDateSafe));
         } else if ("event_date".equalsIgnoreCase(sortBy)) {
-            // sort theo ngày tiệc
             result.sort(Comparator.comparing(
                     Bookings::getEventDate,
                     Comparator.nullsLast(Comparator.naturalOrder())
             ));
         } else if ("highest_value".equalsIgnoreCase(sortBy)) {
-            // tổng tiền cao nhất trước
             result.sort((a, b2) -> {
                 BigDecimal ta = (a.getTotalAmount() != null) ? a.getTotalAmount() : BigDecimal.ZERO;
                 BigDecimal tb = (b2.getTotalAmount() != null) ? b2.getTotalAmount() : BigDecimal.ZERO;
                 return tb.compareTo(ta);
             });
         } else {
-            // newest (default) – mới nhất trước (dựa vào createdAt, fallback bookingId)
+            // newest (default)
             result.sort((a, b2) -> getSortCreatedDateSafe(b2)
                     .compareTo(getSortCreatedDateSafe(a)));
         }
@@ -139,50 +243,31 @@ public class BookingManagementBean implements Serializable {
         return result;
     }
 
-    /**
-     * Kiểm tra 1 booking có match text search hay không
-     */
     private boolean matchesSearch(Bookings b, String q) {
         if (b == null || q == null || q.isEmpty()) {
             return false;
         }
 
-        // Booking code
         if (containsIgnoreCase(b.getBookingCode(), q)) {
             return true;
         }
 
-        // 1) Contact trên booking (ƯU TIÊN)
         try {
-            if (containsIgnoreCase(b.getContactFullName(), q)) {
-                return true;
-            }
-            if (containsIgnoreCase(b.getContactPhone(), q)) {
-                return true;
-            }
-            if (containsIgnoreCase(b.getContactEmail(), q)) {
-                return true;
-            }
+            if (containsIgnoreCase(b.getContactFullName(), q)) return true;
+            if (containsIgnoreCase(b.getContactPhone(), q)) return true;
+            if (containsIgnoreCase(b.getContactEmail(), q)) return true;
         } catch (Exception ignore) {
         }
 
-        // 2) Thông tin account (customerId) – fallback
         try {
             if (b.getCustomerId() != null) {
-                if (containsIgnoreCase(b.getCustomerId().getFullName(), q)) {
-                    return true;
-                }
-                if (containsIgnoreCase(b.getCustomerId().getPhone(), q)) {
-                    return true;
-                }
-                if (containsIgnoreCase(b.getCustomerId().getEmail(), q)) {
-                    return true;
-                }
+                if (containsIgnoreCase(b.getCustomerId().getFullName(), q)) return true;
+                if (containsIgnoreCase(b.getCustomerId().getPhone(), q)) return true;
+                if (containsIgnoreCase(b.getCustomerId().getEmail(), q)) return true;
             }
         } catch (Exception ignore) {
         }
 
-        // 3) Tên nhà hàng
         try {
             if (b.getRestaurantId() != null
                     && containsIgnoreCase(b.getRestaurantId().getName(), q)) {
@@ -191,7 +276,6 @@ public class BookingManagementBean implements Serializable {
         } catch (Exception ignore) {
         }
 
-        // 4) Loại tiệc
         try {
             if (b.getEventTypeId() != null
                     && containsIgnoreCase(b.getEventTypeId().getName(), q)) {
@@ -200,7 +284,6 @@ public class BookingManagementBean implements Serializable {
         } catch (Exception ignore) {
         }
 
-        // 5) Dịch vụ
         try {
             if (b.getServiceTypeId() != null
                     && containsIgnoreCase(b.getServiceTypeId().getName(), q)) {
@@ -209,7 +292,6 @@ public class BookingManagementBean implements Serializable {
         } catch (Exception ignore) {
         }
 
-        // 6) Địa điểm ngoài
         try {
             if (containsIgnoreCase(b.getOutsideAddress(), q)) {
                 return true;
@@ -224,10 +306,6 @@ public class BookingManagementBean implements Serializable {
         return value != null && q != null && value.toLowerCase().contains(q);
     }
 
-    /**
-     * Lấy ngày để sort (ưu tiên createdAt, không có thì dùng bookingId làm
-     * pseudo-date)
-     */
     private Date getSortCreatedDateSafe(Bookings b) {
         try {
             if (b.getCreatedAt() != null) {
@@ -279,7 +357,8 @@ public class BookingManagementBean implements Serializable {
             if (b.getBookingStatus() != null
                     && "CONFIRMED".equalsIgnoreCase(b.getBookingStatus())
                     && b.getEventDate() != null
-                    && truncateTime(b.getEventDate()).after(now)) {
+                    && truncateTime(b.getEventDate()).after(now)
+                    && belongsToCurrentRestaurant(b)) {
                 count++;
             }
         }
@@ -302,43 +381,31 @@ public class BookingManagementBean implements Serializable {
         int c = 0;
         for (Bookings b : bookings) {
             if (b.getBookingStatus() != null
-                    && status.equalsIgnoreCase(b.getBookingStatus())) {
+                    && status.equalsIgnoreCase(b.getBookingStatus())
+                    && belongsToCurrentRestaurant(b)) {
                 c++;
             }
         }
         return c;
     }
 
-    /**
-     * Tổng doanh thu dựa trên danh sách đang được filter (loại bỏ booking đã
-     * hủy)
-     */
     public BigDecimal getTotalRevenue() {
         BigDecimal sum = BigDecimal.ZERO;
-
-        // dùng danh sách đã lọc (status, search, timeFilter...)
         for (Bookings b : getFilteredList()) {
             if (b == null) {
                 continue;
             }
 
-            // trạng thái booking
             String bookingStatus = (b.getBookingStatus() != null)
                     ? b.getBookingStatus().trim().toUpperCase()
                     : "";
-
-            // CHỈ tính khi booking đã COMPLETED
             if (!"COMPLETED".equals(bookingStatus)) {
                 continue;
             }
 
-            // trạng thái payment
             String paymentStatus = (b.getPaymentStatus() != null)
                     ? b.getPaymentStatus().trim().toUpperCase()
                     : "";
-
-            // CHỈ tính khi đã thanh toán đủ
-            // (nếu trong DB bạn đang để 'PAID' thì đổi chuỗi này lại cho đúng)
             if (!"PAID_IN_FULL".equals(paymentStatus)) {
                 continue;
             }
@@ -350,7 +417,6 @@ public class BookingManagementBean implements Serializable {
 
             sum = sum.add(total);
         }
-
         return sum;
     }
 
@@ -363,14 +429,12 @@ public class BookingManagementBean implements Serializable {
         try {
             Date now = new Date();
 
-            // cập nhật trạng thái
             booking.setBookingStatus(newStatus);
             try {
                 booking.setUpdatedAt(now);
             } catch (Exception ignore) {
             }
 
-            // nếu là CANCELLED -> lưu lý do & thời gian huỷ (nếu entity có field)
             if ("CANCELLED".equalsIgnoreCase(newStatus)) {
                 String reason = (rejectReason != null) ? rejectReason.trim() : "";
                 if (!reason.isEmpty()) {
@@ -391,8 +455,6 @@ public class BookingManagementBean implements Serializable {
 
             bookingsFacade.edit(booking);
             loadBookings();
-
-            // reset lý do để không dính qua booking khác
             rejectReason = null;
 
             FacesContext.getCurrentInstance().addMessage(
@@ -416,9 +478,6 @@ public class BookingManagementBean implements Serializable {
         return null;
     }
 
-    /**
-     * Cập nhật trạng thái thanh toán của booking
-     */
     public String updatePaymentStatus(Bookings booking, String newStatus) {
         if (booking == null || newStatus == null) {
             return null;
@@ -565,5 +624,13 @@ public class BookingManagementBean implements Serializable {
 
     public void setRejectReason(String rejectReason) {
         this.rejectReason = rejectReason;
+    }
+
+    public Integer getCurrentRestaurantId() {
+        return currentRestaurantId;
+    }
+
+    public void setCurrentRestaurantId(Integer currentRestaurantId) {
+        this.currentRestaurantId = currentRestaurantId;
     }
 }
