@@ -12,14 +12,30 @@ import jakarta.faces.view.ViewScoped;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.context.ExternalContext;
 import jakarta.faces.application.FacesMessage;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.Part;
 
 import java.io.Serializable;
 import java.io.InputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.List;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 @Named("profileBean")
 @ViewScoped
@@ -41,7 +57,7 @@ public class ProfileBean implements Serializable {
 
     // upload avatar
     private Part avatarPart;
-    // path lưu trong DB, vd: /resources/images/upload_file/avatar_26_1764....png
+    // URL lưu trong DB (có thể là Cloudinary URL, hoặc đường dẫn /resources/... cũ)
     private String avatarUrl;
 
     @PostConstruct
@@ -71,7 +87,7 @@ public class ProfileBean implements Serializable {
             cityId = currentUser.getCityId().getCityId();
         }
 
-        avatarUrl = currentUser.getAvatarUrl();   // có thể null
+        avatarUrl = currentUser.getAvatarUrl();   // có thể null (chưa upload)
     }
 
     private void redirectToLogin() {
@@ -102,17 +118,25 @@ public class ProfileBean implements Serializable {
     public void setAvatarPart(Part avatarPart) { this.avatarPart = avatarPart; }
 
     public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 
-    // dùng trong xhtml: #{request.contextPath}#{profileBean.avatarSrc}
+    // dùng trong xhtml: img src="#{profileBean.avatarSrc}"
     public String getAvatarSrc() {
         if (avatarUrl == null || avatarUrl.trim().isEmpty()) {
             return null;
         }
-        // nếu DB đã lưu /resources/... thì trả nguyên
-        if (avatarUrl.startsWith("/")) {
-            return avatarUrl;
+        String url = avatarUrl.trim();
+
+        // Nếu đã là URL tuyệt đối (Cloudinary)
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+            return url;
         }
-        return "/resources/images/upload_file/" + avatarUrl;
+
+        // Nếu là đường dẫn tương đối /resources/... → thêm contextPath
+        String ctxPath = FacesContext.getCurrentInstance()
+                .getExternalContext()
+                .getRequestContextPath();
+        return ctxPath + url;
     }
 
     public List<Cities> getCities() {
@@ -131,8 +155,6 @@ public class ProfileBean implements Serializable {
     }
 
     // ===== ACTIONS =====
-
-    // TRẢ VỀ STRING để redirect lại profile → avatar hiện ngay
     public String saveProfile() {
         FacesContext ctx = FacesContext.getCurrentInstance();
         if (currentUser == null) {
@@ -152,36 +174,29 @@ public class ProfileBean implements Serializable {
             currentUser.setCityId(null);
         }
 
-        // --- UPLOAD AVATAR GIỐNG CODE LOGO CỦA BẠN ---
+        // --- UPLOAD AVATAR LÊN CLOUDINARY (giống logic logo, nhưng folder khác) ---
         if (avatarPart != null && avatarPart.getSize() > 0) {
-            try {
-                String savedRelativePath = uploadAvatarToDisk(avatarPart, currentUser.getUserId());
-                avatarUrl = savedRelativePath;               // cập nhật bean
-                currentUser.setAvatarUrl(savedRelativePath); // cập nhật entity
-            } catch (IOException ex) {
-                ctx.addMessage(null, new FacesMessage(
-                        FacesMessage.SEVERITY_ERROR,
-                        "Upload failed",
-                        "Could not upload avatar image."
-                ));
+            String secureUrl = uploadAvatarToCloudinary(ctx, avatarPart, currentUser.getUserId());
+            if (secureUrl == null) {
+                // đã có message lỗi cụ thể, không save DB
                 return null;
             }
+            avatarUrl = secureUrl;
+            currentUser.setAvatarUrl(secureUrl);
         }
 
-       try {
+        try {
             usersFacade.edit(currentUser);
 
             // update lại session cho header
             ctx.getExternalContext().getSessionMap().put("currentUser", currentUser);
             ctx.getExternalContext().getSessionMap().put("loginIdentifier", currentUser.getEmail());
 
-            // THÔNG BÁO THÀNH CÔNG – KHÔNG redirect, nên message hiện ngay
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
                     "Profile updated",
                     "Your profile has been saved successfully."
             ));
-            
 
             // redirect lại /Customer/profile.xhtml
             return "/Customer/profile?faces-redirect=true";
@@ -196,47 +211,196 @@ public class ProfileBean implements Serializable {
         }
     }
 
-    private String uploadAvatarToDisk(Part filePart, Long userId) throws IOException {
-        // giống hệt đoạn upload logo mà bạn gửi
-        String uploadRoot = "E:\\ProjectSemIV\\Code\\Project_4\\FeastLink-war\\web\\resources\\images\\upload_file";
+    /**
+     * Upload avatar lên Cloudinary (DEV: tắt kiểm tra SSL để tránh PKIX error như lúc nãy)
+     */
+    private String uploadAvatarToCloudinary(FacesContext ctx, Part filePart, Long userId) {
+        try {
+            // ====== 1. TẠM THỜI TẮT CHECK SSL (CHỈ CHO MÔI TRƯỜNG DEV / ĐỒ ÁN) ======
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    @Override
+                    public void checkClientTrusted(X509Certificate[] chain, String authType) { }
+                    @Override
+                    public void checkServerTrusted(X509Certificate[] chain, String authType) { }
+                    @Override
+                    public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+                }
+            };
 
-        File folder = new File(uploadRoot);
-        if (!folder.exists()) {
-            folder.mkdirs();
-        }
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, trustAllCerts, new SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
 
-        String submitted = filePart.getSubmittedFileName();
-        String baseName  = submitted;
+            HostnameVerifier allHostsValid = (hostname, session) -> true;
+            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+            // ====== HẾT PHẦN TẮT SSL CHECK ======
 
-        if (submitted != null) {
-            int slash = submitted.lastIndexOf('/');
-            int back  = submitted.lastIndexOf('\\');
-            int idx   = Math.max(slash, back);
-            if (idx >= 0 && idx < submitted.length() - 1) {
-                baseName = submitted.substring(idx + 1);
+            ServletContext servletContext =
+                    (ServletContext) ctx.getExternalContext().getContext();
+
+            String cloudName = servletContext.getInitParameter("cloudinary.cloud_name");
+            String apiKey    = servletContext.getInitParameter("cloudinary.api_key");
+            String apiSecret = servletContext.getInitParameter("cloudinary.api_secret");
+
+            if (isBlank(cloudName) || isBlank(apiKey) || isBlank(apiSecret)) {
+                ctx.addMessage(null, new FacesMessage(
+                        FacesMessage.SEVERITY_ERROR,
+                        "Cloudinary configuration is missing. Please contact FeastLink Admin.",
+                        null
+                ));
+                return null;
             }
-        }
 
-        String ext = "";
-        int dot = baseName != null ? baseName.lastIndexOf('.') : -1;
-        if (dot != -1) {
-            ext = baseName.substring(dot);
-        }
+            // Folder riêng cho avatar user
+            String folder   = "feastlink/avatars";
+            long timestamp  = System.currentTimeMillis() / 1000L;
+            String publicId = "avatar_user_" + userId + "_" + timestamp;
 
-        String savedName = "avatar_" + userId + "_" + System.currentTimeMillis() + ext;
-        File dest = new File(folder, savedName);
+            String toSign = "folder=" + folder
+                    + "&public_id=" + publicId
+                    + "&timestamp=" + timestamp
+                    + apiSecret;
 
-        try (InputStream in = filePart.getInputStream();
-             FileOutputStream out = new FileOutputStream(dest)) {
-            byte[] buf = new byte[8192];
-            int len;
-            while ((len = in.read(buf)) != -1) {
-                out.write(buf, 0, len);
+            String signature = sha1Hex(toSign);
+
+            String urlStr = "https://api.cloudinary.com/v1_1/" + cloudName + "/image/upload";
+            URL url = new URL(urlStr);
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+
+            String boundary = "----FeastLinkProfileBoundary" + System.currentTimeMillis();
+            String CRLF = "\r\n";
+
+            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+            try (OutputStream out = conn.getOutputStream();
+                 OutputStreamWriter osw = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
+
+                // helper: field text
+                java.util.function.BiConsumer<String, String> writeField = (name, value) -> {
+                    try {
+                        osw.write("--" + boundary + CRLF);
+                        osw.write("Content-Disposition: form-data; name=\"" + name + "\"" + CRLF);
+                        osw.write(CRLF);
+                        osw.write(value + CRLF);
+                        osw.flush();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                };
+
+                writeField.accept("api_key", apiKey);
+                writeField.accept("timestamp", String.valueOf(timestamp));
+                writeField.accept("signature", signature);
+                writeField.accept("folder", folder);
+                writeField.accept("public_id", publicId);
+
+                String submitted = filePart.getSubmittedFileName();
+                String fileName = (submitted != null && !submitted.isEmpty())
+                        ? submitted
+                        : ("avatar_" + userId + ".png");
+                String contentType = filePart.getContentType();
+                if (isBlank(contentType)) {
+                    contentType = "application/octet-stream";
+                }
+
+                osw.write("--" + boundary + CRLF);
+                osw.write("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"" + CRLF);
+                osw.write("Content-Type: " + contentType + CRLF);
+                osw.write(CRLF);
+                osw.flush();
+
+                try (InputStream in = filePart.getInputStream()) {
+                    byte[] buf = new byte[8192];
+                    int len;
+                    while ((len = in.read(buf)) != -1) {
+                        out.write(buf, 0, len);
+                    }
+                    out.flush();
+                }
+
+                osw.write(CRLF);
+                osw.write("--" + boundary + "--" + CRLF);
+                osw.flush();
             }
-        }
 
-        // lưu trong DB dạng /resources/images/upload_file/...
-        String relativePath = "/resources/images/upload_file/" + savedName;
-        return relativePath;
+            int status = conn.getResponseCode();
+            InputStream respStream = (status >= 200 && status < 300)
+                    ? conn.getInputStream()
+                    : conn.getErrorStream();
+
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(respStream, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append(line);
+                }
+            }
+
+            String response = sb.toString();
+            System.out.println("Cloudinary avatar response: " + response);
+
+            if (status < 200 || status >= 300) {
+                ctx.addMessage(null, new FacesMessage(
+                        FacesMessage.SEVERITY_ERROR,
+                        "Cloudinary upload failed (HTTP " + status + ").",
+                        response
+                ));
+                return null;
+            }
+
+            String marker = "\"secure_url\":\"";
+            int idx = response.indexOf(marker);
+            if (idx == -1) {
+                ctx.addMessage(null, new FacesMessage(
+                        FacesMessage.SEVERITY_ERROR,
+                        "Cloudinary response does not contain secure_url.",
+                        response
+                ));
+                return null;
+            }
+            int start = idx + marker.length();
+            int end = response.indexOf('"', start);
+            if (end == -1) end = response.length();
+
+            String secureUrl = response.substring(start, end)
+                    .replace("\\/", "/");
+            return secureUrl;
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Cannot create signature for Cloudinary.",
+                    e.toString()
+            ));
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Cloudinary upload failed due to an unexpected error.",
+                    e.toString()
+            ));
+            return null;
+        }
+    }
+
+    // SHA-1 hex
+    private String sha1Hex(String input) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        byte[] bytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }
