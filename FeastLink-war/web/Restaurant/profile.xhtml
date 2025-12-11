@@ -80,8 +80,12 @@
                             <label class="block text-sm font-medium text-text-main-light mb-1">
                                 Restaurant Name
                             </label>
-                            <h:inputText value="#{restaurantProfileBean.name}"
-                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60"/>
+
+                            <!-- Ô hiển thị giống input -->
+                            <div class="w-full border border-border-light rounded-lg px-3 py-2 text-sm 
+                                 bg-gray-100 text-text-main-light cursor-not-allowed">
+                                #{restaurantProfileBean.name}
+                            </div>
                         </div>
 
                         <!-- Description -->

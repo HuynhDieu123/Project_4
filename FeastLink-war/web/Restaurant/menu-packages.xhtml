@@ -102,23 +102,34 @@
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary-light text-base">
                         search
                     </span>
-                    <input type="text"
-                           placeholder="Search items..."
-                           class="w-full pl-10 pr-3 py-2 rounded-lg border border-border-light bg-white text-sm
-                           text-text-main-light placeholder:text-text-secondary-light
-                           focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
+
+                    <!-- JSF input -->
+                    <h:inputText id="searchInput"
+                                 value="#{menuPackagesBean.searchQuery}"
+                                 styleClass="w-full pl-10 pr-3 py-2 rounded-lg border border-border-light bg-white text-sm
+                                 text-text-main-light placeholder:text-text-secondary-light
+                                 focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+
+                        <!-- HTML5 placeholder cho JSF input -->
+                        <f:passThroughAttribute name="placeholder" value="Search items..." />
+
+                        <!-- Gõ tới đâu lọc tới đó: chỉ render 3 panel, không render cả form -->
+                        <f:ajax event="keyup"
+                                execute="@this"
+                                render="itemsPanel packagesPanel categoriesPanel" />
+                    </h:inputText>
                 </div>
             </div>
 
             <!-- ===================================================== -->
             <!-- ===============  TAB 1: INDIVIDUAL ITEMS  =========== -->
             <!-- ===================================================== -->
-            <h:panelGroup layout="block"
+            <h:panelGroup id="itemsPanel" layout="block"
                           rendered="#{menuPackagesBean.activeTab eq 'items'}">
 
                 <!-- Grid 4 card / row -->
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                    <ui:repeat value="#{menuPackagesBean.items}" var="item">
+                    <ui:repeat value="#{menuPackagesBean.filteredItems}" var="item">
 
                         <!-- CARD ITEM: độc đáo hơn -->
                         <article class="relative bg-card-light rounded-2xl shadow-subtle overflow-hidden flex flex-col group border border-border-light hover:shadow-lg hover:-translate-y-0.5 transition-all"
@@ -210,17 +221,15 @@
             <!-- ===================================================== -->
             <!-- =========  TAB 2: CATERING PACKAGES  ================= -->
             <!-- ===================================================== -->
-            <h:panelGroup layout="block"
+            <h:panelGroup id="packagesPanel" layout="block"
                           rendered="#{menuPackagesBean.activeTab eq 'packages'}">
 
                 <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <ui:repeat value="#{menuPackagesBean.packages}" var="pkg">
+                    <ui:repeat value="#{menuPackagesBean.filteredPackages}" var="pkg">
 
-                        <!-- THAY TOÀN BỘ ARTICLE BẰNG ĐOẠN NÀY -->
                         <article class="group relative bg-card-light rounded-2xl shadow-subtle border border-border-light overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all"
                                  style="cursor: pointer;"
-                                 onclick="window.location = '#{request.contextPath}/faces/Restaurant/menu-combo-detail.xhtml?comboId=#{pkg.comboId}'"
-                                 >
+                                 onclick="window.location = '#{request.contextPath}/faces/Restaurant/menu-combo-detail.xhtml?comboId=#{pkg.comboId}'">
 
                             <!-- Header gradient -->
                             <div class="px-6 pt-4 pb-3 bg-gradient-to-r from-[#FFF7E6] via-white to-[#FFF7E6]">
@@ -291,11 +300,11 @@
             <!-- ===================================================== -->
             <!-- ============  TAB 3: MENU CATEGORIES  ================ -->
             <!-- ===================================================== -->
-            <h:panelGroup layout="block"
+            <h:panelGroup id="categoriesPanel" layout="block"
                           rendered="#{menuPackagesBean.activeTab eq 'categories'}">
 
                 <div class="mt-4 space-y-3">
-                    <ui:repeat value="#{menuPackagesBean.categories}" var="cat">
+                    <ui:repeat value="#{menuPackagesBean.filteredCategories}" var="cat">
 
                         <article class="group bg-card-light rounded-2xl shadow-subtle border border-border-light px-5 py-4 flex items-center justify-between hover:bg-[#FFF9EC] transition-colors">
                             <div class="flex items-start gap-4">
