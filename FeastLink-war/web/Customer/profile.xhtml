@@ -10,10 +10,8 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" type="text/css"
           href="#{request.contextPath}/css/profile.css" />
-      <script src="https://cdn.tailwindcss.com"></script>
-
-        <!-- Lucide Icons CDN -->
-        <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </h:head>
 
 <h:body>
@@ -41,7 +39,7 @@
                             <div class="profile-avatar-circle">
                                 <!-- ĐÃ CÓ AVATAR -->
                                 <ui:fragment rendered="#{not empty profileBean.avatarSrc}">
-                                    <img src="#{request.contextPath}#{profileBean.avatarSrc}"
+                                    <img src="#{profileBean.avatarSrc}"
                                          alt="Avatar"
                                          style="width:100%;height:100%;border-radius:999px;object-fit:cover;display:block;" />
                                 </ui:fragment>
