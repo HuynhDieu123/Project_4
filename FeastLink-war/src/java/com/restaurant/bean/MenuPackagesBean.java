@@ -42,6 +42,9 @@ public class MenuPackagesBean implements Serializable {
     private List<MenuCategories> categories;
     private List<MenuCombos> packages;   // danh sách combo thực tế
 
+    // ------- SEARCH -------
+    private String searchQuery;  // bind với ô search
+
     // ================== HELPER: LẤY NHÀ HÀNG HIỆN TẠI ==================
     private Restaurants resolveCurrentRestaurant() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -81,6 +84,8 @@ public class MenuPackagesBean implements Serializable {
         } else {
             activeTab = "items";
         }
+
+        searchQuery = "";  // mặc định rỗng
 
         refreshItems();
         refreshCategories();
@@ -175,7 +180,7 @@ public class MenuPackagesBean implements Serializable {
         }
     }
 
-    // ===== TAB ACTIONS =====
+    // ================== TAB ACTIONS ==================
     public String getActiveTab() {
         return activeTab;
     }
@@ -192,7 +197,7 @@ public class MenuPackagesBean implements Serializable {
         activeTab = "categories";
     }
 
-    // ===== DELETE ITEM (soft delete) =====
+    // ================== DELETE ACTIONS ==================
     public String deleteItem(Long itemId) {
         if (itemId != null) {
             MenuItems item = menuItemsFacade.find(itemId);
@@ -205,7 +210,6 @@ public class MenuPackagesBean implements Serializable {
         return null;
     }
 
-    // ===== DELETE CATEGORY (IsActive = false) =====
     public String deleteCategory(Long categoryId) {
         if (categoryId != null) {
             MenuCategories cat = menuCategoriesFacade.find(categoryId);
@@ -218,7 +222,6 @@ public class MenuPackagesBean implements Serializable {
         return null;
     }
 
-    // ===== DELETE PACKAGE / COMBO (soft delete) =====
     public String deletePackage(Long comboId) {
         if (comboId != null) {
             MenuCombos combo = menuCombosFacade.find(comboId);
@@ -231,7 +234,83 @@ public class MenuPackagesBean implements Serializable {
         return null;
     }
 
-    // ===== GETTERS =====
+    // ================== SEARCH SUPPORT ==================
+    private boolean containsIgnoreCase(String value, String q) {
+        return value != null && q != null &&
+               value.toLowerCase().contains(q.toLowerCase());
+    }
+
+    // ----- Items đã lọc -----
+    public List<MenuItems> getFilteredItems() {
+        if (items == null) return new ArrayList<>();
+
+        if (searchQuery == null || searchQuery.trim().isEmpty()) {
+            return items;
+        }
+
+        String q = searchQuery.trim().toLowerCase();
+        List<MenuItems> result = new ArrayList<>();
+
+        for (MenuItems m : items) {
+            if (m == null) continue;
+
+            if (containsIgnoreCase(m.getName(), q)
+                    || containsIgnoreCase(m.getDescription(), q)
+                    || (m.getCuisineId() != null &&
+                        containsIgnoreCase(m.getCuisineId().getName(), q))
+                    || (m.getCategoryId() != null &&
+                        containsIgnoreCase(m.getCategoryId().getName(), q))) {
+                result.add(m);
+            }
+        }
+        return result;
+    }
+
+    // ----- Packages đã lọc -----
+    public List<MenuCombos> getFilteredPackages() {
+        if (packages == null) return new ArrayList<>();
+
+        if (searchQuery == null || searchQuery.trim().isEmpty()) {
+            return packages;
+        }
+
+        String q = searchQuery.trim().toLowerCase();
+        List<MenuCombos> result = new ArrayList<>();
+
+        for (MenuCombos combo : packages) {
+            if (combo == null) continue;
+
+            if (containsIgnoreCase(combo.getName(), q)
+                    || containsIgnoreCase(combo.getDescription(), q)) {
+                result.add(combo);
+            }
+        }
+        return result;
+    }
+
+    // ----- Categories đã lọc -----
+    public List<MenuCategories> getFilteredCategories() {
+        if (categories == null) return new ArrayList<>();
+
+        if (searchQuery == null || searchQuery.trim().isEmpty()) {
+            return categories;
+        }
+
+        String q = searchQuery.trim().toLowerCase();
+        List<MenuCategories> result = new ArrayList<>();
+
+        for (MenuCategories cat : categories) {
+            if (cat == null) continue;
+
+            if (containsIgnoreCase(cat.getName(), q)
+                    || containsIgnoreCase(cat.getDescription(), q)) {
+                result.add(cat);
+            }
+        }
+        return result;
+    }
+
+    // ================== GETTERS / SETTERS GỐC ==================
     public List<MenuItems> getItems() {
         return items;
     }
@@ -242,5 +321,13 @@ public class MenuPackagesBean implements Serializable {
 
     public List<MenuCombos> getPackages() {
         return packages;
+    }
+
+    public String getSearchQuery() {
+        return searchQuery;
+    }
+
+    public void setSearchQuery(String searchQuery) {
+        this.searchQuery = searchQuery;
     }
 }
