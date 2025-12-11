@@ -25,7 +25,8 @@ const BookingUI = (function () {
         tax: 0,
         totalAmount: 0,
         depositAmount: 0,
-        remainingAmount: 0
+        remainingAmount: 0,
+        menuPricePerTable: 0
     };
 
     const PACKAGE_CONFIGS = {
@@ -79,6 +80,27 @@ const BookingUI = (function () {
             const price = Math.round(base * cfg.feeMultiplier);
             el.textContent = '$' + formatNumber(price) + ' service fee';
         });
+    }
+
+    // Đọc list món (js-menu-dish-price) và tính giá custom menu / 1 bàn
+    function initMenuPriceFromDom() {
+        const nodes = document.querySelectorAll('.js-menu-dish-price');
+        if (!nodes || nodes.length === 0) {
+            state.menuPricePerTable = 0;
+            return;
+        }
+
+        let perGuestTotal = 0;
+        nodes.forEach(span => {
+            const val = parseFloat(span.getAttribute('data-price') || '0');
+            if (!isNaN(val)) {
+                perGuestTotal += val;
+            }
+        });
+
+        // Giả định 10 khách / bàn (đúng với phần Capacity hiện tại)
+        const guestsPerTable = 10;
+        state.menuPricePerTable = perGuestTotal * guestsPerTable;
     }
 
 
@@ -195,11 +217,17 @@ const BookingUI = (function () {
         collectAddonQuantities();
 
         const packageSubtotal = state.pricePerGuest * state.tableCount; // giá theo bàn
+
+        // tiền custom menu (tính từ list món đã chọn)
+        const menuSubtotal = state.menuPricePerTable * state.tableCount;
+
         const addOnsSubtotal = state.addOns.reduce(
                 (sum, a) => sum + a.price * a.quantity,
                 0
                 );
-        const subtotal = packageSubtotal + addOnsSubtotal;
+
+        const subtotal = packageSubtotal + menuSubtotal + addOnsSubtotal;
+
         const tax = Math.round((subtotal + state.serviceCharge) * 0.1);
         const discount = state.discount;
         const totalWithCharges = subtotal + state.serviceCharge + tax - discount;
@@ -228,6 +256,10 @@ const BookingUI = (function () {
         const pkgTotalEl = document.getElementById('summary-package-total');
         if (pkgTotalEl)
             pkgTotalEl.textContent = '$' + formatNumber(packageSubtotal);
+
+        const menuEl = document.getElementById('summary-menu-total');
+        if (menuEl)
+            menuEl.textContent = '$' + formatNumber(menuSubtotal);
 
         const serviceEl = document.getElementById('summary-service-charge');
         if (serviceEl)
@@ -531,6 +563,30 @@ const BookingUI = (function () {
         // nếu mọi thứ ok: cho submit form để JSF lưu booking
         return true;
     }
+    function setupFullMenuToggle() {
+        const btn = document.getElementById('view-full-menu-btn');
+        const panel = document.getElementById('full-menu-details-panel');
+        if (!btn || !panel)
+            return;
+
+        const icon = btn.querySelector('i');
+
+        btn.addEventListener('click', function () {
+            const isHidden = panel.classList.contains('hidden');
+            if (isHidden) {
+                panel.classList.remove('hidden');
+                if (icon) {
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            } else {
+                panel.classList.add('hidden');
+                if (icon) {
+                    icon.style.transform = '';
+                }
+            }
+        });
+    }
+
 
     // ====== INIT ======
     function init() {
@@ -874,7 +930,8 @@ const BookingUI = (function () {
                 window.location.href = targetUrl;
             });
         }
-
+        // đọc giá custom menu từ DOM
+        initMenuPriceFromDom();
         // initial render
         updateCapacity();
         updateSummary();
@@ -884,6 +941,7 @@ const BookingUI = (function () {
         setServiceLevel('premium');
         setPaymentMethod('card');
         setPaymentType('deposit');
+        setupFullMenuToggle();
         goToStep(1);
     }
 

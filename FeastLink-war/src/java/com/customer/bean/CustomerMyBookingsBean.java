@@ -23,15 +23,22 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import jakarta.faces.view.ViewScoped;
 
 @Named("customerMyBookingsBean")
-@RequestScoped
+@ViewScoped
 public class CustomerMyBookingsBean implements Serializable {
 
     @EJB
     private BookingsFacadeLocal bookingsFacade;
 
     private List<Bookings> myBookings = new ArrayList<>();
+    // ========= PAGINATION =========
+    // Số booking mỗi trang (bro muốn 5, 6, 10 tùy chỉnh)
+    private int pageSize = 5;
+
+    // Trang hiện tại (bắt đầu từ 1)
+    private int currentPage = 1;
 
     private final Locale displayLocale = Locale.US;
     private final SimpleDateFormat shortDateFmt
@@ -385,4 +392,91 @@ public class CustomerMyBookingsBean implements Serializable {
         FacesContext ctx = FacesContext.getCurrentInstance();
         ctx.addMessage(null, new FacesMessage(severity, summary, detail));
     }
+    // ========= PAGINATION HELPERS =========
+
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(int pageSize) {
+        if (pageSize > 0) {
+            this.pageSize = pageSize;
+        }
+    }
+
+    public int getCurrentPage() {
+        return currentPage;
+    }
+
+    public void setCurrentPage(int currentPage) {
+        this.currentPage = currentPage;
+    }
+
+    // Tổng số booking (dùng hiển thị "X bookings")
+    public int getTotalRecords() {
+        return (myBookings != null) ? myBookings.size() : 0;
+    }
+
+    // Tổng số trang
+    public int getTotalPages() {
+        int totalRecords = getTotalRecords();
+        if (totalRecords == 0) {
+            return 1;
+        }
+        return (int) Math.ceil((double) totalRecords / (double) pageSize);
+    }
+
+    // Danh sách booking chỉ cho trang hiện tại
+    public List<Bookings> getPagedBookings() {
+        if (myBookings == null || myBookings.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        int totalPages = getTotalPages();
+
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+        if (currentPage < 1) {
+            currentPage = 1;
+        }
+
+        int fromIndex = (currentPage - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, myBookings.size());
+
+        return myBookings.subList(fromIndex, toIndex);
+    }
+
+    // List số trang: [1, 2, 3, ...] để ui:repeat vẽ button
+    public List<Integer> getPageNumbers() {
+        List<Integer> pages = new ArrayList<>();
+        int totalPages = getTotalPages();
+        for (int i = 1; i <= totalPages; i++) {
+            pages.add(i);
+        }
+        return pages;
+    }
+
+    // Bấm qua trang kế
+    public String nextPage() {
+        if (currentPage < getTotalPages()) {
+            currentPage++;
+        }
+        return null; // ở lại trang hiện tại
+    }
+
+    // Bấm về trang trước
+    public String previousPage() {
+        if (currentPage > 1) {
+            currentPage--;
+        }
+        return null;
+    }
+
+    // Bấm trực tiếp số trang
+    public String changePage() {
+        // currentPage đã được set bởi f:setPropertyActionListener
+        return null;
+    }
+
 }
