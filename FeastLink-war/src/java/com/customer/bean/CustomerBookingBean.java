@@ -28,6 +28,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.mypack.entity.MenuItems;
+import com.mypack.sessionbean.MenuItemsFacadeLocal;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Handle final booking confirmation from booking.xhtml (wizard).
@@ -50,6 +54,9 @@ public class CustomerBookingBean implements Serializable {
     @EJB
     private ServiceTypesFacadeLocal serviceTypesFacade;
 
+    @EJB
+    private MenuItemsFacadeLocal menuItemsFacade;
+
     private List<EventTypes> allEventTypes;
 
     // danh sách event type cho dropdown
@@ -61,6 +68,10 @@ public class CustomerBookingBean implements Serializable {
     private EventTypes selectedEventType;
     // ====== Fields bound từ booking.xhtml (hidden inputs / form) ======
     private Long restaurantId;
+    // ===== Custom menu (selected dishes) =====
+    private String selectedMenuItemIds;        // raw: "1,2,3"
+    private List<MenuItems> selectedMenuItems = new ArrayList<>();
+
     private String eventDateStr;   // yyyy-MM-dd (URL / hidden field)
     private int guestCount;
     private String locationType;   // AT_RESTAURANT / OUTSIDE
@@ -150,7 +161,41 @@ public class CustomerBookingBean implements Serializable {
 
         restaurantName = safe(restaurant.getName());
         restaurantAddress = safe(restaurant.getAddress());
+        /* ===== Load selected menu items from query param ===== */
+        String menuItemsParam = params.get("menuItems");
+        if (menuItemsParam != null && !menuItemsParam.trim().isEmpty()) {
+            selectedMenuItemIds = menuItemsParam;
+            selectedMenuItems = new ArrayList<>();
 
+            String[] parts = menuItemsParam.split(",");
+            for (String part : parts) {
+                String trimmed = part.trim();
+                if (trimmed.isEmpty()) {
+                    continue;
+                }
+
+                try {
+                    Long id = Long.valueOf(trimmed);
+                    MenuItems mi = menuItemsFacade.find(id);
+                    if (mi != null) {
+                        // Optional: chỉ nhận món đúng nhà hàng này
+                        if (restaurant != null
+                                && mi.getRestaurantId() != null
+                                && !mi.getRestaurantId().getRestaurantId()
+                                        .equals(restaurant.getRestaurantId())) {
+                            continue;
+                        }
+
+                        selectedMenuItems.add(mi);
+                    }
+                } catch (NumberFormatException ex) {
+                    // ignore invalid id
+                }
+            }
+        } else {
+            selectedMenuItemIds = null;
+            selectedMenuItems = new ArrayList<>();
+        }
         // ---- Event date ----
         if (eventDateStr == null || eventDateStr.isBlank()) {
             String dParam = params.get("date");
@@ -360,6 +405,18 @@ public class CustomerBookingBean implements Serializable {
 // Alias cho tên hiển thị nếu view dùng eventTypeName
     public String getEventTypeName() {
         return getSelectedEventTypeName();
+    }
+
+    public String getSelectedMenuItemIds() {
+        return selectedMenuItemIds;
+    }
+
+    public void setSelectedMenuItemIds(String selectedMenuItemIds) {
+        this.selectedMenuItemIds = selectedMenuItemIds;
+    }
+
+    public List<MenuItems> getSelectedMenuItems() {
+        return selectedMenuItems;
     }
 
     private Map<Integer, String> eventTypeNameMap = new HashMap<>();

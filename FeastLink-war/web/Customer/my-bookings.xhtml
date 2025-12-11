@@ -200,7 +200,7 @@
                     <h:form id="myBookingsForm">
                         <!-- DANH SÁCH BOOKING -->
                         <div id="bookings-list" class="grid grid-cols-1 gap-6 mt-8">
-                            <ui:repeat value="#{customerMyBookingsBean.myBookings}" var="b">
+                            <ui:repeat value="#{customerMyBookingsBean.pagedBookings}" var="b">
                                 <div
                                     class="booking-card group bg-white rounded-3xl border border-[#E5E7EB] shadow-lg hover:shadow-2xl hover:border-[#D4AF37]/50 transition-all duration-500 overflow-hidden hover:-translate-y-1"
                                     data-role="booking-card"
@@ -404,6 +404,59 @@
                                 </div>
                             </ui:repeat>
                         </div>
+                        <!-- PAGINATION BAR -->
+                        <h:panelGroup rendered="#{customerMyBookingsBean.totalRecords gt 0}">
+                            <div class="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+                                <!-- Info bên trái -->
+                                <div class="text-sm text-[#4B5563]">
+                                    Page
+                                    <span class="font-semibold text-[#0B1120]">
+                                        <h:outputText value="#{customerMyBookingsBean.currentPage}" />
+                                    </span>
+                                    of
+                                    <span class="font-semibold text-[#0B1120]">
+                                        <h:outputText value="#{customerMyBookingsBean.totalPages}" />
+                                    </span>
+                                    ·
+                                    <span class="text-[#6B7280]">
+                                        <h:outputText value="#{customerMyBookingsBean.totalRecords}" /> bookings
+                                    </span>
+                                </div>
+
+                                <!-- Nút phân trang bên phải -->
+                                <div class="flex items-center gap-2">
+
+                                    <!-- Previous -->
+                                    <h:panelGroup rendered="#{customerMyBookingsBean.currentPage gt 1}">
+                                        <h:commandLink action="#{customerMyBookingsBean.previousPage}"
+                                                       styleClass="px-3 py-1.5 rounded-full border border-[#E5E7EB] text-xs font-medium text-[#4B5563] bg-white hover:border-[#D4AF37] hover:text-[#0B1120] transition-all">
+                                            ‹ Prev
+                                        </h:commandLink>
+                                    </h:panelGroup>
+
+                                    <!-- Số trang -->
+                                    <ui:repeat value="#{customerMyBookingsBean.pageNumbers}" var="p">
+                                        <h:commandLink action="#{customerMyBookingsBean.changePage}"
+                                                       styleClass="#{customerMyBookingsBean.currentPage eq p
+                                                                     ? 'px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] text-[#111827] shadow-sm'
+                                                                     : 'px-3 py-1.5 rounded-full text-xs font-medium border border-[#E5E7EB] text-[#4B5563] bg-white hover:border-[#D4AF37] hover:text-[#111827] transition-all'}">
+                                            <f:setPropertyActionListener target="#{customerMyBookingsBean.currentPage}" value="#{p}" />
+                                            <span>#{p}</span>
+                                        </h:commandLink>
+                                    </ui:repeat>
+
+                                    <!-- Next -->
+                                    <h:panelGroup rendered="#{customerMyBookingsBean.currentPage lt customerMyBookingsBean.totalPages}">
+                                        <h:commandLink action="#{customerMyBookingsBean.nextPage}"
+                                                       styleClass="px-3 py-1.5 rounded-full border border-[#E5E7EB] text-xs font-medium text-[#4B5563] bg-white hover:border-[#D4AF37] hover:text-[#0B1120] transition-all">
+                                            Next ›
+                                        </h:commandLink>
+                                    </h:panelGroup>
+                                </div>
+                            </div>
+                        </h:panelGroup>
+
                     </h:form>
                 </h:panelGroup>
             </div>
