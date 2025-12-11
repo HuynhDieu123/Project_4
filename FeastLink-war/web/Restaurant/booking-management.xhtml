@@ -10,16 +10,16 @@
     xmlns:p="http://xmlns.jakarta.ee/jsf/passthrough"
     template="/Restaurant/layout-manager.xhtml">
 
-    <ui:define name="title">Booking Management</ui:define>
+    <ui:define name="title">FeastLink - Restaurant Profile</ui:define>
 
-    <!-- HEADER TRÊN TOP BAR -->
+    <!-- ===== TOP BAR LEFT (giống figma) ===== -->
     <ui:define name="header">
         <div class="flex flex-col">
             <h1 class="text-2xl font-bold text-text-main-light">
-                Booking Management
+                Restaurant Profile Management
             </h1>
             <p class="text-sm text-text-secondary-light">
-                Review and manage all banquet reservations for your venue.
+                Manage your restaurant&apos;s information and policies.
             </p>
         </div>
     </ui:define>
@@ -33,7 +33,7 @@
             <h:inputHidden id="rejectReasonInput"
                            value="#{bookingManagementBean.rejectReason}"/>
 
-            <!-- BỎ max-w / mx-auto / px-4 ... để căn giống các trang khác -->
+            <!-- container chính -->
             <div class="space-y-6">
 
                 <!-- header trong content -->
@@ -260,35 +260,36 @@
                         </div>
                     </div>
 
+                    <!-- bảng fit trong khung -->
                     <div class="overflow-x-auto">
-                        <table class="w-full min-w-[900px]">
+                        <table class="min-w-full">
                             <thead>
                                 <tr class="bg-gray-50 border-b border-gray-100">
-                                    <th class="px-6 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Booking Code
                                     </th>
-                                    <th class="px-6 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Event Date &amp; Time
                                     </th>
-                                    <th class="px-6 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Customer
                                     </th>
-                                    <th class="px-6 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Party Size
                                     </th>
-                                    <th class="px-6 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Event Type
                                     </th>
-                                    <th class="px-6 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Status
                                     </th>
-                                    <th class="px-6 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-left text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Payment
                                     </th>
-                                    <th class="px-6 py-4 text-right text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-right text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Total Amount
                                     </th>
-                                    <th class="px-6 py-4 text-right text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-right text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>
@@ -299,14 +300,14 @@
                                     <tr class="hover:bg-[#FFF7E6] transition-colors">
 
                                         <!-- Booking Code -->
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-4">
                                             <span class="font-mono text-xs sm:text-sm font-semibold text-[#0B1120]">
                                                 #{b.bookingCode}
                                             </span>
                                         </td>
 
                                         <!-- Event Date & Time -->
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-4">
                                             <div class="text-xs sm:text-sm font-medium text-[#0B1120]">
                                                 <h:outputText value="#{b.eventDate}">
                                                     <f:convertDateTime pattern="MMM dd, yyyy"/>
@@ -320,7 +321,7 @@
                                         </td>
 
                                         <!-- Contact / Customer -->
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-4">
                                             <!-- Tên người liên hệ -->
                                             <div class="text-xs sm:text-sm font-medium text-[#0B1120]">
                                                 #{not empty b.contactFullName
@@ -343,23 +344,22 @@
                                             </div>
                                         </td>
 
-
                                         <!-- Party Size -->
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-4">
                                             <span class="text-xs sm:text-sm font-semibold text-[#0B1120]">
                                                 #{b.guestCount} guests
                                             </span>
                                         </td>
 
                                         <!-- Event Type -->
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-4">
                                             <span class="text-xs sm:text-sm text-gray-700">
                                                 #{b.eventTypeId != null ? b.eventTypeId.name : ''}
                                             </span>
                                         </td>
 
                                         <!-- Status -->
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-4">
                                             <span
                                                 class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium border
                                                 #{b.bookingStatus eq 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -372,7 +372,7 @@
                                         </td>
 
                                         <!-- Payment -->
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-4">
                                             <div class="space-y-1">
                                                 <!-- badge trạng thái -->
                                                 <span
@@ -386,17 +386,17 @@
                                                 </span>
 
                                                 <!-- các nút đổi trạng thái thanh toán -->
-                                                <div class="flex flex-wrap gap-2 text-[11px]">
+                                                <div class="flex flex-col gap-1 text-[11px]">
                                                     <!-- UNPAID: có 2 lựa chọn -->
                                                     <h:panelGroup rendered="#{b.paymentStatus eq 'UNPAID'}">
                                                         <h:commandButton value="Mark deposit paid"
-                                                                         styleClass="px-2 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium"
+                                                                         styleClass="w-full text-left px-2 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium"
                                                                          action="#{bookingManagementBean.updatePaymentStatus(b,'DEPOSIT_PAID')}">
                                                             <f:ajax render="@form"/>
                                                         </h:commandButton>
 
                                                         <h:commandButton value="Mark paid in full"
-                                                                         styleClass="px-2 py-1 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium"
+                                                                         styleClass="w-full text-left mt-1 px-2 py-1 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium"
                                                                          action="#{bookingManagementBean.updatePaymentStatus(b,'PAID_IN_FULL')}">
                                                             <f:ajax render="@form"/>
                                                         </h:commandButton>
@@ -405,7 +405,7 @@
                                                     <!-- DEPOSIT_PAID: chỉ cho lên full -->
                                                     <h:panelGroup rendered="#{b.paymentStatus eq 'DEPOSIT_PAID'}">
                                                         <h:commandButton value="Mark paid in full"
-                                                                         styleClass="px-2 py-1 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium"
+                                                                         styleClass="w-full text-left px-2 py-1 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium"
                                                                          action="#{bookingManagementBean.updatePaymentStatus(b,'PAID_IN_FULL')}">
                                                             <f:ajax render="@form"/>
                                                         </h:commandButton>
@@ -414,9 +414,8 @@
                                             </div>
                                         </td>
 
-
                                         <!-- Total Amount -->
-                                        <td class="px-6 py-4 text-right">
+                                        <td class="px-4 py-4 text-right">
                                             <span class="text-xs sm:text-sm font-bold text-[#0B1120]">
                                                 $
                                                 <h:outputText value="#{b.totalAmount}">
@@ -426,7 +425,7 @@
                                         </td>
 
                                         <!-- ACTIONS -->
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-4">
                                             <div class="flex items-center justify-end gap-3">
 
                                                 <!-- PENDING: nút ✓ và ✕ -->
@@ -435,7 +434,7 @@
                                                         <!-- APPROVE -->
                                                         <h:commandButton
                                                             value="check"
-                                                            styleClass="material-symbols-outlined flex items-center justify-center w-10 h-10 rounded-2xl
+                                                            styleClass="material-symbols-outlined flex items-center justify-center w-9 h-9 rounded-2xl
                                                             bg-emerald-50 border border-emerald-100
                                                             text-emerald-600 hover:bg-emerald-100 transition-all"
                                                             title="Approve"
@@ -446,7 +445,7 @@
                                                         <!-- DECLINE -->
                                                         <h:commandButton
                                                             value="close"
-                                                            styleClass="material-symbols-outlined flex items-center justify-center w-10 h-10 rounded-2xl
+                                                            styleClass="material-symbols-outlined flex items-center justify-center w-9 h-9 rounded-2xl
                                                             bg-red-50 border border-red-100
                                                             text-red-600 hover:bg-red-100 transition-all"
                                                             title="Decline"
@@ -461,7 +460,7 @@
                                                 <h:panelGroup rendered="#{b.bookingStatus eq 'CONFIRMED'}">
                                                     <h:commandButton
                                                         value="flag"
-                                                        styleClass="material-symbols-outlined flex items-center justify-center w-10 h-10 rounded-2xl
+                                                        styleClass="material-symbols-outlined flex items-center justify-center w-9 h-9 rounded-2xl
                                                         bg-[#0B1120] text-[#D4AF37] hover:bg-[#020617] transition-all"
                                                         title="Mark as completed"
                                                         action="#{bookingManagementBean.updateStatus(b,'COMPLETED')}">
@@ -472,7 +471,7 @@
                                                 <!-- VIEW DETAILS: luôn nằm bên phải -->
                                                 <h:commandButton
                                                     value="visibility"
-                                                    styleClass="material-symbols-outlined flex items-center justify-center w-11 h-11 rounded-2xl
+                                                    styleClass="material-symbols-outlined flex items-center justify-center w-10 h-10 rounded-2xl
                                                     bg-[#D4AF37] text-white hover:bg-[#c49d2f] transition-all shadow-sm"
                                                     title="View details"
                                                     action="#{bookingManagementBean.selectBooking(b)}">
