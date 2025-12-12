@@ -824,7 +824,7 @@
                                             <ui:repeat value="#{section.items}" var="item" varStatus="itemStatus">
                                                 <div class="group relative rounded-2xl border border-[#E5E7EB] bg-white p-3 lg:p-4
                                                      hover:border-[#D4AF37] hover:shadow-md transition-all"
-                                                     data-menu-card="#{item.id}"
+                                                     data-menu-card="#{item.menuItemId}"
                                                      data-menu-item-index="#{itemStatus.index}"
                                                      data-menu-name="#{item.name}"
                                                      data-menu-category="#{section.category.name}"
@@ -837,7 +837,7 @@
                                                                 <div>
                                                                     <p class="text-sm font-semibold text-[#111827]">
                                                                         #{item.name}
-                                                                        <h:panelGroup rendered="#{item.vegetarian}">
+                                                                        <h:panelGroup rendered="#{item.isVegetarian}">
                                                                             <span
                                                                                 class="ml-2 inline-flex items-center rounded-full border border-emerald-400 px-2 py-0.5
                                                                                 text-[10px] font-medium text-emerald-600">
@@ -870,7 +870,7 @@
                                                                         text-[#111827] hover:border-[#D4AF37] hover:bg-[#FDF6E9]
                                                                         transition-all"
                                                                         data-role="toggle-menu-item"
-                                                                        data-menu-id="#{item.id}"
+                                                                        data-menu-id="#{item.menuItemId}"
                                                                         data-menu-price="#{item.pricePerPerson}">
                                                                     <span>Add to menu</span>
                                                                 </button>

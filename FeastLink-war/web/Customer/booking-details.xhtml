@@ -1,373 +1,471 @@
 <?xml version='1.0' encoding='UTF-8' ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
       xmlns:ui="jakarta.faces.facelets">
 
-  <h:head>
-    <meta charset="UTF-8" />
-    <title>FeastLink - Booking Details</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style type="text/css">
-      body {
-        margin: 0;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background-color: #F9FAFB;
-      }
-    </style>
-  </h:head>
+    <h:head>
+        <meta charset="UTF-8" />
+        <title>FeastLink - Booking Details</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <style type="text/css">
+            body {
+                margin: 0;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                background-color: #F9FAFB;
+            }
+        </style>
+    </h:head>
 
-  <h:body class="bg-[#F9FAFB]">
-    <ui:include src="/layout/header.xhtml" />
+    <h:body class="bg-[#F9FAFB]">
+        <ui:include src="/layout/header.xhtml" />
 
-    <main class="pt-28 pb-16 min-h-screen bg-[#F9FAFB]">
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <main class="pt-28 pb-16 min-h-screen bg-[#F9FAFB]">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <!-- Nếu booking không tồn tại -->
-        <h:panelGroup rendered="#{empty customerBookingDetailsBean.booking}">
-          <div class="bg-white rounded-3xl border border-[#E5E7EB] p-10 text-center shadow-xl">
-            <h2 class="text-2xl font-bold text-[#0B1120] mb-3">
-              Booking not found
-            </h2>
-            <p class="text-[#4B5563] mb-6">
-              We couldn't find this booking. It may have been removed or you don't have permission to view it.
-            </p>
-            <h:link outcome="/Customer/my-bookings" styleClass="inline-block">
-              <span class="px-6 py-3 bg-[#0B1120] text-white rounded-xl border border-[#D4AF37]">
-                Back to My Bookings
-              </span>
-            </h:link>
-          </div>
-        </h:panelGroup>
-
-        <!-- Booking tồn tại -->
-        <h:panelGroup rendered="#{not empty customerBookingDetailsBean.booking}">
-          <!-- Page header -->
-          <div class="flex items-center justify-between mb-8">
-            <div>
-              <h1 class="text-3xl font-bold text-[#0B1120] mb-2">
-                Booking details
-              </h1>
-              <p class="text-[#4B5563]">
-                Full summary of your reservation with
-                <span class="font-semibold text-[#0B1120]">
-                  <h:outputText value="#{customerBookingDetailsBean.booking.restaurantId.name}" />
-                </span>.
-              </p>
-            </div>
-            <h:link outcome="/Customer/my-bookings"
-                    styleClass="inline-flex items-center gap-2 text-sm text-[#4B5563] hover:text-[#0B1120]">
-              <i data-lucide="arrow-left" class="w-4 h-4"></i>
-              <span>Back to My Bookings</span>
-            </h:link>
-          </div>
-
-          <!-- Card tổng -->
-          <div class="bg-white rounded-3xl border border-[#E5E7EB] shadow-xl overflow-hidden">
-
-            <!-- Header strip -->
-            <div class="bg-gradient-to-r from-[#0B1120] to-[#020617] px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b-4 border-[#D4AF37]">
-              <div class="flex-1">
-                <div class="flex flex-wrap items-center gap-3 mb-2">
-                  <span class="px-4 py-1.5 bg-[#D4AF37]/20 text-[#E6C77F] text-sm font-semibold rounded-full border border-[#D4AF37]">
-                    <h:outputText value="#{customerBookingDetailsBean.booking.bookingCode}" />
-                  </span>
-                </div>
-                <h2 class="text-2xl font-bold text-white mb-1">
-                  <h:outputText value="#{customerBookingDetailsBean.booking.restaurantId.name}" />
-                </h2>
-                <p class="text-sm text-[#E5E7EB]">
-                  <h:outputText value="#{customerBookingDetailsBean.booking.eventTypeId.name}" />
-                  <span> · </span>
-                  <h:outputText value="#{customerBookingDetailsBean.booking.guestCount}" /> guests
-                  <span> · </span>
-                  <h:outputText value="#{customerBookingDetailsBean.formatDate()}" />
-                </p>
-              </div>
-
-              <!-- Status + Payment -->
-              <div class="flex flex-wrap gap-2 sm:flex-col sm:items-end">
-                <!-- Booking status badge -->
-                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.bookingStatus eq 'PENDING'}">
-                  <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]">
-                    Pending
-                  </span>
-                </h:panelGroup>
-                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.bookingStatus eq 'CONFIRMED'}">
-                  <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#22C55E] text-white border-[#22C55E]">
-                    Confirmed
-                  </span>
-                </h:panelGroup>
-                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.bookingStatus eq 'COMPLETED'}">
-                  <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#0B1120] text-[#D4AF37] border-[#0B1120]">
-                    Completed
-                  </span>
-                </h:panelGroup>
-                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.bookingStatus eq 'CANCELLED'}">
-                  <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#EF4444] text-white border-[#EF4444]">
-                    Cancelled
-                  </span>
-                </h:panelGroup>
-
-                <!-- Payment status badge -->
-                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.paymentStatus eq 'UNPAID'}">
-                  <span class="px-4 py-1.5 rounded-full text-sm font-semibold border bg-[#4B5563]/10 text-[#F9FAFB] border-[#4B5563]/40">
-                    Unpaid
-                  </span>
-                </h:panelGroup>
-                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.paymentStatus eq 'DEPOSIT_PAID'}">
-                  <span class="px-4 py-1.5 rounded-full text-sm font-semibold border bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/60">
-                    Deposit Paid
-                  </span>
-                </h:panelGroup>
-                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.paymentStatus eq 'PAID'}">
-                  <span class="px-4 py-1.5 rounded-full text-sm font-semibold border bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/60">
-                    Paid in Full
-                  </span>
-                </h:panelGroup>
-              </div>
-            </div>
-
-            <!-- Body -->
-            <div class="px-8 py-8 space-y-10">
-
-              <!-- ===== Section 1: Event & Venue details ===== -->
-              <section>
-                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
-                  <i data-lucide="calendar" class="w-5 h-5 text-[#D4AF37]"></i>
-                  Event &amp; venue details
-                </h3>
-
-                <div class="bg-[#F9FAFB] rounded-2xl p-6 space-y-4 border border-[#E5E7EB]">
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p class="text-sm text-[#4B5563] mb-1">Event date</p>
-                      <p class="text-[#111827] font-semibold">
-                        <h:outputText value="#{customerBookingDetailsBean.formatDate()}" />
-                      </p>
-                    </div>
-                    <div>
-                      <p class="text-sm text-[#4B5563] mb-1">Time</p>
-                      <p class="text-[#111827] font-semibold">
-                        <h:outputText value="#{customerBookingDetailsBean.formatTimeRange()}" />
-                      </p>
-                    </div>
-                    <div>
-                      <p class="text-sm text-[#4B5563] mb-1">Guest count</p>
-                      <p class="text-[#111827] font-semibold">
-                        <h:outputText value="#{customerBookingDetailsBean.booking.guestCount}" /> guests
-                      </p>
-                    </div>
-                    <div>
-                      <p class="text-sm text-[#4B5563] mb-1">Event type</p>
-                      <p class="text-[#111827] font-semibold">
-                        <h:outputText value="#{customerBookingDetailsBean.booking.eventTypeId.name}" />
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p class="text-sm text-[#4B5563] mb-1">Service package</p>
-                      <p class="text-[#111827] font-semibold">
-                        <h:outputText value="#{customerBookingDetailsBean.booking.serviceTypeId.name}" />
-                      </p>
-                    </div>
-                    <div>
-                      <p class="text-sm text-[#4B5563] mb-1">Location</p>
-                      <p class="text-[#111827] font-semibold">
-                        <h:outputText value="#{customerBookingDetailsBean.locationDisplay}" />
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <!-- ===== NEW Section: Contact information ===== -->
-              <section>
-                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
-                  <i data-lucide="user-round" class="w-5 h-5 text-[#D4AF37]"></i>
-                  Contact information
-                </h3>
-
-                <div class="bg-white rounded-2xl border border-[#E5E7EB] p-6">
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Full name</p>
-                      <p class="mt-1 text-sm text-[#111827]">
-                        <h:outputText value="#{customerBookingDetailsBean.contactFullName}" />
-                      </p>
-                    </div>
-
-                    <div>
-                      <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Email address</p>
-                      <p class="mt-1 text-sm text-[#111827]">
-                        <h:outputText value="#{customerBookingDetailsBean.contactEmail}" />
-                      </p>
-                    </div>
-
-                    <div>
-                      <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Phone number</p>
-                      <p class="mt-1 text-sm text-[#111827]">
-                        <h:outputText value="#{customerBookingDetailsBean.contactPhone}" />
-                      </p>
-                    </div>
-
-                    <div>
-                      <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
-                        Company / Organization (optional)
-                      </p>
-                      <p class="mt-1 text-sm text-[#111827]">
-                        <h:outputText value="#{customerBookingDetailsBean.companyName}" />
-                      </p>
-                    </div>
-
-                    <div>
-                      <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Company tax ID</p>
-                      <p class="mt-1 text-sm text-[#111827]">
-                        <h:outputText value="#{customerBookingDetailsBean.companyTaxId}" />
-                      </p>
-                    </div>
-
-                    <div class="md:col-span-2">
-                      <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Billing address</p>
-                      <p class="mt-1 text-sm text-[#111827]">
-                        <h:outputText value="#{customerBookingDetailsBean.billingAddress}" />
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <!-- ===== NEW Section: Special services & requests ===== -->
-              <section>
-                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
-                  <i data-lucide="star" class="w-5 h-5 text-[#D4AF37]"></i>
-                  Special services &amp; requests
-                </h3>
-                <div class="bg-white rounded-2xl border border-[#E5E7EB] p-6">
-                  <p class="text-sm text-[#4B5563] whitespace-pre-line">
-                    <h:outputText value="#{customerBookingDetailsBean.specialRequests}" />
-                  </p>
-                </div>
-              </section>
-
-              <!-- ===== Section 2: Payment breakdown ===== -->
-              <section>
-                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
-                  <i data-lucide="dollar-sign" class="w-5 h-5 text-[#D4AF37]"></i>
-                  Payment breakdown
-                </h3>
-
-                <div class="bg-gradient-to-br from-[#F9FAFB] to-white border-2 border-[#E5E7EB] rounded-2xl p-6">
-                  <div class="space-y-4">
-                    <div class="flex justify-between items-center pb-4 border-b-2 border-[#E5E7EB]">
-                      <span class="text-[#4B5563]">Total amount</span>
-                      <span class="text-3xl font-bold text-[#0B1120]">
-                        <h:outputText value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.booking.totalAmount)}" />
-                      </span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                      <span class="text-[#4B5563]">Deposit amount</span>
-                      <span class="text-xl font-semibold text-[#22C55E]">
-                        <h:outputText value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.booking.depositAmount)}" />
-                      </span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                      <span class="text-[#4B5563]">Remaining balance</span>
-                      <span class="text-xl font-bold">
-                        <h:outputText value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.booking.remainingAmount)}" />
-                      </span>
-                    </div>
-
-                    <!-- Payment type -->
-                    <div class="flex justify-between items-center pt-4 mt-2 border-t border-[#E5E7EB]">
-                      <span class="text-[#4B5563]">Payment type</span>
-                      <span class="text-sm font-semibold text-[#111827]">
-                        <h:outputText value="#{customerBookingDetailsBean.paymentTypeLabel}" />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <!-- ===== Section 3: Cancellation policy ===== -->
-              <section>
-                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
-                  <i data-lucide="file-text" class="w-5 h-5 text-[#D4AF37]"></i>
-                  Cancellation policy
-                </h3>
-                <div class="bg-[#FEF3C7] border-l-4 border-[#EAB308] rounded-xl p-5">
-                  <p class="text-sm text-[#78350F] leading-relaxed">
-                    <h:outputText value="#{customerBookingDetailsBean.cancellationPolicyText}" />
-                  </p>
-                </div>
-              </section>
-
-              <!-- ===== Section 4: Notes & cancellation details ===== -->
-              <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 class="text-sm font-semibold text-[#0B1120] uppercase tracking-wide mb-2">
-                    Customer notes
-                  </h3>
-                  <div class="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl p-4 min-h-[96px]">
-                    <h:panelGroup rendered="#{customerBookingDetailsBean.hasCustomerNote()}">
-                      <p class="text-[#4B5563] text-sm whitespace-pre-line">
-                        <h:outputText value="#{customerBookingDetailsBean.booking.note}" />
-                      </p>
-                    </h:panelGroup>
-                    <h:panelGroup rendered="#{not customerBookingDetailsBean.hasCustomerNote()}">
-                      <p class="text-[#9CA3AF] text-sm italic">
-                        No additional notes were provided for this booking.
-                      </p>
-                    </h:panelGroup>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 class="text-sm font-semibold text-[#0B1120] uppercase tracking-wide mb-2">
-                    Cancellation details
-                  </h3>
-                  <div class="bg-[#FEF2F2] border border-[#FECACA] rounded-2xl p-4 min-h-[96px]">
-                    <h:panelGroup rendered="#{customerBookingDetailsBean.hasCancelInfo()}">
-                      <p class="text-[#7F1D1D] text-sm mb-2">
-                        <strong>Reason:</strong>
-                        <h:outputText value="#{customerBookingDetailsBean.booking.cancelReason}" />
-                      </p>
-                      <h:panelGroup rendered="#{not empty customerBookingDetailsBean.booking.cancelTime}">
-                        <p class="text-[#7F1D1D] text-sm">
-                          <strong>Cancelled on:</strong>
-                          <h:outputText value="#{customerBookingDetailsBean.formatDateTime(customerBookingDetailsBean.booking.cancelTime)}" />
+                <!-- Nếu booking không tồn tại -->
+                <h:panelGroup rendered="#{empty customerBookingDetailsBean.booking}">
+                    <div class="bg-white rounded-3xl border border-[#E5E7EB] p-10 text-center shadow-xl">
+                        <h2 class="text-2xl font-bold text-[#0B1120] mb-3">
+                            Booking not found
+                        </h2>
+                        <p class="text-[#4B5563] mb-6">
+                            We couldn't find this booking. It may have been removed or you don't have permission to view it.
                         </p>
-                      </h:panelGroup>
-                    </h:panelGroup>
-                    <h:panelGroup rendered="#{not customerBookingDetailsBean.hasCancelInfo()}">
-                      <p class="text-[#9CA3AF] text-sm italic">
-                        This booking has not been cancelled.
-                      </p>
-                    </h:panelGroup>
-                  </div>
-                </div>
-              </section>
+                        <h:link outcome="/Customer/my-bookings" styleClass="inline-block">
+                            <span class="px-6 py-3 bg-[#0B1120] text-white rounded-xl border border-[#D4AF37]">
+                                Back to My Bookings
+                            </span>
+                        </h:link>
+                    </div>
+                </h:panelGroup>
+
+                <!-- Booking tồn tại -->
+                <h:panelGroup rendered="#{not empty customerBookingDetailsBean.booking}">
+                    <!-- Page header -->
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h1 class="text-3xl font-bold text-[#0B1120] mb-2">
+                                Booking details
+                            </h1>
+                            <p class="text-[#4B5563]">
+                                Full summary of your reservation with
+                                <span class="font-semibold text-[#0B1120]">
+                                    <h:outputText value="#{customerBookingDetailsBean.booking.restaurantId.name}" />
+                                </span>.
+                            </p>
+                        </div>
+                        <h:link outcome="/Customer/my-bookings"
+                                styleClass="inline-flex items-center gap-2 text-sm text-[#4B5563] hover:text-[#0B1120]">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            <span>Back to My Bookings</span>
+                        </h:link>
+                    </div>
+
+                    <!-- Card tổng -->
+                    <div class="bg-white rounded-3xl border border-[#E5E7EB] shadow-xl overflow-hidden">
+
+                        <!-- Header strip -->
+                        <div class="bg-gradient-to-r from-[#0B1120] to-[#020617] px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b-4 border-[#D4AF37]">
+                            <div class="flex-1">
+                                <div class="flex flex-wrap items-center gap-3 mb-2">
+                                    <span class="px-4 py-1.5 bg-[#D4AF37]/20 text-[#E6C77F] text-sm font-semibold rounded-full border border-[#D4AF37]">
+                                        <h:outputText value="#{customerBookingDetailsBean.booking.bookingCode}" />
+                                    </span>
+                                </div>
+                                <h2 class="text-2xl font-bold text-white mb-1">
+                                    <h:outputText value="#{customerBookingDetailsBean.booking.restaurantId.name}" />
+                                </h2>
+                                <p class="text-sm text-[#E5E7EB]">
+                                    <h:outputText value="#{customerBookingDetailsBean.booking.eventTypeId.name}" />
+                                    <span> · </span>
+                                    <h:outputText value="#{customerBookingDetailsBean.booking.guestCount}" /> guests
+                                    <span> · </span>
+                                    <h:outputText value="#{customerBookingDetailsBean.formatDate()}" />
+                                </p>
+                            </div>
+
+                            <!-- Status + Payment -->
+                            <div class="flex flex-wrap gap-2 sm:flex-col sm:items-end">
+                                <!-- Booking status badge -->
+                                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.bookingStatus eq 'PENDING'}">
+                                    <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]">
+                                        Pending
+                                    </span>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.bookingStatus eq 'CONFIRMED'}">
+                                    <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#22C55E] text-white border-[#22C55E]">
+                                        Confirmed
+                                    </span>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.bookingStatus eq 'COMPLETED'}">
+                                    <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#0B1120] text-[#D4AF37] border-[#0B1120]">
+                                        Completed
+                                    </span>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.bookingStatus eq 'CANCELLED'}">
+                                    <span class="px-4 py-1.5 rounded-full text-sm font-semibold border-2 bg-[#EF4444] text-white border-[#EF4444]">
+                                        Cancelled
+                                    </span>
+                                </h:panelGroup>
+
+                                <!-- Payment status badge -->
+                                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.paymentStatus eq 'UNPAID'}">
+                                    <span class="px-4 py-1.5 rounded-full text-sm font-semibold border bg-[#4B5563]/10 text-[#F9FAFB] border-[#4B5563]/40">
+                                        Unpaid
+                                    </span>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.paymentStatus eq 'DEPOSIT_PAID'}">
+                                    <span class="px-4 py-1.5 rounded-full text-sm font-semibold border bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/60">
+                                        Deposit Paid
+                                    </span>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{customerBookingDetailsBean.booking.paymentStatus eq 'PAID'}">
+                                    <span class="px-4 py-1.5 rounded-full text-sm font-semibold border bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/60">
+                                        Paid in Full
+                                    </span>
+                                </h:panelGroup>
+                            </div>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="px-8 py-8 space-y-10">
+
+                            <!-- ===== Section 1: Event & Venue details ===== -->
+                            <section>
+                                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
+                                    <i data-lucide="calendar" class="w-5 h-5 text-[#D4AF37]"></i>
+                                    Event &amp; venue details
+                                </h3>
+
+                                <div class="bg-[#F9FAFB] rounded-2xl p-6 space-y-4 border border-[#E5E7EB]">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <p class="text-sm text-[#4B5563] mb-1">Event date</p>
+                                            <p class="text-[#111827] font-semibold">
+                                                <h:outputText value="#{customerBookingDetailsBean.formatDate()}" />
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-[#4B5563] mb-1">Time</p>
+                                            <p class="text-[#111827] font-semibold">
+                                                <h:outputText value="#{customerBookingDetailsBean.formatTimeRange()}" />
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-[#4B5563] mb-1">Guest count</p>
+                                            <p class="text-[#111827] font-semibold">
+                                                <h:outputText value="#{customerBookingDetailsBean.booking.guestCount}" /> guests
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-[#4B5563] mb-1">Event type</p>
+                                            <p class="text-[#111827] font-semibold">
+                                                <h:outputText value="#{customerBookingDetailsBean.booking.eventTypeId.name}" />
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <p class="text-sm text-[#4B5563] mb-1">Service package</p>
+                                            <p class="text-[#111827] font-semibold">
+                                                <h:outputText value="#{customerBookingDetailsBean.booking.serviceTypeId.name}" />
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-[#4B5563] mb-1">Location</p>
+                                            <p class="text-[#111827] font-semibold">
+                                                <h:outputText value="#{customerBookingDetailsBean.locationDisplay}" />
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- ===== Section: Menu & package ===== -->
+                            <section>
+                                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
+                                    <i data-lucide="utensils" class="w-5 h-5 text-[#D4AF37]"></i>
+                                    Menu &amp; package
+                                </h3>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <!-- Selected package -->
+                                    <div class="bg-white rounded-2xl border border-[#E5E7EB] p-6">
+                                        <p class="text-sm text-[#4B5563] mb-2">Selected package</p>
+
+                                        <h:panelGroup
+                                            rendered="#{not empty customerBookingDetailsBean.booking.bookingCombosCollection}">
+                                            <ui:repeat value="#{customerBookingDetailsBean.booking.bookingCombosCollection}" var="bc">
+                                                <p class="text-[#111827] font-semibold">
+                                                    <h:outputText value="#{bc.menuCombos.name}" />
+                                                </p>
+                                            </ui:repeat>
+                                        </h:panelGroup>
+
+                                        <h:panelGroup
+                                            rendered="#{empty customerBookingDetailsBean.booking.bookingCombosCollection}">
+                                            <p class="text-[#6B7280] italic">
+                                                No package selected.
+                                            </p>
+                                        </h:panelGroup>
+                                    </div>
+
+                                    <!-- Custom menu -->
+                                    <div class="bg-white rounded-2xl border border-[#E5E7EB] p-6">
+                                        <p class="text-sm text-[#4B5563] mb-2">Custom menu</p>
+
+                                        <h:panelGroup
+                                            rendered="#{not empty customerBookingDetailsBean.booking.bookingMenuItemsCollection}">
+                                            <ul class="divide-y divide-[#E5E7EB]">
+                                                <ui:repeat
+                                                    value="#{customerBookingDetailsBean.booking.bookingMenuItemsCollection}"
+                                                    var="mi">
+                                                    <li class="py-2 flex justify-between items-center text-sm">
+                                                        <span class="text-[#111827]">
+                                                            <h:outputText value="#{mi.menuItems.name}" />
+                                                        </span>
+                                                        <span class="text-[#4B5563]">
+                                                            x <h:outputText value="#{mi.quantity}" />
+                                                        </span>
+                                                    </li>
+                                                </ui:repeat>
+                                            </ul>
+                                        </h:panelGroup>
+
+                                        <h:panelGroup
+                                            rendered="#{empty customerBookingDetailsBean.booking.bookingMenuItemsCollection}">
+                                            <p class="text-[#6B7280] italic">
+                                                No custom menu selected.
+                                            </p>
+                                        </h:panelGroup>
+                                    </div>
+                                </div>
+                            </section>
+
+
+                            <!-- ===== NEW Section: Contact information ===== -->
+                            <section>
+                                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
+                                    <i data-lucide="user-round" class="w-5 h-5 text-[#D4AF37]"></i>
+                                    Contact information
+                                </h3>
+
+                                <div class="bg-white rounded-2xl border border-[#E5E7EB] p-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Full name</p>
+                                            <p class="mt-1 text-sm text-[#111827]">
+                                                <h:outputText value="#{customerBookingDetailsBean.contactFullName}" />
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Email address</p>
+                                            <p class="mt-1 text-sm text-[#111827]">
+                                                <h:outputText value="#{customerBookingDetailsBean.contactEmail}" />
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Phone number</p>
+                                            <p class="mt-1 text-sm text-[#111827]">
+                                                <h:outputText value="#{customerBookingDetailsBean.contactPhone}" />
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+                                                Company / Organization (optional)
+                                            </p>
+                                            <p class="mt-1 text-sm text-[#111827]">
+                                                <h:outputText value="#{customerBookingDetailsBean.companyName}" />
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Company tax ID</p>
+                                            <p class="mt-1 text-sm text-[#111827]">
+                                                <h:outputText value="#{customerBookingDetailsBean.companyTaxId}" />
+                                            </p>
+                                        </div>
+
+                                        <div class="md:col-span-2">
+                                            <p class="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">Billing address</p>
+                                            <p class="mt-1 text-sm text-[#111827]">
+                                                <h:outputText value="#{customerBookingDetailsBean.billingAddress}" />
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- ===== NEW Section: Special services & requests ===== -->
+                            <section>
+                                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
+                                    <i data-lucide="star" class="w-5 h-5 text-[#D4AF37]"></i>
+                                    Special services &amp; requests
+                                </h3>
+                                <div class="bg-white rounded-2xl border border-[#E5E7EB] p-6">
+                                    <p class="text-sm text-[#4B5563] whitespace-pre-line">
+                                        <h:outputText value="#{customerBookingDetailsBean.specialRequests}" />
+                                    </p>
+                                </div>
+                            </section>
+
+                            <!-- ===== Section 2: Payment breakdown ===== -->
+                            <section>
+                                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
+                                    <i data-lucide="dollar-sign" class="w-5 h-5 text-[#D4AF37]"></i>
+                                    Payment breakdown
+                                </h3>
+
+                                <div class="bg-gradient-to-br from-[#F9FAFB] to-white border-2 border-[#E5E7EB] rounded-2xl p-6">
+                                    <div class="space-y-3">
+
+                                        <!-- PACKAGE SUBTOTAL -->
+                                        <h:panelGroup rendered="#{customerBookingDetailsBean.hasPackage}">
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-[#4B5563]">Package subtotal</span>
+                                                <span class="font-medium">
+                                                    <h:outputText
+                                                        value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.packageSubtotal)}" />
+                                                </span>
+                                            </div>
+                                        </h:panelGroup>
+
+                                        <!-- CUSTOM MENU SUBTOTAL -->
+                                        <h:panelGroup rendered="#{customerBookingDetailsBean.hasMenuItems}">
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-[#4B5563]">Custom menu subtotal</span>
+                                                <span class="font-medium">
+                                                    <h:outputText
+                                                        value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.menuSubtotal)}" />
+                                                </span>
+                                            </div>
+                                        </h:panelGroup>
+
+                                        <!-- OTHER CHARGES -->
+                                        <h:panelGroup rendered="#{customerBookingDetailsBean.hasOtherCharges}">
+                                            <div class="flex flex-col gap-0.5">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-[#4B5563]">Other charges</span>
+                                                    <span class="font-medium">
+                                                        <h:outputText
+                                                            value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.otherCharges)}" />
+                                                    </span>
+                                                </div>
+                                                <p class="text-[11px] text-[#6B7280]">
+                                                    Includes venue fee, service charge and taxes.
+                                                </p>
+                                            </div>
+                                        </h:panelGroup>
+
+                                        <div class="border-t border-[#E5E7EB] my-3"></div>
+
+                                        <!-- DEPOSIT -->
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-[#4B5563]">Deposit amount</span>
+                                            <span class="text-xl font-semibold text-[#22C55E]">
+                                                <h:outputText
+                                                    value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.booking.depositAmount)}" />
+                                            </span>
+                                        </div>
+
+                                        <!-- REMAINING -->
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-[#4B5563]">Remaining balance</span>
+                                            <span class="text-xl font-bold">
+                                                <h:outputText
+                                                    value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.booking.remainingAmount)}" />
+                                            </span>
+                                        </div>
+
+                                        <div class="border-t border-[#E5E7EB] my-3"></div>
+
+                                        <!-- TOTAL AMOUNT (ở cuối, nổi bật hơn) -->
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs font-semibold uppercase tracking-wide text-[#4B5563]">
+                                                Total amount
+                                            </span>
+                                            <span class="text-3xl font-bold text-[#0B1120]">
+                                                <h:outputText
+                                                    value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.booking.totalAmount)}" />
+                                            </span>
+                                        </div>
+
+                                        <!-- PAYMENT TYPE -->
+                                        <div class="flex justify-between items-center pt-2">
+                                            <span class="text-[#4B5563]">Payment type</span>
+                                            <span class="text-sm font-semibold text-[#111827]">
+                                                <h:outputText value="#{customerBookingDetailsBean.paymentTypeLabel}" />
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </section>
+
+                            <!-- ===== Section 3: Cancellation policy ===== -->
+                            <section>
+                                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
+                                    <i data-lucide="file-text" class="w-5 h-5 text-[#D4AF37]"></i>
+                                    Cancellation policy
+                                </h3>
+                                <div class="bg-[#FEF3C7] border-l-4 border-[#EAB308] rounded-xl p-5">
+                                    <p class="text-sm text-[#78350F] leading-relaxed">
+                                        <h:outputText value="#{customerBookingDetailsBean.cancellationPolicyText}" />
+                                    </p>
+                                </div>
+                            </section>
+
+                            <!-- ===== Section 4: Cancellation details ===== -->
+                            <section>
+                                <h3 class="text-sm font-semibold text-[#0B1120] uppercase tracking-wide mb-2">
+                                    Cancellation details
+                                </h3>
+                                <div class="bg-[#FEF2F2] border border-[#FECACA] rounded-2xl p-4 min-h-[96px]">
+                                    <h:panelGroup rendered="#{customerBookingDetailsBean.hasCancelInfo()}">
+                                        <p class="text-[#7F1D1D] text-sm mb-2">
+                                            <strong>Reason:</strong>
+                                            <h:outputText value="#{customerBookingDetailsBean.booking.cancelReason}" />
+                                        </p>
+                                        <h:panelGroup rendered="#{not empty customerBookingDetailsBean.booking.cancelTime}">
+                                            <p class="text-[#7F1D1D] text-sm">
+                                                <strong>Cancelled on:</strong>
+                                                <h:outputText
+                                                    value="#{customerBookingDetailsBean.formatDateTime(customerBookingDetailsBean.booking.cancelTime)}" />
+                                            </p>
+                                        </h:panelGroup>
+                                    </h:panelGroup>
+                                    <h:panelGroup rendered="#{not customerBookingDetailsBean.hasCancelInfo()}">
+                                        <p class="text-[#9CA3AF] text-sm italic">
+                                            This booking has not been cancelled.
+                                        </p>
+                                    </h:panelGroup>
+                                </div>
+                            </section>
+
+
+                        </div>
+                    </div>
+                </h:panelGroup>
 
             </div>
-          </div>
-        </h:panelGroup>
+        </main>
 
-      </div>
-    </main>
+        <ui:include src="/layout/footer.xhtml" />
 
-    <ui:include src="/layout/footer.xhtml" />
-
-    <script type="text/javascript">
-      document.addEventListener('DOMContentLoaded', function () {
-        if (window.lucide) {
-          window.lucide.createIcons();
-        }
-      });
-    </script>
-  </h:body>
+        <script type="text/javascript">
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            });
+        </script>
+    </h:body>
 </html>

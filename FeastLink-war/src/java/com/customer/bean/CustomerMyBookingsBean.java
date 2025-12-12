@@ -4,6 +4,9 @@ import com.mypack.entity.Bookings;
 import com.mypack.entity.EventTypes;
 import com.mypack.entity.ServiceTypes;
 import com.mypack.entity.Users;
+import com.mypack.entity.BookingCombos;
+import com.mypack.entity.BookingMenuItems;
+
 import com.mypack.sessionbean.BookingsFacadeLocal;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
@@ -23,6 +26,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+
 import jakarta.faces.view.ViewScoped;
 
 @Named("customerMyBookingsBean")
@@ -61,16 +68,44 @@ public class CustomerMyBookingsBean implements Serializable {
 
         if (userObj instanceof Users) {
             Users currentUser = (Users) userObj;
+
             List<Bookings> all = bookingsFacade.findAll();
             if (all != null) {
                 for (Bookings b : all) {
-                    if (b.getCustomerId() != null
-                            && b.getCustomerId().getUserId()
-                                    .equals(currentUser.getUserId())) {
+                    if (b == null || b.getCustomerId() == null) {
+                        continue;
+                    }
+                    if (b.getCustomerId().getUserId()
+                            .equals(currentUser.getUserId())) {
                         myBookings.add(b);
                     }
                 }
             }
+
+            // *** Sort: eventDate / createdAt DESC (mới nhất nằm trên cùng) ***
+            Collections.sort(myBookings, new Comparator<Bookings>() {
+                @Override
+                public int compare(Bookings o1, Bookings o2) {
+                    Date d1 = (o1 != null)
+                            ? (o1.getEventDate() != null ? o1.getEventDate() : o1.getCreatedAt())
+                            : null;
+                    Date d2 = (o2 != null)
+                            ? (o2.getEventDate() != null ? o2.getEventDate() : o2.getCreatedAt())
+                            : null;
+
+                    if (d1 == null && d2 == null) {
+                        return 0;
+                    }
+                    if (d1 == null) {
+                        return 1;   // d1 null => đứng sau
+                    }
+                    if (d2 == null) {
+                        return -1;  // d2 null => đứng sau
+                    }
+                    // DESC
+                    return d2.compareTo(d1);
+                }
+            });
         }
     }
 
@@ -157,6 +192,117 @@ public class CustomerMyBookingsBean implements Serializable {
         }
         NumberFormat nf = NumberFormat.getCurrencyInstance(displayLocale);
         return nf.format(value);
+    }
+
+        // ========== PACKAGE & MENU CHO TỪNG BOOKING ==========
+
+    public boolean hasPackage(Bookings b) {
+        return b != null
+                && b.getBookingCombosCollection() != null
+                && !b.getBookingCombosCollection().isEmpty();
+    }
+
+    public boolean hasMenuItems(Bookings b) {
+        return b != null
+                && b.getBookingMenuItemsCollection() != null
+                && !b.getBookingMenuItemsCollection().isEmpty();
+    }
+
+    // Tên package (giả sử 1 booking chỉ có 1 combo chính)
+    public String getPackageName(Bookings b) {
+        if (!hasPackage(b)) {
+            return "No package selected";
+        }
+        BookingCombos bc = b.getBookingCombosCollection().iterator().next();
+        if (bc.getMenuCombos() != null && bc.getMenuCombos().getName() != null) {
+            return bc.getMenuCombos().getName();
+        }
+        return "Package";
+    }
+
+    // Tóm tắt custom menu: số món
+    public String getMenuSummary(Bookings b) {
+        if (!hasMenuItems(b)) {
+            return "No custom menu selected";
+        }
+        int dishes = 0;
+        for (BookingMenuItems bmi : b.getBookingMenuItemsCollection()) {
+            if (bmi.getQuantity() > 0) {
+                dishes++;
+            }
+        }
+        return dishes + " dishes";
+    }
+
+    // Subtotal package cho booking (từ BookingCombos.TotalPrice)
+    public BigDecimal getPackageSubtotal(Bookings b) {
+        if (!hasPackage(b)) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal sum = BigDecimal.ZERO;
+        for (BookingCombos bc : b.getBookingCombosCollection()) {
+            if (bc.getTotalPrice() != null) {
+                sum = sum.add(bc.getTotalPrice());
+            }
+        }
+        return sum;
+    }
+
+    // Subtotal custom menu (từ BookingMenuItems.TotalPrice)
+    public BigDecimal getMenuSubtotal(Bookings b) {
+        if (!hasMenuItems(b)) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal sum = BigDecimal.ZERO;
+        for (BookingMenuItems bmi : b.getBookingMenuItemsCollection()) {
+            if (bmi.getTotalPrice() != null) {
+                sum = sum.add(bmi.getTotalPrice());
+            }
+        }
+        return sum;
+    }
+
+    // Other charges = Total - Package - Menu (không cho âm)
+    public BigDecimal getOtherCharges(Bookings b) {
+        if (b == null || b.getTotalAmount() == null) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal total = b.getTotalAmount();
+        BigDecimal pkg = getPackageSubtotal(b);
+        BigDecimal menu = getMenuSubtotal(b);
+
+        BigDecimal other = total.subtract(pkg.add(menu));
+        if (other.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO;
+        }
+        return other;
+    }
+
+    // ===== Bridge methods cho EL gọi kiểu method-expression =====
+
+    // dùng cho #{customerMyBookingsBean.packageName(b)}
+    public String packageName(Bookings b) {
+        return getPackageName(b);
+    }
+
+    // dùng cho #{customerMyBookingsBean.menuSummary(b)}
+    public String menuSummary(Bookings b) {
+        return getMenuSummary(b);
+    }
+
+    // dùng cho #{customerMyBookingsBean.packageSubtotal(b)}
+    public BigDecimal packageSubtotal(Bookings b) {
+        return getPackageSubtotal(b);
+    }
+
+    // dùng cho #{customerMyBookingsBean.menuSubtotal(b)}
+    public BigDecimal menuSubtotal(Bookings b) {
+        return getMenuSubtotal(b);
+    }
+
+    // dùng cho #{customerMyBookingsBean.otherCharges(b)}
+    public BigDecimal otherCharges(Bookings b) {
+        return getOtherCharges(b);
     }
 
     // ========== HELPER DÙNG TRONG EL ==========

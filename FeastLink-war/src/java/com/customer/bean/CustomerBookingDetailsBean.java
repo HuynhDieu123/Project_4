@@ -2,6 +2,11 @@ package com.customer.bean;
 
 import com.mypack.entity.Bookings;
 import com.mypack.entity.Users;
+import com.mypack.entity.BookingCombos;
+import com.mypack.entity.BookingMenuItems;
+import java.math.BigDecimal;
+import java.util.Collection;
+
 import com.mypack.sessionbean.BookingsFacadeLocal;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
@@ -41,6 +46,9 @@ public class CustomerBookingDetailsBean implements Serializable {
 
     private final NumberFormat currencyFmt =
             NumberFormat.getCurrencyInstance(locale);
+        // ====== Payment breakdown subtotals ======
+    private BigDecimal packageSubtotal = BigDecimal.ZERO;
+    private BigDecimal menuSubtotal = BigDecimal.ZERO;
 
     @PostConstruct
     public void init() {
@@ -286,6 +294,75 @@ public class CustomerBookingDetailsBean implements Serializable {
         }
         return "Pay full amount now";
     }
+    
+        // =========================================
+    //  PRICE BREAKDOWN: PACKAGE / MENU / OTHER
+    // =========================================
+
+    private void calculatePriceBreakdown() {
+        packageSubtotal = BigDecimal.ZERO;
+        menuSubtotal = BigDecimal.ZERO;
+
+        if (booking == null) {
+            return;
+        }
+
+        // Tính subtotal cho package từ BookingCombos.TotalPrice
+        Collection<BookingCombos> comboColl = booking.getBookingCombosCollection();
+        if (comboColl != null) {
+            for (BookingCombos bc : comboColl) {
+                if (bc != null && bc.getTotalPrice() != null) {
+                    packageSubtotal = packageSubtotal.add(bc.getTotalPrice());
+                }
+            }
+        }
+
+        // Tính subtotal cho custom menu từ BookingMenuItems.TotalPrice
+        Collection<BookingMenuItems> menuColl = booking.getBookingMenuItemsCollection();
+        if (menuColl != null) {
+            for (BookingMenuItems bmi : menuColl) {
+                if (bmi != null && bmi.getTotalPrice() != null) {
+                    menuSubtotal = menuSubtotal.add(bmi.getTotalPrice());
+                }
+            }
+        }
+    }
+
+    public BigDecimal getPackageSubtotal() {
+        return packageSubtotal != null ? packageSubtotal : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getMenuSubtotal() {
+        return menuSubtotal != null ? menuSubtotal : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getOtherCharges() {
+        if (booking == null || booking.getTotalAmount() == null) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal total = booking.getTotalAmount();
+        BigDecimal pkg = getPackageSubtotal();
+        BigDecimal menu = getMenuSubtotal();
+
+        BigDecimal other = total.subtract(pkg.add(menu));
+        if (other.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO;
+        }
+        return other;
+    }
+
+    public boolean isHasPackage() {
+        return getPackageSubtotal().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public boolean isHasMenuItems() {
+        return getMenuSubtotal().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public boolean isHasOtherCharges() {
+        return getOtherCharges().compareTo(BigDecimal.ZERO) > 0;
+    }
+
 
     // ========= HELPERS =========
 

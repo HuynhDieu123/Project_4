@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const mobileClose = document.getElementById('mobileFilterClose');
     const mobileApply = document.getElementById('mobileFilterApply');
 
-    // 🔁 ĐỔI SANG USD
+
     function formatCurrency(v) {
         return '$' + v.toLocaleString('en-US');
     }
