@@ -31,19 +31,27 @@ import java.util.Date;
     @NamedQuery(name = "PointWallets.findAll", query = "SELECT p FROM PointWallets p"),
     @NamedQuery(name = "PointWallets.findByWalletId", query = "SELECT p FROM PointWallets p WHERE p.walletId = :walletId"),
     @NamedQuery(name = "PointWallets.findByCurrentPoints", query = "SELECT p FROM PointWallets p WHERE p.currentPoints = :currentPoints"),
-    @NamedQuery(name = "PointWallets.findByUpdatedAt", query = "SELECT p FROM PointWallets p WHERE p.updatedAt = :updatedAt")})
+    @NamedQuery(name = "PointWallets.findByUpdatedAt", query = "SELECT p FROM PointWallets p WHERE p.updatedAt = :updatedAt")
+})
 public class PointWallets implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
     @Column(name = "WalletId")
     private Long walletId;
+
+    // 🔹 Map thêm cột UserId (trong DB đã có cột này)
+    @Column(name = "UserId")
+    private Long userId;
+
     @Basic(optional = false)
     @NotNull
     @Column(name = "CurrentPoints")
     private long currentPoints;
+
     @Basic(optional = false)
     @NotNull
     @Column(name = "UpdatedAt")
@@ -69,6 +77,14 @@ public class PointWallets implements Serializable {
 
     public void setWalletId(Long walletId) {
         this.walletId = walletId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public long getCurrentPoints() {
@@ -111,5 +127,5 @@ public class PointWallets implements Serializable {
     public String toString() {
         return "com.mypack.entity.PointWallets[ walletId=" + walletId + " ]";
     }
-    
+
 }
