@@ -8,6 +8,8 @@ import com.mypack.entity.Cuisines;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
+import java.util.List;
 
 /**
  *
@@ -28,4 +30,16 @@ public class CuisinesFacade extends AbstractFacade<Cuisines> implements Cuisines
         super(Cuisines.class);
     }
     
+
+    @Override
+    public List<Cuisines> searchByName(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return findAll();
+        }
+
+        String jpql = "SELECT c FROM Cuisines c WHERE LOWER(c.name) LIKE :kw ORDER BY c.name";
+        TypedQuery<Cuisines> q = em.createQuery(jpql, Cuisines.class);
+        q.setParameter("kw", "%" + keyword.trim().toLowerCase() + "%");
+        return q.getResultList();
+    }
 }

@@ -1,0 +1,217 @@
+<ui:composition
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:h="jakarta.faces.html"
+        xmlns:f="jakarta.faces.core"
+        xmlns:ui="jakarta.faces.facelets"
+        template="/Admin/template.xhtml"
+        xmlns:pass="jakarta.faces.passthrough">
+
+    <ui:define name="content">
+
+        <h:head>
+            <title>Quản lý loại ẩm thực</title>
+            <style>
+                .page-wrapper {
+                    padding: 24px;
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                }
+                .page-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                }
+                .page-title {
+                    font-size: 24px;
+                    font-weight: 600;
+                }
+                .card {
+                    background: #ffffff;
+                    border-radius: 12px;
+                    padding: 20px;
+                    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+                }
+                .grid-2 {
+                    display: grid;
+                    grid-template-columns: 2fr 1.2fr;
+                    gap: 20px;
+                }
+                .search-row {
+                    display: flex;
+                    gap: 10px;
+                    margin-bottom: 14px;
+                }
+                .input-text {
+                    flex: 1;
+                    padding: 8px 10px;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
+                    outline: none;
+                }
+                .input-text:focus {
+                    border-color: #6366f1;
+                    box-shadow: 0 0 0 1px rgba(99,102,241,0.3);
+                }
+                .btn {
+                    padding: 8px 14px;
+                    border-radius: 8px;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 14px;
+                }
+                .btn-primary {
+                    background: linear-gradient(135deg, #4f46e5, #6366f1);
+                    color: #fff;
+                }
+                .btn-secondary {
+                    background: #e5e7eb;
+                    color: #111827;
+                }
+                .btn-danger {
+                    background: #ef4444;
+                    color: #fff;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 10px;
+                    font-size: 14px;
+                }
+                th, td {
+                    padding: 10px 12px;
+                    border-bottom: 1px solid #e5e7eb;
+                }
+                th {
+                    background: #f9fafb;
+                    text-align: left;
+                    font-weight: 600;
+                    color: #4b5563;
+                }
+                tr:hover td {
+                    background: #f9fafb;
+                }
+                .form-group {
+                    margin-bottom: 12px;
+                }
+                .form-label {
+                    font-size: 13px;
+                    font-weight: 500;
+                    margin-bottom: 4px;
+                    display: block;
+                }
+                .messages {
+                    margin-bottom: 12px;
+                }
+                .messages .ui-message {
+                    margin-bottom: 4px;
+                }
+            </style>
+        </h:head>
+
+        <h:body>
+            <div class="page-wrapper">
+                <div class="page-header">
+                    <div class="page-title">Quản lý loại ẩm thực (Cuisines)</div>
+                </div>
+
+                <h:form id="cuisineForm">
+                    <h:messages globalOnly="true" layout="table" styleClass="messages" />
+
+                    <div class="card">
+                        <div class="grid-2">
+                            <!-- BÊN TRÁI: DANH SÁCH -->
+                            <div>
+                                <div class="search-row">
+                                    <h:inputText value="#{cuisineBean.keyword}"
+                                                 styleClass="input-text"
+                                                 maxlength="100"
+                                                 pass:placeholder="Nhập tên loại ẩm thực cần tìm..." />
+                                    <h:commandButton value="Tìm kiếm"
+                                                     action="#{cuisineBean.search}"
+                                                     styleClass="btn btn-primary" />
+                                    <h:commandButton value="Xóa lọc"
+                                                     action="#{cuisineBean.clearSearch}"
+                                                     immediate="true"
+                                                     styleClass="btn btn-secondary" />
+                                </div>
+
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th style="width:80px;">ID</th>
+                                            <th>Tên loại ẩm thực</th>
+                                            <th style="width:150px;">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <ui:repeat value="#{cuisineBean.cuisines}" var="c">
+                                            <tr>
+                                                <td>#{c.cuisineId}</td>
+                                                <td>#{c.name}</td>
+                                                <td>
+                                                    <h:commandButton value="Sửa"
+                                                                     action="#{cuisineBean.prepareEdit(c)}"
+                                                                     styleClass="btn btn-secondary">
+                                                        <f:ajax render=":cuisineForm:editPanel" />
+                                                    </h:commandButton>
+                                                    &#160;
+                                                    <h:commandButton value="Xóa"
+                                                                     action="#{cuisineBean.delete(c)}"
+                                                                     styleClass="btn btn-danger"
+                                                                     onclick="return confirm('Bạn có chắc muốn xóa loại ẩm thực này?');">
+                                                        <f:ajax render="@form" />
+                                                    </h:commandButton>
+                                                </td>
+                                            </tr>
+                                        </ui:repeat>
+                                        <tr rendered="#{empty cuisineBean.cuisines}">
+                                            <td colspan="3">Không có loại ẩm thực nào.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- BÊN PHẢI: FORM THÊM / SỬA -->
+                            <div id="editPanel">
+                                <h:panelGroup id="editPanel" layout="block">
+                                    <h3 style="margin-top:0;">
+                                        <h:outputText value="#{cuisineBean.currentCuisine.cuisineId == null ? 
+                                                              'Thêm loại ẩm thực mới' : 
+                                                              'Chỉnh sửa loại ẩm thực'}" />
+                                    </h3>
+
+                                    <div class="form-group">
+                                        <span class="form-label">Tên loại ẩm thực <span style="color:#ef4444">*</span></span>
+                                        <h:inputText value="#{cuisineBean.currentCuisine.name}"
+                                                     styleClass="input-text"
+                                                     required="true"
+                                                     requiredMessage="Tên loại ẩm thực không được để trống."
+                                                     maxlength="100"
+                                                     pass:placeholder="Ví dụ: Việt Nam, Nhật Bản, Hàn Quốc..." />
+                                        <h:message for="name" style="color:#ef4444;font-size:12px;" />
+                                    </div>
+
+                                    <div style="margin-top:16px; display:flex; gap:8px;">
+                                        <h:commandButton value="#{cuisineBean.currentCuisine.cuisineId == null ? 'Thêm mới' : 'Lưu thay đổi'}"
+                                                         action="#{cuisineBean.save}"
+                                                         styleClass="btn btn-primary">
+                                            <f:ajax render="@form" />
+                                        </h:commandButton>
+
+                                        <h:commandButton value="Làm mới form"
+                                                         action="#{cuisineBean.prepareCreate}"
+                                                         immediate="true"
+                                                         styleClass="btn btn-secondary">
+                                            <f:ajax render=":cuisineForm:editPanel" />
+                                        </h:commandButton>
+                                    </div>
+                                </h:panelGroup>
+                            </div>
+                        </div>
+                    </div>
+                </h:form>
+            </div>
+        </h:body>
+
+    </ui:define>
+</ui:composition>
