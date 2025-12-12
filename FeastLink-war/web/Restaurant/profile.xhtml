@@ -5,10 +5,8 @@
                 xmlns:f="jakarta.faces.core"
                 template="/Restaurant/layout-manager.xhtml">
 
-    <!-- ===== PAGE TITLE (tab title) ===== -->
     <ui:define name="title">FeastLink - Restaurant Profile</ui:define>
 
-    <!-- ===== TOP BAR LEFT (giống figma) ===== -->
     <ui:define name="header">
         <div class="flex flex-col">
             <h1 class="text-2xl font-bold text-text-main-light">
@@ -20,16 +18,25 @@
         </div>
     </ui:define>
 
-    <!-- ===== MAIN CONTENT ===== -->
     <ui:define name="content">
 
-        <h:form styleClass="max-w-6xl mx-auto space-y-8">
+        <!-- BẮT BUỘC: multipart/form-data để upload file -->
+        <h:form id="restaurantForm"
+                enctype="multipart/form-data"
+                styleClass="max-w-6xl mx-auto space-y-8">
+
+            <!-- Hiện thông báo (lỗi upload, lưu thành công, ...) -->
+            <h:messages id="msgs"
+                        style="margin-bottom:12px;font-size:12px;"
+                        infoClass="text-green-600"
+                        errorClass="text-red-500"
+                        warnClass="text-yellow-600"/>
 
             <!-- ============ CARD 1: BASIC INFORMATION + LOGO ============ -->
             <section
                 class="bg-card-light rounded-2xl shadow-subtle border border-border-light p-6">
 
-                <!-- Header row của card (ĐÃ SỬA) -->
+                <!-- Header row của card -->
                 <div class="flex items-start justify-between mb-4">
                     <div>
                         <h2 class="text-sm font-semibold text-text-secondary-light uppercase tracking-wide">
@@ -81,7 +88,6 @@
                                 Restaurant Name
                             </label>
 
-                            <!-- Ô hiển thị giống input -->
                             <div class="w-full border border-border-light rounded-lg px-3 py-2 text-sm 
                                  bg-gray-100 text-text-main-light cursor-not-allowed">
                                 #{restaurantProfileBean.name}
@@ -99,27 +105,43 @@
                         </div>
                     </div>
 
-                    <!-- Cột phải: Logo + Upload -->
+                    <!-- Cột phải: Avatar tài khoản MANAGER (dùng chung Users.AvatarUrl) -->
                     <div
                         class="flex flex-col items-center justify-center rounded-2xl border border-border-light bg-background-soft py-6">
 
-                        <!-- Khung logo giả giống figma -->
-                        <div class="w-32 h-32 rounded-xl bg-[#C3A356] flex items-center justify-center mb-4">
-                            <span class="text-xs font-semibold text-white tracking-wide">
-                                LOGO
-                            </span>
+                        <!-- Khung avatar: có hình thì show, không thì LOGO -->
+                        <div class="w-32 h-32 rounded-xl bg-[#C3A356] flex items-center justify-center mb-3 overflow-hidden">
+                            <!-- ĐÃ CÓ AVATAR -->
+                            <ui:fragment rendered="#{not empty restaurantProfileBean.avatarSrc}">
+                                <img src="#{restaurantProfileBean.avatarSrc}"
+                                     alt="Manager Avatar"
+                                     style="width:100%;height:100%;object-fit:cover;border-radius:0.75rem;display:block;"/>
+                            </ui:fragment>
+
+                            <!-- CHƯA CÓ AVATAR -->
+                            <ui:fragment rendered="#{empty restaurantProfileBean.avatarSrc}">
+                                <span class="text-xs font-semibold text-white tracking-wide">
+                                    LOGO
+                                </span>
+                            </ui:fragment>
                         </div>
 
-                        <p class="text-xs text-text-secondary-light mb-3">
-                            Restaurant Logo
+                        <p class="text-xs text-text-secondary-light mb-2">
+                            Restaurant Avatar (dùng chung với Avatar trong Users)
                         </p>
 
-                        <!-- Nút upload (chưa cần action JSF) -->
-                        <button type="button"
-                                class="px-4 py-2 rounded-lg bg-cta-orange text-white text-xs font-semibold hover:opacity-90">
-                            Upload Image
-                        </button>
+                        <!-- Nút chọn file: dùng luôn h:inputFile, style thành nút -->
+                        <h:inputFile id="avatarFile"
+                                     value="#{restaurantProfileBean.avatarPart}"
+                                     styleClass="px-4 py-2 rounded-lg bg-cta-orange text-white text-xs font-semibold hover:opacity-90 cursor-pointer">
+                            <f:passThroughAttribute name="accept" value="image/*"/>
+                        </h:inputFile>
+
+                        <p class="mt-2 text-[11px] text-text-secondary-light text-center">
+                            Chọn file avatar, sau đó bấm <span class="font-semibold">Save Changes</span> để lưu.
+                        </p>
                     </div>
+
                 </div>
             </section>
 
@@ -252,7 +274,7 @@
                 </div>
 
                 <div class="space-y-4">
-                    <!-- Monday - Friday (THỰC SỰ CHỈNH GIỜ) -->
+                    <!-- Monday - Friday -->
                     <div class="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1fr] md:items-center gap-3">
                         <p class="text-sm text-text-secondary-light">
                             Monday – Friday
@@ -261,7 +283,6 @@
                         <!-- Giờ mở cửa -->
                         <h:inputText value="#{restaurantProfileBean.openTimeText}"
                                      styleClass="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
-                            <!-- HTML5 time input: format HH:mm -->
                             <f:passThroughAttribute name="type" value="time"/>
                         </h:inputText>
 
@@ -273,7 +294,6 @@
                     </div>
                 </div>
             </section>
-
 
             <!-- ============ CARD 4: BOOKING POLICY ============ -->
             <section
