@@ -61,7 +61,9 @@ public class RestaurantDetailsBean implements Serializable {
     @PostConstruct
     public void init() {
         FacesContext ctx = FacesContext.getCurrentInstance();
-        if (ctx == null) return;
+        if (ctx == null) {
+            return;
+        }
 
         Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
         String idParam = params.get("restaurantId");
@@ -71,7 +73,8 @@ public class RestaurantDetailsBean implements Serializable {
             if (idParam != null && !idParam.isEmpty()) {
                 id = Long.valueOf(idParam);
             }
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException ignored) {
+        }
 
         if (id != null) {
             restaurant = restaurantsFacade.find(id);
@@ -84,7 +87,9 @@ public class RestaurantDetailsBean implements Serializable {
                 restaurant = all.get(0);
             }
         }
-        if (restaurant == null) return;
+        if (restaurant == null) {
+            return;
+        }
 
         // ==== City / Area ====
         cityName = "";
@@ -96,79 +101,87 @@ public class RestaurantDetailsBean implements Serializable {
                     cityName = safe(restaurant.getAreaId().getCityId().getName());
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         // ==== Capacity (use minGuest * 3 as max demo) ====
         Integer minGuests = restaurant.getMinGuestCount();
         capacityMin = (minGuests != null && minGuests > 0) ? minGuests : 30;
         capacityMax = capacityMin * 3;
 
-      // =================== IMAGES (IsPrimary + SortOrder) ===================
-heroImageUrl = null;
-galleryImages = new ArrayList<>();
-try {
-    Collection<RestaurantImages> imagesCol = restaurant.getRestaurantImagesCollection();
-    if (imagesCol != null && !imagesCol.isEmpty()) {
+        // =================== IMAGES (IsPrimary + SortOrder) ===================
+        heroImageUrl = null;
+        galleryImages = new ArrayList<>();
+        try {
+            Collection<RestaurantImages> imagesCol = restaurant.getRestaurantImagesCollection();
+            if (imagesCol != null && !imagesCol.isEmpty()) {
 
-        // Chuyển sang List để sort + BỎ QUA ảnh không có URL (coi như đã xóa)
-        List<RestaurantImages> images = new ArrayList<>();
-        for (RestaurantImages img : imagesCol) {
-            if (img == null) continue;
+                // Chuyển sang List để sort + BỎ QUA ảnh không có URL (coi như đã xóa)
+                List<RestaurantImages> images = new ArrayList<>();
+                for (RestaurantImages img : imagesCol) {
+                    if (img == null) {
+                        continue;
+                    }
 
-            String url = safe(img.getImageUrl()); // safe() trả "" nếu null
-            if (url.trim().isEmpty()) {
-                // ảnh này không còn đường dẫn => coi như đã xóa, không add vào
-                continue;
-            }
+                    String url = safe(img.getImageUrl()); // safe() trả "" nếu null
+                    if (url.trim().isEmpty()) {
+                        // ảnh này không còn đường dẫn => coi như đã xóa, không add vào
+                        continue;
+                    }
 
-            images.add(img);
-        }
+                    images.add(img);
+                }
 
-        if (!images.isEmpty()) {
-            // Sắp xếp theo SortOrder tăng dần (null sẽ nằm cuối)
-            images.sort((a, b) -> {
-                Integer sa = a.getSortOrder();   // giữ nguyên getter của bạn
-                Integer sb = b.getSortOrder();
-                if (sa == null && sb == null) return 0;
-                if (sa == null) return 1;
-                if (sb == null) return -1;
-                return sa.compareTo(sb);
-            });
+                if (!images.isEmpty()) {
+                    // Sắp xếp theo SortOrder tăng dần (null sẽ nằm cuối)
+                    images.sort((a, b) -> {
+                        Integer sa = a.getSortOrder();   // giữ nguyên getter của bạn
+                        Integer sb = b.getSortOrder();
+                        if (sa == null && sb == null) {
+                            return 0;
+                        }
+                        if (sa == null) {
+                            return 1;
+                        }
+                        if (sb == null) {
+                            return -1;
+                        }
+                        return sa.compareTo(sb);
+                    });
 
-            // Tìm ảnh IsPrimary = 1 để làm banner (nếu không có thì lấy ảnh đầu tiên)
-            RestaurantImages primary = null;
-            for (RestaurantImages img : images) {
-                Boolean isPrimary = img.getIsPrimary(); // giữ nguyên getter hiện tại
-                if (isPrimary != null && isPrimary) {
-                    primary = img;
-                    break;
+                    // Tìm ảnh IsPrimary = 1 để làm banner (nếu không có thì lấy ảnh đầu tiên)
+                    RestaurantImages primary = null;
+                    for (RestaurantImages img : images) {
+                        Boolean isPrimary = img.getIsPrimary(); // giữ nguyên getter hiện tại
+                        if (isPrimary != null && isPrimary) {
+                            primary = img;
+                            break;
+                        }
+                    }
+                    if (primary == null) {
+                        primary = images.get(0);
+                    }
+
+                    // Ảnh banner
+                    heroImageUrl = safe(primary.getImageUrl());
+
+                    // Ảnh gallery dưới: lấy hết theo SortOrder
+                    for (RestaurantImages img : images) {
+                        String url = safe(img.getImageUrl());
+                        if (!url.trim().isEmpty()) {
+                            galleryImages.add(url);
+                        }
+                    }
                 }
             }
-            if (primary == null) {
-                primary = images.get(0);
-            }
-
-            // Ảnh banner
-            heroImageUrl = safe(primary.getImageUrl());
-
-            // Ảnh gallery dưới: lấy hết theo SortOrder
-            for (RestaurantImages img : images) {
-                String url = safe(img.getImageUrl());
-                if (!url.trim().isEmpty()) {
-                    galleryImages.add(url);
-                }
-            }
+        } catch (Exception e) {
+            // bạn có thể log ra để debug nếu muốn
+            e.printStackTrace();
         }
-    }
-} catch (Exception e) {
-    // bạn có thể log ra để debug nếu muốn
-    e.printStackTrace();
-}
 
-if (heroImageUrl == null || heroImageUrl.isEmpty()) {
-    heroImageUrl = "/FeastLink-war/resources/images/restaurant-placeholder.jpg";
-}
-
+        if (heroImageUrl == null || heroImageUrl.isEmpty()) {
+            heroImageUrl = "/FeastLink-war/resources/images/restaurant-placeholder.jpg";
+        }
 
         // ==== Rating & Reviews ====
         double sumRating = 0d;
@@ -177,13 +190,19 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
             Collection<RestaurantReviews> reviews = restaurant.getRestaurantReviewsCollection();
             if (reviews != null) {
                 for (RestaurantReviews rev : reviews) {
-                    if (rev == null) continue;
+                    if (rev == null) {
+                        continue;
+                    }
 
                     Boolean deleted = rev.getIsDeleted();
-                    if (deleted != null && deleted) continue;
+                    if (deleted != null && deleted) {
+                        continue;
+                    }
 
                     Boolean approved = rev.getIsApproved();
-                    if (approved != null && !approved) continue;
+                    if (approved != null && !approved) {
+                        continue;
+                    }
 
                     Integer r = rev.getRating();
                     if (r != null && r > 0) {
@@ -192,7 +211,8 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
                     }
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         avgRating = reviewCount > 0 ? (sumRating / reviewCount) : 4.8d;
 
         if (avgRating >= 4.9 && reviewCount >= 200) {
@@ -212,7 +232,9 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
             Collection<MenuCombos> comboEntities = restaurant.getMenuCombosCollection();
             if (comboEntities != null) {
                 for (MenuCombos combo : comboEntities) {
-                    if (combo == null) continue;
+                    if (combo == null) {
+                        continue;
+                    }
 
                     BigDecimal total = combo.getPriceTotal();
                     Integer guests = combo.getMinGuests();
@@ -249,7 +271,8 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
                     combos.add(c);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         if (pricePerGuestFrom <= 0d) {
             pricePerGuestFrom = 75d; // fallback demo
@@ -261,14 +284,17 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
             Collection<Bookings> bookings = restaurant.getBookingsCollection();
             if (bookings != null) {
                 for (Bookings b : bookings) {
-                    if (b == null) continue;
+                    if (b == null) {
+                        continue;
+                    }
                     EventTypes et = b.getEventTypeId();
                     if (et != null && et.getName() != null) {
                         typeSet.add(et.getName());
                     }
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         if (typeSet.isEmpty()) {
             typeSet.add("Wedding");
             typeSet.add("Corporate");
@@ -281,98 +307,151 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
 
     private void loadMenuSections() {
         menuSections = new ArrayList<>();
-        if (restaurant == null) return;
+        if (restaurant == null || restaurant.getRestaurantId() == null) {
+            return;
+        }
 
         Long restaurantId = restaurant.getRestaurantId();
-        if (restaurantId == null) return;
 
         List<MenuCategories> allCategories = menuCategoriesFacade.findAll();
         List<MenuItems> allItems = menuItemsFacade.findAll();
+        if (allCategories == null) {
+            allCategories = new ArrayList<>();
+        }
+        if (allItems == null) {
+            allItems = new ArrayList<>();
+        }
 
-        if (allCategories == null) allCategories = new ArrayList<>();
-        if (allItems == null) allItems = new ArrayList<>();
+        // 1) Lấy danh sách categoryId thuộc restaurant này
+        Set<Long> restaurantCategoryIds = new HashSet<>();
+        List<MenuCategories> restaurantCats = new ArrayList<>();
 
         for (MenuCategories cat : allCategories) {
-            if (cat == null) continue;
+            if (cat == null) {
+                continue;
+            }
 
-            // filter by restaurant
             if (cat.getRestaurantId() == null
                     || cat.getRestaurantId().getRestaurantId() == null
                     || !restaurantId.equals(cat.getRestaurantId().getRestaurantId())) {
                 continue;
             }
 
-            // only active categories if there is IsActive flag
             try {
                 Boolean active = cat.getIsActive();
                 if (active != null && !active) {
                     continue;
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
 
-            List<MenuItemCard> itemsForCategory = new ArrayList<>();
+            if (cat.getCategoryId() != null) {
+                restaurantCategoryIds.add(cat.getCategoryId());
+            }
+            restaurantCats.add(cat);
+        }
+
+        // 2) Build section theo category đúng
+        for (MenuCategories cat : restaurantCats) {
+            List<MenuItems> itemsForCategory = new ArrayList<>();
 
             for (MenuItems mi : allItems) {
-                if (mi == null) continue;
+                if (mi == null) {
+                    continue;
+                }
 
-                // filter by restaurant
+                // filter restaurant
                 if (mi.getRestaurantId() == null
                         || mi.getRestaurantId().getRestaurantId() == null
                         || !restaurantId.equals(mi.getRestaurantId().getRestaurantId())) {
                     continue;
                 }
 
-                // filter by category
-                if (mi.getCategoryId() == null
-                        || mi.getCategoryId().getCategoryId() == null
-                        || !cat.getCategoryId().equals(mi.getCategoryId().getCategoryId())) {
+                // status + deleted
+                if (isSkipMenuItem(mi)) {
                     continue;
                 }
 
-                boolean skip = false;
-                try {
-                    String status = mi.getStatus();
-                    if (status != null && !"AVAILABLE".equalsIgnoreCase(status)) {
-                        skip = true;
-                    }
-                } catch (Exception ignored) {}
+                // đúng category
+                if (mi.getCategoryId() == null || mi.getCategoryId().getCategoryId() == null) {
+                    continue;
+                }
+                if (!cat.getCategoryId().equals(mi.getCategoryId().getCategoryId())) {
+                    continue;
+                }
 
-                try {
-                    Boolean deleted = mi.getIsDeleted();
-                    if (deleted != null && deleted) {
-                        skip = true;
-                    }
-                } catch (Exception ignored) {}
-
-                if (skip) continue;
-
-                MenuItemCard card = new MenuItemCard();
-                card.setId(mi.getMenuItemId());
-                card.setName(safe(mi.getName()));
-                card.setDescription(safe(mi.getDescription()));
-
-                try {
-                    card.setImageUrl(mi.getImageUrl());
-                } catch (Exception ignored) {}
-
-                try {
-                    card.setPricePerPerson(mi.getPricePerPerson());
-                } catch (Exception ignored) {}
-
-                try {
-                    Boolean veg = mi.getIsVegetarian();
-                    if (veg != null) {
-                        card.setVegetarian(veg);
-                    }
-                } catch (Exception ignored) {}
-
-                itemsForCategory.add(card);
+                itemsForCategory.add(mi);
             }
 
             if (!itemsForCategory.isEmpty()) {
                 menuSections.add(new MenuSection(cat, itemsForCategory));
             }
         }
+
+        // 3) Gom nhóm OTHER: (a) category null, (b) category “orphan” không thuộc restaurant
+        List<MenuItems> otherItems = new ArrayList<>();
+
+        for (MenuItems mi : allItems) {
+            if (mi == null) {
+                continue;
+            }
+
+            if (mi.getRestaurantId() == null
+                    || mi.getRestaurantId().getRestaurantId() == null
+                    || !restaurantId.equals(mi.getRestaurantId().getRestaurantId())) {
+                continue;
+            }
+
+            if (isSkipMenuItem(mi)) {
+                continue;
+            }
+
+            Long catId = null;
+            if (mi.getCategoryId() != null) {
+                catId = mi.getCategoryId().getCategoryId();
+            }
+
+            // Nếu catId thuộc restaurantCategoryIds -> đã được add ở section chính
+            if (catId != null && restaurantCategoryIds.contains(catId)) {
+                continue;
+            }
+
+            // còn lại: null category hoặc orphan category => dồn vào Other
+            otherItems.add(mi);
+        }
+
+        if (!otherItems.isEmpty()) {
+            MenuCategories other = new MenuCategories();
+            other.setCategoryId(-1L);
+            other.setName("Other");
+            other.setDescription("Uncategorized / mismatched category items");
+            menuSections.add(new MenuSection(other, otherItems));
+        }
+    }
+
+    private boolean isSkipMenuItem(MenuItems mi) {
+        boolean skip = false;
+
+        try {
+            String status = mi.getStatus();
+            if (status != null) {
+                String s = status.trim().toUpperCase();
+                if (!("ACTIVE".equals(s) || "AVAILABLE".equals(s))) {
+                    skip = true;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        try {
+            Boolean deleted = mi.getIsDeleted();
+            if (deleted != null && deleted) {
+                skip = true;
+            }
+        } catch (Exception ignored) {
+        }
+
+        return skip;
     }
 
     private String safe(String s) {
@@ -380,7 +459,6 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
     }
 
     // ===== getters for xhtml =====
-
     public Restaurants getRestaurant() {
         return restaurant;
     }
@@ -443,6 +521,7 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
 
     // ====== Inner class: combo card ======
     public static class ComboCard implements Serializable {
+
         private Long comboId;
         private String name;
         private String description;
@@ -452,33 +531,74 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
         private boolean vip;
         private String highlightTag;
 
-        public Long getComboId() { return comboId; }
-        public void setComboId(Long comboId) { this.comboId = comboId; }
+        public Long getComboId() {
+            return comboId;
+        }
 
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
+        public void setComboId(Long comboId) {
+            this.comboId = comboId;
+        }
 
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
+        public String getName() {
+            return name;
+        }
 
-        public double getPriceTotal() { return priceTotal; }
-        public void setPriceTotal(double priceTotal) { this.priceTotal = priceTotal; }
+        public void setName(String name) {
+            this.name = name;
+        }
 
-        public int getMinGuests() { return minGuests; }
-        public void setMinGuests(int minGuests) { this.minGuests = minGuests; }
+        public String getDescription() {
+            return description;
+        }
 
-        public String getIdealRange() { return idealRange; }
-        public void setIdealRange(String idealRange) { this.idealRange = idealRange; }
+        public void setDescription(String description) {
+            this.description = description;
+        }
 
-        public boolean isVip() { return vip; }
-        public void setVip(boolean vip) { this.vip = vip; }
+        public double getPriceTotal() {
+            return priceTotal;
+        }
 
-        public String getHighlightTag() { return highlightTag; }
-        public void setHighlightTag(String highlightTag) { this.highlightTag = highlightTag; }
+        public void setPriceTotal(double priceTotal) {
+            this.priceTotal = priceTotal;
+        }
+
+        public int getMinGuests() {
+            return minGuests;
+        }
+
+        public void setMinGuests(int minGuests) {
+            this.minGuests = minGuests;
+        }
+
+        public String getIdealRange() {
+            return idealRange;
+        }
+
+        public void setIdealRange(String idealRange) {
+            this.idealRange = idealRange;
+        }
+
+        public boolean isVip() {
+            return vip;
+        }
+
+        public void setVip(boolean vip) {
+            this.vip = vip;
+        }
+
+        public String getHighlightTag() {
+            return highlightTag;
+        }
+
+        public void setHighlightTag(String highlightTag) {
+            this.highlightTag = highlightTag;
+        }
     }
 
     // ====== Inner class: menu item card (for UI) ======
     public static class MenuItemCard implements Serializable {
+
         private Long id;
         private String name;
         private String description;
@@ -489,6 +609,7 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
         public Long getId() {
             return id;
         }
+
         public void setId(Long id) {
             this.id = id;
         }
@@ -496,6 +617,7 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
         public String getName() {
             return name;
         }
+
         public void setName(String name) {
             this.name = name;
         }
@@ -503,6 +625,7 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
         public String getDescription() {
             return description;
         }
+
         public void setDescription(String description) {
             this.description = description;
         }
@@ -510,6 +633,7 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
         public BigDecimal getPricePerPerson() {
             return pricePerPerson;
         }
+
         public void setPricePerPerson(BigDecimal pricePerPerson) {
             this.pricePerPerson = pricePerPerson;
         }
@@ -517,6 +641,7 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
         public boolean isVegetarian() {
             return vegetarian;
         }
+
         public void setVegetarian(boolean vegetarian) {
             this.vegetarian = vegetarian;
         }
@@ -524,17 +649,37 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
         public String getImageUrl() {
             return imageUrl;
         }
+
         public void setImageUrl(String imageUrl) {
             this.imageUrl = imageUrl;
         }
+
+        // alias để EL dùng thống nhất như entity MenuItems
+        public Long getMenuItemId() {
+            return id;
+        }
+
+        public void setMenuItemId(Long v) {
+            this.id = v;
+        }
+
+        public boolean getIsVegetarian() {
+            return vegetarian;
+        }
+
+        public void setIsVegetarian(boolean v) {
+            this.vegetarian = v;
+        }
+
     }
 
     // ====== Inner class: menu section (category + items) ======
     public static class MenuSection implements Serializable {
-        private MenuCategories category;
-        private List<MenuItemCard> items;
 
-        public MenuSection(MenuCategories category, List<MenuItemCard> items) {
+        private MenuCategories category;
+        private List<MenuItems> items;
+
+        public MenuSection(MenuCategories category, List<MenuItems> items) {
             this.category = category;
             this.items = items;
         }
@@ -547,11 +692,11 @@ if (heroImageUrl == null || heroImageUrl.isEmpty()) {
             this.category = category;
         }
 
-        public List<MenuItemCard> getItems() {
+        public List<MenuItems> getItems() {
             return items;
         }
 
-        public void setItems(List<MenuItemCard> items) {
+        public void setItems(List<MenuItems> items) {
             this.items = items;
         }
     }
