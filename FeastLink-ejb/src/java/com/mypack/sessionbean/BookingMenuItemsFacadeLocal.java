@@ -14,6 +14,8 @@ import java.util.List;
  */
 @Local
 public interface BookingMenuItemsFacadeLocal {
+    
+    List<BookingMenuItems> findByBookingId(Long bookingId);
 
     void create(BookingMenuItems bookingMenuItems);
 

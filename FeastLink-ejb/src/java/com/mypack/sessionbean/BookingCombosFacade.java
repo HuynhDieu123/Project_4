@@ -8,7 +8,7 @@ import com.mypack.entity.BookingCombos;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-
+import java.util.List;    
 /**
  *
  * @author Laptop
@@ -26,6 +26,13 @@ public class BookingCombosFacade extends AbstractFacade<BookingCombos> implement
 
     public BookingCombosFacade() {
         super(BookingCombos.class);
+    }
+    
+     @Override
+    public List<BookingCombos> findByBookingId(Long bookingId) {
+        return em.createNamedQuery("BookingCombos.findByBookingId", BookingCombos.class)
+                 .setParameter("bookingId", bookingId)
+                 .getResultList();
     }
     
 }

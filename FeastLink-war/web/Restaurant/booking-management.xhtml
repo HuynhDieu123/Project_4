@@ -469,14 +469,15 @@
                                                 </h:panelGroup>
 
                                                 <!-- VIEW DETAILS: luôn nằm bên phải -->
-                                                <h:commandButton
-                                                    value="visibility"
-                                                    styleClass="material-symbols-outlined flex items-center justify-center w-10 h-10 rounded-2xl
-                                                    bg-[#D4AF37] text-white hover:bg-[#c49d2f] transition-all shadow-sm"
-                                                    title="View details"
-                                                    action="#{bookingManagementBean.selectBooking(b)}">
-                                                    <f:ajax render="@form"/>
-                                                </h:commandButton>
+                                                <!-- VIEW DETAILS: đi thẳng sang trang booking-detail -->
+                                                <h:link outcome="/Restaurant/booking-detail"
+                                                        value="visibility"
+                                                        styleClass="material-symbols-outlined flex items-center justify-center w-10 h-10 rounded-2xl
+                                                        bg-[#D4AF37] text-white hover:bg-[#c49d2f] transition-all shadow-sm"
+                                                        title="View details">
+                                                    <f:param name="bookingId" value="#{b.bookingId}" />
+                                                </h:link>
+
 
                                             </div>
                                         </td>
@@ -536,188 +537,7 @@
                     </div>
                 </div>
 
-                <!-- DETAIL PANEL -->
-                <h:panelGroup id="detailPanel"
-                              layout="block"
-                              rendered="#{not empty bookingManagementBean.selectedBooking}">
-                    <div class="fixed inset-0 bg-black/30 z-40"
-                         onclick="document.getElementById('closeDetailBtn').click();"></div>
 
-                    <div class="fixed right-0 top-0 h-full w-full max-w-xl bg-white shadow-2xl z-50 overflow-y-auto">
-                        <!-- header -->
-                        <div class="sticky top-0 bg-gradient-to-r from-[#0B1120] to-[#020617] text-white px-6 py-4 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs text-gray-300 mb-1">Booking code</p>
-                                <p class="font-mono text-lg font-bold text-[#D4AF37]">
-                                    #{bookingManagementBean.selectedBooking.bookingCode}
-                                </p>
-                                <p class="text-xs text-gray-300 mt-1">Detail information</p>
-                            </div>
-                            <h:commandLink id="closeDetailBtn"
-                                           title="Close"
-                                           styleClass="p-2 rounded-lg hover:bg-white/10"
-                                           action="#{bookingManagementBean.closeDetail}">
-                                <span class="material-symbols-outlined text-xl">close</span>
-                                <f:ajax render="@form"/>
-                            </h:commandLink>
-                        </div>
-
-                        <!-- body -->
-                        <div class="p-6 space-y-6">
-                            <!-- customer info -->
-                            <section class="bg-white border border-gray-100 rounded-2xl p-5">
-                                <h3 class="text-sm font-bold text-[#0B1120] flex items-center gap-2 mb-4">
-                                    <span class="material-symbols-outlined text-[#D4AF37] text-base">person</span>
-                                    Customer Information
-                                </h3>
-                                <div class="space-y-3 text-sm">
-                                    <!-- Full name -->
-                                    <div>
-                                        <p class="text-xs text-gray-500">Full name</p>
-                                        <p class="font-semibold text-gray-900">
-                                            #{not empty bookingManagementBean.selectedBooking.contactFullName
-                                              ? bookingManagementBean.selectedBooking.contactFullName
-                                              : (bookingManagementBean.selectedBooking.customerId != null
-                                              ? bookingManagementBean.selectedBooking.customerId.fullName
-                                              : '—')}
-                                        </p>
-                                    </div>
-
-                                    <!-- Phone -->
-                                    <div>
-                                        <p class="text-xs text-gray-500">Phone</p>
-                                        <p class="font-medium text-gray-900">
-                                            #{not empty bookingManagementBean.selectedBooking.contactPhone
-                                              ? bookingManagementBean.selectedBooking.contactPhone
-                                              : (bookingManagementBean.selectedBooking.customerId != null
-                                              ? bookingManagementBean.selectedBooking.customerId.phone
-                                              : '')}
-                                        </p>
-                                    </div>
-
-                                    <!-- Email -->
-                                    <div>
-                                        <p class="text-xs text-gray-500">Email</p>
-                                        <p class="font-medium text-gray-900">
-                                            #{not empty bookingManagementBean.selectedBooking.contactEmail
-                                              ? bookingManagementBean.selectedBooking.contactEmail
-                                              : (bookingManagementBean.selectedBooking.customerId != null
-                                              ? bookingManagementBean.selectedBooking.customerId.email
-                                              : '')}
-                                        </p>
-                                    </div>
-                                </div>
-
-                            </section>
-
-                            <!-- event info -->
-                            <section class="bg-white border border-gray-100 rounded-2xl p-5">
-                                <h3 class="text-sm font-bold text-[#0B1120] flex items-center gap-2 mb-4">
-                                    <span class="material-symbols-outlined text-[#D4AF37] text-base">event</span>
-                                    Event Details
-                                </h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <p class="text-xs text-gray-500">Event date</p>
-                                        <p class="font-semibold text-gray-900">
-                                            <h:outputText value="#{bookingManagementBean.selectedBooking.eventDate}">
-                                                <f:convertDateTime pattern="EEEE, MMM dd, yyyy"/>
-                                            </h:outputText>
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Time</p>
-                                        <p class="font-semibold text-gray-900">
-                                            <h:outputText value="#{bookingManagementBean.selectedBooking.startTime}">
-                                                <f:convertDateTime pattern="HH:mm"/>
-                                            </h:outputText>
-                                            -
-                                            <h:outputText value="#{bookingManagementBean.selectedBooking.endTime}">
-                                                <f:convertDateTime pattern="HH:mm"/>
-                                            </h:outputText>
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Guests</p>
-                                        <p class="font-semibold text-gray-900">
-                                            #{bookingManagementBean.selectedBooking.guestCount} guests
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Event type</p>
-                                        <p class="font-semibold text-gray-900">
-                                            #{bookingManagementBean.selectedBooking.eventTypeId != null ? bookingManagementBean.selectedBooking.eventTypeId.name : ''}
-                                        </p>
-                                    </div>
-                                    <div class="sm:col-span-2">
-                                        <p class="text-xs text-gray-500">Outside address</p>
-                                        <p class="font-semibold text-gray-900">
-                                            #{bookingManagementBean.selectedBooking.outsideAddress}
-                                        </p>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <!-- payment summary -->
-                            <section class="bg-gradient-to-br from-[#0B1120] to-[#020617] rounded-2xl p-5 text-white">
-                                <h3 class="text-sm font-bold flex items-center gap-2 mb-4">
-                                    <span class="material-symbols-outlined text-[#D4AF37] text-base">payments</span>
-                                    Payment Summary
-                                </h3>
-                                <div class="space-y-3 text-sm">
-                                    <div class="flex items-center justify-between pb-3 border-b border-white/15">
-                                        <span class="text-gray-300">Total amount</span>
-                                        <span class="text-lg font-bold text-[#D4AF37]">
-                                            $<h:outputText value="#{bookingManagementBean.selectedBooking.totalAmount}">
-                                                <f:convertNumber type="number" minFractionDigits="2" maxFractionDigits="2"/>
-                                            </h:outputText>
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center justify-between pb-3 border-b border-white/15">
-                                        <span class="text-gray-300">Deposit</span>
-                                        <span class="text-base font-semibold text-emerald-400">
-                                            $<h:outputText value="#{bookingManagementBean.selectedBooking.depositAmount}">
-                                                <f:convertNumber type="number" minFractionDigits="2" maxFractionDigits="2"/>
-                                            </h:outputText>
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-gray-300">Remaining</span>
-                                        <span class="text-base font-semibold">
-                                            $<h:outputText value="#{bookingManagementBean.selectedBooking.remainingAmount}">
-                                                <f:convertNumber type="number" minFractionDigits="2" maxFractionDigits="2"/>
-                                            </h:outputText>
-                                        </span>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <!-- notes / reason -->
-                            <section class="bg-white border border-gray-100 rounded-2xl p-5 space-y-3 text-sm">
-                                <div>
-                                    <p class="text-xs text-gray-500">Customer note</p>
-                                    <p class="text-gray-800 whitespace-pre-line">
-                                        #{empty bookingManagementBean.selectedBooking.note
-                                          ? '—'
-                                          : bookingManagementBean.selectedBooking.note}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <p class="text-xs text-gray-500">Cancel / reject reason</p>
-                                    <p class="text-gray-800 whitespace-pre-line">
-                                        #{empty bookingManagementBean.selectedBooking.cancelReason
-                                          and empty bookingManagementBean.selectedBooking.rejectReason
-                                          ? '—'
-                                          : (not empty bookingManagementBean.selectedBooking.cancelReason
-                                          ? bookingManagementBean.selectedBooking.cancelReason
-                                          : bookingManagementBean.selectedBooking.rejectReason)}
-                                    </p>
-                                </div>
-                            </section>
-                        </div>
-                    </div>
-                </h:panelGroup>
 
             </div>
 
@@ -725,24 +545,24 @@
             <h:outputScript>
                 // Chỉ còn hàm decline, approve dùng JSF trực tiếp
                 function feastlinkDecline() {
-                    var reason = prompt(
-                        "Optional: enter a reason for declining this booking:",
-                        ""
-                    );
+                var reason = prompt(
+                "Optional: enter a reason for declining this booking:",
+                ""
+                );
 
-                    // user bấm Cancel -> không submit form
-                    if (reason === null) {
-                        return false;
-                    }
+                // user bấm Cancel -> không submit form
+                if (reason === null) {
+                return false;
+                }
 
-                    // set lý do vào hidden input trong form
-                    var inp = document.getElementById('rejectReasonInput');
-                    if (inp) {
-                        inp.value = reason;
-                    }
+                // set lý do vào hidden input trong form
+                var inp = document.getElementById('rejectReasonInput');
+                if (inp) {
+                inp.value = reason;
+                }
 
-                    // cho phép submit JSF (onclick return true)
-                    return true;
+                // cho phép submit JSF (onclick return true)
+                return true;
                 }
             </h:outputScript>
 

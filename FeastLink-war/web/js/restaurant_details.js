@@ -152,6 +152,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     function handleBookingRedirect(qsParams) {
+
+        if (selectedPackageId) {
+            qsParams.set('comboId', selectedPackageId);            // 👈 NEW
+        }
         // Gắn menu items (nếu có chọn) vào query string để booking.xhtml xử lý
         if (selectedMenuItemIds.size > 0) {
             qsParams.set('menuItems', Array.from(selectedMenuItemIds).join(','));
@@ -679,108 +683,114 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 // ================== PHOTO LIGHTBOX ==================
-const lightbox = qs('#lightbox');
-const lightboxClose = qs('#lightbox-close');
-const lightboxPrev = qs('#lightbox-prev');
-const lightboxNext = qs('#lightbox-next');
-const lightboxCounter = qs('#lightbox-counter');
-const heroTrigger = qs('#hero-gallery-trigger');
-const thumbs = qsa('.thumb');
-const lightboxImage = qs('#lightbox-image');
+    const lightbox = qs('#lightbox');
+    const lightboxClose = qs('#lightbox-close');
+    const lightboxPrev = qs('#lightbox-prev');
+    const lightboxNext = qs('#lightbox-next');
+    const lightboxCounter = qs('#lightbox-counter');
+    const heroTrigger = qs('#hero-gallery-trigger');
+    const thumbs = qsa('.thumb');
+    const lightboxImage = qs('#lightbox-image');
 
 // Danh sách URL ảnh lấy từ DOM
-const imageSources = [];
+    const imageSources = [];
 
 // Ảnh hero (đầu tiên)
-if (heroTrigger) {
-    const heroSrc = heroTrigger.getAttribute('data-src');
-    if (heroSrc) {
-        imageSources.push(heroSrc);
+    if (heroTrigger) {
+        const heroSrc = heroTrigger.getAttribute('data-src');
+        if (heroSrc) {
+            imageSources.push(heroSrc);
+        }
     }
-}
 
 // Các thumbnail
-thumbs.forEach(thumb => {
-    const src = thumb.getAttribute('data-src');
-    if (src) {
-        imageSources.push(src);
-    }
-});
+    thumbs.forEach(thumb => {
+        const src = thumb.getAttribute('data-src');
+        if (src) {
+            imageSources.push(src);
+        }
+    });
 
-let currentImageIndex = 0;
+    let currentImageIndex = 0;
 
-function updateLightboxImage() {
-    if (!lightboxImage || !imageSources.length) return;
-    lightboxImage.src = imageSources[currentImageIndex];
-}
-
-function updateLightboxCounter() {
-    if (!lightboxCounter) return;
-    const total = imageSources.length || 0;
-    if (total === 0) {
-        lightboxCounter.textContent = '';
-    } else {
-        lightboxCounter.textContent = (currentImageIndex + 1) + ' / ' + total;
-    }
-}
-
-function openLightbox(index) {
-    if (!lightbox || !imageSources.length) return;
-
-    currentImageIndex = index;
-    if (currentImageIndex < 0 || currentImageIndex >= imageSources.length) {
-        currentImageIndex = 0;
+    function updateLightboxImage() {
+        if (!lightboxImage || !imageSources.length)
+            return;
+        lightboxImage.src = imageSources[currentImageIndex];
     }
 
-    updateLightboxImage();
-    updateLightboxCounter();
+    function updateLightboxCounter() {
+        if (!lightboxCounter)
+            return;
+        const total = imageSources.length || 0;
+        if (total === 0) {
+            lightboxCounter.textContent = '';
+        } else {
+            lightboxCounter.textContent = (currentImageIndex + 1) + ' / ' + total;
+        }
+    }
 
-    lightbox.classList.remove('hidden');
-    lightbox.classList.add('flex');
-}
+    function openLightbox(index) {
+        if (!lightbox || !imageSources.length)
+            return;
 
-function closeLightbox() {
-    if (!lightbox) return;
-    lightbox.classList.add('hidden');
-    lightbox.classList.remove('flex');
-}
+        currentImageIndex = index;
+        if (currentImageIndex < 0 || currentImageIndex >= imageSources.length) {
+            currentImageIndex = 0;
+        }
+
+        updateLightboxImage();
+        updateLightboxCounter();
+
+        lightbox.classList.remove('hidden');
+        lightbox.classList.add('flex');
+    }
+
+    function closeLightbox() {
+        if (!lightbox)
+            return;
+        lightbox.classList.add('hidden');
+        lightbox.classList.remove('flex');
+    }
 
 // Click hero -> mở ảnh đầu tiên
-if (heroTrigger) {
-    heroTrigger.addEventListener('click', () => openLightbox(0));
-}
+    if (heroTrigger) {
+        heroTrigger.addEventListener('click', () => openLightbox(0));
+    }
 
 // Click thumbnail -> mở đúng index (hero là index 0, thumb bắt đầu từ 1)
-thumbs.forEach((thumb, idx) => {
-    thumb.addEventListener('click', () => {
-        // hero = 0, nên thumb đầu tiên = 1
-        openLightbox(idx + 1);
+    thumbs.forEach((thumb, idx) => {
+        thumb.addEventListener('click', () => {
+            // hero = 0, nên thumb đầu tiên = 1
+            openLightbox(idx + 1);
+        });
     });
-});
 
 // Nút close
-if (lightboxClose) {
-    lightboxClose.addEventListener('click', closeLightbox);
-}
+    if (lightboxClose) {
+        lightboxClose.addEventListener('click', closeLightbox);
+    }
 
 // Prev / Next
-if (lightboxPrev) {
-    lightboxPrev.addEventListener('click', () => {
-        if (!imageSources.length) return;
-        currentImageIndex = (currentImageIndex - 1 + imageSources.length) % imageSources.length;
-        updateLightboxImage();
-        updateLightboxCounter();
-    });
-}
+    if (lightboxPrev) {
+        lightboxPrev.addEventListener('click', () => {
+            if (!imageSources.length)
+                return;
+            currentImageIndex = (currentImageIndex - 1 + imageSources.length) % imageSources.length;
+            updateLightboxImage();
+            updateLightboxCounter();
+        });
+    }
 
-if (lightboxNext) {
-    lightboxNext.addEventListener('click', () => {
-        if (!imageSources.length) return;
-        currentImageIndex = (currentImageIndex + 1) % imageSources.length;
-        updateLightboxImage();
-        updateLightboxCounter();
-    });
-}
+    if (lightboxNext) {
+        lightboxNext.addEventListener('click', () => {
+            if (!imageSources.length)
+                return;
+            currentImageIndex = (currentImageIndex + 1) % imageSources.length;
+            updateLightboxImage();
+            updateLightboxCounter();
+        });
+    }
 
 
     // ================== FLOATING ACTIONS ==================
@@ -871,7 +881,15 @@ if (lightboxNext) {
     // ================== PACKAGE BUTTONS (Select / Compare / View menu) ==================
     let selectedCard = null;
     let selectedPackageName = null;
+    let selectedPackageId = null;
     const packagesSection = qs('#packages');
+
+    function getPackageIdFromCard(card) {
+        if (!card)
+            return null;
+        return card.getAttribute('data-combo-id') || null; // lấy từ data-combo-id trên card
+    }
+
 
     function getCardFromButton(btn) {
         return btn.closest('.group');
@@ -952,14 +970,18 @@ if (lightboxNext) {
                     return;
 
                 if (selectedCard === card) {
+                    // bỏ chọn
                     resetAllPackageCards();
                     selectedCard = null;
                     selectedPackageName = null;
+                    selectedPackageId = null;                 // 👈 reset id
                     alert('Package selection has been cleared.');
                 } else {
+                    // chọn mới
                     resetAllPackageCards();
                     selectedCard = card;
                     selectedPackageName = getPackageNameFromCard(card);
+                    selectedPackageId = getPackageIdFromCard(card);   // 👈 lấy ComboId từ data-combo-id
                     applySelectedState(card);
                     alert(
                             'Selected package: ' +
@@ -968,6 +990,7 @@ if (lightboxNext) {
                             );
                 }
             }
+
 
             // COMPARE
             if (role === 'compare-package') {

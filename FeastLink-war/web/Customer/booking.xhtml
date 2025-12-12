@@ -111,6 +111,13 @@
             <h:inputHidden id="hf-remaining-amount"
                            value="#{customerBookingBean.remainingAmount}" />
 
+            <!-- NEW: giữ id combo & id các món custom menu giữa các request -->
+            <h:inputHidden id="hf-combo-id"
+                           value="#{customerBookingBean.selectedComboId}" />
+            <h:inputHidden id="hf-menu-items"
+                           value="#{customerBookingBean.selectedMenuItemIds}" />
+
+
             <main id="booking" class="pt-28 pb-16 min-h-screen bg-[#F9FAFB]">
                 <div class="max-w-[1280px] mx-auto px-4 lg:px-6">
                     <h:panelGroup rendered="#{empty sessionScope.currentUser}">

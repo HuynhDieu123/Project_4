@@ -3,6 +3,9 @@ package com.restaurant.bean;
 import com.mypack.entity.Bookings;
 import com.mypack.entity.RestaurantManagers;
 import com.mypack.entity.Users;
+import com.mypack.entity.BookingCombos;
+import com.mypack.entity.BookingMenuItems;
+
 import com.mypack.sessionbean.BookingsFacadeLocal;
 import com.mypack.sessionbean.RestaurantManagersFacadeLocal;
 import jakarta.annotation.PostConstruct;
@@ -65,8 +68,8 @@ public class BookingManagementBean implements Serializable {
     }
 
     /**
-     * Lấy Users đang login từ session ("currentUser")
-     * rồi tìm RestaurantManagers để lấy restaurantId
+     * Lấy Users đang login từ session ("currentUser") rồi tìm
+     * RestaurantManagers để lấy restaurantId
      */
     private void resolveCurrentRestaurant() {
         try {
@@ -132,48 +135,48 @@ public class BookingManagementBean implements Serializable {
             }
 
             // =============== LỌC THEO NHÀ HÀNG HIỆN TẠI ===============
-            if (currentRestaurantId == null) {
-                // Manager chưa gắn với nhà hàng nào -> KHÔNG cho thấy booking
-                bookings.clear();
-            } else {
+            // Nếu đã xác định được nhà hàng của manager -> chỉ giữ booking của nhà hàng đó.
+            // Nếu chưa xác định được (currentRestaurantId == null) thì GIỮ NGUYÊN,
+            // để còn thấy tất cả booking (không bị clear như trước).
+            if (currentRestaurantId != null) {
                 final String ridStr = String.valueOf(currentRestaurantId);
 
                 bookings.removeIf(b -> {
                     if (b == null || b.getRestaurantId() == null
                             || b.getRestaurantId().getRestaurantId() == null) {
-                        return true; // booking không gắn nhà hàng -> bỏ
+                        // booking không gắn nhà hàng -> bỏ
+                        return true;
                     }
                     String bidStr = String.valueOf(b.getRestaurantId().getRestaurantId());
                     // khác id nhà hàng hiện tại -> bỏ
                     return !bidStr.equals(ridStr);
                 });
             }
-            // =========================================================
 
-            lastUpdated = new Date();
         } catch (Exception ex) {
             bookings = new ArrayList<>();
-            FacesContext.getCurrentInstance().addMessage(
-                    null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                            "Error loading bookings", ex.getMessage())
-            );
         }
     }
 
     // helper: kiểm tra booking thuộc nhà hàng hiện tại
+    // helper: kiểm tra booking thuộc nhà hàng hiện tại
     private boolean belongsToCurrentRestaurant(Bookings b) {
-        if (currentRestaurantId == null) {
-            return false; // không có nhà hàng -> xem như không thuộc
-        }
         if (b == null || b.getRestaurantId() == null
                 || b.getRestaurantId().getRestaurantId() == null) {
             return false;
         }
+
+        // Nếu chưa xác định được nhà hàng hiện tại -> cho qua hết
+        // (để các counter vẫn đếm bình thường)
+        if (currentRestaurantId == null) {
+            return true;
+        }
+
         String ridStr = String.valueOf(currentRestaurantId);
         String bidStr = String.valueOf(b.getRestaurantId().getRestaurantId());
         return bidStr.equals(ridStr);
     }
+
 
     /* ================= FILTER + SORT ================= */
     private List<Bookings> getFilteredList() {
@@ -253,17 +256,29 @@ public class BookingManagementBean implements Serializable {
         }
 
         try {
-            if (containsIgnoreCase(b.getContactFullName(), q)) return true;
-            if (containsIgnoreCase(b.getContactPhone(), q)) return true;
-            if (containsIgnoreCase(b.getContactEmail(), q)) return true;
+            if (containsIgnoreCase(b.getContactFullName(), q)) {
+                return true;
+            }
+            if (containsIgnoreCase(b.getContactPhone(), q)) {
+                return true;
+            }
+            if (containsIgnoreCase(b.getContactEmail(), q)) {
+                return true;
+            }
         } catch (Exception ignore) {
         }
 
         try {
             if (b.getCustomerId() != null) {
-                if (containsIgnoreCase(b.getCustomerId().getFullName(), q)) return true;
-                if (containsIgnoreCase(b.getCustomerId().getPhone(), q)) return true;
-                if (containsIgnoreCase(b.getCustomerId().getEmail(), q)) return true;
+                if (containsIgnoreCase(b.getCustomerId().getFullName(), q)) {
+                    return true;
+                }
+                if (containsIgnoreCase(b.getCustomerId().getPhone(), q)) {
+                    return true;
+                }
+                if (containsIgnoreCase(b.getCustomerId().getEmail(), q)) {
+                    return true;
+                }
             }
         } catch (Exception ignore) {
         }
@@ -525,6 +540,81 @@ public class BookingManagementBean implements Serializable {
         this.selectedBooking = null;
     }
 
+    /* ================= Menu & Package helper cho selectedBooking ================= */
+    // Có package không?
+    public boolean getHasSelectedPackage() {
+        if (selectedBooking == null
+                || selectedBooking.getBookingCombosCollection() == null) {
+            return false;
+        }
+        return !selectedBooking.getBookingCombosCollection().isEmpty();
+    }
+
+    // Có custom menu không?
+    public boolean getHasSelectedMenuItems() {
+        if (selectedBooking == null
+                || selectedBooking.getBookingMenuItemsCollection() == null) {
+            return false;
+        }
+        return !selectedBooking.getBookingMenuItemsCollection().isEmpty();
+    }
+
+    // Tên package (lấy combo đầu tiên)
+    public String getSelectedBookingPackageName() {
+        if (!getHasSelectedPackage()) {
+            return null;
+        }
+
+        BookingCombos bc = selectedBooking.getBookingCombosCollection()
+                .iterator().next();
+
+        // NOTE: nếu trong BookingCombos quan hệ tới MenuCombos tên khác "menuCombos"
+        // thì đổi lại cho đúng, ví dụ: bc.getCombo().getName()
+        if (bc.getMenuCombos() != null && bc.getMenuCombos().getName() != null) {
+            return bc.getMenuCombos().getName();
+        }
+        return null;
+    }
+
+    // Tổng tiền package của booking này
+    public BigDecimal getSelectedBookingPackageSubtotal() {
+        BigDecimal total = BigDecimal.ZERO;
+        if (!getHasSelectedPackage()) {
+            return total;
+        }
+
+        for (BookingCombos bc : selectedBooking.getBookingCombosCollection()) {
+            if (bc.getTotalPrice() != null) {
+                total = total.add(bc.getTotalPrice());
+            }
+        }
+        return total;
+    }
+
+    // Tổng tiền custom menu
+    public BigDecimal getSelectedBookingMenuSubtotal() {
+        BigDecimal total = BigDecimal.ZERO;
+        if (!getHasSelectedMenuItems()) {
+            return total;
+        }
+
+        for (BookingMenuItems bmi : selectedBooking.getBookingMenuItemsCollection()) {
+            if (bmi.getTotalPrice() != null) {
+                total = total.add(bmi.getTotalPrice());
+            }
+        }
+        return total;
+    }
+
+    // Số món trong custom menu
+    public int getSelectedBookingMenuItemCount() {
+        if (!getHasSelectedMenuItems()) {
+            return 0;
+        }
+        return selectedBooking.getBookingMenuItemsCollection().size();
+    }
+
+
     /* ================= Date helper ================= */
     private Date truncateTime(Date d) {
         if (d == null) {
@@ -633,4 +723,5 @@ public class BookingManagementBean implements Serializable {
     public void setCurrentRestaurantId(Integer currentRestaurantId) {
         this.currentRestaurantId = currentRestaurantId;
     }
+
 }
