@@ -8,6 +8,7 @@ import com.mypack.entity.BookingMenuItems;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.util.List;    
 
 /**
  *
@@ -26,6 +27,13 @@ public class BookingMenuItemsFacade extends AbstractFacade<BookingMenuItems> imp
 
     public BookingMenuItemsFacade() {
         super(BookingMenuItems.class);
+    }
+    
+    @Override
+    public List<BookingMenuItems> findByBookingId(Long bookingId) {
+        return em.createNamedQuery("BookingMenuItems.findByBookingId", BookingMenuItems.class)
+                 .setParameter("bookingId", bookingId)
+                 .getResultList();
     }
     
 }

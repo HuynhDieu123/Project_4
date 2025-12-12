@@ -3,7 +3,7 @@
                 xmlns:h="jakarta.faces.html"
                 xmlns:f="jakarta.faces.core"
                 xmlns:ui="jakarta.faces.facelets"
-                template="/Restaurant/restaurant-layout.xhtml">
+                template="/Restaurant/layout-manager.xhtml">
 
     <ui:define name="title">
         FeastLink - Booking Detail
@@ -25,127 +25,439 @@
 
         <!-- Nếu tìm thấy booking -->
         <h:panelGroup rendered="#{bookingDetailBean.bookingFound}">
-            <div class="bg-card-light rounded-2xl shadow-subtle p-6 space-y-6">
+            <div class="max-w-5xl mx-auto space-y-6">
 
-                <!-- Top: mã booking + status chip -->
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs uppercase tracking-wide text-text-secondary-light">
-                            Booking ID
-                        </p>
-                        <p class="text-xl font-semibold text-text-main-light">
-                            #{bookingDetailBean.bookingCode}
-                        </p>
-                        <p class="text-sm text-text-secondary-light mt-1">
-                            #{bookingDetailBean.customerName}
-                            <!-- dùng ký tự · thay cho &middot; -->
-                            ·
-                            #{bookingDetailBean.booking.eventDate}
-                        </p>
-                    </div>
+                <!-- Card chính -->
+                <article class="rounded-3xl overflow-hidden shadow-xl border border-slate-900/10 bg-[#F9FAFB]">
 
-                    <div>
-                        <span class="inline-flex items-center py-1 px-3 rounded-full #{bookingDetailBean.statusCss}">
-                            <span class="w-2 h-2 rounded-full bg-current mr-2"></span>
-                            <span class="text-sm font-medium">
-                                #{bookingDetailBean.statusLabel}
+                    <!-- Header đậm: Booking code + trạng thái -->
+                    <header class="bg-gradient-to-r from-[#020617] via-[#020617] to-[#0B1120] px-6 py-5 md:px-8 md:py-6 text-white flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <p class="text-[11px] uppercase tracking-[0.18em] text-white/60">
+                                Booking code
+                            </p>
+                            <p class="text-2xl font-semibold tracking-wide text-champagne-gold">
+                                #{bookingDetailBean.bookingCode}
+                            </p>
+                            <p class="mt-2 text-sm text-white/70 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <span class="inline-flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-base align-middle">person</span>
+                                    <span>#{bookingDetailBean.customerName}</span>
+                                </span>
+                                <span class="opacity-40">·</span>
+                                <span class="inline-flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-base align-middle">event</span>
+                                    <span>
+                                        <h:outputText value="#{bookingDetailBean.booking.eventDate}">
+                                            <f:convertDateTime type="date" pattern="EEE, MMM d, yyyy"/>
+                                        </h:outputText>
+                                        ·
+                                        <h:outputText value="#{bookingDetailBean.booking.startTime}">
+                                            <f:convertDateTime type="time" pattern="HH:mm"/>
+                                        </h:outputText>
+                                        -
+                                        <h:outputText value="#{bookingDetailBean.booking.endTime}">
+                                            <f:convertDateTime type="time" pattern="HH:mm"/>
+                                        </h:outputText>
+                                    </span>
+
+                                </span>
+                            </p>
+                        </div>
+
+                        <div class="flex flex-col items-end gap-3">
+                            <span class="inline-flex items-center py-1.5 px-3 rounded-full bg-white/10 border border-white/20 backdrop-blur">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>
+                                <span class="text-xs font-semibold tracking-wide uppercase">
+                                    #{bookingDetailBean.statusLabel}
+                                </span>
                             </span>
-                        </span>
-                    </div>
-                </div>
 
-                <!-- Grid 2 cột thông tin -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-
-                    <!-- Cột trái -->
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
-                                Event date &amp; time
-                            </p>
-                            <p class="text-text-main-light">
-                                #{bookingDetailBean.booking.eventDate}
-                                (#{bookingDetailBean.booking.startTime}
-                                - #{bookingDetailBean.booking.endTime})
-                            </p>
-                        </div>
-
-                        <div>
-                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
-                                Guests
-                            </p>
-                            <p class="text-text-main-light">
-                                #{bookingDetailBean.booking.guestCount}
-                            </p>
-                        </div>
-
-                        <div>
-                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
-                                Location
-                            </p>
-                            <p class="text-text-main-light">
-                                #{bookingDetailBean.locationDisplay}
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Cột phải -->
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
-                                Total amount
-                            </p>
-                            <p class="text-text-main-light">
-                                <h:outputText value="#{bookingDetailBean.booking.totalAmount}">
-                                    <f:convertNumber type="currency" currencySymbol="$" />
-                                </h:outputText>
-                            </p>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
-                                    Deposit
+                            <div class="text-right">
+                                <p class="text-[11px] uppercase tracking-widest text-white/50">
+                                    Guests
                                 </p>
-                                <p class="text-text-main-light">
-                                    <h:outputText value="#{bookingDetailBean.booking.depositAmount}">
-                                        <f:convertNumber type="currency" currencySymbol="$" />
-                                    </h:outputText>
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
-                                    Remaining
-                                </p>
-                                <p class="text-text-main-light">
-                                    <h:outputText value="#{bookingDetailBean.booking.remainingAmount}">
-                                        <f:convertNumber type="currency" currencySymbol="$" />
-                                    </h:outputText>
+                                <p class="text-lg font-semibold text-white">
+                                    #{bookingDetailBean.booking.guestCount}
                                 </p>
                             </div>
                         </div>
+                    </header>
 
-                        <div>
-                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide">
-                                Note
-                            </p>
-                            <p class="text-text-main-light">
-                                #{empty bookingDetailBean.booking.note
-                                   ? 'No note.'
-                                   : bookingDetailBean.booking.note}
-                            </p>
+                    <!-- Nội dung -->
+                    <section class="px-6 py-6 md:px-8 md:py-7 space-y-7 text-sm text-text-main-light">
+
+                        <!-- Hàng 2 cột: Thông tin event + Payment -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                            <!-- Event details -->
+                            <section class="bg-white rounded-2xl border border-border-light p-4 md:p-5 space-y-3">
+                                <h3 class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-base text-champagne-gold">event</span>
+                                    Event details
+                                </h3>
+
+                                <div class="space-y-3 mt-1">
+                                    <div>
+                                        <p class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
+                                            Event date &amp; time
+                                        </p>
+                                        <p>
+                                            <h:outputText value="#{bookingDetailBean.booking.eventDate}">
+                                                <f:convertDateTime type="date" pattern="EEE, MMM d, yyyy"/>
+                                            </h:outputText>
+                                            ·
+                                            <h:outputText value="#{bookingDetailBean.booking.startTime}">
+                                                <f:convertDateTime type="time" pattern="HH:mm"/>
+                                            </h:outputText>
+                                            -
+                                            <h:outputText value="#{bookingDetailBean.booking.endTime}">
+                                                <f:convertDateTime type="time" pattern="HH:mm"/>
+                                            </h:outputText>
+                                        </p>
+
+                                    </div>
+
+                                    <div>
+                                        <p class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
+                                            Guests
+                                        </p>
+                                        <p>
+                                            #{bookingDetailBean.booking.guestCount}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
+                                            Location
+                                        </p>
+                                        <p>#{bookingDetailBean.locationDisplay}</p>
+
+                                        <ui:fragment rendered="#{bookingDetailBean.booking.locationType eq 'OUTSIDE'}">
+                                            <p class="text-xs text-text-secondary-light mt-1">
+                                                #{bookingDetailBean.booking.outsideAddress}
+                                            </p>
+                                        </ui:fragment>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
+                                            Event type
+                                        </p>
+                                        <p>
+                                            <ui:fragment rendered="#{not empty bookingDetailBean.booking.eventTypeId}">
+                                                #{bookingDetailBean.booking.eventTypeId.name}
+                                            </ui:fragment>
+                                            <ui:fragment rendered="#{empty bookingDetailBean.booking.eventTypeId}">
+                                                Not selected
+                                            </ui:fragment>
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
+                                            Service type
+                                        </p>
+                                        <p>
+                                            <ui:fragment rendered="#{not empty bookingDetailBean.booking.serviceTypeId}">
+                                                #{bookingDetailBean.booking.serviceTypeId.name}
+                                            </ui:fragment>
+                                            <ui:fragment rendered="#{empty bookingDetailBean.booking.serviceTypeId}">
+                                                Not selected
+                                            </ui:fragment>
+                                        </p>
+                                    </div>
+
+                                </div>
+                            </section>
+
+                            <!-- Payment summary -->
+                            <section class="bg-[#020617] rounded-2xl border border-slate-800 p-4 md:p-5 text-sm text-white space-y-3">
+                                <h3 class="text-xs font-semibold tracking-wide uppercase text-white/70 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-base text-champagne-gold">payments</span>
+                                    Payment summary
+                                </h3>
+
+                                <div class="flex items-center justify-between">
+                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-white/60">
+                                        Payment status
+                                    </p>
+                                    <p class="text-xs font-semibold">
+                                        #{bookingDetailBean.paymentStatusLabel}
+                                    </p>
+                                </div>
+
+
+                                <div class="space-y-3 text-xs">
+                                    <!-- PACKAGE SUBTOTAL -->
+                                    <ui:fragment rendered="#{bookingDetailBean.hasPackage}">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-white/60">Package subtotal</span>
+                                            <span class="font-medium">
+                                                <h:outputText value="#{bookingDetailBean.packageSubtotal}">
+                                                    <f:convertNumber type="currency" currencySymbol="$"
+                                                                     groupingUsed="true"
+                                                                     minFractionDigits="2" maxFractionDigits="2" />
+                                                </h:outputText>
+                                            </span>
+                                        </div>
+                                    </ui:fragment>
+
+                                    <!-- CUSTOM MENU SUBTOTAL -->
+                                    <ui:fragment rendered="#{bookingDetailBean.hasMenuItems}">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-white/60">Custom menu subtotal</span>
+                                            <span class="font-medium">
+                                                <h:outputText value="#{bookingDetailBean.menuSubtotal}">
+                                                    <f:convertNumber type="currency" currencySymbol="$"
+                                                                     groupingUsed="true"
+                                                                     minFractionDigits="2" maxFractionDigits="2" />
+                                                </h:outputText>
+                                            </span>
+                                        </div>
+                                    </ui:fragment>
+
+                                    <!-- OTHER CHARGES + mô tả chi tiết -->
+                                    <ui:fragment rendered="#{bookingDetailBean.hasOtherCharges}">
+                                        <div class="flex flex-col gap-0.5">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-white/60">Other charges</span>
+                                                <span class="font-medium">
+                                                    <h:outputText value="#{bookingDetailBean.otherCharges}">
+                                                        <f:convertNumber type="currency" currencySymbol="$"
+                                                                         groupingUsed="true"
+                                                                         minFractionDigits="2" maxFractionDigits="2" />
+                                                    </h:outputText>
+                                                </span>
+                                            </div>
+                                            <p class="text-[11px] text-white/35">
+                                                Includes venue fee, service charge and taxes.
+                                            </p>
+                                        </div>
+                                    </ui:fragment>
+
+                                    <!-- đường kẻ ngăn phần breakdown với phần thanh toán -->
+                                    <div class="border-t border-white/10 my-2"></div>
+
+                                    <!-- DEPOSIT – làm nổi bật khác với các dòng trên -->
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-white/60">Deposit paid</span>
+                                        <span class="text-sm font-semibold text-emerald-300">
+                                            <h:outputText value="#{bookingDetailBean.booking.depositAmount}">
+                                                <f:convertNumber type="currency" currencySymbol="$"
+                                                                 groupingUsed="true"
+                                                                 minFractionDigits="2" maxFractionDigits="2" />
+                                            </h:outputText>
+                                        </span>
+                                    </div>
+
+                                    <!-- REMAINING – nổi bật màu cam, dễ thấy số còn phải thanh toán -->
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-white/60">Remaining to pay</span>
+                                        <span class="text-sm font-semibold text-[#f97316]">
+                                            <h:outputText value="#{bookingDetailBean.booking.remainingAmount}">
+                                                <f:convertNumber type="currency" currencySymbol="$"
+                                                                 groupingUsed="true"
+                                                                 minFractionDigits="2" maxFractionDigits="2" />
+                                            </h:outputText>
+                                        </span>
+                                    </div>
+
+                                    <!-- kẻ thêm 1 line ngăn cách total -->
+                                    <div class="border-t border-white/10 my-2"></div>
+
+                                    <!-- TOTAL AMOUNT (grand total – to, vàng, ở cuối) -->
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[11px] font-semibold uppercase tracking-wide text-white/70">
+                                            TOTAL AMOUNT
+                                        </span>
+                                        <span class="text-base font-semibold text-[#facc6b]">
+                                            <h:outputText value="#{bookingDetailBean.booking.totalAmount}">
+                                                <f:convertNumber type="currency" currencySymbol="$"
+                                                                 groupingUsed="true"
+                                                                 minFractionDigits="2" maxFractionDigits="2" />
+                                            </h:outputText>
+                                        </span>
+                                    </div>
+                                </div>
+
+
+                            </section>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Back -->
-                <div class="pt-4 border-t border-border-light flex justify-between items-center">
-                    <h:link outcome="/Restaurant/dashboard"
-                            styleClass="text-sm text-text-secondary-light hover:text-text-main-light inline-flex items-center">
-                        <span class="material-symbols-outlined text-base mr-1">arrow_back</span>
-                        Back to dashboard
-                    </h:link>
-                </div>
+                        <!-- Hàng 2: Menu & Packages (nếu có) -->
+                        <!-- Hàng 2: Menu & Packages (luôn hiển thị) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                            <!-- Package summary -->
+                            <section class="bg-white rounded-2xl border border-border-light p-4 md:p-5 h-full flex flex-col justify-between">
+                                <div>
+                                    <h3 class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide mb-2 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-base text-champagne-gold">local_dining</span>
+                                        Selected package
+                                    </h3>
+
+                                    <ui:fragment rendered="#{bookingDetailBean.hasPackage}">
+                                        <p class="text-sm font-semibold">
+                                            #{bookingDetailBean.selectedPackageName}
+                                        </p>
+                                    </ui:fragment>
+
+                                    <ui:fragment rendered="#{not bookingDetailBean.hasPackage}">
+                                        <p class="text-sm text-text-secondary-light">
+                                            No package selected.
+                                        </p>
+                                    </ui:fragment>
+                                </div>
+
+                                <div class="mt-4 flex items-center justify-between border-t border-border-light pt-3">
+                                    <span class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
+                                        Package subtotal
+                                    </span>
+                                    <span class="text-sm font-semibold">
+                                        <ui:fragment rendered="#{bookingDetailBean.hasPackage}">
+                                            <h:outputText value="#{bookingDetailBean.packageSubtotal}">
+                                                <f:convertNumber type="currency" currencySymbol="$"/>
+                                            </h:outputText>
+                                        </ui:fragment>
+                                        <ui:fragment rendered="#{not bookingDetailBean.hasPackage}">
+                                            $0.00
+                                        </ui:fragment>
+                                    </span>
+                                </div>
+                            </section>
+
+                            <!-- Custom menu summary -->
+                            <section class="bg-white rounded-2xl border border-border-light p-4 md:p-5 h-full flex flex-col">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-base text-champagne-gold">restaurant_menu</span>
+                                        Custom menu
+                                    </h3>
+
+                                    <ui:fragment rendered="#{bookingDetailBean.hasMenuItems}">
+                                        <p class="text-[11px] text-text-secondary-light">
+                                            #{bookingDetailBean.bookingMenuItems.size()} dishes
+                                        </p>
+                                    </ui:fragment>
+                                </div>
+
+                                <ui:fragment rendered="#{bookingDetailBean.hasMenuItems}">
+                                    <ul class="divide-y divide-border-light max-h-60 overflow-y-auto pr-1">
+                                        <ui:repeat value="#{bookingDetailBean.bookingMenuItems}" var="mi">
+                                            <li class="py-2 flex items-center justify-between">
+                                                <div class="mr-2">
+                                                    <p class="text-sm font-medium">
+                                                        #{mi.menuItems.name}
+                                                    </p>
+                                                </div>
+                                                <div class="text-right text-[11px] text-text-secondary-light">
+                                                    <p>
+                                                        <h:outputText value="#{mi.unitPrice}">
+                                                            <f:convertNumber type="currency" currencySymbol="$"/>
+                                                        </h:outputText>
+                                                        × #{mi.quantity}
+                                                    </p>
+                                                    <p class="font-semibold text-text-main-light">
+                                                        <h:outputText value="#{mi.totalPrice}">
+                                                            <f:convertNumber type="currency" currencySymbol="$"/>
+                                                        </h:outputText>
+                                                    </p>
+                                                </div>
+                                            </li>
+                                        </ui:repeat>
+                                    </ul>
+
+                                    <div class="flex items-center justify-between pt-3 border-t border-border-light mt-3">
+                                        <span class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
+                                            Menu subtotal
+                                        </span>
+                                        <span class="text-sm font-semibold">
+                                            <h:outputText value="#{bookingDetailBean.menuSubtotal}">
+                                                <f:convertNumber type="currency" currencySymbol="$"/>
+                                            </h:outputText>
+                                        </span>
+                                    </div>
+                                </ui:fragment>
+
+                                <ui:fragment rendered="#{not bookingDetailBean.hasMenuItems}">
+                                    <p class="text-sm text-text-secondary-light">
+                                        No custom menu selected.
+                                    </p>
+                                </ui:fragment>
+                            </section>
+
+                        </div>
+                        <section class="bg-white rounded-2xl border border-border-light p-4 md:p-5">
+                            <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide mb-2">
+                                Contact information
+                            </p>
+
+                            <div class="space-y-1 text-sm">
+                                <p>
+                                    <span class="font-medium">Name:</span>
+                                    <span class="ml-1">
+                                        #{empty bookingDetailBean.booking.contactFullName
+                                          ? bookingDetailBean.customerName
+                                          : bookingDetailBean.booking.contactFullName}
+                                    </span>
+                                </p>
+                                <p>
+                                    <span class="font-medium">Email:</span>
+                                    <span class="ml-1">
+                                        #{empty bookingDetailBean.booking.contactEmail
+                                          ? bookingDetailBean.booking.customerId.email
+                                          : bookingDetailBean.booking.contactEmail}
+                                    </span>
+                                </p>
+                                <p>
+                                    <span class="font-medium">Phone:</span>
+                                    <span class="ml-1">
+                                        #{empty bookingDetailBean.booking.contactPhone
+                                          ? bookingDetailBean.booking.customerId.phone
+                                          : bookingDetailBean.booking.contactPhone}
+                                    </span>
+                                </p>
+                            </div>
+                        </section>
+
+
+                        <!-- Note -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <section class="bg-white rounded-2xl border border-border-light p-4 md:p-5">
+                                <p class="text-xs font-semibold text-text-secondary-light uppercase tracking-wide mb-1">
+                                    Note
+                                </p>
+                                <p>
+                                    #{empty bookingDetailBean.booking.note
+                                      ? 'No note.'
+                                      : bookingDetailBean.booking.note}
+                                </p>
+                            </section>
+
+                            <h:panelGroup rendered="#{not empty bookingDetailBean.booking.cancelReason}">
+                                <section class="bg-white rounded-2xl border border-error-red/30 p-4 md:p-5">
+                                    <p class="text-xs font-semibold text-error-red uppercase tracking-wide mb-1">
+                                        Cancel reason
+                                    </p>
+                                    <p class="text-sm text-error-red">
+                                        #{bookingDetailBean.booking.cancelReason}
+                                    </p>
+                                </section>
+                            </h:panelGroup>
+                        </div>
+
+                        <!-- Back link -->
+                        <div class="pt-3 border-t border-border-light flex justify-between items-center text-xs">
+                            <h:link outcome="/Restaurant/booking-management"
+                                    styleClass="inline-flex items-center text-text-secondary-light hover:text-champagne-gold transition">
+                                <span class="material-symbols-outlined text-base mr-1">arrow_back</span>
+                                Back to booking list
+                            </h:link>
+                        </div>
+
+                    </section>
+                </article>
             </div>
         </h:panelGroup>
 
@@ -155,13 +467,14 @@
                 <p class="text-sm text-error-red">
                     Booking not found.
                 </p>
-                <h:link outcome="/Restaurant/dashboard"
+                <h:link outcome="/Restaurant/booking-management"
                         styleClass="mt-4 inline-flex items-center text-sm text-champagne-gold hover:underline">
                     <span class="material-symbols-outlined text-base mr-1">arrow_back</span>
-                    Back to dashboard
+                    Back to booking list
                 </h:link>
             </div>
         </h:panelGroup>
 
     </ui:define>
+
 </ui:composition>

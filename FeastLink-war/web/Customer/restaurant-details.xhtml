@@ -9,7 +9,7 @@
       encoding="UTF-8"
       contentType="text/html">
 
-    
+
     <h:head>
         <meta charset="UTF-8"/>
         <title>FeastLink – Restaurant Details</title>
@@ -239,13 +239,13 @@
 
                 <!-- Photo gallery (hero) -->
                 <section class="mb-8" id="gallery-top">
-              <!-- HERO GALLERY -->
-<div class="relative mb-4 cursor-pointer group"
-     id="hero-gallery-trigger"
-     data-src="#{restaurantDetailsBean.heroImageUrl}">
-    <div class="relative aspect-video rounded-3xl overflow-hidden">
-        <div class="w-full h-full bg-cover bg-center"
-             style="background-image:url('#{restaurantDetailsBean.heroImageUrl}');">
+                    <!-- HERO GALLERY -->
+                    <div class="relative mb-4 cursor-pointer group"
+                         id="hero-gallery-trigger"
+                         data-src="#{restaurantDetailsBean.heroImageUrl}">
+                        <div class="relative aspect-video rounded-3xl overflow-hidden">
+                            <div class="w-full h-full bg-cover bg-center"
+                                 style="background-image:url('#{restaurantDetailsBean.heroImageUrl}');">
 
                                 <!-- lớp gradient tối cố định (giữ lại cho sang) -->
                                 <div
@@ -289,37 +289,37 @@
                     </div>
 
                     <!-- THUMBNAILS – lấy từ galleryImages (đã sort theo SortOrder) -->
-<!-- THUMBNAILS – lấy từ galleryImages (đã sort theo SortOrder) -->
-<div class="grid grid-cols-3 md:grid-cols-6 gap-3">
+                    <!-- THUMBNAILS – lấy từ galleryImages (đã sort theo SortOrder) -->
+                    <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
 
-    <!-- Tối đa 5 thumbnail thật, click được (class thumb để JS lightbox bắt sự kiện) -->
-    <ui:repeat value="#{restaurantDetailsBean.galleryImages}" var="img" varStatus="st">
-        <ui:fragment rendered="#{st.index lt 5}">
-            <div class="relative aspect-video rounded-xl overflow-hidden cursor-pointer group thumb"
-                 data-index="#{st.index}"
-                 data-src="#{img}">
-                <div class="w-full h-full bg-cover bg-center"
-                     style="background-image:url('#{img}');"></div>
-                <div
-                    class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all">
-                </div>
-            </div>
-        </ui:fragment>
-    </ui:repeat>
+                        <!-- Tối đa 5 thumbnail thật, click được (class thumb để JS lightbox bắt sự kiện) -->
+                        <ui:repeat value="#{restaurantDetailsBean.galleryImages}" var="img" varStatus="st">
+                            <ui:fragment rendered="#{st.index lt 5}">
+                                <div class="relative aspect-video rounded-xl overflow-hidden cursor-pointer group thumb"
+                                     data-index="#{st.index}"
+                                     data-src="#{img}">
+                                    <div class="w-full h-full bg-cover bg-center"
+                                         style="background-image:url('#{img}');"></div>
+                                    <div
+                                        class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all">
+                                    </div>
+                                </div>
+                            </ui:fragment>
+                        </ui:repeat>
 
-    <!-- Ô +X photos, không gắn class 'thumb' để JS lightbox khỏi xử lý -->
-    <ui:fragment rendered="#{fn:length(restaurantDetailsBean.galleryImages) gt 5}">
-        <div class="relative aspect-video rounded-xl overflow-hidden cursor-pointer group">
-            <div
-                class="w-full h-full bg-gradient-to-br from-[#0B1120] to-[#020617] flex items-center justify-center">
-                <span class="text-white text-sm font-semibold">
-                    +<h:outputText value="#{fn:length(restaurantDetailsBean.galleryImages) - 5}"/> photos
-                </span>
-            </div>
-        </div>
-    </ui:fragment>
+                        <!-- Ô +X photos, không gắn class 'thumb' để JS lightbox khỏi xử lý -->
+                        <ui:fragment rendered="#{fn:length(restaurantDetailsBean.galleryImages) gt 5}">
+                            <div class="relative aspect-video rounded-xl overflow-hidden cursor-pointer group">
+                                <div
+                                    class="w-full h-full bg-gradient-to-br from-[#0B1120] to-[#020617] flex items-center justify-center">
+                                    <span class="text-white text-sm font-semibold">
+                                        +<h:outputText value="#{fn:length(restaurantDetailsBean.galleryImages) - 5}"/> photos
+                                    </span>
+                                </div>
+                            </div>
+                        </ui:fragment>
 
-</div>
+                    </div>
 
 
                 </section>
@@ -583,8 +583,8 @@
                                 <ui:repeat value="#{restaurantDetailsBean.combos}" var="c" varStatus="st">
 
                                     <div
-                                        class="group relative bg-white rounded-3xl border border-[#E5E7EB] shadow-[0_18px_45px_rgba(15,23,42,0.12)] overflow-hidden mb-6 hover:border-[#D4AF37]/70 hover:shadow-[0_24px_60px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-500">
-
+                                        class="group relative bg... hover:-translate-y-1 transition-all duration-500"
+                                        data-combo-id="#{c.comboId}">
                                         <!-- Ribbon VIP nếu combo vip -->
                                         <ui:fragment rendered="#{c.vip}">
                                             <div
@@ -706,7 +706,7 @@
                                         <span>
                                             Est. from
                                             <span id="menu-selected-total">0</span> USD / table
-                                            
+
                                         </span>
                                     </div>
 
@@ -2014,37 +2014,37 @@
                 </div>
             </div>
 
-     <!-- Photo lightbox -->
-<div id="lightbox" class="fixed inset-0 z-[100] bg-black/95 hidden items-center justify-center">
-    <button id="lightbox-close"
-            class="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all">
-        <i data-lucide="x" class="w-6 h-6 text-white"></i>
-    </button>
+            <!-- Photo lightbox -->
+            <div id="lightbox" class="fixed inset-0 z-[100] bg-black/95 hidden items-center justify-center">
+                <button id="lightbox-close"
+                        class="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all">
+                    <i data-lucide="x" class="w-6 h-6 text-white"></i>
+                </button>
 
-    <button id="lightbox-prev"
-            class="absolute left-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all">
-        <i data-lucide="chevron-left" class="w-6 h-6 text-white"></i>
-    </button>
+                <button id="lightbox-prev"
+                        class="absolute left-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all">
+                    <i data-lucide="chevron-left" class="w-6 h-6 text-white"></i>
+                </button>
 
-    <!-- KHUNG ẢNH THẬT -->
-    <div
-        class="max-w-5xl max-h-[80vh] aspect-video bg-black rounded-2xl flex items-center justify-center overflow-hidden">
-        <img id="lightbox-image"
-             src=""
-             alt="Restaurant photo"
-             class="max-w-full max-h-full object-contain" />
-    </div>
+                <!-- KHUNG ẢNH THẬT -->
+                <div
+                    class="max-w-5xl max-h-[80vh] aspect-video bg-black rounded-2xl flex items-center justify-center overflow-hidden">
+                    <img id="lightbox-image"
+                         src=""
+                         alt="Restaurant photo"
+                         class="max-w-full max-h-full object-contain" />
+                </div>
 
-    <button id="lightbox-next"
-            class="absolute right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all">
-        <i data-lucide="chevron-right" class="w-6 h-6 text-white"></i>
-    </button>
+                <button id="lightbox-next"
+                        class="absolute right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all">
+                    <i data-lucide="chevron-right" class="w-6 h-6 text-white"></i>
+                </button>
 
-    <div
-        class="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white text-sm">
-        <span id="lightbox-counter">1 / 12</span>
-    </div>
-</div>
+                <div
+                    class="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white text-sm">
+                    <span id="lightbox-counter">1 / 12</span>
+                </div>
+            </div>
 
 
 
@@ -2137,15 +2137,15 @@
 
         </main>
         <!-- Script JS giữ nguyên -->
-<script type="text/javascript">
-   
-</script>
+        <script type="text/javascript">
+
+        </script>
 
 
 
         <ui:include src="/layout/footer.xhtml"/>
-        
-        
+
+
         <!-- Expose login state to JS -->
         <script type="text/javascript">
             window.FEASTLINK = window.FEASTLINK || {};
