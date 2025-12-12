@@ -26,7 +26,8 @@ public interface CuisinesFacadeLocal {
     List<Cuisines> findAll();
 
     List<Cuisines> findRange(int[] range);
-
+    
+    List<Cuisines> searchByName(String keyword);
     int count();
     
 }
