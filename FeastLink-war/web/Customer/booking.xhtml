@@ -116,6 +116,17 @@
                            value="#{customerBookingBean.selectedComboId}" />
             <h:inputHidden id="hf-menu-items"
                            value="#{customerBookingBean.selectedMenuItemIds}" />
+            
+            
+            
+            
+            
+<input type="hidden" id="hf-payment-method" name="hf-payment-method" value=""/>
+<input type="hidden" id="hf-payment-type"   name="hf-payment-type"   value=""/>
+<input type="hidden" id="hf-pay-amount"     name="hf-pay-amount"     value=""/>
+
+            
+
 
 
             <main id="booking" class="pt-28 pb-16 min-h-screen bg-[#F9FAFB]">
@@ -1193,11 +1204,12 @@
                                         conditions.
                                     </p>
 
-                                    <h:commandButton id="btn-confirm-pay"
-                                                     value="Confirm &amp; Pay"
-                                                     styleClass="w-full mb-4 font-semibold rounded-2xl bg-gradient-to-r from-[#F97316] to-[#EAB308] text-white shadow-[0_18px_45px_rgba(0,0,0,0.45)] shadow-[#D4AF37]/40 border-b-4 border-[#92400E] hover:shadow-[0_20px_55px_rgba(0,0,0,0.6)] hover:shadow-[#FACC6B]/40 hover:from-[#FB923C] hover:to-[#EAB308] hover:-translate-y-0.5 hover:border-[#D97706] focus:outline-none focus:ring-2 focus:ring-[#FACC6B]/60 focus:ring-offset-2 focus:ring-offset-[#020617] transition-transform transition-shadow duration-300 ease-out bg-[#F97316]/90 hover:bg-[#F97316] hover:shadow-[#FACC6B]/30 hover:scale-[1.02] active:scale-[0.98] px-8 py-4 text-lg"
-                                                     action="#{customerBookingBean.confirmBooking}"
-                                                     onclick="return BookingUI.handleConfirmClick();"/>
+                                 <h:commandButton id="btn-confirm-pay"
+                 value="Confirm Pay"
+                 action="#{customerBookingBean.confirmBooking}"
+                 onclick="return handleConfirmClick();"
+                 styleClass="w-full mb-4 font-semibold rounded-2xl bg-gradient-to-r from-[#F97316] to-[#EAB308] text-white shadow-[0_18px_45px_rgba(0,0,0,0.45)] shadow-[#D4AF37]/40 border-b-4 border-[#92400E] hover:shadow-[0_20px_55px_rgba(0,0,0,0.6)] hover:shadow-[#FACC6B]/40 hover:from-[#FB923C] hover:to-[#EAB308] hover:-translate-y-0.5 hover:border-[#D97706] focus:outline-none focus:ring-2 focus:ring-[#FACC6B]/60 focus:ring-offset-2 focus:ring-offset-[#020617] transition-transform transition-shadow duration-300 ease-out bg-[#F97316]/90 hover:bg-[#F97316] hover:shadow-[#FACC6B]/30 hover:scale-[1.02] active:scale-[0.98] px-8 py-4 text-lg" />
+
 
 
                                     <button type="button"

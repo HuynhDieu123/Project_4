@@ -1,18 +1,11 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mypack.sessionbean;
 
 import com.mypack.entity.Payments;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
 
-/**
- *
- * @author Laptop
- */
 @Stateless
 public class PaymentsFacade extends AbstractFacade<Payments> implements PaymentsFacadeLocal {
 
@@ -27,5 +20,15 @@ public class PaymentsFacade extends AbstractFacade<Payments> implements Payments
     public PaymentsFacade() {
         super(Payments.class);
     }
-    
+
+    @Override
+    public Payments findByTransactionCode(String transactionCode) {
+        try {
+            return em.createNamedQuery("Payments.findByTransactionCode", Payments.class)
+                    .setParameter("transactionCode", transactionCode)
+                    .getSingleResult();
+        } catch (NoResultException ex) {
+            return null;
+        }
+    }
 }

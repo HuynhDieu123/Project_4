@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+<h:head>
+    <meta charset="UTF-8" />
+    <title>VNPAY Return - FeastLink</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</h:head>
+
+<h:body class="min-h-screen bg-[#05081a] flex items-center justify-center p-6">
+
+    <f:metadata>
+        <f:viewAction action="#{vnPayReturnBean.process}" />
+    </f:metadata>
+
+    <div class="w-full max-w-xl rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 text-white">
+        <h2 class="text-xl font-bold mb-2">VNPAY Payment Result</h2>
+
+        <div class="mt-4 p-4 rounded-xl"
+             style="#{vnPayReturnBean.success ? 'background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35);'
+                                            : 'background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);'}">
+            <p class="font-semibold">
+                #{vnPayReturnBean.success ? 'SUCCESS' : 'FAILED'}
+            </p>
+            <p class="text-sm opacity-90 mt-1">#{vnPayReturnBean.message}</p>
+
+            <p class="text-sm mt-3 opacity-90">
+                TxnRef: <span class="font-mono">#{vnPayReturnBean.txnRef}</span>
+            </p>
+
+            <ui:fragment rendered="#{not empty vnPayReturnBean.bookingId}">
+                <p class="text-sm mt-1 opacity-90">
+                    BookingId: <span class="font-mono">#{vnPayReturnBean.bookingId}</span>
+                </p>
+            </ui:fragment>
+        </div>
+
+        <div class="mt-6 flex gap-3">
+            <a href="#{request.contextPath}/faces/Customer/my-bookings.xhtml"
+               class="px-4 py-2 rounded-xl bg-[#D4AF37] text-black font-semibold hover:opacity-90">
+                Go to My Bookings
+            </a>
+
+            <a href="#{request.contextPath}/faces/index.xhtml"
+               class="px-4 py-2 rounded-xl border border-white/15 hover:bg-white/5">
+                Back Home
+            </a>
+        </div>
+    </div>
+
+</h:body>
+</html>

@@ -40,8 +40,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
+
+// moi them pay
+import com.mypack.vnpay.VnPayService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.faces.context.ExternalContext;
+
+import com.mypack.entity.Payments;
+import com.mypack.sessionbean.PaymentsFacadeLocal;
 
 /**
  * Handle final booking confirmation from booking.xhtml (wizard).
@@ -73,8 +79,15 @@ public class CustomerBookingBean implements Serializable {
     @EJB
     private BookingMenuItemsFacadeLocal bookingMenuItemsFacade;
 
+    // moi them
+    @EJB
+    private VnPayService vnPayService;
+
     @EJB
     private MenuCombosFacadeLocal menuCombosFacade; // nếu có
+
+    @EJB
+    private PaymentsFacadeLocal paymentsFacade;
 
     private List<EventTypes> allEventTypes;
 
@@ -85,8 +98,10 @@ public class CustomerBookingBean implements Serializable {
     private Integer selectedEventTypeId;
     private String selectedEventTypeName;
     private EventTypes selectedEventType;
+
     // ====== Fields bound từ booking.xhtml (hidden inputs / form) ======
     private Long restaurantId;
+
     // ===== Custom menu (selected dishes) =====
     private String selectedMenuItemIds;        // raw: "1,2,3"
     private List<MenuItems> selectedMenuItems = new ArrayList<>();
@@ -118,6 +133,13 @@ public class CustomerBookingBean implements Serializable {
     private String contactPhone;
 
     private List<EventTypes> availableEventTypes;
+
+    private String paymentMethod; // VNPAY / CASH
+    private String paymentType;   // DEPOSIT / FULL
+    private BigDecimal payAmount; // số tiền sẽ thanh toán
+
+    // (giữ nguyên field này nếu bạn đang dùng chỗ khác, nhưng trong redirect VNPay sẽ dùng payAmount)
+    private BigDecimal amount;
 
     // ====== INIT: load data từ param & DB ======
     @PostConstruct
@@ -166,12 +188,11 @@ public class CustomerBookingBean implements Serializable {
         }
 
         // ---- Load restaurant từ DB ----
-        // ---- Load restaurant từ DB ----
         if (restaurantId != null) {
             restaurant = restaurantsFacade.find(restaurantId);
         }
 
-// ❌ KHÔNG ĐƯỢC fallback lấy nhà hàng đầu tiên nữa
+        // ❌ KHÔNG ĐƯỢC fallback lấy nhà hàng đầu tiên nữa
         if (restaurant == null) {
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
@@ -233,6 +254,7 @@ public class CustomerBookingBean implements Serializable {
             selectedMenuItemIds = null;
             selectedMenuItems = new ArrayList<>();
         }
+
         // ---- Event date ----
         if (eventDateStr == null || eventDateStr.isBlank()) {
             String dParam = params.get("date");
@@ -439,7 +461,7 @@ public class CustomerBookingBean implements Serializable {
         this.selectedEventTypeId = eventTypeId;
     }
 
-// Alias cho tên hiển thị nếu view dùng eventTypeName
+    // Alias cho tên hiển thị nếu view dùng eventTypeName
     public String getEventTypeName() {
         return getSelectedEventTypeName();
     }
@@ -593,8 +615,34 @@ public class CustomerBookingBean implements Serializable {
                 remainingAmount = parseBigDecimalSafe(rHidden);
             }
 
+            // ================== ✅ (CHÈN 1) ĐỌC PAYMENT METHOD/TYPE/AMOUNT ==================
+            String pmHidden = params.get("hf-payment-method"); // VNPAY / CASH
+            if (notBlank(pmHidden)) paymentMethod = pmHidden.trim();
+
+            String ptHidden = params.get("hf-payment-type");   // DEPOSIT / FULL
+            if (notBlank(ptHidden)) paymentType = ptHidden.trim();
+
+            if (payAmount == null) {
+                String paHidden = params.get("hf-pay-amount");
+                payAmount = parseBigDecimalSafe(paHidden);
+            }
+
+            // default fallback
+            if (!notBlank(paymentMethod)) paymentMethod = "VNPAY";
+            if (!notBlank(paymentType)) paymentType = "DEPOSIT";
+
+            // ✅ đảm bảo payAmount luôn có (KHÔNG NULL)
+            if (payAmount == null) {
+                payAmount = ("FULL".equalsIgnoreCase(paymentType) && totalAmount != null)
+                        ? totalAmount
+                        : (depositAmount != null ? depositAmount : totalAmount);
+            }
+            if (payAmount == null) {
+                payAmount = BigDecimal.ZERO;
+            }
+            // ================== ✅ (HẾT CHÈN 1) ==================
+
             // ===== Contact information từ form =====
-            // (giả sử 3 input trong booking.xhtml có name: contact-fullname, contact-email, contact-phone)
             if (!notBlank(contactFullName)) {
                 String cName = params.get("contact-fullname");
                 if (!notBlank(cName)) {
@@ -643,7 +691,7 @@ public class CustomerBookingBean implements Serializable {
                 restaurant = restaurantsFacade.find(restaurantId);
             }
 
-// ❌ KHÔNG fallback lấy nhà hàng đầu tiên nữa
+            // ❌ KHÔNG fallback lấy nhà hàng đầu tiên nữa
             if (restaurant == null) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
@@ -724,11 +772,28 @@ public class CustomerBookingBean implements Serializable {
             booking.setContactPhone(notBlank(contactPhone) ? contactPhone.trim() : null);
 
             booking.setBookingStatus("PENDING");
-            booking.setPaymentStatus("UNPAID");
+
+            // ✅ sửa hợp lý: VNPAY là pending, CASH là unpaid
+            booking.setPaymentStatus("VNPAY".equalsIgnoreCase(paymentMethod) ? "PENDING" : "UNPAID");
+
             booking.setCreatedAt(new Date());
 
             // 5. Lưu DB
             bookingsFacade.create(booking);
+
+            // ================== ✅ (CHÈN 2) TẠO PAYMENT PENDING ==================
+            Payments p = new Payments();
+            p.setBookingId(booking);
+            p.setPaymentMethod(paymentMethod);   // VNPAY / CASH
+            p.setPaymentType(paymentType);       // DEPOSIT / FULL
+            p.setPaymentGateway("VNPAY".equalsIgnoreCase(paymentMethod) ? "VNPAY" : "MANUAL");
+            p.setAmount(payAmount);
+            p.setStatus("PENDING");
+
+            String txnRef = "PAY" + System.currentTimeMillis();
+            p.setTransactionCode(txnRef);
+
+            paymentsFacade.create(p);
 
             // 5.1. Lưu package/combo nếu có
             saveSelectedCombo(booking);
@@ -736,26 +801,48 @@ public class CustomerBookingBean implements Serializable {
             // 5.2. Lưu custom menu (các món lẻ) nếu có
             saveSelectedMenuItems(booking);
 
-            // 6. Message + điều hướng
+            // ================== ✅ VNPAY redirect (NGAY TẠI ĐÂY) ==================
+            if ("VNPAY".equalsIgnoreCase(paymentMethod)) {
+
+                ExternalContext ec = ctx.getExternalContext();
+                HttpServletRequest req = (HttpServletRequest) ec.getRequest();
+
+                String orderInfo = "FeastLink booking #" + booking.getBookingId()
+                        + " - " + (paymentType == null ? "PAY" : paymentType);
+
+                // ✅ QUAN TRỌNG: build URL bằng payAmount (không dùng amount bị null)
+                String redirectUrl = vnPayService.buildRedirectUrl(req, txnRef, payAmount, orderInfo);
+
+                ec.redirect(redirectUrl);
+                ctx.responseComplete();
+                return null; // IMPORTANT
+            }
+            // ================== ✅ END VNPAY ==================
+
+            // 6. Message + điều hướng (chỉ chạy cho CASH / các method khác)
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
                     "Booking request sent",
                     "Your booking has been created successfully. Our team will contact you for confirmation."
             ));
 
-            return "/Customer/index";
+            return "/Customer/index?faces-redirect=true";
 
         } catch (Exception ex) {
-            ctx.addMessage(null, new FacesMessage(
-                    FacesMessage.SEVERITY_ERROR,
-                    "Error",
-                    "Could not create booking: " + ex.getMessage()
-            ));
+            ex.printStackTrace();
+            FacesContext ctx2 = FacesContext.getCurrentInstance();
+            if (ctx2 != null) {
+                ctx2.addMessage(null, new FacesMessage(
+                        FacesMessage.SEVERITY_ERROR,
+                        "Error",
+                        "Could not create booking: " + ex.getMessage()
+                ));
+            }
             return null;
         }
     }
-    // ========== Lưu package/combo vào BookingCombos ==========
 
+    // ========== Lưu package/combo vào BookingCombos ==========
     private void saveSelectedCombo(Bookings booking) {
         if (selectedComboId == null || booking == null || booking.getBookingId() == null) {
             return;
@@ -800,7 +887,6 @@ public class CustomerBookingBean implements Serializable {
         }
     }
 
-    // ========== Lưu các món lẻ vào BookingMenuItems ==========
     // ========== Lưu các món lẻ vào BookingMenuItems ==========
     private void saveSelectedMenuItems(Bookings booking) {
         if (booking == null || booking.getBookingId() == null) {

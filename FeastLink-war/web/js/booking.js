@@ -26,7 +26,10 @@ const BookingUI = (function () {
         totalAmount: 0,
         depositAmount: 0,
         remainingAmount: 0,
-        menuPricePerTable: 0
+        menuPricePerTable: 0,
+
+        paymentMethod: 'VNPAY',   // default
+        paymentType: 'deposit'    // bạn đang dùng rồi (deposit/full)
     };
 
     const PACKAGE_CONFIGS = {
@@ -74,8 +77,7 @@ const BookingUI = (function () {
         Object.keys(SERVICE_LEVEL_CONFIGS).forEach(key => {
             const cfg = SERVICE_LEVEL_CONFIGS[key];
             const el = document.getElementById('service-level-price-' + key);
-            if (!el)
-                return;
+            if (!el) return;
 
             const price = Math.round(base * cfg.feeMultiplier);
             el.textContent = '$' + formatNumber(price) + ' service fee';
@@ -103,9 +105,22 @@ const BookingUI = (function () {
         state.menuPricePerTable = perGuestTotal * guestsPerTable;
     }
 
-
     function formatNumber(n) {
         return n.toLocaleString('en-US');
+    }
+
+    // ✅ Đồng bộ hidden fields payment cho server đọc (KHÔNG gọi updateSummary bên trong để tránh loop)
+    function syncPaymentHidden() {
+        const pmHidden = document.getElementById('hf-payment-method');
+        const ptHidden = document.getElementById('hf-payment-type');
+        const payHidden = document.getElementById('hf-pay-amount');
+
+        const pt = (state.paymentType || 'deposit').toLowerCase();
+        const payAmount = (pt === 'full') ? (state.totalAmount || 0) : (state.depositAmount || 0);
+
+        if (pmHidden) pmHidden.value = state.paymentMethod || 'VNPAY';
+        if (ptHidden) ptHidden.value = (pt === 'full') ? 'FULL' : 'DEPOSIT';
+        if (payHidden) payHidden.value = payAmount;
     }
 
     function applyPackageFromParam(packageName) {
@@ -119,30 +134,21 @@ const BookingUI = (function () {
 
         // Không có package hoặc không map trong config -> ẩn card, hiện empty-state
         if (!packageName || !PACKAGE_CONFIGS[packageName]) {
-            if (packageCardEl)
-                packageCardEl.classList.add('hidden');
-            if (noPackageEl)
-                noPackageEl.classList.remove('hidden');
-            if (summaryPkgNameEl)
-                summaryPkgNameEl.textContent = 'No package selected';
+            if (packageCardEl) packageCardEl.classList.add('hidden');
+            if (noPackageEl) noPackageEl.classList.remove('hidden');
+            if (summaryPkgNameEl) summaryPkgNameEl.textContent = 'No package selected';
             return;
         }
 
         const cfg = PACKAGE_CONFIGS[packageName];
 
-        if (packageCardEl)
-            packageCardEl.classList.remove('hidden');
-        if (noPackageEl)
-            noPackageEl.classList.add('hidden');
+        if (packageCardEl) packageCardEl.classList.remove('hidden');
+        if (noPackageEl) noPackageEl.classList.add('hidden');
 
-        if (packageNameEl)
-            packageNameEl.textContent = packageName;
-        if (summaryPkgNameEl)
-            summaryPkgNameEl.textContent = packageName;
-        if (badgeEl && cfg.badge)
-            badgeEl.textContent = cfg.badge;
-        if (guestRangeEl && cfg.guestRange)
-            guestRangeEl.textContent = cfg.guestRange;
+        if (packageNameEl) packageNameEl.textContent = packageName;
+        if (summaryPkgNameEl) summaryPkgNameEl.textContent = packageName;
+        if (badgeEl && cfg.badge) badgeEl.textContent = cfg.badge;
+        if (guestRangeEl && cfg.guestRange) guestRangeEl.textContent = cfg.guestRange;
         if (priceEl && cfg.pricePerGuest != null) {
             priceEl.textContent = '$' + formatNumber(cfg.pricePerGuest);
         }
@@ -153,14 +159,14 @@ const BookingUI = (function () {
         // Re-calc với giá mới
         updateCapacity();
         updateSummary();
+        syncPaymentHidden();
     }
 
     function updateCapacity() {
         const totalGuests = state.tableCount * 10;
         const capacityEl = document.getElementById('capacity-status');
         const guestLabel = document.getElementById('guest-count-label');
-        if (!capacityEl || !guestLabel)
-            return;
+        if (!capacityEl || !guestLabel) return;
 
         let color = '#22C55E';
         let message = 'Within capacity';
@@ -197,8 +203,7 @@ const BookingUI = (function () {
         }
 
         const guestHidden = document.getElementById('hf-guest-count');
-        if (guestHidden)
-            guestHidden.value = totalGuests;
+        if (guestHidden) guestHidden.value = totalGuests;
     }
 
     function collectAddonQuantities() {
@@ -208,8 +213,7 @@ const BookingUI = (function () {
             const qtyEl = row.querySelector('.addon-qty');
             const qty = parseInt(qtyEl.textContent || '0', 10);
             const addon = state.addOns.find(a => a.id === id);
-            if (addon)
-                addon.quantity = qty;
+            if (addon) addon.quantity = qty;
         });
     }
 
@@ -224,7 +228,7 @@ const BookingUI = (function () {
         const addOnsSubtotal = state.addOns.reduce(
                 (sum, a) => sum + a.price * a.quantity,
                 0
-                );
+        );
 
         const subtotal = packageSubtotal + menuSubtotal + addOnsSubtotal;
 
@@ -241,33 +245,26 @@ const BookingUI = (function () {
 
         // hidden fields
         const totalField = document.getElementById('hf-total-amount');
-        if (totalField)
-            totalField.value = totalWithCharges;
+        if (totalField) totalField.value = totalWithCharges;
 
         const depositField = document.getElementById('hf-deposit-amount');
-        if (depositField)
-            depositField.value = depositAmount;
+        if (depositField) depositField.value = depositAmount;
 
         const remainingField = document.getElementById('hf-remaining-amount');
-        if (remainingField)
-            remainingField.value = remainingAmount;
+        if (remainingField) remainingField.value = remainingAmount;
 
         // DOM
         const pkgTotalEl = document.getElementById('summary-package-total');
-        if (pkgTotalEl)
-            pkgTotalEl.textContent = '$' + formatNumber(packageSubtotal);
+        if (pkgTotalEl) pkgTotalEl.textContent = '$' + formatNumber(packageSubtotal);
 
         const menuEl = document.getElementById('summary-menu-total');
-        if (menuEl)
-            menuEl.textContent = '$' + formatNumber(menuSubtotal);
+        if (menuEl) menuEl.textContent = '$' + formatNumber(menuSubtotal);
 
         const serviceEl = document.getElementById('summary-service-charge');
-        if (serviceEl)
-            serviceEl.textContent = '$' + formatNumber(state.serviceCharge);
+        if (serviceEl) serviceEl.textContent = '$' + formatNumber(state.serviceCharge);
 
         const taxEl = document.getElementById('summary-tax');
-        if (taxEl)
-            taxEl.textContent = '$' + formatNumber(tax);
+        if (taxEl) taxEl.textContent = '$' + formatNumber(tax);
 
         const discountRow = document.getElementById('summary-discount-row');
         const discountEl = document.getElementById('summary-discount');
@@ -306,12 +303,12 @@ const BookingUI = (function () {
         const totalEl = document.getElementById('summary-total-amount');
         const depositEl = document.getElementById('summary-deposit');
         const remainingEl = document.getElementById('summary-remaining');
-        if (totalEl)
-            totalEl.textContent = '$' + formatNumber(totalWithCharges);
-        if (depositEl)
-            depositEl.textContent = '$' + formatNumber(depositAmount);
-        if (remainingEl)
-            remainingEl.textContent = '$' + formatNumber(remainingAmount);
+        if (totalEl) totalEl.textContent = '$' + formatNumber(totalWithCharges);
+        if (depositEl) depositEl.textContent = '$' + formatNumber(depositAmount);
+        if (remainingEl) remainingEl.textContent = '$' + formatNumber(remainingAmount);
+
+        // ✅ luôn đồng bộ hidden payment sau khi tính tiền xong
+        syncPaymentHidden();
     }
 
     function setServiceLevel(level) {
@@ -319,15 +316,13 @@ const BookingUI = (function () {
         const cfg = SERVICE_LEVEL_CONFIGS[key] || SERVICE_LEVEL_CONFIGS.standard;
 
         // lưu lại dưới dạng lowercase để sau này dễ map xuống DB nếu cần
-        // lưu lại dưới dạng lowercase để sau này dễ map xuống DB nếu cần
         state.serviceLevel = key;
 
-// đẩy service level xuống hidden để server đọc
+        // đẩy service level xuống hidden để server đọc
         const serviceHidden = document.getElementById('hf-service-level');
         if (serviceHidden) {
             serviceHidden.value = key; // standard / premium / vip / exclusive
         }
-
 
         // Toggle UI cho các button
         const buttons = document.querySelectorAll('.service-level-btn');
@@ -344,8 +339,7 @@ const BookingUI = (function () {
 
         // Cập nhật text ở summary
         const summary = document.getElementById('summary-service-level');
-        if (summary)
-            summary.textContent = cfg.label;
+        if (summary) summary.textContent = cfg.label;
 
         // Tính lại serviceCharge theo level
         const base = state.baseServiceCharge || state.serviceCharge || 0;
@@ -379,8 +373,7 @@ const BookingUI = (function () {
         state.locationType = type === 'outside' ? 'OUTSIDE' : 'AT_RESTAURANT';
 
         const locHidden = document.getElementById('hf-location-type');
-        if (locHidden)
-            locHidden.value = state.locationType;
+        if (locHidden) locHidden.value = state.locationType;
     }
 
     function setPaymentMethod(method) {
@@ -395,6 +388,16 @@ const BookingUI = (function () {
                         'payment-method p-6 rounded-xl border-2 transition-all duration-200 text-left relative border-[#E5E7EB] bg-white hover:border-[#D4AF37]';
             }
         });
+
+        // ✅ map UI -> server method
+        // venue = trả tại quầy, còn lại coi như VNPay
+        const serverMethod = (method === 'venue') ? 'CASH' : 'VNPAY';
+        state.paymentMethod = serverMethod;
+
+        const pmHidden = document.getElementById('hf-payment-method');
+        if (pmHidden) pmHidden.value = serverMethod;
+
+        syncPaymentHidden();
     }
 
     function setPaymentType(type) {
@@ -407,22 +410,24 @@ const BookingUI = (function () {
             if (val === type) {
                 btn.className =
                         'pay-type w-full p-6 rounded-xl border-2 transition-all duration-200 text-left border-[#D4AF37] bg-[#D4AF37]/5';
-                if (radioOuter)
-                    radioOuter.classList.add('border-[#D4AF37]');
-                if (radioInner)
-                    radioInner.classList.add('bg-[#D4AF37]');
+                if (radioOuter) radioOuter.classList.add('border-[#D4AF37]');
+                if (radioInner) radioInner.classList.add('bg-[#D4AF37]');
             } else {
                 btn.className =
                         'pay-type w-full p-6 rounded-xl border-2 transition-all duration-200 text-left border-[#E5E7EB] hover:border-[#D4AF37]';
-                if (radioOuter)
-                    radioOuter.classList.remove('border-[#D4AF37]');
-                if (radioInner)
-                    radioInner.classList.remove('bg-[#D4AF37]');
+                if (radioOuter) radioOuter.classList.remove('border-[#D4AF37]');
+                if (radioInner) radioInner.classList.remove('bg-[#D4AF37]');
             }
         });
+
         // nếu trả full thì depositPercentage = 100, còn lại 30
         state.depositPercentage = type === 'full' ? 100 : 30;
-        updateSummary();
+
+        const ptHidden = document.getElementById('hf-payment-type');
+        if (ptHidden) ptHidden.value = (type === 'full') ? 'FULL' : 'DEPOSIT';
+
+        updateSummary();      // tính lại tiền
+        syncPaymentHidden();  // đồng bộ hidden payment
     }
 
     function goToStep(step) {
@@ -431,8 +436,7 @@ const BookingUI = (function () {
         // Ẩn / hiện 3 section
         ['step-1', 'step-2', 'step-3'].forEach((id, index) => {
             const sec = document.getElementById(id);
-            if (!sec)
-                return;
+            if (!sec) return;
 
             if (index + 1 === step) {
                 sec.classList.remove('hidden');
@@ -508,8 +512,7 @@ const BookingUI = (function () {
         let valid = true;
 
         function mark(el, ok) {
-            if (!el)
-                return;
+            if (!el) return;
             el.classList.remove('border-red-500', 'ring-1', 'ring-red-300');
             if (!ok) {
                 el.classList.remove('border-[#E5E7EB]');
@@ -556,18 +559,21 @@ const BookingUI = (function () {
             }
             alert(
                     'Please fill in your contact details and accept the booking policies before confirming.'
-                    );
+            );
             return false; // chặn form submit
         }
+
+        // ✅ đảm bảo hidden payment luôn đúng trước khi submit JSF
+        syncPaymentHidden();
 
         // nếu mọi thứ ok: cho submit form để JSF lưu booking
         return true;
     }
+
     function setupFullMenuToggle() {
         const btn = document.getElementById('view-full-menu-btn');
         const panel = document.getElementById('full-menu-details-panel');
-        if (!btn || !panel)
-            return;
+        if (!btn || !panel) return;
 
         const icon = btn.querySelector('i');
 
@@ -587,7 +593,6 @@ const BookingUI = (function () {
         });
     }
 
-
     // ====== INIT ======
     function init() {
         // init lucide
@@ -606,8 +611,7 @@ const BookingUI = (function () {
 
         // Format ngày cho hiển thị: 2025-11-19 -> 19 Nov 2025
         function formatDateDisplay(isoDate) {
-            if (!isoDate)
-                return '';
+            if (!isoDate) return '';
             const d = new Date(isoDate);
             if (isNaN(d.getTime())) {
                 return isoDate; // nếu parse lỗi thì hiện raw
@@ -657,8 +661,7 @@ const BookingUI = (function () {
         if (minusBtn && plusBtn && tableInput) {
             minusBtn.addEventListener('click', function () {
                 let val = parseInt(tableInput.value || '1', 10);
-                if (val > 1)
-                    val--;
+                if (val > 1) val--;
                 tableInput.value = String(val);
                 state.tableCount = val;
                 updateCapacity();
@@ -674,8 +677,7 @@ const BookingUI = (function () {
             });
             tableInput.addEventListener('input', function () {
                 let val = parseInt(tableInput.value || '1', 10);
-                if (isNaN(val) || val < 1)
-                    val = 1;
+                if (isNaN(val) || val < 1) val = 1;
                 tableInput.value = String(val);
                 state.tableCount = val;
                 updateCapacity();
@@ -707,16 +709,14 @@ const BookingUI = (function () {
 
             function update(q) {
                 qtyEl.textContent = String(q);
-                if (minus)
-                    minus.disabled = q === 0;
+                if (minus) minus.disabled = q === 0;
                 updateSummary();
             }
 
             if (minus) {
                 minus.addEventListener('click', function () {
                     let q = parseInt(qtyEl.textContent || '0', 10);
-                    if (q > 0)
-                        q--;
+                    if (q > 0) q--;
                     update(q);
                 });
             }
@@ -727,8 +727,7 @@ const BookingUI = (function () {
                     update(q);
                 });
             }
-            if (minus)
-                minus.disabled = true;
+            if (minus) minus.disabled = true;
         });
 
         // event type -> summary
@@ -741,8 +740,7 @@ const BookingUI = (function () {
                 const label = this.options[this.selectedIndex]
                         ? this.options[this.selectedIndex].text
                         : this.value;
-                if (summary)
-                    summary.textContent = label;
+                if (summary) summary.textContent = label;
 
                 // đẩy tên loại tiệc (label) xuống hidden để server đọc
                 const hidden = document.getElementById('hf-event-type');
@@ -754,7 +752,6 @@ const BookingUI = (function () {
             const event = new Event('change');
             eventTypeSelect.dispatchEvent(event);
         }
-
 
         // tax invoice checkbox
         const needTax = document.getElementById('contact-need-tax');
@@ -798,8 +795,7 @@ const BookingUI = (function () {
         // contact validation on input
         ['contact-fullname', 'contact-email', 'contact-phone'].forEach(id => {
             const el = document.getElementById(id);
-            if (el)
-                el.addEventListener('input', validateContact);
+            if (el) el.addEventListener('input', validateContact);
         });
 
         // step buttons
@@ -828,7 +824,7 @@ const BookingUI = (function () {
                     }
                     alert(
                             'Please fill in your full name, email, phone number and accept the booking policies before continuing to payment.'
-                            );
+                    );
                     return;
                 }
 
@@ -880,12 +876,10 @@ const BookingUI = (function () {
                 state.voucherCode = code;
                 if (code) {
                     state.discount = 2000000; // demo
-                    if (voucherSuccess)
-                        voucherSuccess.classList.remove('hidden');
+                    if (voucherSuccess) voucherSuccess.classList.remove('hidden');
                 } else {
                     state.discount = 0;
-                    if (voucherSuccess)
-                        voucherSuccess.classList.add('hidden');
+                    if (voucherSuccess) voucherSuccess.classList.add('hidden');
                 }
                 updateSummary();
             });
@@ -930,8 +924,10 @@ const BookingUI = (function () {
                 window.location.href = targetUrl;
             });
         }
+
         // đọc giá custom menu từ DOM
         initMenuPriceFromDom();
+
         // initial render
         updateCapacity();
         updateSummary();
@@ -951,6 +947,7 @@ const BookingUI = (function () {
         handleConfirmClick: handleConfirmClick
     };
 })();
+
 document.addEventListener('DOMContentLoaded', function () {
     BookingUI.init();
 });
