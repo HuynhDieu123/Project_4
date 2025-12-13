@@ -34,6 +34,26 @@
     </context-param>
     
     
+<context-param>
+    <param-name>vnpay.tmnCode</param-name>
+    <param-value>U1O5RO7N</param-value>
+</context-param>
+
+<context-param>
+    <param-name>vnpay.hashSecret</param-name>
+    <param-value>7ZC0H25LGR2R27J7IK2GQY9TG449PGGI</param-value>
+</context-param>
+
+<context-param>
+    <param-name>vnpay.payUrl</param-name>
+    <param-value>https://sandbox.vnpayment.vn/paymentv2/vpcpay.html</param-value>
+</context-param>
+
+<!-- Nếu bạn muốn cố định returnUrl (khuyên dùng khi deploy thật) -->
+<context-param>
+    <param-name>vnpay.returnUrl</param-name>
+    <param-value>http://localhost:8080/FeastLink-war/faces/vnpay_return.xhtml</param-value>
+</context-param>
 
     
     
