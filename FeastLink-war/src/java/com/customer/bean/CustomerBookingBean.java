@@ -43,6 +43,11 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 
+
+
+
+import com.mypack.entity.Payments;
+import com.mypack.sessionbean.PaymentsFacadeLocal;
 /**
  * Handle final booking confirmation from booking.xhtml (wizard).
  */
@@ -75,6 +80,10 @@ public class CustomerBookingBean implements Serializable {
 
     @EJB
     private MenuCombosFacadeLocal menuCombosFacade; // nếu có
+    
+    
+    @EJB
+private PaymentsFacadeLocal paymentsFacade;
 
     private List<EventTypes> allEventTypes;
 
@@ -118,6 +127,12 @@ public class CustomerBookingBean implements Serializable {
     private String contactPhone;
 
     private List<EventTypes> availableEventTypes;
+    
+    
+    private String paymentMethod; // VNPAY / CASH
+private String paymentType;   // DEPOSIT / FULL
+private BigDecimal payAmount; // số tiền sẽ thanh toán
+
 
     // ====== INIT: load data từ param & DB ======
     @PostConstruct
@@ -458,302 +473,342 @@ public class CustomerBookingBean implements Serializable {
 
     private Map<Integer, String> eventTypeNameMap = new HashMap<>();
 
-    // ====== Main action: save booking ======
-    public String confirmBooking() {
-        FacesContext ctx = FacesContext.getCurrentInstance();
+// ====== Main action: save booking ======
+public String confirmBooking() {
+    FacesContext ctx = FacesContext.getCurrentInstance();
 
-        // 1. Require login
-        Users currentUser = (Users) ctx.getExternalContext()
-                .getSessionMap()
-                .get("currentUser");
+    // 1. Require login
+    Users currentUser = (Users) ctx.getExternalContext()
+            .getSessionMap()
+            .get("currentUser");
 
-        if (currentUser == null) {
-            ctx.addMessage(null, new FacesMessage(
-                    FacesMessage.SEVERITY_ERROR,
-                    "Please sign in",
-                    "You need to log in before making a booking. After signing in, you can view your booking history, manage or cancel reservations, and track payments easily."
-            ));
-            return "login"; // hoặc "/Customer/login?faces-redirect=true"
+    if (currentUser == null) {
+        ctx.addMessage(null, new FacesMessage(
+                FacesMessage.SEVERITY_ERROR,
+                "Please sign in",
+                "You need to log in before making a booking. After signing in, you can view your booking history, manage or cancel reservations, and track payments easily."
+        ));
+        return "login"; // hoặc "/Customer/login?faces-redirect=true"
+    }
+
+    try {
+        Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
+
+        // ===== Combo / package (selectedComboId) =====
+        if (selectedComboId == null) {
+            String cHidden = params.get("hf-combo-id");
+            String cQuery1 = params.get("comboId");
+            String cQuery2 = params.get("packageId");
+            String rawCombo = notBlank(cHidden) ? cHidden
+                    : (notBlank(cQuery1) ? cQuery1 : cQuery2);
+            if (notBlank(rawCombo)) {
+                try {
+                    selectedComboId = Long.valueOf(rawCombo.trim());
+                } catch (NumberFormatException ignored) {
+                }
+            }
         }
 
-        try {
-            Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
+        // ===== Custom menu ids (selectedMenuItemIds) =====
+        if (!notBlank(selectedMenuItemIds)) {
+            String mHidden = params.get("hf-menu-items");
+            String mQuery = params.get("menuItems");
+            if (notBlank(mHidden)) {
+                selectedMenuItemIds = mHidden;
+            } else if (notBlank(mQuery)) {
+                selectedMenuItemIds = mQuery;
+            }
+        }
 
-            // ===== Combo / package (selectedComboId) =====
-            if (selectedComboId == null) {
-                String cHidden = params.get("hf-combo-id");
-                String cQuery1 = params.get("comboId");
-                String cQuery2 = params.get("packageId");
-                String rawCombo = notBlank(cHidden) ? cHidden
-                        : (notBlank(cQuery1) ? cQuery1 : cQuery2);
-                if (notBlank(rawCombo)) {
-                    try {
-                        selectedComboId = Long.valueOf(rawCombo.trim());
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-            }
-
-            // ===== Custom menu ids (selectedMenuItemIds) =====
-            if (!notBlank(selectedMenuItemIds)) {
-                String mHidden = params.get("hf-menu-items");
-                String mQuery = params.get("menuItems");
-                if (notBlank(mHidden)) {
-                    selectedMenuItemIds = mHidden;
-                } else if (notBlank(mQuery)) {
-                    selectedMenuItemIds = mQuery;
-                }
-            }
-
-            // ===== Fallback đọc thêm từ request params khi field chưa bind =====
-            // restaurantId
-            if (restaurantId == null) {
-                String rHidden = params.get("hf-restaurant-id");
-                String rQuery = params.get("restaurantId");
-                String raw = (notBlank(rHidden)) ? rHidden : rQuery;
-                if (notBlank(raw)) {
-                    try {
-                        restaurantId = Long.parseLong(raw);
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-            }
-
-            // eventDateStr
-            if (!notBlank(eventDateStr)) {
-                String dHidden = params.get("hf-event-date");
-                String dQuery = params.get("date");
-                if (notBlank(dHidden)) {
-                    eventDateStr = dHidden;
-                } else if (notBlank(dQuery)) {
-                    eventDateStr = dQuery;
-                }
-            }
-
-            // guestCount
-            if (guestCount <= 0) {
-                String gHidden = params.get("hf-guest-count");
-                if (notBlank(gHidden)) {
-                    try {
-                        guestCount = Integer.parseInt(gHidden);
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-            }
-            if (guestCount <= 0) {
-                guestCount = 200;
-            }
-
-            // locationType
-            if (!notBlank(locationType)) {
-                String locHidden = params.get("hf-location-type");
-                if (notBlank(locHidden)) {
-                    locationType = locHidden;
-                } else {
-                    locationType = "AT_RESTAURANT";
-                }
-            }
-
-            // outsideAddress
-            if (!notBlank(outsideAddress)) {
-                String addrHidden = params.get("hf-outside-address");
-                if (notBlank(addrHidden)) {
-                    outsideAddress = addrHidden;
-                }
-            }
-
-            // total / deposit / remaining
-            if (totalAmount == null) {
-                String tHidden = params.get("hf-total-amount");
-                totalAmount = parseBigDecimalSafe(tHidden);
-            }
-
-            // eventTypeKey
-            if (!notBlank(eventTypeKey)) {
-                String eHidden = params.get("hf-event-type");
-                if (notBlank(eHidden)) {
-                    eventTypeKey = eHidden;
-                }
-            }
-
-            // serviceLevel
-            if (!notBlank(serviceLevel)) {
-                String sHidden = params.get("hf-service-level");
-                if (notBlank(sHidden)) {
-                    serviceLevel = sHidden;
-                }
-            }
-
-            if (depositAmount == null) {
-                String dHidden = params.get("hf-deposit-amount");
-                depositAmount = parseBigDecimalSafe(dHidden);
-            }
-            if (remainingAmount == null) {
-                String rHidden = params.get("hf-remaining-amount");
-                remainingAmount = parseBigDecimalSafe(rHidden);
-            }
-
-            // ===== Contact information từ form =====
-            // (giả sử 3 input trong booking.xhtml có name: contact-fullname, contact-email, contact-phone)
-            if (!notBlank(contactFullName)) {
-                String cName = params.get("contact-fullname");
-                if (!notBlank(cName)) {
-                    cName = params.get("contactFullName");
-                }
-                if (notBlank(cName)) {
-                    contactFullName = cName.trim();
-                }
-            }
-
-            if (!notBlank(contactEmail)) {
-                String cEmail = params.get("contact-email");
-                if (!notBlank(cEmail)) {
-                    cEmail = params.get("contactEmail");
-                }
-                if (notBlank(cEmail)) {
-                    contactEmail = cEmail.trim();
-                }
-            }
-
-            if (!notBlank(contactPhone)) {
-                String cPhone = params.get("contact-phone");
-                if (!notBlank(cPhone)) {
-                    cPhone = params.get("contactPhone");
-                }
-                if (notBlank(cPhone)) {
-                    contactPhone = cPhone.trim();
-                }
-            }
-
-            // fallback cuối: nếu vẫn rỗng thì lấy từ profile
-            if (currentUser != null) {
-                if (!notBlank(contactFullName)) {
-                    contactFullName = safe(currentUser.getFullName());
-                }
-                if (!notBlank(contactEmail)) {
-                    contactEmail = safe(currentUser.getEmail());
-                }
-                if (!notBlank(contactPhone)) {
-                    contactPhone = safe(currentUser.getPhone());
-                }
-            }
-
-            // 2. Load restaurant (nếu chưa có)
-            if (restaurant == null && restaurantId != null) {
-                restaurant = restaurantsFacade.find(restaurantId);
-            }
-
-// ❌ KHÔNG fallback lấy nhà hàng đầu tiên nữa
-            if (restaurant == null) {
-                ctx.addMessage(null, new FacesMessage(
-                        FacesMessage.SEVERITY_ERROR,
-                        "Cannot find restaurant",
-                        "We couldn't detect which venue you're booking. Please go back and choose the restaurant again."
-                ));
-                return null;
-            }
-
-            // 3. Event date + default time 18:00–22:00
-            LocalDate eventLocalDate;
-            if (notBlank(eventDateStr)) {
+        // ===== Fallback đọc thêm từ request params khi field chưa bind =====
+        // restaurantId
+        if (restaurantId == null) {
+            String rHidden = params.get("hf-restaurant-id");
+            String rQuery = params.get("restaurantId");
+            String raw = (notBlank(rHidden)) ? rHidden : rQuery;
+            if (notBlank(raw)) {
                 try {
-                    eventLocalDate = LocalDate.parse(eventDateStr);
-                } catch (Exception ex) {
-                    eventLocalDate = LocalDate.now().plusDays(7);
+                    restaurantId = Long.parseLong(raw);
+                } catch (NumberFormatException ignored) {
                 }
+            }
+        }
+
+        // eventDateStr
+        if (!notBlank(eventDateStr)) {
+            String dHidden = params.get("hf-event-date");
+            String dQuery = params.get("date");
+            if (notBlank(dHidden)) {
+                eventDateStr = dHidden;
+            } else if (notBlank(dQuery)) {
+                eventDateStr = dQuery;
+            }
+        }
+
+        // guestCount
+        if (guestCount <= 0) {
+            String gHidden = params.get("hf-guest-count");
+            if (notBlank(gHidden)) {
+                try {
+                    guestCount = Integer.parseInt(gHidden);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+        if (guestCount <= 0) {
+            guestCount = 200;
+        }
+
+        // locationType
+        if (!notBlank(locationType)) {
+            String locHidden = params.get("hf-location-type");
+            if (notBlank(locHidden)) {
+                locationType = locHidden;
             } else {
-                eventLocalDate = LocalDate.now().plusDays(7);
+                locationType = "AT_RESTAURANT";
             }
+        }
 
-            Date eventDate = java.sql.Date.valueOf(eventLocalDate);
-
-            ZoneId zone = ZoneId.systemDefault();
-            LocalDateTime startLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(18, 0));
-            LocalDateTime endLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(22, 0));
-            Date startTime = Date.from(startLdt.atZone(zone).toInstant());
-            Date endTime = Date.from(endLdt.atZone(zone).toInstant());
-
-            // 3.1 Resolve EventTypes & ServiceTypes từ DB
-            EventTypes selectedEventType = resolveEventType();
-            ServiceTypes selectedServiceType = resolveServiceType();
-
-            // special requests từ step 2
-            String specialRequests = params.get("special-requests");
-
-            // 4. Build entity Bookings
-            Bookings booking = new Bookings();
-            booking.setBookingCode(generateBookingCode());
-            booking.setCustomerId(currentUser);
-            booking.setRestaurantId(restaurant);
-            booking.setEventDate(eventDate);
-            booking.setGuestCount(guestCount);
-            booking.setLocationType(locationType);
-            booking.setStartTime(startTime);
-            booking.setEndTime(endTime);
-
-            // lưu special requests vào Note
-            if (notBlank(specialRequests)) {
-                booking.setNote(specialRequests.trim());
+        // outsideAddress
+        if (!notBlank(outsideAddress)) {
+            String addrHidden = params.get("hf-outside-address");
+            if (notBlank(addrHidden)) {
+                outsideAddress = addrHidden;
             }
+        }
 
-            // Gán loại tiệc & gói dịch vụ nếu tìm được
-            if (selectedEventType != null) {
-                booking.setEventTypeId(selectedEventType);
+        // total / deposit / remaining
+        if (totalAmount == null) {
+            String tHidden = params.get("hf-total-amount");
+            totalAmount = parseBigDecimalSafe(tHidden);
+        }
+
+        // eventTypeKey
+        if (!notBlank(eventTypeKey)) {
+            String eHidden = params.get("hf-event-type");
+            if (notBlank(eHidden)) {
+                eventTypeKey = eHidden;
             }
-            if (selectedServiceType != null) {
-                booking.setServiceTypeId(selectedServiceType);
+        }
+
+        // serviceLevel
+        if (!notBlank(serviceLevel)) {
+            String sHidden = params.get("hf-service-level");
+            if (notBlank(sHidden)) {
+                serviceLevel = sHidden;
             }
+        }
 
-            booking.setOutsideAddress(
-                    notBlank(outsideAddress) ? outsideAddress : null
-            );
+        if (depositAmount == null) {
+            String dHidden = params.get("hf-deposit-amount");
+            depositAmount = parseBigDecimalSafe(dHidden);
+        }
+        if (remainingAmount == null) {
+            String rHidden = params.get("hf-remaining-amount");
+            remainingAmount = parseBigDecimalSafe(rHidden);
+        }
 
-            if (totalAmount != null) {
-                booking.setTotalAmount(totalAmount);
+        // ================== ✅ (CHÈN 1) ĐỌC PAYMENT METHOD/TYPE/AMOUNT ==================
+        // (Bạn phải có 3 hidden trong xhtml: hf-payment-method, hf-payment-type, hf-pay-amount)
+        String pmHidden = params.get("hf-payment-method"); // VNPAY / CASH
+        if (notBlank(pmHidden)) paymentMethod = pmHidden.trim();
+
+        String ptHidden = params.get("hf-payment-type");   // DEPOSIT / FULL
+        if (notBlank(ptHidden)) paymentType = ptHidden.trim();
+
+        if (payAmount == null) {
+            String paHidden = params.get("hf-pay-amount");
+            payAmount = parseBigDecimalSafe(paHidden);
+        }
+
+        // default fallback
+        if (!notBlank(paymentMethod)) paymentMethod = "VNPAY";
+        if (!notBlank(paymentType)) paymentType = "DEPOSIT";
+        if (payAmount == null) {
+            payAmount = ("FULL".equalsIgnoreCase(paymentType) && totalAmount != null)
+                    ? totalAmount
+                    : (depositAmount != null ? depositAmount : totalAmount);
+        }
+        // ================== ✅ (HẾT CHÈN 1) ==================
+
+        // ===== Contact information từ form =====
+        // (giả sử 3 input trong booking.xhtml có name: contact-fullname, contact-email, contact-phone)
+        if (!notBlank(contactFullName)) {
+            String cName = params.get("contact-fullname");
+            if (!notBlank(cName)) {
+                cName = params.get("contactFullName");
             }
-            if (depositAmount != null) {
-                booking.setDepositAmount(depositAmount);
+            if (notBlank(cName)) {
+                contactFullName = cName.trim();
             }
-            if (remainingAmount != null) {
-                booking.setRemainingAmount(remainingAmount);
+        }
+
+        if (!notBlank(contactEmail)) {
+            String cEmail = params.get("contact-email");
+            if (!notBlank(cEmail)) {
+                cEmail = params.get("contactEmail");
             }
+            if (notBlank(cEmail)) {
+                contactEmail = cEmail.trim();
+            }
+        }
 
-            // *** GÁN CONTACT INFO VÀO BOOKING ***
-            booking.setContactFullName(notBlank(contactFullName) ? contactFullName.trim() : null);
-            booking.setContactEmail(notBlank(contactEmail) ? contactEmail.trim() : null);
-            booking.setContactPhone(notBlank(contactPhone) ? contactPhone.trim() : null);
+        if (!notBlank(contactPhone)) {
+            String cPhone = params.get("contact-phone");
+            if (!notBlank(cPhone)) {
+                cPhone = params.get("contactPhone");
+            }
+            if (notBlank(cPhone)) {
+                contactPhone = cPhone.trim();
+            }
+        }
 
-            booking.setBookingStatus("PENDING");
-            booking.setPaymentStatus("UNPAID");
-            booking.setCreatedAt(new Date());
+        // fallback cuối: nếu vẫn rỗng thì lấy từ profile
+        if (currentUser != null) {
+            if (!notBlank(contactFullName)) {
+                contactFullName = safe(currentUser.getFullName());
+            }
+            if (!notBlank(contactEmail)) {
+                contactEmail = safe(currentUser.getEmail());
+            }
+            if (!notBlank(contactPhone)) {
+                contactPhone = safe(currentUser.getPhone());
+            }
+        }
 
-            // 5. Lưu DB
-            bookingsFacade.create(booking);
+        // 2. Load restaurant (nếu chưa có)
+        if (restaurant == null && restaurantId != null) {
+            restaurant = restaurantsFacade.find(restaurantId);
+        }
 
-            // 5.1. Lưu package/combo nếu có
-            saveSelectedCombo(booking);
-
-            // 5.2. Lưu custom menu (các món lẻ) nếu có
-            saveSelectedMenuItems(booking);
-
-            // 6. Message + điều hướng
-            ctx.addMessage(null, new FacesMessage(
-                    FacesMessage.SEVERITY_INFO,
-                    "Booking request sent",
-                    "Your booking has been created successfully. Our team will contact you for confirmation."
-            ));
-
-            return "/Customer/index";
-
-        } catch (Exception ex) {
+        // ❌ KHÔNG fallback lấy nhà hàng đầu tiên nữa
+        if (restaurant == null) {
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Error",
-                    "Could not create booking: " + ex.getMessage()
+                    "Cannot find restaurant",
+                    "We couldn't detect which venue you're booking. Please go back and choose the restaurant again."
             ));
             return null;
         }
+
+        // 3. Event date + default time 18:00–22:00
+        LocalDate eventLocalDate;
+        if (notBlank(eventDateStr)) {
+            try {
+                eventLocalDate = LocalDate.parse(eventDateStr);
+            } catch (Exception ex) {
+                eventLocalDate = LocalDate.now().plusDays(7);
+            }
+        } else {
+            eventLocalDate = LocalDate.now().plusDays(7);
+        }
+
+        Date eventDate = java.sql.Date.valueOf(eventLocalDate);
+
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDateTime startLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(18, 0));
+        LocalDateTime endLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(22, 0));
+        Date startTime = Date.from(startLdt.atZone(zone).toInstant());
+        Date endTime = Date.from(endLdt.atZone(zone).toInstant());
+
+        // 3.1 Resolve EventTypes & ServiceTypes từ DB
+        EventTypes selectedEventType = resolveEventType();
+        ServiceTypes selectedServiceType = resolveServiceType();
+
+        // special requests từ step 2
+        String specialRequests = params.get("special-requests");
+
+        // 4. Build entity Bookings
+        Bookings booking = new Bookings();
+        booking.setBookingCode(generateBookingCode());
+        booking.setCustomerId(currentUser);
+        booking.setRestaurantId(restaurant);
+        booking.setEventDate(eventDate);
+        booking.setGuestCount(guestCount);
+        booking.setLocationType(locationType);
+        booking.setStartTime(startTime);
+        booking.setEndTime(endTime);
+
+        // lưu special requests vào Note
+        if (notBlank(specialRequests)) {
+            booking.setNote(specialRequests.trim());
+        }
+
+        // Gán loại tiệc & gói dịch vụ nếu tìm được
+        if (selectedEventType != null) {
+            booking.setEventTypeId(selectedEventType);
+        }
+        if (selectedServiceType != null) {
+            booking.setServiceTypeId(selectedServiceType);
+        }
+
+        booking.setOutsideAddress(
+                notBlank(outsideAddress) ? outsideAddress : null
+        );
+
+        if (totalAmount != null) {
+            booking.setTotalAmount(totalAmount);
+        }
+        if (depositAmount != null) {
+            booking.setDepositAmount(depositAmount);
+        }
+        if (remainingAmount != null) {
+            booking.setRemainingAmount(remainingAmount);
+        }
+
+        // *** GÁN CONTACT INFO VÀO BOOKING ***
+        booking.setContactFullName(notBlank(contactFullName) ? contactFullName.trim() : null);
+        booking.setContactEmail(notBlank(contactEmail) ? contactEmail.trim() : null);
+        booking.setContactPhone(notBlank(contactPhone) ? contactPhone.trim() : null);
+
+        booking.setBookingStatus("PENDING");
+        booking.setPaymentStatus("UNPAID");
+        booking.setCreatedAt(new Date());
+
+        // 5. Lưu DB
+        bookingsFacade.create(booking);
+
+        // ================== ✅ (CHÈN 2) TẠO PAYMENT PENDING ==================
+        // Lưu giao dịch (để đối soát VNPay sau này)
+        Payments p = new Payments();
+        p.setBookingId(booking);
+        p.setPaymentMethod(paymentMethod);   // VNPAY / CASH
+        p.setPaymentType(paymentType);       // DEPOSIT / FULL
+        p.setPaymentGateway("VNPAY".equalsIgnoreCase(paymentMethod) ? "VNPAY" : "MANUAL");
+        p.setAmount(payAmount);
+        p.setStatus("PENDING");
+
+        String txnRef = "PAY" + System.currentTimeMillis();
+        p.setTransactionCode(txnRef);
+
+        paymentsFacade.create(p);
+        // ================== ✅ (HẾT CHÈN 2) ==================
+
+        // 5.1. Lưu package/combo nếu có
+        saveSelectedCombo(booking);
+
+        // 5.2. Lưu custom menu (các món lẻ) nếu có
+        saveSelectedMenuItems(booking);
+
+        // 6. Message + điều hướng
+        ctx.addMessage(null, new FacesMessage(
+                FacesMessage.SEVERITY_INFO,
+                "Booking request sent",
+                "Your booking has been created successfully. Our team will contact you for confirmation."
+        ));
+
+        return "/Customer/index";
+
+    } catch (Exception ex) {
+        ctx.addMessage(null, new FacesMessage(
+                FacesMessage.SEVERITY_ERROR,
+                "Error",
+                "Could not create booking: " + ex.getMessage()
+        ));
+        return null;
     }
+}
+
     // ========== Lưu package/combo vào BookingCombos ==========
 
     private void saveSelectedCombo(Bookings booking) {

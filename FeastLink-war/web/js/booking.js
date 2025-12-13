@@ -26,7 +26,10 @@ const BookingUI = (function () {
         totalAmount: 0,
         depositAmount: 0,
         remainingAmount: 0,
-        menuPricePerTable: 0
+        menuPricePerTable: 0,
+        
+        paymentMethod: 'VNPAY',   // default
+        paymentType: 'deposit'  // bạn đang dùng rồi (deposit/full)
     };
 
     const PACKAGE_CONFIGS = {
@@ -383,19 +386,28 @@ const BookingUI = (function () {
             locHidden.value = state.locationType;
     }
 
-    function setPaymentMethod(method) {
-        const cards = document.querySelectorAll('.payment-method');
-        cards.forEach(card => {
-            const val = card.getAttribute('data-method');
-            if (val === method) {
-                card.className =
-                        'payment-method p-6 rounded-xl border-2 transition-all duration-200 text-left relative border-[#D4AF37] bg-[#020617] text-white';
-            } else {
-                card.className =
-                        'payment-method p-6 rounded-xl border-2 transition-all duration-200 text-left relative border-[#E5E7EB] bg-white hover:border-[#D4AF37]';
-            }
-        });
-    }
+   function setPaymentMethod(method) {
+    const cards = document.querySelectorAll('.payment-method');
+    cards.forEach(card => {
+        const val = card.getAttribute('data-method');
+        if (val === method) {
+            card.className =
+                'payment-method p-6 rounded-xl border-2 transition-all duration-200 text-left relative border-[#D4AF37] bg-[#020617] text-white';
+        } else {
+            card.className =
+                'payment-method p-6 rounded-xl border-2 transition-all duration-200 text-left relative border-[#E5E7EB] bg-white hover:border-[#D4AF37]';
+        }
+    });
+
+    // ✅ map UI -> server method
+    // venue = trả tại quầy, còn lại coi như VNPay
+    const serverMethod = (method === 'venue') ? 'CASH' : 'VNPAY';
+    state.paymentMethod = serverMethod;
+
+    const pmHidden = document.getElementById('hf-payment-method');
+    if (pmHidden) pmHidden.value = serverMethod;
+}
+
 
     function setPaymentType(type) {
         state.paymentType = type;
@@ -422,7 +434,18 @@ const BookingUI = (function () {
         });
         // nếu trả full thì depositPercentage = 100, còn lại 30
         state.depositPercentage = type === 'full' ? 100 : 30;
-        updateSummary();
+          const ptHidden = document.getElementById('hf-payment-type');
+    if (ptHidden) ptHidden.value = (type === 'full') ? 'FULL' : 'DEPOSIT';
+
+    updateSummary();
+ const pt = (state.paymentType || 'deposit').toLowerCase();
+const payAmount = (pt === 'full') ? state.totalAmount : state.depositAmount;
+
+document.getElementById("hf-payment-method").value = state.paymentMethod;
+document.getElementById("hf-payment-type").value = (pt === 'full') ? "FULL" : "DEPOSIT";
+document.getElementById("hf-pay-amount").value = payAmount;
+
+
     }
 
     function goToStep(step) {

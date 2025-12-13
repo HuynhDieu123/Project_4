@@ -32,6 +32,12 @@
         <param-name>cloudinary.api_secret</param-name>
         <param-value>vPNOl1wvWU1NM8NPYM7NmHGriXw</param-value>
     </context-param>
+    
+    
+
+    
+    
+    
 
     <servlet>
         <servlet-name>Faces Servlet</servlet-name>
