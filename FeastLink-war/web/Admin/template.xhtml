@@ -4,7 +4,7 @@
       xmlns:ui="jakarta.faces.facelets">
 
 <h:head>
-    <title>FeastLink Admin</title>
+    <title>FeastLink Admin Console</title>
     <meta charset="UTF-8" />
 
     <!-- Tailwind + Fonts -->
@@ -12,150 +12,349 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&amp;family=Poppins:wght@500;600&amp;display=swap"
           rel="stylesheet"/>
 
-    <!-- Material Symbols (icon cho dashboard, v.v.) -->
+    <!-- Material Symbols -->
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400..700,0..1,-50..200" />
 
     <style>
         :root {
-            --primary-dark: #020617;
-            --primary: #0B1120;
+            --fl-bg: #020617;          /* sidebar bg */
+            --fl-page-soft: #f9fafb;   /* main bg */
 
-            --secondary: #d4af37;
-            --secondary-soft: #e6c77f;
+            --fl-gold: #facc6b;
+            --fl-gold-strong: #eab308;
+            --fl-gold-soft: rgba(250, 204, 21, 0.10);
 
-            --bg-soft: #f9fafb;
-            --border: #e5e7eb;
+            --fl-text-soft: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
             font-family: "Inter", sans-serif;
-            background: var(--bg-soft);
+            margin: 0;
+            min-height: 100vh;
+            color: #0f172a;
+            background:
+                linear-gradient(180deg, rgba(250, 204, 21, 0.08), transparent 260px),
+                var(--fl-page-soft);
+            overflow-x: hidden;
         }
 
-        /* Material icon */
         .material-symbols-outlined {
             font-family: 'Material Symbols Outlined';
             font-weight: normal;
             font-style: normal;
-            font-size: 22px;          /* size icon mặc định */
-            display: inline-block;
+            font-size: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             line-height: 1;
-            letter-spacing: normal;
-            text-transform: none;
-            white-space: nowrap;
-            word-wrap: normal;
-            direction: ltr;
             -webkit-font-feature-settings: 'liga';
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Sidebar */
+        /* ========== SIDEBAR ========== */
         .sidebar {
-            background: #1c2130;
+            background:
+                radial-gradient(circle at top left, rgba(250, 204, 21, 0.26), transparent 55%),
+                linear-gradient(180deg, #020617 0%, #020617 30%, #020617 100%);
             width: 280px;
             height: 100vh;
-            color: white;
+            color: #e5e7eb;
             position: fixed;
             left: 0;
             top: 0;
-            padding: 26px;
-            box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+            padding: 24px 22px;
+            border-right: 1px solid rgba(15, 23, 42, 0.65);
+            box-shadow: 14px 0 40px rgba(15, 23, 42, 0.5);
+            z-index: 20;
         }
 
-        .sidebar-item:hover {
-            background: rgba(255,255,255,0.06);
+        .sidebar-logo {
+            border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 11px;
+            border-radius: 999px;
+            font-size: 14px;
+            color: #e5e7eb;
+            text-decoration: none;
+            transition: all 0.18s ease;
+            border: 1px solid transparent;
+        }
+
+        .sidebar-link-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top left,
+                        rgba(250, 204, 21, 0.25),
+                        rgba(15, 23, 42, 0.95));
+        }
+
+        .sidebar-link:hover {
+            background: rgba(15, 23, 42, 0.95);
+            border-color: rgba(250, 204, 21, 0.45);
+            color: var(--fl-gold);
             transform: translateX(4px);
-            color: var(--secondary);
         }
 
-        /* HEADER FIX FULL WIDTH */
+        .sidebar-link-active {
+            background: rgba(15, 23, 42, 0.95);
+            color: var(--fl-gold);
+            border-radius: 999px;
+            border: 1px solid rgba(250, 204, 21, 0.95);
+            box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.6);
+        }
+
+        .sidebar-link-active .sidebar-link-icon {
+            background: radial-gradient(circle at top left,
+                        rgba(250, 204, 21, 0.6),
+                        rgba(15, 23, 42, 1));
+        }
+
+        /* ========== HEADER – THANH NGANG PHẲNG ========== */
         .header {
             position: fixed;
             top: 0;
             left: 280px;
-            width: calc(100% - 280px);
-
-            background: linear-gradient(90deg,
-                rgba(212,175,55,0.12),
-                rgba(2,6,23,1) 60%);
-
-            border-bottom: 1px solid rgba(212,175,55,0.2);
-            padding: 20px 40px;
+            right: 0;
+            height: 82px;
+            padding: 18px 32px;
 
             display: flex;
             justify-content: space-between;
             align-items: center;
 
-            height: 95px;
-            z-index: 10;
+            background:
+                radial-gradient(circle at top left, rgba(250, 204, 21, 0.18), transparent 60%),
+                linear-gradient(90deg, #020617 0%, #020617 45%, #050816 100%);
+            box-shadow: 0 8px 26px rgba(15, 23, 42, 0.45);
+
+            z-index: 15;
+            color: #f9fafb;
         }
 
-        /* MAIN CONTENT */
+        .header-title-main {
+            font-family: "Poppins", sans-serif;
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .header-title-sub {
+            font-size: 11px;
+            color: #e5e7eb;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            margin-top: 4px;
+        }
+
+        .admin-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 14px 6px 6px;
+            border-radius: 999px;
+            background:
+                radial-gradient(circle at top left, rgba(250, 204, 21, 0.32), transparent 55%),
+                rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(250, 204, 21, 0.85);
+        }
+
+        .admin-chip-pill {
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #facc6b, #eab308);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: #111827;
+        }
+
+        .admin-chip-name {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .admin-chip-role {
+            font-size: 11px;
+            color: #e5e7eb;
+        }
+
+        /* ========== CONTENT ========== */
         .content-wrapper {
             margin-left: 280px;
-            margin-top: 110px;
-            padding: 20px 40px;
+            margin-top: 82px;        /* vừa bằng chiều cao header */
+            padding: 24px 40px 40px;
+            min-height: calc(100vh - 82px);
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+
+            .header {
+                left: 240px;
+            }
+
+            .content-wrapper {
+                margin-left: 240px;
+            }
         }
     </style>
 </h:head>
 
 <h:body>
 
-    <!-- SIDEBAR -->
+    <!-- ========== SIDEBAR ========== -->
     <aside class="sidebar">
 
         <!-- Logo -->
-        <div class="flex flex-col items-center mb-6 pb-6 border-b border-[rgba(212,175,55,0.25)]">
-
+        <div class="sidebar-logo flex flex-col items-center mb-6 pb-5">
             <h:graphicImage value="#{resource['images/FeastLink_Logo.png']}"
-                            styleClass="w-40 h-40 object-contain drop-shadow-xl" />
+                            styleClass="w-32 h-32 object-contain drop-shadow-2xl mb-2" />
 
-            <h1 class="text-[24px] font-semibold text-[var(--secondary)] mt-4 tracking-wide">
-                FeastLink
+            <h1 class="text-[22px] font-semibold tracking-[0.18em] text-[var(--fl-gold)] uppercase">
+                FEASTLINK
             </h1>
 
-            <p class="text-gray-400 text-xs -mt-1 tracking-wide">Admin Console</p>
+            <p class="text-[11px] tracking-[0.22em] text-[var(--fl-text-soft)] uppercase mt-1">
+                Luxury Events · Admin Console
+            </p>
         </div>
 
         <!-- MENU -->
-        <nav class="space-y-1.5 text-[15px]">
+        <nav class="space-y-1.5 text-[14px]">
 
-            <a href="#{request.contextPath}/faces/Admin/dashboard.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📊 Dashboard</a>
-            <a href="#{request.contextPath}/faces/Admin/users.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">👥 Users</a>
-            <a href="#{request.contextPath}/faces/Admin/restaurants.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">🏨 Restaurants</a>
-            <a href="#{request.contextPath}/faces/Admin/approvals.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📝 Approvals</a>
-            <a href="#{request.contextPath}/faces/Admin/cuisines.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📚 Cuisines</a>
-            <a href="#{request.contextPath}/faces/Admin/complaints.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">⚠ Complaints</a>
-            <a href="#{request.contextPath}/faces/Admin/settings.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">⚙ Settings</a>
-            <a href="#{request.contextPath}/faces/Admin/analytics.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📈 Analytics</a>
-             <a href="#{request.contextPath}/faces/Admin/admin-vouchers.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📈 Voucher</a>
+            <a href="#{request.contextPath}/faces/Admin/dashboard.xhtml"
+               class="sidebar-link #{facesContext.viewRoot.viewId eq '/Admin/dashboard.xhtml' ? 'sidebar-link-active' : ''}">
+                <span class="sidebar-link-icon">
+                    <span class="material-symbols-outlined">space_dashboard</span>
+                </span>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/users.xhtml"
+               class="sidebar-link #{facesContext.viewRoot.viewId eq '/Admin/users.xhtml' ? 'sidebar-link-active' : ''}">
+                <span class="sidebar-link-icon">
+                    <span class="material-symbols-outlined">group</span>
+                </span>
+                <span>Users</span>
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/restaurants.xhtml"
+               class="sidebar-link #{facesContext.viewRoot.viewId eq '/Admin/restaurants.xhtml' ? 'sidebar-link-active' : ''}">
+                <span class="sidebar-link-icon">
+                    <span class="material-symbols-outlined">restaurant</span>
+                </span>
+                <span>Restaurants</span>
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/approvals.xhtml"
+               class="sidebar-link #{facesContext.viewRoot.viewId eq '/Admin/approvals.xhtml' ? 'sidebar-link-active' : ''}">
+                <span class="sidebar-link-icon">
+                    <span class="material-symbols-outlined">assignment_turned_in</span>
+                </span>
+                <span>Approvals</span>
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/cuisines.xhtml"
+               class="sidebar-link #{facesContext.viewRoot.viewId eq '/Admin/cuisines.xhtml' ? 'sidebar-link-active' : ''}">
+                <span class="sidebar-link-icon">
+                    <span class="material-symbols-outlined">local_dining</span>
+                </span>
+                <span>Cuisines</span>
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/service_type.xhtml"
+               class="sidebar-link #{facesContext.viewRoot.viewId eq '/Admin/service_type.xhtml' ? 'sidebar-link-active' : ''}">
+                <span class="sidebar-link-icon">
+                    <span class="material-symbols-outlined">styler</span>
+                </span>
+                <span>Service Types</span>
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/complaints.xhtml"
+               class="sidebar-link #{facesContext.viewRoot.viewId eq '/Admin/complaints.xhtml' ? 'sidebar-link-active' : ''}">
+                <span class="sidebar-link-icon">
+                    <span class="material-symbols-outlined">report_problem</span>
+                </span>
+                <span>Complaints</span>
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/settings.xhtml"
+               class="sidebar-link #{facesContext.viewRoot.viewId eq '/Admin/settings.xhtml' ? 'sidebar-link-active' : ''}">
+                <span class="sidebar-link-icon">
+                    <span class="material-symbols-outlined">settings</span>
+                </span>
+                <span>Settings</span>
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/analytics.xhtml"
+               class="sidebar-link #{facesContext.viewRoot.viewId eq '/Admin/analytics.xhtml' ? 'sidebar-link-active' : ''}">
+                <span class="sidebar-link-icon">
+                    <span class="material-symbols-outlined">query_stats</span>
+                </span>
+                <span>Analytics</span>
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/admin-vouchers.xhtml"
+               class="sidebar-link #{facesContext.viewRoot.viewId eq '/Admin/admin-vouchers.xhtml' ? 'sidebar-link-active' : ''}">
+                <span class="sidebar-link-icon">
+                    <span class="material-symbols-outlined">card_giftcard</span>
+                </span>
+                <span>Vouchers</span>
+            </a>
 
         </nav>
 
     </aside>
 
-    <!-- HEADER -->
-    <header class="header text-white">
+    <!-- ========== HEADER ========== -->
+    <header class="header">
 
-        <h2 class="text-xl font-semibold tracking-wide">
-            <ui:insert name="title">Page Title</ui:insert>
-        </h2>
+        <div>
+            <div class="header-title-main">
+                <ui:insert name="title">Dashboard Overview</ui:insert>
+            </div>
+            <div class="header-title-sub">
+                Vietnam's Leading Banquet Booking Platform · Admin
+            </div>
+        </div>
 
-        <div class="flex items-center gap-3 bg-[rgba(255,255,255,0.08)] px-4 py-2 rounded-xl">
+        <div class="admin-chip">
             <img src="https://i.pravatar.cc/40"
-                 class="w-10 h-10 rounded-full border border-[var(--secondary)]" />
+                 alt="Admin avatar"
+                 class="w-9 h-9 rounded-full border border-[rgba(250,204,21,0.7)] shadow-md" />
 
             <div>
-                <p class="font-medium">Admin</p>
-                <p class="text-xs text-gray-300">FeastLink Admin</p>
+                <div class="admin-chip-name">Admin</div>
+                <div class="admin-chip-role">FeastLink Member · Console</div>
+            </div>
+
+            <div class="admin-chip-pill">
+                ADMIN PANEL
             </div>
         </div>
 
     </header>
 
-    <!-- PAGE CONTENT -->
+    <!-- ========== PAGE CONTENT ========== -->
     <main class="content-wrapper">
+        <!-- Ở đây là content riêng từng trang (card trắng, grid, v.v. do bạn tự thiết kế) -->
         <ui:insert name="content"/>
     </main>
 

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/Admin/template.xhtml"
+                xmlns:pass="jakarta.faces.passthrough">
+
+    <!-- Title tab trình duyệt -->
+    <ui:define name="title">FeastLink - Manage Service Types</ui:define>
+
+    <!-- Nội dung chính -->
+    <ui:define name="content">
+
+        <!-- CSS nhỏ để trang nhìn gọn, đẹp -->
+        <style>
+            .page-wrapper {
+                max-width: 1100px;
+                margin: 0 auto;
+                padding: 1.5rem 0;
+            }
+
+            .page-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                margin-bottom: 1rem;
+            }
+
+            .page-title {
+                font-size: 1.6rem;
+                font-weight: 700;
+                letter-spacing: 0.03em;
+            }
+
+            .page-subtitle {
+                font-size: 0.9rem;
+                color: #6b7280;
+            }
+
+            .card {
+                background: #ffffff;
+                border-radius: 0.75rem;
+                padding: 1.3rem 1.5rem;
+                margin-bottom: 1.2rem;
+                box-shadow:
+                    0 10px 15px -3px rgba(15, 23, 42, 0.10),
+                    0 4px 6px -4px rgba(15, 23, 42, 0.05);
+                border: 1px solid #e5e7eb;
+            }
+
+            .card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+            }
+
+            .card-title {
+                font-weight: 600;
+                font-size: 1.05rem;
+            }
+
+            .card-subtitle {
+                font-size: 0.85rem;
+                color: #9ca3af;
+            }
+
+            .toolbar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                align-items: center;
+                margin-bottom: 0.75rem;
+            }
+
+            .toolbar-group {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                align-items: center;
+            }
+
+            .label {
+                font-size: 0.9rem;
+                color: #4b5563;
+                font-weight: 500;
+            }
+
+            .input-text {
+                padding: 0.45rem 0.75rem;
+                border-radius: 0.5rem;
+                border: 1px solid #d1d5db;
+                min-width: 220px;
+                font-size: 0.9rem;
+            }
+
+            .input-text:focus {
+                outline: none;
+                border-color: #6366f1;
+                box-shadow: 0 0 0 1px #6366f1;
+            }
+
+            .input-inline {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0.4rem 0.85rem;
+                border-radius: 999px;
+                border: 1px solid transparent;
+                font-size: 0.85rem;
+                font-weight: 500;
+                cursor: pointer;
+                text-decoration: none;
+                gap: 0.3rem;
+                transition: all 0.15s ease-in-out;
+            }
+
+            .btn-primary {
+                background: linear-gradient(135deg, #4f46e5, #6366f1);
+                color: #ffffff;
+            }
+
+            .btn-primary:hover {
+                filter: brightness(1.05);
+                transform: translateY(-1px);
+                box-shadow: 0 8px 15px -5px rgba(79, 70, 229, 0.6);
+            }
+
+            .btn-success {
+                background: linear-gradient(135deg, #059669, #10b981);
+                color: #ffffff;
+            }
+
+            .btn-success:hover {
+                filter: brightness(1.05);
+                transform: translateY(-1px);
+                box-shadow: 0 8px 15px -5px rgba(5, 150, 105, 0.6);
+            }
+
+            .btn-outline-danger {
+                background: #ffffff;
+                color: #b91c1c;
+                border-color: #fecaca;
+            }
+
+            .btn-outline-danger:hover {
+                background: #fee2e2;
+            }
+
+            .btn-xs {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.6rem;
+                border-radius: 999px;
+            }
+
+            .alert-container {
+                margin-bottom: 0.75rem;
+            }
+
+            .alert {
+                padding: 0.6rem 0.9rem;
+                border-radius: 0.5rem;
+                font-size: 0.85rem;
+                margin-bottom: 0.4rem;
+            }
+
+            .alert-success {
+                background: #ecfdf3;
+                color: #166534;
+                border: 1px solid #bbf7d0;
+            }
+
+            .alert-warning {
+                background: #fffbeb;
+                color: #92400e;
+                border: 1px solid #fed7aa;
+            }
+
+            .alert-danger {
+                background: #fef2f2;
+                color: #b91c1c;
+                border: 1px solid #fecaca;
+            }
+
+            .fl-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.9rem;
+            }
+
+            .fl-table th,
+            .fl-table td {
+                padding: 0.55rem 0.7rem;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .fl-table thead th {
+                text-align: left;
+                background: #f9fafb;
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #6b7280;
+            }
+
+            .fl-table tbody tr:nth-child(even) {
+                background: #f9fafb;
+            }
+
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 0.15rem 0.55rem;
+                border-radius: 999px;
+                font-size: 0.75rem;
+                font-weight: 600;
+            }
+
+            .badge-id {
+                background: #eef2ff;
+                color: #4338ca;
+            }
+
+            .no-data {
+                font-size: 0.9rem;
+                color: #9ca3af;
+                text-align: center;
+                padding: 0.75rem 0;
+            }
+
+            @media (max-width: 768px) {
+                .page-wrapper {
+                    padding: 1rem 0.25rem;
+                }
+
+                .toolbar {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+            }
+        </style>
+
+        <h:form id="serviceTypeForm">
+
+            <div class="page-wrapper">
+
+                <!-- Page header -->
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Service Types</div>
+                        <div class="page-subtitle">
+                            Manage service styles for restaurants: VIP, standard, buffet...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MESSAGES -->
+                <h:panelGroup>
+                    <h:messages globalOnly="true"
+                                layout="table"
+                                styleClass="alert-container"
+                                infoClass="alert alert-success"
+                                warnClass="alert alert-warning"
+                                errorClass="alert alert-danger"
+                                fatalClass="alert alert-danger"/>
+                </h:panelGroup>
+
+                <!-- CARD: Search + Add -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Search &amp; Add</div>
+                        <div class="card-subtitle">
+                            Quickly find or create service types for bookings.
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- SEARCH TOOLBAR -->
+                        <div class="toolbar">
+                            <div class="toolbar-group">
+                                <span class="label">Search</span>
+                                <h:inputText value="#{adminServiceTypeBean.keyword}"
+                                             styleClass="input-text"
+                                             maxlength="100"
+                                             title="Search by name"/>
+                                <h:commandButton value="Search"
+                                                 styleClass="btn btn-primary"
+                                                 action="#{adminServiceTypeBean.search}">
+                                    <f:ajax execute="@form" render="@form"/>
+                                </h:commandButton>
+                            </div>
+                        </div>
+
+                        <hr/>
+
+                        <!-- ADD NEW -->
+                        <div class="toolbar">
+                            <div class="toolbar-group" style="flex: 1;">
+                                <span class="label">New service type</span>
+                                <h:inputText value="#{adminServiceTypeBean.newName}"
+                                             styleClass="input-text"
+                                             maxlength="100"
+                                             pass:placeholder="e.g. VIP Wedding Package, Standard Buffet..."/>
+                            </div>
+                            <div class="toolbar-group">
+                                <h:commandButton value="+ Add"
+                                                 styleClass="btn btn-success"
+                                                 action="#{adminServiceTypeBean.create}">
+                                    <f:ajax execute="@form" render="@form"/>
+                                </h:commandButton>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- CARD: List -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Service type list</div>
+                        <div class="card-subtitle">
+                            Inline edit name, then Save. Delete only if not used in bookings.
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+
+                        <h:panelGroup rendered="#{not empty adminServiceTypeBean.items}">
+                            <table class="fl-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px;">ID</th>
+                                        <th>Name</th>
+                                        <th style="width: 155px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <ui:repeat value="#{adminServiceTypeBean.items}" var="st">
+                                        <tr>
+                                            <td>
+                                                <span class="badge badge-id">
+                                                    #{st.serviceTypeId}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <h:inputText value="#{st.name}"
+                                                             styleClass="input-text input-inline"
+                                                             maxlength="100"/>
+                                            </td>
+                                            <td>
+                                                <h:commandButton value="Save"
+                                                                 styleClass="btn btn-primary btn-xs"
+                                                                 action="#{adminServiceTypeBean.update(st)}">
+                                                    <f:ajax execute=":serviceTypeForm" render=":serviceTypeForm"/>
+                                                </h:commandButton>
+
+                                                <h:commandButton value="Delete"
+                                                                 styleClass="btn btn-outline-danger btn-xs"
+                                                                 action="#{adminServiceTypeBean.delete(st)}"
+                                                                 onclick="return confirm('Delete this service type?');">
+                                                    <f:ajax execute="@this" render=":serviceTypeForm"/>
+                                                </h:commandButton>
+                                            </td>
+                                        </tr>
+                                    </ui:repeat>
+                                </tbody>
+                            </table>
+                        </h:panelGroup>
+
+                        <h:panelGroup rendered="#{empty adminServiceTypeBean.items}">
+                            <div class="no-data">
+                                No service types found. Try another keyword or add new one.
+                            </div>
+                        </h:panelGroup>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </h:form>
+
+    </ui:define>
+
+</ui:composition>

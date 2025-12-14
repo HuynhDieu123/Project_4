@@ -56,6 +56,75 @@ import java.util.Date;
 })
 public class Bookings implements Serializable {
 
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 30)
+    @Column(name = "BookingCode")
+    private String bookingCode;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "EventDate")
+    @Temporal(TemporalType.DATE)
+    private Date eventDate;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "GuestCount")
+    private int guestCount;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 20)
+    @Column(name = "LocationType")
+    private String locationType;
+    @Size(max = 255)
+    @Column(name = "OutsideAddress")
+    private String outsideAddress;
+    @Size(max = 2147483647)
+    @Column(name = "Note")
+    private String note;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 20)
+    @Column(name = "BookingStatus")
+    private String bookingStatus;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 20)
+    @Column(name = "PaymentStatus")
+    private String paymentStatus;
+    @Size(max = 2147483647)
+    @Column(name = "CancelReason")
+    private String cancelReason;
+    @Size(max = 2147483647)
+    @Column(name = "RejectReason")
+    private String rejectReason;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "CreatedAt")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date createdAt;
+    @Size(max = 100)
+    @Column(name = "ContactFullName")
+    private String contactFullName;
+    @Size(max = 100)
+    @Column(name = "ContactEmail")
+    private String contactEmail;
+    @Size(max = 20)
+    @Column(name = "ContactPhone")
+    private String contactPhone;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "DiscountAmount")
+    private BigDecimal discountAmount;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "PointsUsed")
+    private long pointsUsed;
+    @JoinColumn(name = "VoucherId", referencedColumnName = "VoucherId")
+    @ManyToOne
+    private Vouchers voucherId;
+    @OneToMany(mappedBy = "usedBookingId")
+    private Collection<UserVouchers> userVouchersCollection;
+
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -64,17 +133,6 @@ public class Bookings implements Serializable {
     @Column(name = "BookingId")
     private Long bookingId;
 
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 30)
-    @Column(name = "BookingCode")
-    private String bookingCode;
-
-    @Basic(optional = false)
-    @NotNull
-    @Column(name = "EventDate")
-    @Temporal(TemporalType.DATE)
-    private Date eventDate;
 
     @Column(name = "StartTime")
     @Temporal(TemporalType.TIME)
@@ -84,38 +142,6 @@ public class Bookings implements Serializable {
     @Temporal(TemporalType.TIME)
     private Date endTime;
 
-    @Basic(optional = false)
-    @NotNull
-    @Column(name = "GuestCount")
-    private int guestCount;
-
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 20)
-    @Column(name = "LocationType")
-    private String locationType;
-
-    @Size(max = 255)
-    @Column(name = "OutsideAddress")
-    private String outsideAddress;
-
-    @Size(max = 2147483647)
-    @Column(name = "Note")
-    private String note;
-
-    // ==== Contact information (mới thêm) ====
-    @Size(max = 100)
-    @Column(name = "ContactFullName")
-    private String contactFullName;
-
-    @Size(max = 100)
-    @Column(name = "ContactEmail")
-    private String contactEmail;
-
-    @Size(max = 20)
-    @Column(name = "ContactPhone")
-    private String contactPhone;
-    // ========================================
 
     // @Max/@Min nếu cần range
     @Column(name = "TotalAmount")
@@ -127,35 +153,11 @@ public class Bookings implements Serializable {
     @Column(name = "RemainingAmount")
     private BigDecimal remainingAmount;
 
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 20)
-    @Column(name = "BookingStatus")
-    private String bookingStatus;
-
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 20)
-    @Column(name = "PaymentStatus")
-    private String paymentStatus;
-
-    @Size(max = 2147483647)
-    @Column(name = "CancelReason")
-    private String cancelReason;
 
     @Column(name = "CancelTime")
     @Temporal(TemporalType.TIMESTAMP)
     private Date cancelTime;
 
-    @Size(max = 2147483647)
-    @Column(name = "RejectReason")
-    private String rejectReason;
-
-    @Basic(optional = false)
-    @NotNull
-    @Column(name = "CreatedAt")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date createdAt;
 
     @Column(name = "UpdatedAt")
     @Temporal(TemporalType.TIMESTAMP)
@@ -229,21 +231,6 @@ public class Bookings implements Serializable {
         this.bookingId = bookingId;
     }
 
-    public String getBookingCode() {
-        return bookingCode;
-    }
-
-    public void setBookingCode(String bookingCode) {
-        this.bookingCode = bookingCode;
-    }
-
-    public Date getEventDate() {
-        return eventDate;
-    }
-
-    public void setEventDate(Date eventDate) {
-        this.eventDate = eventDate;
-    }
 
     public Date getStartTime() {
         return startTime;
@@ -261,61 +248,6 @@ public class Bookings implements Serializable {
         this.endTime = endTime;
     }
 
-    public int getGuestCount() {
-        return guestCount;
-    }
-
-    public void setGuestCount(int guestCount) {
-        this.guestCount = guestCount;
-    }
-
-    public String getLocationType() {
-        return locationType;
-    }
-
-    public void setLocationType(String locationType) {
-        this.locationType = locationType;
-    }
-
-    public String getOutsideAddress() {
-        return outsideAddress;
-    }
-
-    public void setOutsideAddress(String outsideAddress) {
-        this.outsideAddress = outsideAddress;
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    public void setNote(String note) {
-        this.note = note;
-    }
-
-    public String getContactFullName() {
-        return contactFullName;
-    }
-
-    public void setContactFullName(String contactFullName) {
-        this.contactFullName = contactFullName;
-    }
-
-    public String getContactEmail() {
-        return contactEmail;
-    }
-
-    public void setContactEmail(String contactEmail) {
-        this.contactEmail = contactEmail;
-    }
-
-    public String getContactPhone() {
-        return contactPhone;
-    }
-
-    public void setContactPhone(String contactPhone) {
-        this.contactPhone = contactPhone;
-    }
 
     public BigDecimal getTotalAmount() {
         return totalAmount;
@@ -341,29 +273,6 @@ public class Bookings implements Serializable {
         this.remainingAmount = remainingAmount;
     }
 
-    public String getBookingStatus() {
-        return bookingStatus;
-    }
-
-    public void setBookingStatus(String bookingStatus) {
-        this.bookingStatus = bookingStatus;
-    }
-
-    public String getPaymentStatus() {
-        return paymentStatus;
-    }
-
-    public void setPaymentStatus(String paymentStatus) {
-        this.paymentStatus = paymentStatus;
-    }
-
-    public String getCancelReason() {
-        return cancelReason;
-    }
-
-    public void setCancelReason(String cancelReason) {
-        this.cancelReason = cancelReason;
-    }
 
     public Date getCancelTime() {
         return cancelTime;
@@ -373,21 +282,6 @@ public class Bookings implements Serializable {
         this.cancelTime = cancelTime;
     }
 
-    public String getRejectReason() {
-        return rejectReason;
-    }
-
-    public void setRejectReason(String rejectReason) {
-        this.rejectReason = rejectReason;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
 
     public Date getUpdatedAt() {
         return updatedAt;
@@ -523,5 +417,150 @@ public class Bookings implements Serializable {
     @Override
     public String toString() {
         return "com.mypack.entity.Bookings[ bookingId=" + bookingId + " ]";
+    }
+
+    public String getBookingCode() {
+        return bookingCode;
+    }
+
+    public void setBookingCode(String bookingCode) {
+        this.bookingCode = bookingCode;
+    }
+
+    public Date getEventDate() {
+        return eventDate;
+    }
+
+    public void setEventDate(Date eventDate) {
+        this.eventDate = eventDate;
+    }
+
+    public int getGuestCount() {
+        return guestCount;
+    }
+
+    public void setGuestCount(int guestCount) {
+        this.guestCount = guestCount;
+    }
+
+    public String getLocationType() {
+        return locationType;
+    }
+
+    public void setLocationType(String locationType) {
+        this.locationType = locationType;
+    }
+
+    public String getOutsideAddress() {
+        return outsideAddress;
+    }
+
+    public void setOutsideAddress(String outsideAddress) {
+        this.outsideAddress = outsideAddress;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    public String getBookingStatus() {
+        return bookingStatus;
+    }
+
+    public void setBookingStatus(String bookingStatus) {
+        this.bookingStatus = bookingStatus;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
+    public String getRejectReason() {
+        return rejectReason;
+    }
+
+    public void setRejectReason(String rejectReason) {
+        this.rejectReason = rejectReason;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getContactFullName() {
+        return contactFullName;
+    }
+
+    public void setContactFullName(String contactFullName) {
+        this.contactFullName = contactFullName;
+    }
+
+    public String getContactEmail() {
+        return contactEmail;
+    }
+
+    public void setContactEmail(String contactEmail) {
+        this.contactEmail = contactEmail;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+
+    public long getPointsUsed() {
+        return pointsUsed;
+    }
+
+    public void setPointsUsed(long pointsUsed) {
+        this.pointsUsed = pointsUsed;
+    }
+
+    public Vouchers getVoucherId() {
+        return voucherId;
+    }
+
+    public void setVoucherId(Vouchers voucherId) {
+        this.voucherId = voucherId;
+    }
+
+    @XmlTransient
+    public Collection<UserVouchers> getUserVouchersCollection() {
+        return userVouchersCollection;
+    }
+
+    public void setUserVouchersCollection(Collection<UserVouchers> userVouchersCollection) {
+        this.userVouchersCollection = userVouchersCollection;
     }
 }

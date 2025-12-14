@@ -36,17 +36,18 @@ import java.util.Collection;
     @NamedQuery(name = "Areas.findByName", query = "SELECT a FROM Areas a WHERE a.name = :name")})
 public class Areas implements Serializable {
 
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 100)
+    @Column(name = "Name")
+    private String name;
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
     @Column(name = "AreaId")
     private Integer areaId;
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 100)
-    @Column(name = "Name")
-    private String name;
     @OneToMany(mappedBy = "areaId")
     private Collection<Restaurants> restaurantsCollection;
     @JoinColumn(name = "CityId", referencedColumnName = "CityId")
@@ -73,13 +74,6 @@ public class Areas implements Serializable {
         this.areaId = areaId;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 
     @XmlTransient
     public Collection<Restaurants> getRestaurantsCollection() {
@@ -121,6 +115,14 @@ public class Areas implements Serializable {
     @Override
     public String toString() {
         return "com.mypack.entity.Areas[ areaId=" + areaId + " ]";
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
     
 }

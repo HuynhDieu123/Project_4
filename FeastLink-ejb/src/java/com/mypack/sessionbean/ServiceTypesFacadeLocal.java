@@ -27,6 +27,12 @@ public interface ServiceTypesFacadeLocal {
 
     List<ServiceTypes> findRange(int[] range);
 
+    List<ServiceTypes> findByKeyword(String keyword);
+
+    boolean existsByName(String name);
+
+    boolean existsByNameExceptId(String name, Integer id);
+
     int count();
-    
+
 }

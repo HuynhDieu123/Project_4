@@ -9,239 +9,273 @@
 
     <ui:define name="content">
 
-        <!-- HEADER INTRO -->
-        <div class="flex items-center justify-between gap-4 mb-8">
-            <div>
-                <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">
-                    FeastLink overview
-                </p>
-                <h1 class="mt-1 text-2xl font-semibold text-slate-900">
-                    Today’s performance
-                </h1>
-                <p class="mt-1 text-xs text-slate-500">
-                    Key metrics across customers, restaurants and bookings.
-                </p>
-            </div>
+        <div class="space-y-8">
 
-            <div class="hidden md:flex items-center gap-2 px-3 py-2 rounded-2xl border border-slate-200 bg-white/80 shadow-sm text-[11px] text-slate-500">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Updated just now
-            </div>
-        </div>
-
-        <!-- ==== TOP METRICS ==== -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-6 mb-10">
-
-            <!-- Customers -->
-            <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-sky-100/70 blur-2xl group-hover:bg-sky-200/80"></div>
-                <div class="relative p-4 flex items-center gap-4">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50">
-                        <span class="material-symbols-outlined text-sky-500 text-[22px]"
-                              style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                            group
-                        </span>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                            Customers
-                        </p>
-                        <p class="mt-1 text-[26px] font-bold text-slate-900 leading-none">
-                            #{dashboardBean.totalUsers}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Restaurants -->
-            <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-violet-100/70 blur-2xl group-hover:bg-violet-200/80"></div>
-                <div class="relative p-4 flex items-center gap-4">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50">
-                        <span class="material-symbols-outlined text-violet-500 text-[22px]"
-                              style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                            storefront
-                        </span>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                            Restaurants
-                        </p>
-                        <p class="mt-1 text-[26px] font-bold text-slate-900 leading-none">
-                            #{dashboardBean.totalRestaurants}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total bookings -->
-            <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-emerald-100/70 blur-2xl group-hover:bg-emerald-200/80"></div>
-                <div class="relative p-4 flex items-center gap-4">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50">
-                        <span class="material-symbols-outlined text-emerald-500 text-[22px]"
-                              style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                            event_list
-                        </span>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                            Total bookings
-                        </p>
-                        <p class="mt-1 text-[26px] font-bold text-slate-900 leading-none">
-                            #{dashboardBean.totalBookings}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Monthly revenue -->
-            <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-emerald-100/70 blur-2xl group-hover:bg-emerald-200/80"></div>
-                <div class="relative p-4 flex items-center gap-4">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50">
-                        <span class="material-symbols-outlined text-emerald-500 text-[22px]"
-                              style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                            payments
-                        </span>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                            Monthly revenue
-                        </p>
-
-                        <!-- CHỖ NÀY ĐÃ SỬA -->
-                        <p class="mt-1 text-[22px] font-bold text-emerald-600 leading-none whitespace-nowrap">
-                            #{dashboardBean.formattedMonthlyRevenue}
-                        </p>
-
-                        <!-- HẾT PHẦN SỬA -->
-
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Total confirmed booking revenue for the current month.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cancellation rate -->
-            <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-rose-100/70 blur-2xl group-hover:bg-rose-200/80"></div>
-                <div class="relative p-4 flex items-center gap-4">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50">
-                        <span class="material-symbols-outlined text-rose-500 text-[22px]"
-                              style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                            cancel
-                        </span>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                            Cancellation rate
-                        </p>
-                        <p class="mt-1 text-[26px] font-bold text-rose-500 leading-none">
-                            #{dashboardBean.cancelRate}%
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pending approvals -->
-            <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-amber-100/70 blur-2xl group-hover:bg-amber-200/80"></div>
-                <div class="relative p-4 flex items-center gap-4">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50">
-                        <span class="material-symbols-outlined text-amber-500 text-[22px]"
-                              style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                            pending_actions
-                        </span>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                            Pending approvals
-                        </p>
-                        <p class="mt-1 text-[26px] font-bold text-amber-500 leading-none">
-                            #{dashboardBean.pendingApprovals}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- ==== RECENT BOOKINGS ==== -->
-        <div class="bg-white/95 rounded-3xl p-8 shadow-xl border border-slate-100 backdrop-blur">
-
-            <div class="flex items-center justify-between gap-4 mb-6">
+            <!-- HEADER INTRO -->
+            <div class="flex items-start justify-between gap-4">
                 <div>
-                    <h3 class="text-lg font-semibold text-slate-900">
-                        Latest bookings
-                    </h3>
-                    <p class="text-xs text-slate-500 mt-1">
-                        Monitor the most recent bookings to keep track of platform activity.
+                    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">
+                        FeastLink overview
+                    </p>
+                    <h1 class="mt-1 text-2xl font-semibold text-slate-900">
+                        Today’s performance
+                    </h1>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Key metrics across customers, restaurants and bookings.
                     </p>
                 </div>
 
-                <span
-                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 text-[11px] font-medium tracking-[0.18em] uppercase text-slate-500 bg-slate-50">
-                    <span class="material-symbols-outlined text-[15px]"
-                          style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                        monitoring
+                <div class="hidden md:flex flex-col items-end gap-2 text-[11px]">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border border-slate-200 bg-white/80 shadow-sm text-slate-500">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Updated just now
+                    </div>
+                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 uppercase tracking-[0.18em]">
+                        <span class="material-symbols-outlined text-[15px]"
+                              style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
+                            calendar_month
+                        </span>
+                        This month
                     </span>
-                    Monitoring
-                    <span class="text-[10px] font-normal text-slate-400">realtime overview</span>
-                </span>
+                </div>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="min-w-[720px] w-full text-left text-sm">
-                    <thead>
-                        <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase">
-                            <th class="pb-3 pr-4">Booking</th>
-                            <th class="pb-3 pr-4">Customer</th>
-                            <th class="pb-3 pr-4">Restaurant</th>
-                            <th class="pb-3 pr-4">Date</th>
-                            <th class="pb-3">Status</th>
-                        </tr>
-                    </thead>
+            <!-- ==== TOP METRICS WRAPPER ==== -->
+            <section class="rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/70 p-6">
+                <div class="flex items-center justify-between mb-5 gap-3">
+                    <div>
+                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">
+                            Key metrics
+                        </p>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Snapshot of user growth, restaurant partners and booking activity.
+                        </p>
+                    </div>
+                </div>
 
-                    <tbody class="text-[14px] text-slate-700">
-                        <ui:repeat value="#{dashboardBean.recentBookings}" var="b">
-                            <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-                                <td class="py-3 pr-4 font-medium text-slate-900 whitespace-nowrap">
-                                    #{b.bookingCode}
-                                </td>
-                                <td class="py-3 pr-4 whitespace-nowrap">
-                                    #{b.customerId.fullName}
-                                </td>
-                                <td class="py-3 pr-4 whitespace-nowrap">
-                                    #{b.restaurantId.name}
-                                </td>
-                                <td class="py-3 pr-4 whitespace-nowrap text-slate-600">
-                                    <h:outputText value="#{b.eventDate}">
-                                        <f:convertDateTime pattern="EEE, dd MMM yyyy" />
-                                    </h:outputText>
-                                </td>
-                                <td class="py-3">
-                                    <span class="
-                                          inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-medium
-                                          #{b.bookingStatus eq 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                                            b.bookingStatus eq 'PENDING'   ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                                            'bg-rose-50 text-rose-700 border border-rose-100'}">
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-5">
 
-                                        <span class="w-1.5 h-1.5 rounded-full
-                                              #{b.bookingStatus eq 'CONFIRMED' ? 'bg-emerald-500' :
-                                                b.bookingStatus eq 'PENDING'   ? 'bg-amber-500' :
-                                                'bg-rose-500'}">
-                                        </span>
+                    <!-- Customers -->
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-sky-100/70 blur-2xl group-hover:bg-sky-200/80"></div>
+                        <div class="relative p-4 flex items-center gap-4">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50">
+                                <span class="material-symbols-outlined text-sky-500 text-[22px]"
+                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
+                                    group
+                                </span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
+                                    Customers
+                                </p>
+                                <p class="mt-1 text-[24px] font-bold text-slate-900 leading-none">
+                                    #{dashboardBean.totalUsers}
+                                </p>
+                                <p class="mt-1 text-[11px] text-slate-400">
+                                    Active customer accounts on platform.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
-                                        #{b.bookingStatus}
-                                    </span>
-                                </td>
+                    <!-- Restaurants -->
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-violet-100/70 blur-2xl group-hover:bg-violet-200/80"></div>
+                        <div class="relative p-4 flex items-center gap-4">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50">
+                                <span class="material-symbols-outlined text-violet-500 text-[22px]"
+                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24%;">
+                                    storefront
+                                </span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
+                                    Restaurants
+                                </p>
+                                <p class="mt-1 text-[24px] font-bold text-slate-900 leading-none">
+                                    #{dashboardBean.totalRestaurants}
+                                </p>
+                                <p class="mt-1 text-[11px] text-slate-400">
+                                    Partner venues currently live on FeastLink.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total bookings -->
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50/70 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-emerald-100/70 blur-2xl group-hover:bg-emerald-200/80"></div>
+                        <div class="relative p-4 flex items-center gap-4">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50">
+                                <span class="material-symbols-outlined text-emerald-500 text-[22px]"
+                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
+                                    event_list
+                                </span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
+                                    Total bookings
+                                </p>
+                                <p class="mt-1 text-[24px] font-bold text-slate-900 leading-none">
+                                    #{dashboardBean.totalBookings}
+                                </p>
+                                <p class="mt-1 text-[11px] text-slate-400">
+                                    All bookings recorded in the system.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Monthly revenue -->
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50/70 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-emerald-100/70 blur-2xl group-hover:bg-emerald-200/80"></div>
+                        <div class="relative p-4 flex items-center gap-4">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50">
+                                <span class="material-symbols-outlined text-emerald-500 text-[22px]"
+                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
+                                    payments
+                                </span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
+                                    Monthly revenue
+                                </p>
+                                <p class="mt-1 text-[22px] font-bold text-emerald-600 leading-none whitespace-nowrap">
+                                    #{dashboardBean.formattedMonthlyRevenue}
+                                </p>
+                                <p class="mt-1 text-[11px] text-slate-400">
+                                    Total confirmed booking revenue this month.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cancellation rate -->
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-rose-100/70 blur-2xl group-hover:bg-rose-200/80"></div>
+                        <div class="relative p-4 flex items-center gap-4">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50">
+                                <span class="material-symbols-outlined text-rose-500 text-[22px]"
+                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
+                                    cancel
+                                </span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
+                                    Cancellation rate
+                                </p>
+                                <p class="mt-1 text-[24px] font-bold text-rose-500 leading-none">
+                                    #{dashboardBean.cancelRate}%
+                                </p>
+                                <p class="mt-1 text-[11px] text-slate-400">
+                                    Percentage of cancelled bookings overall.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pending approvals -->
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-amber-100/70 blur-2xl group-hover:bg-amber-200/80"></div>
+                        <div class="relative p-4 flex items-center gap-4">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50">
+                                <span class="material-symbols-outlined text-amber-500 text-[22px]"
+                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
+                                    pending_actions
+                                </span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
+                                    Pending approvals
+                                </p>
+                                <p class="mt-1 text-[24px] font-bold text-amber-500 leading-none">
+                                    #{dashboardBean.pendingApprovals}
+                                </p>
+                                <p class="mt-1 text-[11px] text-slate-400">
+                                    Restaurants waiting for admin review.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- ==== RECENT BOOKINGS ==== -->
+            <section class="bg-white/95 rounded-3xl p-8 shadow-xl border border-slate-100 backdrop-blur">
+                <div class="flex items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900">
+                            Latest bookings
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Monitor the most recent bookings to keep track of platform activity.
+                        </p>
+                    </div>
+
+                    <span
+                        class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 text-[11px] font-medium tracking-[0.18em] uppercase text-slate-500 bg-slate-50">
+                        <span class="material-symbols-outlined text-[15px]"
+                              style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
+                            monitoring
+                        </span>
+                        Monitoring
+                        <span class="text-[10px] font-normal text-slate-400">realtime overview</span>
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-[720px] w-full text-left text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase">
+                                <th class="pb-3 pr-4">Booking</th>
+                                <th class="pb-3 pr-4">Customer</th>
+                                <th class="pb-3 pr-4">Restaurant</th>
+                                <th class="pb-3 pr-4">Date</th>
+                                <th class="pb-3">Status</th>
                             </tr>
-                        </ui:repeat>
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+
+                        <tbody class="text-[14px] text-slate-700">
+                            <ui:repeat value="#{dashboardBean.recentBookings}" var="b">
+                                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 pr-4 font-medium text-slate-900 whitespace-nowrap">
+                                        #{b.bookingCode}
+                                    </td>
+                                    <td class="py-3 pr-4 whitespace-nowrap">
+                                        #{b.customerId.fullName}
+                                    </td>
+                                    <td class="py-3 pr-4 whitespace-nowrap">
+                                        #{b.restaurantId.name}
+                                    </td>
+                                    <td class="py-3 pr-4 whitespace-nowrap text-slate-600">
+                                        <h:outputText value="#{b.eventDate}">
+                                            <f:convertDateTime pattern="EEE, dd MMM yyyy" />
+                                        </h:outputText>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="
+                                              inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-medium
+                                              #{b.bookingStatus eq 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                                                b.bookingStatus eq 'PENDING'   ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                                                'bg-rose-50 text-rose-700 border border-rose-100'}">
+
+                                            <span class="w-1.5 h-1.5 rounded-full
+                                                  #{b.bookingStatus eq 'CONFIRMED' ? 'bg-emerald-500' :
+                                                    b.bookingStatus eq 'PENDING'   ? 'bg-amber-500' :
+                                                    'bg-rose-500'}">
+                                            </span>
+
+                                            #{b.bookingStatus}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </ui:repeat>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
 
         </div>
 

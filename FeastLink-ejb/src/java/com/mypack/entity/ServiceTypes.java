@@ -34,17 +34,18 @@ import java.util.Collection;
     @NamedQuery(name = "ServiceTypes.findByName", query = "SELECT s FROM ServiceTypes s WHERE s.name = :name")})
 public class ServiceTypes implements Serializable {
 
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 100)
+    @Column(name = "Name")
+    private String name;
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
     @Column(name = "ServiceTypeId")
     private Integer serviceTypeId;
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 100)
-    @Column(name = "Name")
-    private String name;
     @OneToMany(mappedBy = "serviceTypeId")
     private Collection<Bookings> bookingsCollection;
 
@@ -68,13 +69,6 @@ public class ServiceTypes implements Serializable {
         this.serviceTypeId = serviceTypeId;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 
     @XmlTransient
     public Collection<Bookings> getBookingsCollection() {
@@ -108,6 +102,14 @@ public class ServiceTypes implements Serializable {
     @Override
     public String toString() {
         return "com.mypack.entity.ServiceTypes[ serviceTypeId=" + serviceTypeId + " ]";
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
     
 }

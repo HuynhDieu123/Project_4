@@ -50,12 +50,6 @@ import java.util.Date;
     @NamedQuery(name = "Users.findByLastLoginAt", query = "SELECT u FROM Users u WHERE u.lastLoginAt = :lastLoginAt")})
 public class Users implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Basic(optional = false)
-    @Column(name = "UserId")
-    private Long userId;
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 100)
@@ -63,7 +57,7 @@ public class Users implements Serializable {
     private String fullName;
     // @Pattern(regexp="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", message="Invalid email")//if the field contains email address consider using this annotation to enforce field validation
     @Basic(optional = false)
-    @NotNull
+    @NotNull()
     @Size(min = 1, max = 100)
     @Column(name = "Email")
     private String email;
@@ -71,13 +65,15 @@ public class Users implements Serializable {
     @Size(max = 20)
     @Column(name = "Phone")
     private String phone;
+    // @Pattern(regexp="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", message="Invalid email")//if the field contains email address consider using this annotation to enforce field validation
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 255)
     @Column(name = "Password")
     private String password;
+    // @Pattern(regexp="^\\(?(\\d{3})\\)?[- ]?(\\d{3})[- ]?(\\d{4})$", message="Invalid phone/fax format, should be as xxx-xxx-xxxx")//if the field contains phone or fax number consider using this annotation to enforce field validation
     @Basic(optional = false)
-    @NotNull
+    @NotNull()
     @Size(min = 1, max = 20)
     @Column(name = "Role")
     private String role;
@@ -93,10 +89,18 @@ public class Users implements Serializable {
     @Column(name = "Address")
     private String address;
     @Basic(optional = false)
-    @NotNull
+    @NotNull()
     @Column(name = "CreatedAt")
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "userId")
+    private Collection<UserVouchers> userVouchersCollection;
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "UserId")
+    private Long userId;
     @Column(name = "UpdatedAt")
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
@@ -152,77 +156,6 @@ public class Users implements Serializable {
         this.userId = userId;
     }
 
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
 
     public Date getUpdatedAt() {
         return updatedAt;
@@ -361,6 +294,87 @@ public class Users implements Serializable {
     @Override
     public String toString() {
         return "com.mypack.entity.Users[ userId=" + userId + " ]";
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @XmlTransient
+    public Collection<UserVouchers> getUserVouchersCollection() {
+        return userVouchersCollection;
+    }
+
+    public void setUserVouchersCollection(Collection<UserVouchers> userVouchersCollection) {
+        this.userVouchersCollection = userVouchersCollection;
     }
     
 }
