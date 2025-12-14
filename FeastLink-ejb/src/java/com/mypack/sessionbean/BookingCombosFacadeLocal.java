@@ -14,6 +14,8 @@ import java.util.List;
  */
 @Local
 public interface BookingCombosFacadeLocal {
+    
+    List<BookingCombos> findByBookingId(Long bookingId);
 
     void create(BookingCombos bookingCombos);
 

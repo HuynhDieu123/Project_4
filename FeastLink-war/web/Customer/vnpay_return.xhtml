@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core">
+
+<h:head>
+    <meta charset="UTF-8" />
+    <title>FeastLink - VNPay Return</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <f:metadata>
+        <f:viewAction action="#{vnpayReturnBean.handle}" />
+    </f:metadata>
+</h:head>
+
+<h:body class="bg-[#F9FAFB] min-h-screen">
+    <div class="max-w-2xl mx-auto pt-20 px-4">
+        <div class="rounded-2xl border border-[#E5E7EB] bg-white shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-[#E5E7EB] bg-[#020617]">
+                <h1 class="text-xl font-bold text-white">VNPay Payment Result</h1>
+                <p class="text-sm text-[#E6C77F] mt-1">
+                    Transaction: <span class="font-semibold">#{vnpayReturnBean.txnRef}</span>
+                </p>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <h:panelGroup rendered="#{vnpayReturnBean.success}">
+                    <div class="p-4 rounded-xl border border-green-200 bg-green-50 text-green-800">
+                        <p class="font-semibold">✅ #{vnpayReturnBean.message}</p>
+                    </div>
+                </h:panelGroup>
+
+                <h:panelGroup rendered="#{not vnpayReturnBean.success}">
+                    <div class="p-4 rounded-xl border border-red-200 bg-red-50 text-red-800">
+                        <p class="font-semibold">❌ #{vnpayReturnBean.message}</p>
+                        <p class="text-sm mt-1">ResponseCode: #{vnpayReturnBean.responseCode}</p>
+                    </div>
+                </h:panelGroup>
+
+                <h:panelGroup rendered="#{not empty vnpayReturnBean.payment}">
+                    <div class="rounded-xl border border-[#E5E7EB] p-4 bg-[#F9FAFB]">
+                        <p class="text-sm text-[#4B5563]">Stored in DB (USD):</p>
+                        <p class="text-lg font-bold text-[#111827]">
+                            $#{vnpayReturnBean.payment.amount}
+                        </p>
+
+                        <div class="mt-3 text-sm text-[#4B5563] space-y-1">
+                            <p>Status: <span class="font-semibold">#{vnpayReturnBean.payment.status}</span></p>
+                            <p>Method: <span class="font-semibold">#{vnpayReturnBean.payment.paymentMethod}</span></p>
+                            <p>Type: <span class="font-semibold">#{vnpayReturnBean.payment.paymentType}</span></p>
+                        </div>
+                    </div>
+                </h:panelGroup>
+
+                <div class="flex gap-3 pt-2">
+                    <h:link outcome="/Customer/index" styleClass="px-4 py-2 rounded-xl bg-[#020617] text-white font-semibold">
+                        Back to Home
+                    </h:link>
+                    <h:link outcome="/Customer/my-bookings" styleClass="px-4 py-2 rounded-xl border border-[#020617] text-[#020617] font-semibold">
+                        View My Bookings
+                    </h:link>
+                </div>
+            </div>
+        </div>
+    </div>
+</h:body>
+</html>

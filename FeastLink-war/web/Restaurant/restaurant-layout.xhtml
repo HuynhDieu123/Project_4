@@ -72,20 +72,35 @@
 
                 <!-- Thông tin user -->
                 <div class="flex items-center space-x-3">
-                    <img alt="Restaurant manager profile picture"
-                         class="w-10 h-10 rounded-full object-cover"
-                         src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAnKjQGks3gD9kxsvLraeSzojgLwf5Z61JrAgV9nLgVaOVJBoexk_CA3UNddMxmFdRURhXc3BMZ423UXkefu13YKsHoocOFGx2L7BWZcXRM4Rda_oBrmx3QAebrZ25VHwAy_j3FT1_7pXZBdzDhonbM8G-lZrO-xJi-0-jpgUvRkaOiMPQfCruaJdn9206ZsG3LnFCpUHU-fUr1H4fwkjszojJz9Ae7KJZdy1MtPT5VemJu0sBU4XBt5AQKKbfbZnbJNigaeyRE9Sb" />
+                        <!-- Avatar: lấy từ sessionScope.currentUser.avatarUrl -->
+                        <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                            <!-- Có avatar -->
+                            <ui:fragment rendered="#{sessionScope.currentUser ne null
+                                                     and not empty sessionScope.currentUser.avatarUrl}">
+                                <img alt="Restaurant manager profile picture"
+                                     class="w-10 h-10 rounded-full object-cover"
+                                     src="#{sessionScope.currentUser.avatarUrl}" />
+                            </ui:fragment>
 
-                    <div class="text-left">
-                        <!-- Lấy tên từ sessionScope.currentUser.fullName, fallback 'Manager' -->
-                        <p class="font-semibold text-sm text-text-main-light">
-                            #{empty sessionScope.currentUser ? 'Manager' : sessionScope.currentUser.fullName}
-                        </p>
-                        <p class="text-xs text-text-secondary-light">
-                            #{empty sessionScope.currentUser ? 'Restaurant Manager' : 'Restaurant Manager'}
-                        </p>
+                            <!-- Không có avatar: icon mặc định -->
+                            <ui:fragment rendered="#{sessionScope.currentUser eq null
+                                                     or empty sessionScope.currentUser.avatarUrl}">
+                                <span class="material-symbols-outlined text-gray-500">
+                                    account_circle
+                                </span>
+                            </ui:fragment>
+                        </div>
+
+                        <div>
+                            <!-- Lấy tên từ sessionScope.currentUser -->
+                            <p class="font-semibold text-sm text-text-main-light">
+                                #{empty sessionScope.currentUser ? 'Manager' : sessionScope.currentUser.fullName}
+                            </p>
+                            <p class="text-xs text-text-secondary-light">
+                                Restaurant Manager
+                            </p>
+                        </div>
                     </div>
-                </div>
 
                 <!-- Nút LOGOUT -->
                 <h:commandLink action="#{authBean.logout}"

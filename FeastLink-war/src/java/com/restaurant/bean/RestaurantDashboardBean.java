@@ -1,10 +1,14 @@
 package com.restaurant.bean;
 
 import com.mypack.entity.Bookings;
+import com.mypack.entity.Restaurants;
 import com.mypack.entity.Users;
 import com.mypack.sessionbean.BookingsFacadeLocal;
+import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
+import jakarta.faces.context.ExternalContext;
+import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 
@@ -18,6 +22,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Named("restaurantDashboardBean")
 @ViewScoped
@@ -25,6 +30,13 @@ public class RestaurantDashboardBean implements Serializable {
 
     @EJB
     private BookingsFacadeLocal bookingsFacade;
+
+    @EJB
+    private RestaurantsFacadeLocal restaurantsFacade;
+
+    // Nhà hàng & user hiện tại
+    private Restaurants currentRestaurant;
+    private Users currentUser;
 
     private double totalRevenue;
     private int upcomingBookings;
@@ -34,14 +46,56 @@ public class RestaurantDashboardBean implements Serializable {
 
     @PostConstruct
     public void init() {
+        // Xác định nhà hàng của manager đang đăng nhập
+        currentRestaurant = resolveCurrentRestaurant();
         loadDashboardData();
+    }
+
+    // ================== LẤY NHÀ HÀNG HIỆN TẠI TỪ SESSION ==================
+    private Restaurants resolveCurrentRestaurant() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx == null) return null;
+
+        ExternalContext ec = ctx.getExternalContext();
+        Map<String, Object> session = ec.getSessionMap();
+
+        Object obj = session.get("currentUser");
+        if (!(obj instanceof Users)) {
+            return null;
+        }
+
+        currentUser = (Users) obj;
+
+        if (currentUser.getEmail() == null) {
+            return null;
+        }
+
+        String emailLogin = currentUser.getEmail();
+
+        // Tạm thời duyệt findAll, giống RestaurantProfileBean
+        List<Restaurants> allRes = restaurantsFacade.findAll();
+        for (Restaurants r : allRes) {
+            if (r.getEmail() != null &&
+                r.getEmail().equalsIgnoreCase(emailLogin)) {
+                return r;
+            }
+        }
+        return null;
     }
 
     // ================== LOAD DATA TỪ DATABASE ==================
     private void loadDashboardData() {
-        List<Bookings> all = bookingsFacade.findAll();
         recentBookings = new ArrayList<>();
 
+        // Nếu chưa xác định được nhà hàng -> chưa có gì để hiển thị
+        if (currentRestaurant == null) {
+            totalRevenue = 0;
+            upcomingBookings = 0;
+            newInquiries = 0;
+            return;
+        }
+
+        List<Bookings> all = bookingsFacade.findAll();
         if (all == null || all.isEmpty()) {
             totalRevenue = 0;
             upcomingBookings = 0;
@@ -49,8 +103,23 @@ public class RestaurantDashboardBean implements Serializable {
             return;
         }
 
-        // TODO: sau này filter theo restaurant của manager đang đăng nhập
-        List<Bookings> filtered = new ArrayList<>(all);
+        // ====== LỌC BOOKING THEO NHÀ HÀNG HIỆN TẠI ======
+        Long restaurantId = currentRestaurant.getRestaurantId();
+        List<Bookings> filtered = new ArrayList<>();
+        for (Bookings b : all) {
+            if (b.getRestaurantId() != null &&
+                b.getRestaurantId().getRestaurantId() != null &&
+                b.getRestaurantId().getRestaurantId().equals(restaurantId)) {
+                filtered.add(b);
+            }
+        }
+
+        if (filtered.isEmpty()) {
+            totalRevenue = 0;
+            upcomingBookings = 0;
+            newInquiries = 0;
+            return;
+        }
 
         // ----- Total Revenue: sum TotalAmount -----
         BigDecimal total = BigDecimal.ZERO;
@@ -62,12 +131,11 @@ public class RestaurantDashboardBean implements Serializable {
         totalRevenue = total.doubleValue();
 
         LocalDate today = LocalDate.now();
-        ZoneId zone = ZoneId.systemDefault();
 
         // ----- Upcoming bookings: eventDate >= hôm nay -----
         upcomingBookings = (int) filtered.stream()
                 .filter(b -> b.getEventDate() != null)
-                .map(b -> b.getEventDate().toInstant().atZone(zone).toLocalDate())
+                .map(b -> toLocalDate(b.getEventDate()))
                 .filter(d -> !d.isBefore(today))
                 .count();
 
@@ -75,7 +143,7 @@ public class RestaurantDashboardBean implements Serializable {
         LocalDate nextWeek = today.plusDays(7);
         newInquiries = (int) filtered.stream()
                 .filter(b -> b.getEventDate() != null)
-                .map(b -> b.getEventDate().toInstant().atZone(zone).toLocalDate())
+                .map(b -> toLocalDate(b.getEventDate()))
                 .filter(d -> !d.isBefore(today) && !d.isAfter(nextWeek))
                 .count();
 
@@ -124,7 +192,7 @@ public class RestaurantDashboardBean implements Serializable {
                 statusLabel = "Pending";
                 statusClass = "bg-yellow-100 text-yellow-700";
             } else {
-                LocalDate ev = b.getEventDate().toInstant().atZone(zone).toLocalDate();
+                LocalDate ev = toLocalDate(b.getEventDate());
                 if (ev.isBefore(today)) {
                     statusLabel = "Completed";
                     statusClass = "bg-gray-100 text-gray-700";
@@ -141,6 +209,19 @@ public class RestaurantDashboardBean implements Serializable {
                     new BookingSummary(id, customerName, dateLabel, statusLabel, statusClass)
             );
         }
+    }
+
+    // ===== Helper: convert java.util.Date / java.sql.Date -> LocalDate an toàn =====
+    private LocalDate toLocalDate(Date date) {
+        if (date == null) return null;
+
+        if (date instanceof java.sql.Date) {
+            return ((java.sql.Date) date).toLocalDate();
+        }
+
+        return date.toInstant()
+                   .atZone(ZoneId.systemDefault())
+                   .toLocalDate();
     }
 
     // ================== GETTERS ==================

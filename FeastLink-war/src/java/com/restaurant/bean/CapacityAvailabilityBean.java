@@ -59,6 +59,9 @@ public class CapacityAvailabilityBean implements Serializable {
     private Integer inputGuestCount;
     private Integer inputBookingCount;
 
+    // slot được chọn (ALLDAY / LUNCH / EVENING)
+    private String selectedSlot = "ALLDAY";
+
     // Helper: lấy nhà hàng theo user login
     private Restaurants resolveCurrentRestaurant() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -87,7 +90,6 @@ public class CapacityAvailabilityBean implements Serializable {
         try {
             currentRestaurant = resolveCurrentRestaurant();
             if (currentRestaurant == null) {
-                // Không có nhà hàng tương ứng user -> không làm gì
                 return;
             }
 
@@ -95,6 +97,7 @@ public class CapacityAvailabilityBean implements Serializable {
             inputGuestCount = 0;
             inputBookingCount = 0;
             selectedStatus = "--";
+            selectedSlot = "ALLDAY";
 
             loadSettingsFromDb();
             loadCalendarFromDb();
@@ -133,12 +136,16 @@ public class CapacityAvailabilityBean implements Serializable {
                         java.sql.Date.valueOf(last)
                 );
 
+        // Nếu một ngày có nhiều slot -> lấy status "nặng" nhất
         for (RestaurantDayCapacity d : list) {
             LocalDate date = toLocalDate(d.getEventDate());
             StatusType st = computeStatusForRow(d);
 
-            if (st != StatusType.NONE) {
-                dayStatusMap.put(date, st);
+            StatusType existing = dayStatusMap.getOrDefault(date, StatusType.NONE);
+            StatusType merged = maxStatus(existing, st);
+
+            if (merged != StatusType.NONE) {
+                dayStatusMap.put(date, merged);
             }
         }
 
@@ -179,24 +186,84 @@ public class CapacityAvailabilityBean implements Serializable {
         if (dateIso == null || dateIso.isBlank()) return;
 
         selectedDate = LocalDate.parse(dateIso); // yyyy-MM-dd
+        // Khi chọn ngày -> load lại dữ liệu cho slot hiện tại
+        loadSelectedDayData();
+        buildCalendar();
+    }
 
-        RestaurantDayCapacity row = dayCapacityFacade.findByRestaurantAndDate(
-                currentRestaurant,
-                java.sql.Date.valueOf(selectedDate)
-        );
+    // Gọi khi đổi slot trên UI
+    public void onSlotChange() {
+        loadSelectedDayData();
+    }
 
-        if (row != null) {
-            inputGuestCount = row.getCurrentGuestCount();
-            inputBookingCount = row.getCurrentBookingCount();
-            StatusType st = computeStatusForRow(row);
-            selectedStatus = translateStatus(st);
-        } else {
+    // Load dữ liệu currentGuests/currentBookings + status cho (selectedDate, selectedSlot)
+    private void loadSelectedDayData() {
+        if (currentRestaurant == null || selectedDate == null) {
             inputGuestCount = 0;
             inputBookingCount = 0;
             selectedStatus = "--";
+            return;
         }
 
-        buildCalendar();
+        RestaurantDayCapacity row = findCapacityRow(selectedDate, selectedSlot);
+
+        if (row != null) {
+            Integer cg = row.getCurrentGuestCount();
+            Integer cb = row.getCurrentBookingCount();
+            inputGuestCount = (cg != null) ? cg : 0;
+            inputBookingCount = (cb != null) ? cb : 0;
+            StatusType st = computeStatusForRow(row);
+            selectedStatus = translateStatus(st);
+        } else {
+            // chưa có record -> xem như 0/0, status Available
+            inputGuestCount = 0;
+            inputBookingCount = 0;
+            StatusType st = computeStatus(0, 0,
+                    defaultMaxGuestsPerDay,
+                    defaultMaxBookingsPerDay);
+            selectedStatus = translateStatus(st);
+        }
+    }
+
+    /**
+     * Tìm record capacity cho 1 ngày + slot.
+     * Dùng findByRestaurantAndDateRange(start=end=date) để không phải sửa Facade.
+     */
+    private RestaurantDayCapacity findCapacityRow(LocalDate date, String slotCode) {
+        if (currentRestaurant == null || date == null) return null;
+
+        java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+        List<RestaurantDayCapacity> list =
+                dayCapacityFacade.findByRestaurantAndDateRange(
+                        currentRestaurant,
+                        sqlDate,
+                        sqlDate);
+
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+
+        RestaurantDayCapacity allDayFallback = null;
+
+        for (RestaurantDayCapacity d : list) {
+            String rowSlot = d.getSlotCode();
+
+            if (rowSlot == null || rowSlot.isBlank()) {
+                // xem như ALLDAY cũ
+                if ("ALLDAY".equalsIgnoreCase(slotCode)) {
+                    return d;
+                }
+                allDayFallback = d;
+            } else if (rowSlot.equalsIgnoreCase(slotCode)) {
+                return d;
+            }
+        }
+
+        if ("ALLDAY".equalsIgnoreCase(slotCode) && allDayFallback != null) {
+            return allDayFallback;
+        }
+
+        return null;
     }
 
     // ----------------------------------------------------
@@ -227,14 +294,28 @@ public class CapacityAvailabilityBean implements Serializable {
     }
 
     public void applyStatusToSelectedDay() {
-        if (currentRestaurant == null || selectedDate == null) {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+
+        System.out.println(">>> applyStatusToSelectedDay, date=" + selectedDate + ", slot=" + selectedSlot);
+
+        if (currentRestaurant == null) {
+            ctx.addMessage("dayStatusForm",
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                            "Không tìm thấy nhà hàng hiện tại.", null));
+            return;
+        }
+
+        // Nếu chưa chọn ngày mà bấm Save
+        if (selectedDate == null) {
+            ctx.addMessage("dayStatusForm",
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                            "Please select a date on the calendar first.", null));
             return;
         }
 
         if (inputGuestCount == null)  inputGuestCount = 0;
         if (inputBookingCount == null) inputBookingCount = 0;
 
-        FacesContext ctx = FacesContext.getCurrentInstance();
         boolean hasError = false;
 
         if (defaultMaxGuestsPerDay > 0 && inputGuestCount > defaultMaxGuestsPerDay) {
@@ -252,16 +333,16 @@ public class CapacityAvailabilityBean implements Serializable {
 
         if (hasError) return;
 
-        RestaurantDayCapacity row = dayCapacityFacade.findByRestaurantAndDate(
-                currentRestaurant,
-                java.sql.Date.valueOf(selectedDate)
-        );
+        // Lấy record theo (ngày + slot)
+        RestaurantDayCapacity row = findCapacityRow(selectedDate, selectedSlot);
 
         if (row == null) {
             row = new RestaurantDayCapacity();
             row.setRestaurantId(currentRestaurant);
             row.setEventDate(java.sql.Date.valueOf(selectedDate));
-            row.setSlotCode("ALLDAY");
+            row.setSlotCode(selectedSlot);
+        } else {
+            row.setSlotCode(selectedSlot); // đảm bảo slot đúng
         }
 
         row.setMaxGuests(defaultMaxGuestsPerDay);
@@ -284,10 +365,19 @@ public class CapacityAvailabilityBean implements Serializable {
             dayCapacityFacade.edit(row);
         }
 
-        dayStatusMap.put(selectedDate, st);
+        // Cập nhật trạng thái đang chọn
         selectedStatus = translateStatus(st);
 
+        // ✅ Cập nhật heatmap ngay cho ngày đang chọn
+        StatusType existing = dayStatusMap.getOrDefault(selectedDate, StatusType.NONE);
+        dayStatusMap.put(selectedDate, maxStatus(existing, st));
         buildCalendar();
+
+        // Thông báo thành công
+        ctx.addMessage("dayStatusForm",
+                new FacesMessage(FacesMessage.SEVERITY_INFO,
+                        "Đã lưu sức chứa cho ngày " + getSelectedDateLabel()
+                                + " (" + selectedSlot + ")", null));
     }
 
     public void blockDates() {
@@ -302,15 +392,15 @@ public class CapacityAvailabilityBean implements Serializable {
             LocalDate end   = LocalDate.parse(blockEndDate);
 
             while (!end.isBefore(start)) {
-                RestaurantDayCapacity d = dayCapacityFacade.findByRestaurantAndDate(
-                        currentRestaurant,
-                        java.sql.Date.valueOf(start)
-                );
+                // Block cả ngày -> dùng slot ALLDAY
+                RestaurantDayCapacity d = findCapacityRow(start, "ALLDAY");
 
                 if (d == null) {
                     d = new RestaurantDayCapacity();
                     d.setRestaurantId(currentRestaurant);
                     d.setEventDate(java.sql.Date.valueOf(start));
+                    d.setSlotCode("ALLDAY");
+                } else {
                     d.setSlotCode("ALLDAY");
                 }
 
@@ -361,9 +451,12 @@ public class CapacityAvailabilityBean implements Serializable {
             return StatusType.BLOCKED;
         }
 
+        Integer cg = d.getCurrentGuestCount();
+        Integer cb = d.getCurrentBookingCount();
+
         return computeStatus(
-                d.getCurrentGuestCount(),
-                d.getCurrentBookingCount(),
+                cg != null ? cg : 0,
+                cb != null ? cb : 0,
                 maxGuests,
                 maxBookings
         );
@@ -423,6 +516,27 @@ public class CapacityAvailabilityBean implements Serializable {
                 return "Bị chặn";
             default:
                 return "--";
+        }
+    }
+
+    // so sánh độ "nặng" của status để lên màu trên calendar
+    private StatusType maxStatus(StatusType a, StatusType b) {
+        if (a == null) a = StatusType.NONE;
+        if (b == null) b = StatusType.NONE;
+
+        int wa = weight(a);
+        int wb = weight(b);
+        return (wb > wa) ? b : a;
+    }
+
+    private int weight(StatusType st) {
+        switch (st) {
+            case NONE:       return 0;
+            case AVAILABLE:  return 1;
+            case NEAR_FULL:  return 2;
+            case FULL:       return 3;
+            case BLOCKED:    return 4;
+            default:         return 0;
         }
     }
 
@@ -509,6 +623,14 @@ public class CapacityAvailabilityBean implements Serializable {
     public String getCurrentMonthLabel() {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
         return currentMonth.format(fmt);
+    }
+
+    public String getSelectedSlot() {
+        return selectedSlot;
+    }
+
+    public void setSelectedSlot(String selectedSlot) {
+        this.selectedSlot = selectedSlot;
     }
 
     // ----------------------------------------------------

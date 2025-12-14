@@ -1,0 +1,204 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition
+        template="template.xhtml"
+        xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:h="jakarta.faces.html"
+        xmlns:f="jakarta.faces.core"
+        xmlns:ui="jakarta.faces.facelets">
+
+    <ui:define name="title">Reward Points Settings</ui:define>
+
+    <ui:define name="content">
+
+        <h:form id="pointsForm">
+
+            <!-- HEADER -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Reward Points Settings</h2>
+                    <p class="text-sm text-gray-500">
+                        Manage how booking payments in USD are converted into reward points
+                        (only one rule is active at a time).
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-3xl shadow border border-gray-200 mb-5">
+
+                <!-- CURRENT RULE TABLE (0 or 1 row) -->
+                <h3 class="text-sm font-semibold text-gray-800 mb-3">
+                    Current point rule
+                </h3>
+
+                <table class="w-full text-sm mb-4">
+                    <thead>
+                    <tr class="border-b text-gray-500">
+                        <th class="py-3 text-left">ID</th>
+                        <th class="text-left">Amount (USD)</th>
+                        <th class="text-left">Points</th>
+                        <th class="text-left">Created at</th>
+                        <th class="text-left">Updated at</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <ui:fragment rendered="#{empty adminPointSettingsBean.settings}">
+                        <tr>
+                            <td colspan="6"
+                                class="py-4 text-center text-xs text-gray-400">
+                                No point rule has been defined yet. Enter the values below and click
+                                <strong>Save changes</strong> to create the first rule.
+                            </td>
+                        </tr>
+                    </ui:fragment>
+
+                    <ui:repeat value="#{adminPointSettingsBean.settings}" var="ps">
+                        <tr class="border-b last:border-b-0 hover:bg-gray-50">
+                            <td class="py-3 align-top text-xs text-gray-700">
+                                ##{ps.settingId}
+                            </td>
+
+                            <td class="align-top text-xs text-gray-700">
+                                <h:outputText value="#{ps.amountPerPoint}">
+                                    <f:convertNumber groupingUsed="true" />
+                                </h:outputText>
+                                <span class="text-gray-400"> USD</span>
+                            </td>
+
+                            <td class="align-top text-xs text-gray-700">
+                                <h:outputText value="#{ps.pointsPerAmount}" />
+                                <span class="text-gray-400"> points</span>
+                            </td>
+
+                            <td class="align-top text-xs text-gray-500">
+                                <h:outputText value="#{ps.createdAt}">
+                                    <f:convertDateTime pattern="dd/MM/yyyy HH:mm"
+                                                       timeZone="Asia/Ho_Chi_Minh" />
+                                </h:outputText>
+                            </td>
+
+                            <td class="align-top text-xs text-gray-500">
+                                <h:panelGroup rendered="#{ps.updatedAt != null}">
+                                    <h:outputText value="#{ps.updatedAt}">
+                                        <f:convertDateTime pattern="dd/MM/yyyy HH:mm"
+                                                           timeZone="Asia/Ho_Chi_Minh" />
+                                    </h:outputText>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{ps.updatedAt == null}">
+                                    —
+                                </h:panelGroup>
+                            </td>
+
+                            <td class="align-top text-center">
+                                <div class="inline-flex gap-2">
+                                    <h:commandButton value="Edit"
+                                                     action="#{adminPointSettingsBean.prepareEdit(ps)}"
+                                                     styleClass="px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs" />
+                                    <h:commandButton value="Delete"
+                                                     action="#{adminPointSettingsBean.delete(ps)}"
+                                                     styleClass="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs"
+                                                     onclick="return confirm('Are you sure you want to delete this rule?');" />
+                                </div>
+                            </td>
+                        </tr>
+                    </ui:repeat>
+                    </tbody>
+                </table>
+
+                <!-- CREATE / UPDATE FORM -->
+                <h3 class="text-sm font-semibold mb-2">
+                    <h:panelGroup rendered="#{adminPointSettingsBean.selectedSetting == null}">
+                        Create new point rule
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{adminPointSettingsBean.selectedSetting != null}">
+                        Update point rule
+                        <h:panelGroup rendered="#{adminPointSettingsBean.selectedSetting.settingId != null}">
+                            (ID ##{adminPointSettingsBean.selectedSetting.settingId})
+                        </h:panelGroup>
+                    </h:panelGroup>
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                    <!-- AMOUNT & POINTS -->
+                    <div class="md:col-span-2">
+                        <label class="text-xs font-semibold text-gray-600">
+                            Conversion rule
+                        </label>
+                        <div class="mt-1 flex items-center gap-2 flex-wrap">
+                            <span class="text-sm text-gray-700">For every</span>
+
+                            <h:inputText value="#{adminPointSettingsBean.editAmountPerPoint}"
+                                         styleClass="w-32 px-3 py-2 border rounded-xl text-sm text-right">
+                                <f:convertNumber integerOnly="true" />
+                                <f:ajax listener="#{adminPointSettingsBean.recalcPreview}"
+                                        render="previewPoints" />
+                            </h:inputText>
+
+                            <span class="text-sm text-gray-700">USD paid, the customer earns</span>
+
+                            <h:inputText value="#{adminPointSettingsBean.editPointsPerAmount}"
+                                         styleClass="w-20 px-3 py-2 border rounded-xl text-sm text-right">
+                                <f:convertNumber integerOnly="true" />
+                                <f:ajax listener="#{adminPointSettingsBean.recalcPreview}"
+                                        render="previewPoints" />
+                            </h:inputText>
+
+                            <span class="text-sm text-gray-700">points</span>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">
+                            Example: if you set <strong>100 USD</strong> and <strong>5 points</strong>,
+                            then a booking of 2,300 USD will earn
+                            <strong>(2,300 / 100) × 5 = 115 points</strong>.
+                        </p>
+                    </div>
+
+                    <!-- PREVIEW -->
+                    <div class="md:col-span-1">
+                        <label class="text-xs font-semibold text-gray-600">
+                            Preview with sample amount
+                        </label>
+                        <div class="mt-1 flex items-center gap-2">
+                            <span class="text-xs text-gray-600">Booking amount</span>
+                            <h:inputText value="#{adminPointSettingsBean.sampleAmount}"
+                                         styleClass="w-32 px-3 py-2 border rounded-xl text-xs text-right">
+                                <f:convertNumber integerOnly="true" />
+                                <f:ajax listener="#{adminPointSettingsBean.recalcPreview}"
+                                        render="previewPoints" />
+                            </h:inputText>
+                            <span class="text-xs text-gray-600">USD</span>
+                        </div>
+
+                        <div id="previewPoints"
+                             class="mt-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
+                            With this amount, the customer will earn
+                            <strong>
+                                <h:outputText value="#{adminPointSettingsBean.previewPoints}" />
+                                points
+                            </strong>.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MESSAGES -->
+                <h:messages styleClass="mt-3 text-sm"
+                            errorClass="text-red-500"
+                            infoClass="text-green-600"
+                            warnClass="text-amber-500" />
+
+                <!-- SAVE BUTTON -->
+                <div class="flex justify-end gap-2 mt-3">
+                    <h:commandButton value="Save changes"
+                                     action="#{adminPointSettingsBean.save}"
+                                     styleClass="px-4 py-2 bg-blue-600 text-white text-sm rounded-xl" />
+                </div>
+
+            </div>
+
+        </h:form>
+
+    </ui:define>
+
+</ui:composition>

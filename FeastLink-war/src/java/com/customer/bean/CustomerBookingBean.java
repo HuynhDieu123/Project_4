@@ -5,6 +5,18 @@ import com.mypack.entity.Restaurants;
 import com.mypack.entity.Users;
 import com.mypack.entity.EventTypes;
 import com.mypack.entity.ServiceTypes;
+import com.mypack.entity.BookingCombos;
+import com.mypack.entity.BookingCombosPK;
+import com.mypack.entity.BookingMenuItems;
+import com.mypack.entity.BookingMenuItemsPK;
+import com.mypack.entity.MenuCombos;          // nếu đã có MenuCombosFacade
+import com.mypack.entity.MenuItems;
+
+import com.mypack.sessionbean.BookingCombosFacadeLocal;
+import com.mypack.sessionbean.BookingMenuItemsFacadeLocal;
+import com.mypack.sessionbean.MenuItemsFacadeLocal;
+import com.mypack.sessionbean.MenuCombosFacadeLocal;  // nếu project đã có
+
 import com.mypack.sessionbean.BookingsFacadeLocal;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import com.mypack.sessionbean.EventTypesFacadeLocal;
@@ -28,10 +40,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.mypack.entity.MenuItems;
-import com.mypack.sessionbean.MenuItemsFacadeLocal;
-import java.util.ArrayList;
-import java.util.List;
+
+// moi them pay
+import com.mypack.vnpay.VnPayService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.faces.context.ExternalContext;
+
+import com.mypack.entity.Payments;
+import com.mypack.sessionbean.PaymentsFacadeLocal;
 
 /**
  * Handle final booking confirmation from booking.xhtml (wizard).
@@ -57,6 +73,22 @@ public class CustomerBookingBean implements Serializable {
     @EJB
     private MenuItemsFacadeLocal menuItemsFacade;
 
+    @EJB
+    private BookingCombosFacadeLocal bookingCombosFacade;
+
+    @EJB
+    private BookingMenuItemsFacadeLocal bookingMenuItemsFacade;
+
+    // moi them
+    @EJB
+    private VnPayService vnPayService;
+
+    @EJB
+    private MenuCombosFacadeLocal menuCombosFacade; // nếu có
+
+    @EJB
+    private PaymentsFacadeLocal paymentsFacade;
+
     private List<EventTypes> allEventTypes;
 
     // danh sách event type cho dropdown
@@ -66,11 +98,16 @@ public class CustomerBookingBean implements Serializable {
     private Integer selectedEventTypeId;
     private String selectedEventTypeName;
     private EventTypes selectedEventType;
+
     // ====== Fields bound từ booking.xhtml (hidden inputs / form) ======
     private Long restaurantId;
+
     // ===== Custom menu (selected dishes) =====
     private String selectedMenuItemIds;        // raw: "1,2,3"
     private List<MenuItems> selectedMenuItems = new ArrayList<>();
+
+    // ===== Selected package / combo (MenuCombos) từ restaurant detail =====
+    private Long selectedComboId;
 
     private String eventDateStr;   // yyyy-MM-dd (URL / hidden field)
     private int guestCount;
@@ -96,6 +133,13 @@ public class CustomerBookingBean implements Serializable {
     private String contactPhone;
 
     private List<EventTypes> availableEventTypes;
+
+    private String paymentMethod; // VNPAY / CASH
+    private String paymentType;   // DEPOSIT / FULL
+    private BigDecimal payAmount; // số tiền sẽ thanh toán
+
+    // (giữ nguyên field này nếu bạn đang dùng chỗ khác, nhưng trong redirect VNPay sẽ dùng payAmount)
+    private BigDecimal amount;
 
     // ====== INIT: load data từ param & DB ======
     @PostConstruct
@@ -144,12 +188,11 @@ public class CustomerBookingBean implements Serializable {
         }
 
         // ---- Load restaurant từ DB ----
-        // ---- Load restaurant từ DB ----
         if (restaurantId != null) {
             restaurant = restaurantsFacade.find(restaurantId);
         }
 
-// ❌ KHÔNG ĐƯỢC fallback lấy nhà hàng đầu tiên nữa
+        // ❌ KHÔNG ĐƯỢC fallback lấy nhà hàng đầu tiên nữa
         if (restaurant == null) {
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
@@ -161,6 +204,21 @@ public class CustomerBookingBean implements Serializable {
 
         restaurantName = safe(restaurant.getName());
         restaurantAddress = safe(restaurant.getAddress());
+
+        // ---- Selected combo / package (optional) ----
+        String comboParam = params.get("comboId");
+        if (comboParam == null || comboParam.isBlank()) {
+            // nếu bên restaurant detail dùng tên khác, ví dụ packageId thì vẫn bắt được
+            comboParam = params.get("packageId");
+        }
+        if (comboParam != null && !comboParam.isBlank()) {
+            try {
+                selectedComboId = Long.parseLong(comboParam.trim());
+            } catch (NumberFormatException ignored) {
+                selectedComboId = null;
+            }
+        }
+
         /* ===== Load selected menu items from query param ===== */
         String menuItemsParam = params.get("menuItems");
         if (menuItemsParam != null && !menuItemsParam.trim().isEmpty()) {
@@ -196,6 +254,7 @@ public class CustomerBookingBean implements Serializable {
             selectedMenuItemIds = null;
             selectedMenuItems = new ArrayList<>();
         }
+
         // ---- Event date ----
         if (eventDateStr == null || eventDateStr.isBlank()) {
             String dParam = params.get("date");
@@ -402,7 +461,7 @@ public class CustomerBookingBean implements Serializable {
         this.selectedEventTypeId = eventTypeId;
     }
 
-// Alias cho tên hiển thị nếu view dùng eventTypeName
+    // Alias cho tên hiển thị nếu view dùng eventTypeName
     public String getEventTypeName() {
         return getSelectedEventTypeName();
     }
@@ -441,6 +500,32 @@ public class CustomerBookingBean implements Serializable {
 
         try {
             Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
+
+            // ===== Combo / package (selectedComboId) =====
+            if (selectedComboId == null) {
+                String cHidden = params.get("hf-combo-id");
+                String cQuery1 = params.get("comboId");
+                String cQuery2 = params.get("packageId");
+                String rawCombo = notBlank(cHidden) ? cHidden
+                        : (notBlank(cQuery1) ? cQuery1 : cQuery2);
+                if (notBlank(rawCombo)) {
+                    try {
+                        selectedComboId = Long.valueOf(rawCombo.trim());
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+
+            // ===== Custom menu ids (selectedMenuItemIds) =====
+            if (!notBlank(selectedMenuItemIds)) {
+                String mHidden = params.get("hf-menu-items");
+                String mQuery = params.get("menuItems");
+                if (notBlank(mHidden)) {
+                    selectedMenuItemIds = mHidden;
+                } else if (notBlank(mQuery)) {
+                    selectedMenuItemIds = mQuery;
+                }
+            }
 
             // ===== Fallback đọc thêm từ request params khi field chưa bind =====
             // restaurantId
@@ -530,8 +615,34 @@ public class CustomerBookingBean implements Serializable {
                 remainingAmount = parseBigDecimalSafe(rHidden);
             }
 
+            // ================== ✅ (CHÈN 1) ĐỌC PAYMENT METHOD/TYPE/AMOUNT ==================
+            String pmHidden = params.get("hf-payment-method"); // VNPAY / CASH
+            if (notBlank(pmHidden)) paymentMethod = pmHidden.trim();
+
+            String ptHidden = params.get("hf-payment-type");   // DEPOSIT / FULL
+            if (notBlank(ptHidden)) paymentType = ptHidden.trim();
+
+            if (payAmount == null) {
+                String paHidden = params.get("hf-pay-amount");
+                payAmount = parseBigDecimalSafe(paHidden);
+            }
+
+            // default fallback
+            if (!notBlank(paymentMethod)) paymentMethod = "VNPAY";
+            if (!notBlank(paymentType)) paymentType = "DEPOSIT";
+
+            // ✅ đảm bảo payAmount luôn có (KHÔNG NULL)
+            if (payAmount == null) {
+                payAmount = ("FULL".equalsIgnoreCase(paymentType) && totalAmount != null)
+                        ? totalAmount
+                        : (depositAmount != null ? depositAmount : totalAmount);
+            }
+            if (payAmount == null) {
+                payAmount = BigDecimal.ZERO;
+            }
+            // ================== ✅ (HẾT CHÈN 1) ==================
+
             // ===== Contact information từ form =====
-            // (giả sử 3 input trong booking.xhtml có name: contact-fullname, contact-email, contact-phone)
             if (!notBlank(contactFullName)) {
                 String cName = params.get("contact-fullname");
                 if (!notBlank(cName)) {
@@ -580,7 +691,7 @@ public class CustomerBookingBean implements Serializable {
                 restaurant = restaurantsFacade.find(restaurantId);
             }
 
-// ❌ KHÔNG fallback lấy nhà hàng đầu tiên nữa
+            // ❌ KHÔNG fallback lấy nhà hàng đầu tiên nữa
             if (restaurant == null) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
@@ -661,28 +772,172 @@ public class CustomerBookingBean implements Serializable {
             booking.setContactPhone(notBlank(contactPhone) ? contactPhone.trim() : null);
 
             booking.setBookingStatus("PENDING");
-            booking.setPaymentStatus("UNPAID");
+
+            // ✅ sửa hợp lý: VNPAY là pending, CASH là unpaid
+            booking.setPaymentStatus("VNPAY".equalsIgnoreCase(paymentMethod) ? "PENDING" : "UNPAID");
+
             booking.setCreatedAt(new Date());
 
             // 5. Lưu DB
             bookingsFacade.create(booking);
 
-            // 6. Message + điều hướng
+            // ================== ✅ (CHÈN 2) TẠO PAYMENT PENDING ==================
+            Payments p = new Payments();
+            p.setBookingId(booking);
+            p.setPaymentMethod(paymentMethod);   // VNPAY / CASH
+            p.setPaymentType(paymentType);       // DEPOSIT / FULL
+            p.setPaymentGateway("VNPAY".equalsIgnoreCase(paymentMethod) ? "VNPAY" : "MANUAL");
+            p.setAmount(payAmount);
+            p.setStatus("PENDING");
+
+            String txnRef = "PAY" + System.currentTimeMillis();
+            p.setTransactionCode(txnRef);
+
+            paymentsFacade.create(p);
+
+            // 5.1. Lưu package/combo nếu có
+            saveSelectedCombo(booking);
+
+            // 5.2. Lưu custom menu (các món lẻ) nếu có
+            saveSelectedMenuItems(booking);
+
+            // ================== ✅ VNPAY redirect (NGAY TẠI ĐÂY) ==================
+            if ("VNPAY".equalsIgnoreCase(paymentMethod)) {
+
+                ExternalContext ec = ctx.getExternalContext();
+                HttpServletRequest req = (HttpServletRequest) ec.getRequest();
+
+                String orderInfo = "FeastLink booking #" + booking.getBookingId()
+                        + " - " + (paymentType == null ? "PAY" : paymentType);
+
+                // ✅ QUAN TRỌNG: build URL bằng payAmount (không dùng amount bị null)
+                String redirectUrl = vnPayService.buildRedirectUrl(req, txnRef, payAmount, orderInfo);
+
+                ec.redirect(redirectUrl);
+                ctx.responseComplete();
+                return null; // IMPORTANT
+            }
+            // ================== ✅ END VNPAY ==================
+
+            // 6. Message + điều hướng (chỉ chạy cho CASH / các method khác)
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
                     "Booking request sent",
                     "Your booking has been created successfully. Our team will contact you for confirmation."
             ));
 
-            return "/Customer/index";
+            return "/Customer/index?faces-redirect=true";
 
         } catch (Exception ex) {
-            ctx.addMessage(null, new FacesMessage(
-                    FacesMessage.SEVERITY_ERROR,
-                    "Error",
-                    "Could not create booking: " + ex.getMessage()
-            ));
+            ex.printStackTrace();
+            FacesContext ctx2 = FacesContext.getCurrentInstance();
+            if (ctx2 != null) {
+                ctx2.addMessage(null, new FacesMessage(
+                        FacesMessage.SEVERITY_ERROR,
+                        "Error",
+                        "Could not create booking: " + ex.getMessage()
+                ));
+            }
             return null;
+        }
+    }
+
+    // ========== Lưu package/combo vào BookingCombos ==========
+    private void saveSelectedCombo(Bookings booking) {
+        if (selectedComboId == null || booking == null || booking.getBookingId() == null) {
+            return;
+        }
+        if (bookingCombosFacade == null) {
+            return;
+        }
+
+        try {
+            // Lấy thông tin combo để có giá
+            MenuCombos combo = null;
+            BigDecimal unitPrice = BigDecimal.ZERO;
+
+            if (menuCombosFacade != null) {
+                combo = menuCombosFacade.find(selectedComboId);
+            }
+
+            if (combo != null && combo.getPriceTotal() != null) {
+                unitPrice = combo.getPriceTotal();
+            }
+
+            int quantity = 1; // 1 package cho cả event
+            BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+
+            // Tạo PK (BookingId + ComboId)
+            BookingCombosPK pk = new BookingCombosPK(booking.getBookingId(), selectedComboId);
+
+            BookingCombos bc = new BookingCombos(pk);
+            bc.setBookings(booking);
+            if (combo != null) {
+                bc.setMenuCombos(combo);
+            }
+
+            bc.setUnitPrice(unitPrice);
+            bc.setQuantity(quantity);
+            bc.setTotalPrice(totalPrice);
+
+            bookingCombosFacade.create(bc);
+        } catch (Exception ex) {
+            // Không cho lỗi combo làm fail booking
+            ex.printStackTrace();
+        }
+    }
+
+    // ========== Lưu các món lẻ vào BookingMenuItems ==========
+    private void saveSelectedMenuItems(Bookings booking) {
+        if (booking == null || booking.getBookingId() == null) {
+            return;
+        }
+        if (bookingMenuItemsFacade == null || menuItemsFacade == null) {
+            return;
+        }
+        // lấy source id món: từ chuỗi selectedMenuItemIds
+        if (!notBlank(selectedMenuItemIds)) {
+            return;
+        }
+
+        int quantityPerDish = guestCount > 0 ? guestCount : 1;
+
+        String[] parts = selectedMenuItemIds.split(",");
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+
+            try {
+                Long itemId = Long.valueOf(trimmed);
+                MenuItems mi = menuItemsFacade.find(itemId);
+                if (mi == null) {
+                    continue;
+                }
+
+                BigDecimal unitPrice = mi.getPricePerPerson() != null
+                        ? mi.getPricePerPerson()
+                        : BigDecimal.ZERO;
+
+                BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantityPerDish));
+
+                BookingMenuItemsPK pk = new BookingMenuItemsPK(
+                        booking.getBookingId(),
+                        itemId
+                );
+
+                BookingMenuItems bmi = new BookingMenuItems(pk);
+                bmi.setBookings(booking);
+                bmi.setMenuItems(mi);
+                bmi.setUnitPrice(unitPrice);
+                bmi.setQuantity(quantityPerDish);
+                bmi.setTotalPrice(totalPrice);
+
+                bookingMenuItemsFacade.create(bmi);
+            } catch (NumberFormatException ex) {
+                // bỏ qua id không hợp lệ
+            }
         }
     }
 
@@ -763,6 +1018,14 @@ public class CustomerBookingBean implements Serializable {
             ex.printStackTrace();
             availableEventTypes = new ArrayList<>();
         }
+    }
+
+    public Long getSelectedComboId() {
+        return selectedComboId;
+    }
+
+    public void setSelectedComboId(Long selectedComboId) {
+        this.selectedComboId = selectedComboId;
     }
 
 }

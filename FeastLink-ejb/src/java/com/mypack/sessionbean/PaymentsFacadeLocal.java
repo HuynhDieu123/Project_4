@@ -29,4 +29,5 @@ public interface PaymentsFacadeLocal {
 
     int count();
     
+      Payments findByTransactionCode(String transactionCode);
 }

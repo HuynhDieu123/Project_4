@@ -277,6 +277,21 @@
                             </span>
                         </p>
 
+                        <!-- NEW: chọn buổi (slot) -->
+                        <div>
+                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                Time slot
+                            </label>
+                            <h:selectOneMenu value="#{capacityAvailabilityBean.selectedSlot}"
+                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                <f:selectItem itemValue="ALLDAY"  itemLabel="All day" />
+                                <f:selectItem itemValue="LUNCH"   itemLabel="Lunch" />
+                                <f:selectItem itemValue="EVENING" itemLabel="Evening" />
+                                <f:ajax listener="#{capacityAvailabilityBean.onSlotChange}"
+                                        render=":dayStatusForm" />
+                            </h:selectOneMenu>
+                        </div>
+
                         <!-- Nhập số khách / booking hiện tại -->
                         <div class="grid grid-cols-2 gap-3">
                             <div>
@@ -323,7 +338,6 @@
 
                         <h:commandButton value="Save day capacity"
                                          action="#{capacityAvailabilityBean.applyStatusToSelectedDay}"
-                                         disabled="#{capacityAvailabilityBean.selectedDate == null}"
                                          styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
                             <f:ajax execute="@form" render=":calendarForm :dayStatusForm" />
                         </h:commandButton>

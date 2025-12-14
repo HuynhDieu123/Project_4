@@ -4,18 +4,17 @@
  */
 package com.mypack.sessionbean;
 
-import com.mypack.entity.BookingMenuItems;
+import com.mypack.entity.PointSettings;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import java.util.List;    
 
 /**
  *
- * @author Laptop
+ * @author tuanc
  */
 @Stateless
-public class BookingMenuItemsFacade extends AbstractFacade<BookingMenuItems> implements BookingMenuItemsFacadeLocal {
+public class PointSettingsFacade extends AbstractFacade<PointSettings> implements PointSettingsFacadeLocal {
 
     @PersistenceContext(unitName = "FeastLink-ejbPU")
     private EntityManager em;
@@ -25,15 +24,8 @@ public class BookingMenuItemsFacade extends AbstractFacade<BookingMenuItems> imp
         return em;
     }
 
-    public BookingMenuItemsFacade() {
-        super(BookingMenuItems.class);
-    }
-    
-    @Override
-    public List<BookingMenuItems> findByBookingId(Long bookingId) {
-        return em.createNamedQuery("BookingMenuItems.findByBookingId", BookingMenuItems.class)
-                 .setParameter("bookingId", bookingId)
-                 .getResultList();
+    public PointSettingsFacade() {
+        super(PointSettings.class);
     }
     
 }
