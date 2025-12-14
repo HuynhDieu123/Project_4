@@ -57,12 +57,6 @@ import java.util.Date;
     @NamedQuery(name = "Restaurants.findByUpdatedAt", query = "SELECT r FROM Restaurants r WHERE r.updatedAt = :updatedAt")})
 public class Restaurants implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Basic(optional = false)
-    @Column(name = "RestaurantId")
-    private Long restaurantId;
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 150)
@@ -75,7 +69,7 @@ public class Restaurants implements Serializable {
     @Column(name = "Description")
     private String description;
     @Basic(optional = false)
-    @NotNull
+    @NotNull()
     @Size(min = 1, max = 255)
     @Column(name = "Address")
     private String address;
@@ -87,9 +81,29 @@ public class Restaurants implements Serializable {
     @Size(max = 100)
     @Column(name = "Email")
     private String email;
+    // @Pattern(regexp="^\\(?(\\d{3})\\)?[- ]?(\\d{3})[- ]?(\\d{4})$", message="Invalid phone/fax format, should be as xxx-xxx-xxxx")//if the field contains phone or fax number consider using this annotation to enforce field validation
     @Size(max = 100)
     @Column(name = "ContactPerson")
     private String contactPerson;
+    // @Pattern(regexp="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", message="Invalid email")//if the field contains email address consider using this annotation to enforce field validation
+    @Basic(optional = false)
+    @NotNull()
+    @Size(min = 1, max = 30)
+    @Column(name = "Status")
+    private String status;
+    @Basic(optional = false)
+    @NotNull()
+    @Column(name = "CreatedAt")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date createdAt;
+    @OneToMany(mappedBy = "restaurantId")
+    private Collection<Vouchers> vouchersCollection;
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "RestaurantId")
+    private Long restaurantId;
     @Column(name = "OpenTime")
     @Temporal(TemporalType.TIME)
     private Date openTime;
@@ -109,16 +123,6 @@ public class Restaurants implements Serializable {
     // @Max(value=?)  @Min(value=?)//if you know range of your decimal fields consider using these annotations to enforce field validation
     @Column(name = "DefaultDepositPercent")
     private BigDecimal defaultDepositPercent;
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 30)
-    @Column(name = "Status")
-    private String status;
-    @Basic(optional = false)
-    @NotNull
-    @Column(name = "CreatedAt")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date createdAt;
     @Column(name = "UpdatedAt")
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
@@ -173,61 +177,6 @@ public class Restaurants implements Serializable {
         this.restaurantId = restaurantId;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getLogoUrl() {
-        return logoUrl;
-    }
-
-    public void setLogoUrl(String logoUrl) {
-        this.logoUrl = logoUrl;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getContactPerson() {
-        return contactPerson;
-    }
-
-    public void setContactPerson(String contactPerson) {
-        this.contactPerson = contactPerson;
-    }
 
     public Date getOpenTime() {
         return openTime;
@@ -285,21 +234,6 @@ public class Restaurants implements Serializable {
         this.defaultDepositPercent = defaultDepositPercent;
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
 
     public Date getUpdatedAt() {
         return updatedAt;
@@ -455,6 +389,87 @@ public class Restaurants implements Serializable {
 
     public void setMaxGuestCount(Integer maxGuestCount) {
         this.maxGuestCount = maxGuestCount;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getContactPerson() {
+        return contactPerson;
+    }
+
+    public void setContactPerson(String contactPerson) {
+        this.contactPerson = contactPerson;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @XmlTransient
+    public Collection<Vouchers> getVouchersCollection() {
+        return vouchersCollection;
+    }
+
+    public void setVouchersCollection(Collection<Vouchers> vouchersCollection) {
+        this.vouchersCollection = vouchersCollection;
     }
 
 }

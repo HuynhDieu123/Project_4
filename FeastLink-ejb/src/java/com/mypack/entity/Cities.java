@@ -35,17 +35,18 @@ import java.util.Collection;
     @NamedQuery(name = "Cities.findByName", query = "SELECT c FROM Cities c WHERE c.name = :name")})
 public class Cities implements Serializable {
 
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 100)
+    @Column(name = "Name")
+    private String name;
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
     @Column(name = "CityId")
     private Integer cityId;
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 100)
-    @Column(name = "Name")
-    private String name;
     @OneToMany(mappedBy = "cityId")
     private Collection<Users> usersCollection;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "cityId")
@@ -71,13 +72,6 @@ public class Cities implements Serializable {
         this.cityId = cityId;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 
     @XmlTransient
     public Collection<Users> getUsersCollection() {
@@ -120,6 +114,14 @@ public class Cities implements Serializable {
     @Override
     public String toString() {
         return "com.mypack.entity.Cities[ cityId=" + cityId + " ]";
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
     
 }
