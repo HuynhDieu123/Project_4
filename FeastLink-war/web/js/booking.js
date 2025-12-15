@@ -256,7 +256,23 @@ function setVoucherStatusUI(mode, message) {
     const box = document.getElementById('voucher-success');
     if (!box) return;
 
+    // reset tone classes
+    box.classList.remove(
+        'border-emerald-200','bg-emerald-50','text-emerald-700',
+        'border-amber-200','bg-amber-50','text-amber-700',
+        'border-red-200','bg-red-50','text-red-700'
+    );
+
+    if (mode === 'success') {
+        box.classList.add('border-emerald-200','bg-emerald-50','text-emerald-700');
+    } else if (mode === 'warn') {
+        box.classList.add('border-amber-200','bg-amber-50','text-amber-700');
+    } else {
+        box.classList.add('border-red-200','bg-red-50','text-red-700');
+    }
+
     box.classList.remove('hidden');
+
     const spans = box.querySelectorAll('span');
     if (spans && spans.length > 0) {
         if (spans[0]) spans[0].textContent = (mode === 'success') ? '✓' : (mode === 'warn' ? '!' : '✕');
@@ -269,6 +285,72 @@ function setVoucherStatusUI(mode, message) {
 function hideVoucherStatusUI() {
     const box = document.getElementById('voucher-success');
     if (box) box.classList.add('hidden');
+}
+
+function formatMoneyUSD(n) {
+    const v = Math.round(toNumber(n));
+    return v.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' USD';
+}
+
+function parseDateSafe(val) {
+    if (!val) return null;
+    const d = (val instanceof Date) ? val : new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function validateVoucherAndCalc(voucher, totalBeforeDiscount) {
+    const base = toNumber(totalBeforeDiscount);
+    if (!voucher || base <= 0) {
+        return { ok: false, discount: 0, reason: 'NO_BASE' };
+    }
+
+    // optional date window
+    const now = new Date();
+    const start = parseDateSafe(voucher.startAt || voucher.start || voucher.start_date);
+    const end = parseDateSafe(voucher.endAt || voucher.end || voucher.end_date);
+
+    if (start && now < start) {
+        return { ok: false, discount: 0, reason: 'NOT_STARTED' };
+    }
+    if (end && now > end) {
+        return { ok: false, discount: 0, reason: 'EXPIRED' };
+    }
+
+    const minOrder = toNumber(voucher.minOrderAmount);
+    if (minOrder > 0 && base < minOrder) {
+        return { ok: false, discount: 0, reason: 'MIN_ORDER', minOrder, base };
+    }
+
+    const type = normalizeCode(voucher.discountType);
+    const value = toNumber(voucher.discountValue);
+    const maxDiscount = toNumber(voucher.maxDiscount);
+
+    if (!value || value <= 0) {
+        return { ok: false, discount: 0, reason: 'INVALID_VALUE' };
+    }
+
+    let discount = 0;
+
+    if (type === 'PERCENT') {
+        discount = base * (value / 100);
+    } else if (type === 'AMOUNT') {
+        discount = value;
+    } else {
+        return { ok: false, discount: 0, reason: 'UNKNOWN_TYPE' };
+    }
+
+    if (maxDiscount > 0) {
+        discount = Math.min(discount, maxDiscount);
+    }
+
+    discount = clamp(discount, 0, base);
+    discount = Math.round(discount);
+
+    if (discount <= 0) {
+        return { ok: false, discount: 0, reason: 'NO_DISCOUNT' };
+    }
+
+    return { ok: true, discount, reason: 'OK', type, value, maxDiscount, minOrder, base };
 }
 
 // ✅ Đồng bộ hidden fields payment cho server đọc (KHÔNG gọi updateSummary bên trong để tránh loop)
@@ -1051,38 +1133,54 @@ const voucherBtn = document.getElementById('btn-apply-voucher');
 
 if (voucherBtn && voucherInput) {
     voucherBtn.addEventListener('click', function () {
-        const code = normalizeCode(voucherInput.value);
-        state.voucherCode = code;
+const code = normalizeCode(voucherInput.value);
+state.voucherCode = code;
 
-        // Clear
-        if (!code) {
-            state.discount = 0;
-            hideVoucherStatusUI();
-            updateSummary();
-            return;
-        }
+// Clear
+if (!code) {
+    state.discount = 0;
+    hideVoucherStatusUI();
+    updateSummary();
+    return;
+}
 
-        // Tính discount nếu có catalog, còn không thì chỉ sync code để server xử lý
-        const voucher = findVoucherByCode(code);
-        if (voucher) {
-            // luôn tính trên TOTAL BEFORE DISCOUNT hiện tại
-            updateSummary(); // update state.totalBeforeDiscount
-            const disc = calcVoucherDiscountAmount(voucher, state.totalBeforeDiscount);
-            state.discount = disc;
-            updateSummary();
+// Luôn tính trên TOTAL BEFORE DISCOUNT hiện tại
+const totalBefore = toNumber(state.totalBeforeDiscount || state.totalAmount || 0);
 
-            if (disc > 0) {
-                setVoucherStatusUI('success', 'Voucher applied successfully');
-            } else {
-                setVoucherStatusUI('warn', 'Voucher saved. Conditions not met yet (will re-check on confirm).');
-            }
+// Nếu có catalog ở client -> validate + tính theo loại voucher (PERCENT/AMOUNT)
+const voucher = findVoucherByCode(code);
+
+if (voucher) {
+    const res = validateVoucherAndCalc(voucher, totalBefore);
+
+    if (res.ok) {
+        state.discount = res.discount;
+        updateSummary();
+
+        if (res.type === 'PERCENT') {
+            const extra = (toNumber(res.maxDiscount) > 0) ? ` (max ${formatMoneyUSD(res.maxDiscount)})` : '';
+            setVoucherStatusUI('success', `Applied ${res.value}% off${extra} → -${formatMoneyUSD(res.discount)}`);
         } else {
-            // Không có catalog ở client -> để server kiểm tra
-            state.discount = 0;
-            updateSummary();
-            setVoucherStatusUI('warn', 'Voucher saved. Discount will be validated when you confirm payment.');
+            setVoucherStatusUI('success', `Applied -${formatMoneyUSD(res.discount)} discount`);
         }
-    });
+        return;
+    }
+
+    // Không đủ điều kiện / hết hạn / chưa tới ngày… => KHÔNG ném lỗi, chỉ báo user và không áp dụng
+    state.discount = 0;
+    // clear hidden voucher so user can still confirm booking without being blocked by server-side validation
+    state.voucherCode = '';
+    updateSummary();
+
+    setVoucherStatusUI('warn', 'Không đủ điều kiện để sử dụng voucher');
+return;
+}
+
+// Không có catalog client -> vẫn cho nhập code, server sẽ validate khi confirm
+state.discount = 0;
+updateSummary();
+setVoucherStatusUI('warn', 'Voucher saved. Discount will be validated when you confirm.');
+});
         }
 
         // Change venue

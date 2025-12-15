@@ -20,7 +20,7 @@
                 <div>
                     <h2 class="text-xl font-semibold text-gray-900">Vouchers Management</h2>
                     <p class="text-sm text-gray-500">
-                        Quản lý các mã giảm giá cho hệ thống FeastLink.
+                        Manage discount vouchers for the FeastLink system.
                     </p>
                 </div>
 
@@ -38,13 +38,13 @@
                     <!-- keyword -->
                     <h:inputText value="#{adminVoucherBean.keyword}"
                                  styleClass="p-2.5 border rounded-xl text-sm w-full"
-                                 title="Tìm theo code hoặc tên voucher"
+                                 title="Search by voucher code or name"
                                 />
 
                     <!-- scope filter -->
                     <h:selectOneMenu value="#{adminVoucherBean.scopeFilter}"
                                      styleClass="p-2.5 border rounded-xl text-sm w-full">
-                        <f:selectItem itemValue="ALL" itemLabel="Tất cả phạm vi" />
+                        <f:selectItem itemValue="ALL" itemLabel="All scopes" />
                         <f:selectItem itemValue="GLOBAL" itemLabel="GLOBAL" />
                         <f:selectItem itemValue="RESTAURANT" itemLabel="RESTAURANT" />
                         <f:selectItem itemValue="CUSTOMER" itemLabel="CUSTOMER" />
@@ -53,7 +53,7 @@
                     <!-- status filter -->
                     <h:selectOneMenu value="#{adminVoucherBean.statusFilter}"
                                      styleClass="p-2.5 border rounded-xl text-sm w-full">
-                        <f:selectItem itemValue="ALL" itemLabel="Tất cả trạng thái" />
+                        <f:selectItem itemValue="ALL" itemLabel="All statuses" />
                         <f:selectItem itemValue="ACTIVE" itemLabel="ACTIVE" />
                         <f:selectItem itemValue="INACTIVE" itemLabel="INACTIVE" />
                         <f:selectItem itemValue="EXPIRED" itemLabel="EXPIRED" />
@@ -78,13 +78,13 @@
                 <table class="w-full text-sm">
                     <thead>
                     <tr class="border-b text-gray-500">
-                        <th class="py-3 text-left">Mã / Tên</th>
-                        <th class="text-left">Phạm vi</th>
-                        <th class="text-left">Giảm giá</th>
-                        <th class="text-left">Điều kiện</th>
-                        <th class="text-left">Có hiệu lực</th>
-                        <th class="text-left">Trạng thái</th>
-                        <th class="text-center">Hành động</th>
+                        <th class="py-3 text-left">Code / Name</th>
+                        <th class="text-left">Scope</th>
+                        <th class="text-left">Discount</th>
+                        <th class="text-left">Conditions</th>
+                        <th class="text-left">Validity</th>
+                        <th class="text-left">Status</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                     </thead>
 
@@ -112,14 +112,23 @@
                             <!-- Discount info -->
                             <td class="align-top text-xs text-gray-700">
                                 <div>
-                                    Loại: #{v.discountType}
+                                    Type: #{v.discountType}
                                 </div>
                                 <div>
-                                    Giá trị:
-                                    <h:outputText value="#{v.discountValue}" />
+                                    Value:
+                                    <ui:fragment rendered="#{v.discountType eq 'PERCENT'}">
+                                        <h:outputText value="#{v.discountValue}">
+                                            <f:convertNumber maxFractionDigits="2" />
+                                        </h:outputText>%
+                                    </ui:fragment>
+                                    <ui:fragment rendered="#{v.discountType ne 'PERCENT'}">
+                                        <h:outputText value="#{v.discountValue}">
+                                            <f:convertNumber maxFractionDigits="2" />
+                                        </h:outputText>
+                                    </ui:fragment>
                                 </div>
                                 <ui:fragment rendered="#{v.maxDiscount != null}">
-                                    <div>Giảm tối đa:
+                                    <div>Max discount:
                                         <h:outputText value="#{v.maxDiscount}" />
                                     </div>
                                 </ui:fragment>
@@ -128,23 +137,23 @@
                             <!-- Conditions -->
                             <td class="align-top text-xs text-gray-700">
                                 <ui:fragment rendered="#{v.minOrderAmount != null}">
-                                    <div>Đơn tối thiểu:
+                                    <div>Min order:
                                         <h:outputText value="#{v.minOrderAmount}" />
                                     </div>
                                 </ui:fragment>
                                 <ui:fragment rendered="#{v.totalQuantity != null}">
-                                    <div>Tổng số lượng: #{v.totalQuantity}</div>
+                                    <div>Total quantity: #{v.totalQuantity}</div>
                                 </ui:fragment>
                                 <ui:fragment rendered="#{v.perUserLimit != null}">
-                                    <div>Giới hạn / người: #{v.perUserLimit}</div>
+                                    <div>Per-user limit: #{v.perUserLimit}</div>
                                 </ui:fragment>
                                 <div class="mt-1 text-[11px] text-gray-500">
-                                    Đổi bằng điểm:
-                                    <h:outputText value="#{v.isPointRedeemable ? 'Có' : 'Không'}" />
+                                    Redeem with points:
+                                    <h:outputText value="#{v.isPointRedeemable ? 'Yes' : 'No'}" />
                                 </div>
                                 <ui:fragment rendered="#{v.isPointRedeemable and v.pointCost != null}">
                                     <div class="text-[11px] text-gray-500">
-                                        Chi phí điểm: #{v.pointCost}
+                                        Point cost: #{v.pointCost}
                                     </div>
                                 </ui:fragment>
                             </td>
@@ -152,14 +161,14 @@
                             <!-- Valid date -->
                             <td class="align-top text-xs text-gray-700">
                                 <div>
-                                    <span class="text-gray-400">Bắt đầu:</span>
+                                    <span class="text-gray-400">Start:</span>
                                     <h:outputText value="#{v.startAt}">
                                         <f:convertDateTime pattern="dd/MM/yyyy"
                                                            timeZone="Asia/Ho_Chi_Minh" />
                                     </h:outputText>
                                 </div>
                                 <div>
-                                    <span class="text-gray-400">Kết thúc:</span>
+                                    <span class="text-gray-400">End:</span>
                                     <h:outputText value="#{v.endAt}">
                                         <f:convertDateTime pattern="dd/MM/yyyy"
                                                            timeZone="Asia/Ho_Chi_Minh" />
@@ -175,13 +184,13 @@
                             <!-- Actions -->
                             <td class="align-top text-center">
                                 <div class="flex flex-col items-center gap-1">
-                                    <h:commandButton value="Sửa"
+                                    <h:commandButton value="Edit"
                                                      action="#{adminVoucherBean.prepareEdit(v)}"
                                                      styleClass="px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs" />
-                                    <h:commandButton value="Xoá"
+                                    <h:commandButton value="Delete"
                                                      action="#{adminVoucherBean.deleteVoucher(v)}"
                                                      immediate="true"
-                                                     onclick="return confirm('Xoá voucher này?');"
+                                                     onclick="return confirm('Delete this voucher?');"
                                                      styleClass="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs" />
                                 </div>
                             </td>
@@ -196,30 +205,30 @@
 
                     <h3 class="text-sm font-semibold mb-2">
                         <ui:fragment rendered="#{adminVoucherBean.createMode}">
-                            Tạo phiếu giảm giá mới
+                            Create new voucher
                         </ui:fragment>
                         <ui:fragment rendered="#{not adminVoucherBean.createMode}">
-                            Chỉnh sửa phiếu giảm giá ##{adminVoucherBean.selectedVoucher.voucherId}
+                            Edit voucher ##{adminVoucherBean.selectedVoucher.voucherId}
                         </ui:fragment>
                     </h3>
 
                     <!-- BASIC INFO -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Mã số</label>
+                            <label class="text-xs font-semibold text-gray-600">Code</label>
                             <h:inputText value="#{adminVoucherBean.selectedVoucher.code}"
                                          maxlength="50"
                                          required="true"
-                                         requiredMessage="Mã voucher không được bỏ trống"
+                                         requiredMessage="Voucher code is required"
                                          styleClass="mt-1 w-full p-2 border rounded-xl text-sm" />
                         </div>
 
                         <div class="md:col-span-2">
-                            <label class="text-xs font-semibold text-gray-600">Tên</label>
+                            <label class="text-xs font-semibold text-gray-600">Name</label>
                             <h:inputText value="#{adminVoucherBean.selectedVoucher.name}"
                                          maxlength="150"
                                          required="true"
-                                         requiredMessage="Tên voucher không được bỏ trống"
+                                         requiredMessage="Voucher name is required"
                                          styleClass="mt-1 w-full p-2 border rounded-xl text-sm" />
                         </div>
                     </div>
@@ -227,31 +236,31 @@
                     <!-- SCOPE + DISCOUNT TYPE + STATUS -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Phạm vi</label>
+                            <label class="text-xs font-semibold text-gray-600">Scope</label>
                             <h:selectOneMenu value="#{adminVoucherBean.selectedVoucher.scope}"
                                              styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
-                                <f:selectItem itemValue="CUSTOMER" itemLabel="KHÁCH HÀNG" />
-                                <f:selectItem itemValue="RESTAURANT" itemLabel="NHÀ HÀNG" />
-                                <f:selectItem itemValue="GLOBAL" itemLabel="TOÀN HỆ THỐNG" />
+                                <f:selectItem itemValue="CUSTOMER" itemLabel="CUSTOMER" />
+                                <f:selectItem itemValue="RESTAURANT" itemLabel="RESTAURANT" />
+                                <f:selectItem itemValue="GLOBAL" itemLabel="GLOBAL" />
                             </h:selectOneMenu>
                         </div>
 
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Loại giảm giá</label>
+                            <label class="text-xs font-semibold text-gray-600">Discount type</label>
                             <h:selectOneMenu value="#{adminVoucherBean.selectedVoucher.discountType}"
                                              styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
-                                <f:selectItem itemValue="PERCENT" itemLabel="PHẦN TRĂM" />
-                                <f:selectItem itemValue="AMOUNT" itemLabel="SỐ TIỀN" />
+                                <f:selectItem itemValue="PERCENT" itemLabel="PERCENT" />
+                                <f:selectItem itemValue="AMOUNT" itemLabel="AMOUNT" />
                             </h:selectOneMenu>
                         </div>
 
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Trạng thái</label>
+                            <label class="text-xs font-semibold text-gray-600">Status</label>
                             <h:selectOneMenu value="#{adminVoucherBean.selectedVoucher.status}"
                                              styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
-                                <f:selectItem itemValue="ACTIVE" itemLabel="TÍCH CỰC" />
-                                <f:selectItem itemValue="INACTIVE" itemLabel="NGƯNG" />
-                                <f:selectItem itemValue="EXPIRED" itemLabel="HẾT HẠN" />
+                                <f:selectItem itemValue="ACTIVE" itemLabel="ACTIVE" />
+                                <f:selectItem itemValue="INACTIVE" itemLabel="INACTIVE" />
+                                <f:selectItem itemValue="EXPIRED" itemLabel="EXPIRED" />
                             </h:selectOneMenu>
                         </div>
                     </div>
@@ -259,15 +268,19 @@
                     <!-- DISCOUNT VALUES -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Giá trị chiết khấu</label>
-                            <h:inputText value="#{adminVoucherBean.selectedVoucher.discountValue}"
-                                         styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
-                                <f:convertNumber />
-                            </h:inputText>
+                            <label class="text-xs font-semibold text-gray-600">Discount value (%)</label>
+                            <div class="relative">
+                                <h:inputText value="#{adminVoucherBean.selectedVoucher.discountValue}"
+                                             pt:placeholder="e.g., 10"
+                                             styleClass="mt-1 w-full p-2 pr-9 border rounded-xl text-sm">
+                                    <f:convertNumber maxFractionDigits="2" />
+                                </h:inputText>
+                                <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">%</span>
+                            </div>
                         </div>
 
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Giảm giá tối đa</label>
+                            <label class="text-xs font-semibold text-gray-600">Max discount</label>
                             <h:inputText value="#{adminVoucherBean.selectedVoucher.maxDiscount}"
                                          styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
                                 <f:convertNumber />
@@ -275,7 +288,7 @@
                         </div>
 
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Số tiền đặt hàng tối thiểu</label>
+                            <label class="text-xs font-semibold text-gray-600">Minimum order amount</label>
                             <h:inputText value="#{adminVoucherBean.selectedVoucher.minOrderAmount}"
                                          styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
                                 <f:convertNumber />
@@ -283,10 +296,10 @@
                         </div>
                     </div>
 
-                    <!-- QUANTITY & LIMIT & POINT -->
+                    <!-- QUANTITY / LIMIT / POINT -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Tổng số lượng</label>
+                            <label class="text-xs font-semibold text-gray-600">Total quantity</label>
                             <h:inputText value="#{adminVoucherBean.selectedVoucher.totalQuantity}"
                                          styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
                                 <f:convertNumber integerOnly="true" />
@@ -294,7 +307,7 @@
                         </div>
 
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Giới hạn cho mỗi người dùng</label>
+                            <label class="text-xs font-semibold text-gray-600">Per-user limit</label>
                             <h:inputText value="#{adminVoucherBean.selectedVoucher.perUserLimit}"
                                          styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
                                 <f:convertNumber integerOnly="true" />
@@ -305,7 +318,7 @@
                             <h:selectBooleanCheckbox value="#{adminVoucherBean.selectedVoucher.isPointRedeemable}"
                                                      styleClass="h-4 w-4" />
                             <label class="text-xs font-semibold text-gray-600">
-                                Đổi bằng điểm
+                                Redeem with points
                             </label>
                         </div>
                     </div>
@@ -313,7 +326,7 @@
                     <!-- POINT COST + DATES (DATE PICKER) -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Chi phí điểm</label>
+                            <label class="text-xs font-semibold text-gray-600">Point cost</label>
                             <h:inputText value="#{adminVoucherBean.selectedVoucher.pointCost}"
                                          styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
                                 <f:convertNumber integerOnly="true" />
@@ -321,7 +334,7 @@
                         </div>
 
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Ngày bắt đầu</label>
+                            <label class="text-xs font-semibold text-gray-600">Start date</label>
                             <h:inputText value="#{adminVoucherBean.selectedVoucher.startAt}"
                                          pt:type="date"
                                          styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
@@ -331,7 +344,7 @@
                         </div>
 
                         <div>
-                            <label class="text-xs font-semibold text-gray-600">Ngày kết thúc</label>
+                            <label class="text-xs font-semibold text-gray-600">End date</label>
                             <h:inputText value="#{adminVoucherBean.selectedVoucher.endAt}"
                                          pt:type="date"
                                          styleClass="mt-1 w-full p-2 border rounded-xl text-sm">
@@ -343,11 +356,11 @@
 
                     <!-- ACTION BUTTONS -->
                     <div class="flex justify-end gap-2 mt-4">
-                        <h:commandButton value="Hủy bỏ"
+                        <h:commandButton value="Cancel"
                                          action="#{adminVoucherBean.cancelEdit}"
                                          immediate="true"
                                          styleClass="px-4 py-2 bg-gray-100 text-sm rounded-xl" />
-                        <h:commandButton value="Lưu"
+                        <h:commandButton value="Save"
                                          action="#{adminVoucherBean.saveVoucher}"
                                          styleClass="px-4 py-2 bg-blue-600 text-white text-sm rounded-xl" />
                     </div>

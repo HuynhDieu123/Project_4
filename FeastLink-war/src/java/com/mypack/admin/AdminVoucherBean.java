@@ -34,7 +34,7 @@ public class AdminVoucherBean implements Serializable {
 
     // EDIT / CREATE
     private Vouchers selectedVoucher;
-    private boolean createMode = false;      // true = tạo mới, false = chỉnh sửa
+    private boolean createMode = false;      // true = create new, false = edit
 
     @PostConstruct
     public void init() {
@@ -104,14 +104,14 @@ public class AdminVoucherBean implements Serializable {
         return null;
     }
 
-    /** Mở form tạo mới */
+    /** Open create form */
     public String prepareCreate() {
         selectedVoucher = new Vouchers();
         createMode = true;
 
-        // giá trị mặc định
+        // default values
         selectedVoucher.setStatus("ACTIVE");
-        selectedVoucher.setScope("CUSTOMER");        // hoặc GLOBAL tuỳ bạn
+        selectedVoucher.setScope("CUSTOMER");        // or GLOBAL if you prefer
         selectedVoucher.setDiscountType("PERCENT");  // PERCENT / AMOUNT
         selectedVoucher.setIsPointRedeemable(false);
         selectedVoucher.setCreatedAt(new Date());
@@ -120,7 +120,7 @@ public class AdminVoucherBean implements Serializable {
         return null;
     }
 
-    /** Mở form edit (load lại bản ghi từ DB cho chắc) */
+    /** Open edit form (reload from DB) */
     public String prepareEdit(Vouchers v) {
         if (v != null && v.getVoucherId() != null) {
             selectedVoucher = vouchersFacade.find(v.getVoucherId());
@@ -135,7 +135,7 @@ public class AdminVoucherBean implements Serializable {
         return null;
     }
 
-    /** Lưu: nếu createMode=true thì create, ngược lại edit */
+    /** Save: if createMode=true then create, otherwise edit */
     public String saveVoucher() {
         if (selectedVoucher == null) {
             return null;
@@ -150,13 +150,13 @@ public class AdminVoucherBean implements Serializable {
             if (createMode) {
                 vouchersFacade.create(selectedVoucher);
                 addMessage(FacesMessage.SEVERITY_INFO,
-                        "Tạo voucher thành công",
-                        "Voucher " + selectedVoucher.getCode() + " đã được thêm.");
+                        "Voucher created successfully",
+                        "Voucher " + selectedVoucher.getCode() + " has been added.");
             } else {
                 vouchersFacade.edit(selectedVoucher);
                 addMessage(FacesMessage.SEVERITY_INFO,
-                        "Cập nhật voucher thành công",
-                        "Voucher " + selectedVoucher.getCode() + " đã được cập nhật.");
+                        "Voucher updated successfully",
+                        "Voucher " + selectedVoucher.getCode() + " has been updated.");
             }
 
             selectedVoucher = null;
@@ -166,13 +166,13 @@ public class AdminVoucherBean implements Serializable {
         } catch (Exception ex) {
             ex.printStackTrace();
             addMessage(FacesMessage.SEVERITY_ERROR,
-                    "Lỗi khi lưu voucher",
+                    "Error saving voucher",
                     ex.getMessage());
         }
         return null;
     }
 
-    /** Xoá voucher */
+    /** Delete voucher */
     public String deleteVoucher(Vouchers v) {
         if (v == null || v.getVoucherId() == null) {
             return null;
@@ -182,14 +182,14 @@ public class AdminVoucherBean implements Serializable {
             if (managed != null) {
                 vouchersFacade.remove(managed);
                 addMessage(FacesMessage.SEVERITY_INFO,
-                        "Xoá voucher thành công",
-                        "Voucher " + managed.getCode() + " đã được xoá.");
+                        "Voucher deleted successfully",
+                        "Voucher " + managed.getCode() + " has been deleted.");
                 reloadAll();
             }
         } catch (Exception ex) {
             ex.printStackTrace();
             addMessage(FacesMessage.SEVERITY_ERROR,
-                    "Lỗi khi xoá voucher",
+                    "Error deleting voucher",
                     ex.getMessage());
         }
         return null;
@@ -200,7 +200,7 @@ public class AdminVoucherBean implements Serializable {
                 .addMessage(null, new FacesMessage(severity, summary, detail));
     }
 
-    // ========== OPTIONS FOR SELECT (nếu cần dùng) ==========
+    // ========== OPTIONS FOR SELECT (if needed) ==========
 
     public List<String> getScopeOptions() {
         return Arrays.asList("GLOBAL", "RESTAURANT", "CUSTOMER");
