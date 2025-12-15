@@ -107,4 +107,22 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
         return (count != null) ? count : 0L;
     }
 
+    public List<Bookings> findCompletedBookingsForReview(Long restaurantId, Long customerId) {
+        // Chỉ lấy booking COMPLETED và chưa có review (isDeleted=false) cho booking đó
+        return em.createQuery(
+                "SELECT b FROM Bookings b "
+                + "WHERE b.restaurantId.restaurantId = :rid "
+                + "AND b.customerId.userId = :cid "
+                + "AND UPPER(b.bookingStatus) = 'COMPLETED' "
+                + "AND NOT EXISTS ("
+                + "   SELECT rr FROM RestaurantReviews rr "
+                + "   WHERE rr.bookingId = b AND rr.customerId.userId = :cid AND rr.isDeleted = false"
+                + ") "
+                + "ORDER BY b.eventDate DESC",
+                Bookings.class
+        ).setParameter("rid", restaurantId)
+                .setParameter("cid", customerId)
+                .getResultList();
+    }
+
 }

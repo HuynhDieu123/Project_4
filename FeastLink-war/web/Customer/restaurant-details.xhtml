@@ -131,6 +131,68 @@
             .scrollbar-custom::-webkit-scrollbar-thumb:hover {
                 background: linear-gradient(135deg, #E6C77F, #D4AF37);
             }
+
+            @keyframes slideDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-8px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            /* ===== Star rating picker (CSS only) ===== */
+            .star-picker input[type="radio"]{
+                display:none;
+            }
+
+            .star-picker label{
+                cursor:pointer;
+                font-size: 22px;
+                line-height: 1;
+                color: #E5E7EB; /* gray */
+                transition: transform .12s ease, color .12s ease;
+                user-select:none;
+            }
+            .star-picker label:hover{
+                transform: translateY(-1px) scale(1.06);
+            }
+
+            /* Hover: fill from left to right (we use row-reverse trick) */
+            .star-picker{
+                display:flex;
+                flex-direction: row-reverse;
+                gap: 6px;
+            }
+            .star-picker label:hover,
+            .star-picker label:hover ~ label{
+                color:#D4AF37;
+            }
+
+            /* Checked: fill selected + all before it */
+            .star-picker input:checked ~ label{
+                color:#D4AF37;
+            }
+
+            /* optional: focus outline */
+            .star-picker input:focus-visible + label{
+                outline: 2px solid rgba(212,175,55,.45);
+                outline-offset: 4px;
+                border-radius: 6px;
+            }
+
+            .feast-star-btn:hover {
+                transform: translateY(-1px) scale(1.05);
+            }
+            .feast-star-btn:active {
+                transform: translateY(0) scale(0.98);
+            }
+
+
+
+
         </style>
     </h:head>
 
@@ -174,19 +236,36 @@
                             <h:outputText value="#{restaurantDetailsBean.displayName}"/>
                         </h1>
                         <div class="flex flex-wrap items-center gap-3">
-                            <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-[#E5E7EB]">
-                                <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                <span class="font-semibold text-[#111827]">
-                                    <h:outputText value="#{restaurantDetailsBean.avgRating}">
-                                        <f:convertNumber minFractionDigits="1" maxFractionDigits="1"/>
-                                    </h:outputText>
-                                </span>
-                                <span class="text-[#4B5563] text-sm">
-                                    (<h:outputText value="#{restaurantDetailsBean.reviewCount}"/> reviews)
-                                </span>
+                            <ui:fragment rendered="#{restaurantDetailsBean.hasReviews}">
+                                <div class="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-[#E5E7EB]">
+                                    <!-- 5 stars background + overlay -->
+                                    <div class="relative inline-block text-[14px] tracking-[2px] leading-none select-none">
+                                        <span class="text-[#E5E7EB]">★★★★★</span>
+                                        <span class="absolute left-0 top-0 overflow-hidden text-[#D4AF37]"
+                                              style="width: #{restaurantDetailsBean.ratingPercent}%;">
+                                            ★★★★★
+                                        </span>
+                                    </div>
 
-                            </div>
+                                    <span class="font-semibold text-[#111827]">
+                                        <h:outputText value="#{restaurantDetailsBean.avgRating}">
+                                            <f:convertNumber minFractionDigits="1" maxFractionDigits="1"/>
+                                        </h:outputText>
+                                    </span>
+
+                                    <span class="text-[#4B5563] text-sm">
+                                        (<h:outputText value="#{restaurantDetailsBean.reviewCount}"/> reviews)
+                                    </span>
+                                </div>
+                            </ui:fragment>
+
+                            <ui:fragment rendered="#{not restaurantDetailsBean.hasReviews}">
+                                <div class="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-[#E5E7EB]">
+                                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">NEW</span>
+                                    <span class="text-sm text-[#4B5563]">No reviews yet</span>
+                                </div>
+                            </ui:fragment>
+
                             <div class="flex items-center gap-1.5 text-[#4B5563]">
                                 <i data-lucide="map-pin" class="w-4 h-4 text-[#D4AF37]"></i>
                                 <span class="text-sm">
@@ -1029,306 +1108,367 @@
                                 <div class="w-16 h-1 bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] rounded-full"></div>
                             </div>
 
-                            <!-- Summary card -->
-                            <div
-                                class="bg-gradient-to-br from-[#D4AF37]/5 to-[#E6C77F]/5 rounded-3xl p-8 border border-[#D4AF37]/20 mb-8">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div
-                                        class="flex flex-col items-center justify-center md:border-r md:border-[#D4AF37]/20">
-                                        <div class="text-6xl font-bold text-[#111827] mb-2">
-                                            <h:outputText value="#{restaurantDetailsBean.avgRating}">
-                                                <f:convertNumber minFractionDigits="1" maxFractionDigits="1"/>
-                                            </h:outputText>
+                            <h:form id="reviewsForm">
+                                <h:messages id="reviewMsgs" globalOnly="true"
+                                            styleClass="mb-4 text-sm text-red-600"/>
+
+                                <!-- messages -->
+                                <h:messages styleClass="mb-4 text-sm" />
+
+                                <!-- Summary card -->
+                                <h:panelGroup id="reviewsSummary" layout="block"
+                                              class="bg-gradient-to-br from-[#D4AF37]/5 to-[#E6C77F]/5 rounded-3xl p-8 border border-[#D4AF37]/20 mb-8">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div class="flex flex-col items-center justify-center md:border-r md:border-[#D4AF37]/20">
+                                            <div class="text-6xl font-bold text-[#111827] mb-2">
+                                                <h:outputText value="#{restaurantReviewBean.avgRating}">
+                                                    <f:convertNumber minFractionDigits="1" maxFractionDigits="1"/>
+                                                </h:outputText>
+                                            </div>
+
+                                            <p class="text-[#4B5563] text-sm mb-4">
+                                                Based on
+                                                <h:outputText value="#{restaurantReviewBean.approvedReviewCount}"/>
+                                                reviews
+                                            </p>
+
+                                            <!-- Write review button -->
+                                            <ui:fragment rendered="#{restaurantReviewBean.canReview}">
+                                                <h:commandLink action="#{restaurantReviewBean.openCreate}"
+                                                               styleClass="inline-flex items-center justify-center px-6 py-2 border-2 border-[#D4AF37] text-[#D4AF37] font-medium rounded-xl hover:bg-[#D4AF37] hover:text-white transition-all no-underline">
+                                                    Write a Review
+                                                    <f:ajax execute="@this"
+                                                            render="reviewFormWrap reviewsSummary reviewMsgs"
+                                                            onevent="function(data){ if(data.status==='success'){ if(window.scrollToReviewForm){window.scrollToReviewForm();} } }"/>
+                                                </h:commandLink>
+
+                                            </ui:fragment>
+
+
+                                            <ui:fragment rendered="#{not restaurantReviewBean.canReview}">
+                                                <button type="button" disabled="disabled"
+                                                        class="px-6 py-2 border-2 border-[#E5E7EB] text-[#9CA3AF] font-medium rounded-xl cursor-not-allowed">
+                                                    Write a Review
+                                                </button>
+                                                <p class="text-xs text-[#6B7280] mt-2 text-center">
+                                                    #{restaurantReviewBean.canReviewMessage}
+                                                </p>
+                                            </ui:fragment>
                                         </div>
 
-                                        <p class="text-[#4B5563] text-sm mb-4">
-                                            Based on
-                                            <h:outputText value="#{restaurantDetailsBean.reviewCount}"/>
-                                            reviews
-                                        </p>
-
-                                        <button
-                                            class="px-6 py-2 border-2 border-[#D4AF37] text-[#D4AF37] font-medium rounded-xl hover:bg-[#D4AF37] hover:text-white transition-all">
-                                            Write a Review
-                                        </button>
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <!-- rating breakdown -->
-                                        <div class="flex items-center gap-3">
-                                            <div class="flex items-center gap-1 w-16">
-                                                <span class="text-sm font-medium text-[#111827]">5</span>
-                                                <i data-lucide="star" class="w-3 h-3 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                            </div>
-                                            <div class="flex-1 h-2 bg-white rounded-full overflow-hidden">
-                                                <div class="h-full bg-gradient-to-r from-[#D4AF37] to-[#E6C77F]"
-                                                     style="width: 87%;"></div>
-                                            </div>
-                                            <span class="text-sm text-[#4B5563] w-12 text-right">286</span>
-                                        </div>
-                                        <div class="flex items-center gap-3">
-                                            <div class="flex items-center gap-1 w-16">
-                                                <span class="text-sm font-medium text-[#111827]">4</span>
-                                                <i data-lucide="star" class="w-3 h-3 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                            </div>
-                                            <div class="flex-1 h-2 bg-white rounded-full overflow-hidden">
-                                                <div class="h-full bg-gradient-to-r from-[#D4AF37] to-[#E6C77F]"
-                                                     style="width: 10%;"></div>
-                                            </div>
-                                            <span class="text-sm text-[#4B5563] w-12 text-right">32</span>
-                                        </div>
-                                        <div class="flex items-center gap-3">
-                                            <div class="flex items-center gap-1 w-16">
-                                                <span class="text-sm font-medium text-[#111827]">3</span>
-                                                <i data-lucide="star" class="w-3 h-3 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                            </div>
-                                            <div class="flex-1 h-2 bg-white rounded-full overflow-hidden">
-                                                <div class="h-full bg-gradient-to-r from-[#D4AF37] to-[#E6C77F]"
-                                                     style="width: 2%;"></div>
-                                            </div>
-                                            <span class="text-sm text-[#4B5563] w-12 text-right">7</span>
-                                        </div>
-                                        <div class="flex items-center gap-3">
-                                            <div class="flex items-center gap-1 w-16">
-                                                <span class="text-sm font-medium text-[#111827]">2</span>
-                                                <i data-lucide="star" class="w-3 h-3 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                            </div>
-                                            <div class="flex-1 h-2 bg-white rounded-full overflow-hidden">
-                                                <div class="h-full bg-gradient-to-r from-[#D4AF37] to-[#E6C77F]"
-                                                     style="width: 1%;"></div>
-                                            </div>
-                                            <span class="text-sm text-[#4B5563] w-12 text-right">2</span>
-                                        </div>
-                                        <div class="flex items-center gap-3">
-                                            <div class="flex items-center gap-1 w-16">
-                                                <span class="text-sm font-medium text-[#111827]">1</span>
-                                                <i data-lucide="star" class="w-3 h-3 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                            </div>
-                                            <div class="flex-1 h-2 bg-white rounded-full overflow-hidden">
-                                                <div class="h-full bg-gradient-to-r from-[#D4AF37] to-[#E6C77F]"
-                                                     style="width: 0%;"></div>
-                                            </div>
-                                            <span class="text-sm text-[#4B5563] w-12 text-right">1</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="mt-6 p-4 bg-white rounded-xl border border-[#D4AF37]/30">
-                                    <p class="text-sm text-[#111827]">
-                                        <span class="font-semibold text-[#D4AF37]">96%</span> of customers would recommend
-                                        this venue for weddings
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center justify-between mb-6">
-                                <h3 class="text-lg font-semibold text-[#111827]">Customer Reviews</h3>
-                                <select
-                                    class="px-4 py-2 border border-[#E5E7EB] rounded-xl text-sm text-[#4B5563] focus:outline-none focus:border-[#D4AF37]">
-                                    <option>Most recent</option>
-                                    <option>Highest rating</option>
-                                    <option>Lowest rating</option>
-                                    <option>Most helpful</option>
-                                </select>
-                            </div>
-
-                            <!-- 3 hard-coded reviews -->
-                            <div class="space-y-4">
-                                <!-- Review 1 -->
-                                <div
-                                    class="bg-white rounded-2xl p-6 border border-[#E5E7EB] hover:border-[#D4AF37]/30 hover:shadow-lg transition-all">
-                                    <div class="flex items-start gap-4 mb-4">
-                                        <div
-                                            class="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#E6C77F] rounded-full flex items-center justify-center text-white font-semibold">
-                                            J
-                                        </div>
-                                        <div class="flex-1">
-                                            <div class="flex items-center gap-2 mb-1">
-                                                <h4 class="font-semibold text-[#111827]">Jennifer Nguyen</h4>
-                                                <span
-                                                    class="px-2 py-0.5 bg-[#22C55E]/10 text-[#22C55E] text-xs font-medium rounded-full">
-                                                    Verified Booking
+                                        <!-- rating breakdown from DB -->
+                                        <div class="space-y-2">
+                                            <!-- 5 -->
+                                            <div class="flex items-center gap-3">
+                                                <div class="flex items-center gap-1 w-16">
+                                                    <span class="text-sm font-medium text-[#111827]">5</span>
+                                                    <span class="text-[#D4AF37] text-sm">★</span>
+                                                </div>
+                                                <div class="flex-1 h-2 bg-white rounded-full overflow-hidden">
+                                                    <div class="h-full bg-gradient-to-r from-[#D4AF37] to-[#E6C77F]"
+                                                         style="width: #{restaurantReviewBean.pct5}%;"></div>
+                                                </div>
+                                                <span class="text-sm text-[#4B5563] w-12 text-right">
+                                                    <h:outputText value="#{restaurantReviewBean.count5}"/>
                                                 </span>
                                             </div>
-                                            <div class="flex items-center gap-3 text-sm text-[#4B5563]">
-                                                <div class="flex items-center gap-1">
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
+
+                                            <!-- 4 -->
+                                            <div class="flex items-center gap-3">
+                                                <div class="flex items-center gap-1 w-16">
+                                                    <span class="text-sm font-medium text-[#111827]">4</span>
+                                                    <span class="text-[#D4AF37] text-sm">★</span>
                                                 </div>
-                                                <span>•</span><span>Wedding</span>
-                                                <span>•</span><span>March 2025</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <h5 class="font-semibold text-[#111827] mb-2">Breathtaking ballroom and flawless service
-                                    </h5>
-                                    <p class="text-[#4B5563] text-sm leading-relaxed mb-4">
-                                        The Grand Sapphire exceeded all our expectations for our wedding. The panoramic
-                                        views at sunset were absolutely stunning, and our guests couldn't stop talking about
-                                        the exquisite food. The event coordinator was incredibly attentive to every detail.
-                                    </p>
-
-                                    <div class="flex flex-wrap gap-2 mb-4">
-                                        <span
-                                            class="px-3 py-1 bg-[#F9FAFB] text-[#4B5563] text-xs font-medium rounded-full border border-[#E5E7EB]">Service</span>
-                                        <span
-                                            class="px-3 py-1 bg-[#F9FAFB] text-[#4B5563] text-xs font-medium rounded-full border border-[#E5E7EB]">Food
-                                            quality</span>
-                                        <span
-                                            class="px-3 py-1 bg-[#F9FAFB] text-[#4B5563] text-xs font-medium rounded-full border border-[#E5E7EB]">Decoration</span>
-                                        <span
-                                            class="px-3 py-1 bg-[#F9FAFB] text-[#4B5563] text-xs font-medium rounded-full border border-[#E5E7EB]">Sound
-                                            &amp; light</span>
-                                    </div>
-
-                                    <div class="flex items-center gap-4 pt-4 border-t border-[#E5E7EB]">
-                                        <button
-                                            class="flex items-center gap-2 text-sm text-[#4B5563] hover:text-[#D4AF37] transition-colors">
-                                            <i data-lucide="thumbs-up" class="w-4 h-4"></i>
-                                            <span>Helpful (24)</span>
-                                        </button>
-                                        <button
-                                            class="flex items-center gap-2 text-sm text-[#4B5563] hover:text-[#D4AF37] transition-colors">
-                                            <i data-lucide="message-circle" class="w-4 h-4"></i>
-                                            <span>Reply</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- Review 2 -->
-                                <div
-                                    class="bg-white rounded-2xl p-6 border border-[#E5E7EB] hover:border-[#D4AF37]/30 hover:shadow-lg transition-all">
-                                    <div class="flex items-start gap-4 mb-4">
-                                        <div
-                                            class="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#E6C77F] rounded-full flex items-center justify-center text-white font-semibold">
-                                            M
-                                        </div>
-                                        <div class="flex-1">
-                                            <div class="flex items-center gap-2 mb-1">
-                                                <h4 class="font-semibold text-[#111827]">Michael Chen</h4>
-                                                <span
-                                                    class="px-2 py-0.5 bg-[#22C55E]/10 text-[#22C55E] text-xs font-medium rounded-full">
-                                                    Verified Booking
+                                                <div class="flex-1 h-2 bg-white rounded-full overflow-hidden">
+                                                    <div class="h-full bg-gradient-to-r from-[#D4AF37] to-[#E6C77F]"
+                                                         style="width: #{restaurantReviewBean.pct4}%;"></div>
+                                                </div>
+                                                <span class="text-sm text-[#4B5563] w-12 text-right">
+                                                    <h:outputText value="#{restaurantReviewBean.count4}"/>
                                                 </span>
                                             </div>
-                                            <div class="flex items-center gap-3 text-sm text-[#4B5563]">
-                                                <div class="flex items-center gap-1">
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
+
+                                            <!-- 3 -->
+                                            <div class="flex items-center gap-3">
+                                                <div class="flex items-center gap-1 w-16">
+                                                    <span class="text-sm font-medium text-[#111827]">3</span>
+                                                    <span class="text-[#D4AF37] text-sm">★</span>
                                                 </div>
-                                                <span>•</span><span>Corporate</span>
-                                                <span>•</span><span>February 2025</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <h5 class="font-semibold text-[#111827] mb-2">Perfect venue for our annual gala</h5>
-                                    <p class="text-[#4B5563] text-sm leading-relaxed mb-4">
-                                        Hosted our company's 500-person annual gala here. The pillarless design meant
-                                        everyone had perfect sightlines to the stage. The AV team was professional and the
-                                        acoustics were exceptional. Highly recommend for corporate events.
-                                    </p>
-
-                                    <div class="flex flex-wrap gap-2 mb-4">
-                                        <span
-                                            class="px-3 py-1 bg-[#F9FAFB] text-[#4B5563] text-xs font-medium rounded-full border border-[#E5E7EB]">AV
-                                            System</span>
-                                        <span
-                                            class="px-3 py-1 bg-[#F9FAFB] text-[#4B5563] text-xs font-medium rounded-full border border-[#E5E7EB]">Service</span>
-                                        <span
-                                            class="px-3 py-1 bg-[#F9FAFB] text-[#4B5563] text-xs font-medium rounded-full border border-[#E5E7EB]">Capacity</span>
-                                    </div>
-
-                                    <div class="flex items-center gap-4 pt-4 border-t border-[#E5E7EB]">
-                                        <button
-                                            class="flex items-center gap-2 text-sm text-[#4B5563] hover:text-[#D4AF37] transition-colors">
-                                            <i data-lucide="thumbs-up" class="w-4 h-4"></i>
-                                            <span>Helpful (18)</span>
-                                        </button>
-                                        <button
-                                            class="flex items-center gap-2 text-sm text-[#4B5563] hover:text-[#D4AF37] transition-colors">
-                                            <i data-lucide="message-circle" class="w-4 h-4"></i>
-                                            <span>Reply</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- Review 3 -->
-                                <div
-                                    class="bg-white rounded-2xl p-6 border border-[#E5E7EB] hover:border-[#D4AF37]/30 hover:shadow-lg transition-all">
-                                    <div class="flex items-start gap-4 mb-4">
-                                        <div
-                                            class="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#E6C77F] rounded-full flex items-center justify-center text-white font-semibold">
-                                            S
-                                        </div>
-                                        <div class="flex-1">
-                                            <div class="flex items-center gap-2 mb-1">
-                                                <h4 class="font-semibold text-[#111827]">Sarah Williams</h4>
-                                                <span
-                                                    class="px-2 py-0.5 bg-[#22C55E]/10 text-[#22C55E] text-xs font-medium rounded-full">
-                                                    Verified Booking
+                                                <div class="flex-1 h-2 bg-white rounded-full overflow-hidden">
+                                                    <div class="h-full bg-gradient-to-r from-[#D4AF37] to-[#E6C77F]"
+                                                         style="width: #{restaurantReviewBean.pct3}%;"></div>
+                                                </div>
+                                                <span class="text-sm text-[#4B5563] w-12 text-right">
+                                                    <h:outputText value="#{restaurantReviewBean.count3}"/>
                                                 </span>
                                             </div>
-                                            <div class="flex items-center gap-3 text-sm text-[#4B5563]">
-                                                <div class="flex items-center gap-1">
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
-                                                    <i data-lucide="star" class="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]"></i>
+
+                                            <!-- 2 -->
+                                            <div class="flex items-center gap-3">
+                                                <div class="flex items-center gap-1 w-16">
+                                                    <span class="text-sm font-medium text-[#111827]">2</span>
+                                                    <span class="text-[#D4AF37] text-sm">★</span>
                                                 </div>
-                                                <span>•</span><span>Wedding</span>
-                                                <span>•</span><span>January 2025</span>
+                                                <div class="flex-1 h-2 bg-white rounded-full overflow-hidden">
+                                                    <div class="h-full bg-gradient-to-r from-[#D4AF37] to-[#E6C77F]"
+                                                         style="width: #{restaurantReviewBean.pct2}%;"></div>
+                                                </div>
+                                                <span class="text-sm text-[#4B5563] w-12 text-right">
+                                                    <h:outputText value="#{restaurantReviewBean.count2}"/>
+                                                </span>
+                                            </div>
+
+                                            <!-- 1 -->
+                                            <div class="flex items-center gap-3">
+                                                <div class="flex items-center gap-1 w-16">
+                                                    <span class="text-sm font-medium text-[#111827]">1</span>
+                                                    <span class="text-[#D4AF37] text-sm">★</span>
+                                                </div>
+                                                <div class="flex-1 h-2 bg-white rounded-full overflow-hidden">
+                                                    <div class="h-full bg-gradient-to-r from-[#D4AF37] to-[#E6C77F]"
+                                                         style="width: #{restaurantReviewBean.pct1}%;"></div>
+                                                </div>
+                                                <span class="text-sm text-[#4B5563] w-12 text-right">
+                                                    <h:outputText value="#{restaurantReviewBean.count1}"/>
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
+                                </h:panelGroup>
+                                <!-- INLINE REVIEW FORM (no popup) -->
+                                <h:panelGroup id="reviewFormWrap" layout="block">
 
-                                    <h5 class="font-semibold text-[#111827] mb-2">Dream wedding venue came true</h5>
-                                    <p class="text-[#4B5563] text-sm leading-relaxed mb-4">
-                                        From the initial consultation to the last dance, everything was perfect. The crystal
-                                        chandeliers created such a romantic ambiance, and the bridal suite was luxurious.
-                                        The 10-course menu was a culinary journey our guests are still raving about.
-                                    </p>
+                                    <!-- FORM: chỉ hiện khi showModal=true -->
+                                    <h:panelGroup id="reviewForm" layout="block"
+                                                  rendered="#{restaurantReviewBean.showModal}"
+                                                  class="mb-10">
 
-                                    <div class="flex flex-wrap gap-2 mb-4">
-                                        <span
-                                            class="px-3 py-1 bg-[#F9FAFB] text-[#4B5563] text-xs font-medium rounded-full border border-[#E5E7EB]">Decoration</span>
-                                        <span
-                                            class="px-3 py-1 bg-[#F9FAFB] text-[#4B5563] text-xs font-medium rounded-full border border-[#E5E7EB]">Food
-                                            quality</span>
-                                        <span
-                                            class="px-3 py-1 bg-[#F9FAFB] text-[#4B5563] text-xs font-medium rounded-full border border-[#E5E7EB]">Service</span>
-                                    </div>
+                                        <div id="reviewFormCard"
+                                             class="relative overflow-hidden rounded-3xl border border-[#D4AF37]/25 bg-white shadow-xl">
 
-                                    <div class="flex items-center gap-4 pt-4 border-t border-[#E5E7EB]">
-                                        <button
-                                            class="flex items-center gap-2 text-sm text-[#4B5563] hover:text-[#D4AF37] transition-colors">
-                                            <i data-lucide="thumbs-up" class="w-4 h-4"></i>
-                                            <span>Helpful (31)</span>
-                                        </button>
-                                        <button
-                                            class="flex items-center gap-2 text-sm text-[#4B5563] hover:text-[#D4AF37] transition-colors">
-                                            <i data-lucide="message-circle" class="w-4 h-4"></i>
-                                            <span>Reply</span>
-                                        </button>
-                                    </div>
+                                            <div class="absolute inset-0 pointer-events-none">
+                                                <div class="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-[#D4AF37]/10 blur-3xl"></div>
+                                                <div class="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#E6C77F]/10 blur-3xl"></div>
+                                                <div class="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37]/60 to-transparent"></div>
+                                            </div>
+
+                                            <div class="relative p-6 md:p-8">
+                                                <div class="flex items-start justify-between gap-4 mb-6">
+                                                    <div>
+                                                        <h3 class="text-xl md:text-2xl font-bold text-[#111827]">
+                                                            <ui:fragment rendered="#{restaurantReviewBean.editMode}">Edit Your Review</ui:fragment>
+                                                            <ui:fragment rendered="#{not restaurantReviewBean.editMode}">Write a Review</ui:fragment>
+                                                        </h3>
+                                                        <p class="text-sm text-[#6B7280] mt-1">
+                                                            Share your experience to help other guests choose with confidence.
+                                                        </p>
+                                                    </div>
+
+                                                    <h:commandButton value="✕"
+                                                                     action="#{restaurantReviewBean.closeModal}"
+                                                                     styleClass="w-10 h-10 rounded-2xl border border-[#E5E7EB] text-[#6B7280] hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all">
+                                                        <f:ajax render="reviewFormWrap"/>
+                                                    </h:commandButton>
+                                                </div>
+
+                                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                    <div>
+                                                        <ui:fragment rendered="#{not restaurantReviewBean.editMode}">
+                                                            <label class="block text-sm font-semibold text-[#111827] mb-2">
+                                                                Choose your completed booking
+                                                            </label>
+                                                            <h:selectOneMenu value="#{restaurantReviewBean.formBookingId}"
+                                                                             styleClass="w-full px-4 py-3 border border-[#E5E7EB] rounded-2xl text-sm focus:outline-none focus:border-[#D4AF37] mb-5">
+                                                                <f:selectItems value="#{restaurantReviewBean.eligibleBookingItems}"/>
+                                                            </h:selectOneMenu>
+                                                        </ui:fragment>
+
+                                                        <label class="block text-sm font-semibold text-[#111827] mb-2">Rating</label>
+
+                                                        <!-- hidden value bind to bean -->
+                                                        <h:inputHidden id="ratingVal" value="#{restaurantReviewBean.formRating}" />
+
+                                                        <!-- star UI -->
+                                                        <div class="flex items-center gap-2 mb-2">
+                                                            <div class="inline-flex items-center gap-1" id="starBox">
+                                                                <button type="button" class="feast-star-btn text-[22px] text-[#E5E7EB] transition"
+                                                                        data-star="1" aria-label="1 star">★</button>
+                                                                <button type="button" class="feast-star-btn text-[22px] text-[#E5E7EB] transition"
+                                                                        data-star="2" aria-label="2 stars">★</button>
+                                                                <button type="button" class="feast-star-btn text-[22px] text-[#E5E7EB] transition"
+                                                                        data-star="3" aria-label="3 stars">★</button>
+                                                                <button type="button" class="feast-star-btn text-[22px] text-[#E5E7EB] transition"
+                                                                        data-star="4" aria-label="4 stars">★</button>
+                                                                <button type="button" class="feast-star-btn text-[22px] text-[#E5E7EB] transition"
+                                                                        data-star="5" aria-label="5 stars">★</button>
+                                                            </div>
+
+                                                            <span class="text-xs text-[#6B7280]">(tap a star)</span>
+                                                        </div>
+
+                                                        <!-- message for rating -->
+                                                        <h:message for="ratingVal" styleClass="block text-xs text-red-600 mb-4"/>
+
+
+
+
+                                                        <label class="block text-sm font-semibold text-[#111827] mb-2">Comment</label>
+                                                        <h:inputTextarea value="#{restaurantReviewBean.formComment}"
+                                                                         rows="6"
+                                                                         styleClass="w-full px-4 py-3 border border-[#E5E7EB] rounded-2xl text-sm focus:outline-none focus:border-[#D4AF37] resize-none"/>
+
+                                                        <div class="mt-6 flex items-center justify-end gap-3">
+                                                            <h:commandButton value="Cancel"
+                                                                             action="#{restaurantReviewBean.closeModal}"
+                                                                             styleClass="px-5 py-3 rounded-2xl border border-[#E5E7EB] text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all">
+                                                                <f:ajax render="reviewFormWrap"/>
+                                                            </h:commandButton>
+
+                                                            <h:commandButton value="Submit"
+                                                                             action="#{restaurantReviewBean.submit}"
+                                                                             styleClass="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] text-white font-semibold shadow-lg hover:shadow-xl transition-all">
+                                                                <f:ajax execute="@form"
+                                                                        render=":reviewsForm:reviewsSummary :reviewsForm:reviewsList :reviewsForm:loadMoreWrap :reviewsForm:reviewFormWrap :reviewsForm:reviewMsgs"
+                                                                        onevent="function(d){ if(d.status==='success'){ scrollToReviewsList(); } }"/>
+
+                                                            </h:commandButton>
+
+
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="rounded-3xl border border-[#E5E7EB] bg-gradient-to-br from-[#F9FAFB] to-white p-6">
+                                                        <div class="flex items-center gap-2 mb-3">
+                                                            <span class="inline-flex w-9 h-9 rounded-2xl bg-[#D4AF37]/10 items-center justify-center text-[#D4AF37] font-bold">★</span>
+                                                            <h4 class="font-semibold text-[#111827]">Review tips</h4>
+                                                        </div>
+                                                        <ul class="text-sm text-[#4B5563] space-y-2">
+                                                            <li>• Mention food quality, service attitude, and ambience.</li>
+                                                            <li>• Be honest and specific (what you liked / disliked).</li>
+                                                            <li>• Keep it respectful. Your review may be moderated.</li>
+                                                        </ul>
+
+                                                        <div class="mt-6 p-4 rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/5">
+                                                            <p class="text-xs text-[#6B7280]">
+                                                                Your review is linked to your completed booking to keep ratings trustworthy.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </h:panelGroup>
+                                </h:panelGroup>
+
+                                <!-- Sort + title -->
+                                <div class="flex items-center justify-between mb-6">
+                                    <h3 class="text-lg font-semibold text-[#111827]">Customer Reviews</h3>
+
+                                    <h:selectOneMenu value="#{restaurantReviewBean.sortOption}"
+                                                     styleClass="px-4 py-2 border border-[#E5E7EB] rounded-xl text-sm text-[#4B5563] focus:outline-none focus:border-[#D4AF37]">
+                                        <f:selectItem itemValue="recent" itemLabel="Most recent"/>
+                                        <f:selectItem itemValue="highest" itemLabel="Highest rating"/>
+                                        <f:selectItem itemValue="lowest" itemLabel="Lowest rating"/>
+                                        <f:ajax listener="#{restaurantReviewBean.changeSort}" render="reviewsList loadMoreWrap"/>
+                                    </h:selectOneMenu>
                                 </div>
-                            </div>
 
-                            <div class="mt-6 text-center">
-                                <button
-                                    class="px-8 py-3 border-2 border-[#E5E7EB] text-[#4B5563] font-medium rounded-xl hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all">
-                                    Load More Reviews
-                                </button>
-                            </div>
+                                <!-- Reviews list from DB -->
+                                <h:panelGroup id="reviewsList" layout="block" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <ui:repeat value="#{restaurantReviewBean.approvedReviews}" var="rev">
+
+                                        <div class="bg-white rounded-2xl p-6 border border-[#E5E7EB] hover:border-[#D4AF37]/30 hover:shadow-lg transition-all">
+                                            <div class="flex items-start gap-4 mb-4">
+                                                <!-- avatar -->
+                                                <ui:fragment rendered="#{not empty rev.customerId.avatarUrl}">
+                                                    <img src="#{rev.customerId.avatarUrl}"
+                                                         class="w-12 h-12 rounded-full object-cover border border-[#E5E7EB]" />
+                                                </ui:fragment>
+                                                <ui:fragment rendered="#{empty rev.customerId.avatarUrl}">
+                                                    <div class="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#E6C77F] rounded-full flex items-center justify-center text-white font-semibold">
+                                                        #{restaurantReviewBean.initials(rev.customerId.fullName)}
+                                                    </div>
+                                                </ui:fragment>
+
+                                                <div class="flex-1">
+                                                    <div class="flex items-center justify-between gap-3 mb-1">
+
+                                                        <!-- LEFT: name + verified -->
+                                                        <div class="flex items-center gap-2">
+                                                            <h4 class="font-semibold text-[#111827]">#{rev.customerId.fullName}</h4>
+                                                            <span class="px-2 py-0.5 bg-[#22C55E]/10 text-[#22C55E] text-xs font-medium rounded-full">
+                                                                Verified Booking
+                                                            </span>
+                                                        </div>
+
+                                                        <!-- RIGHT: edit/delete only for owner -->
+                                                        <ui:fragment rendered="#{restaurantReviewBean.myReview(rev)}">
+                                                            <div class="flex items-center gap-2">
+
+                                                                <!-- EDIT -->
+                                                                <h:commandLink action="#{restaurantReviewBean.openEdit(rev.reviewId)}"
+                                                                               styleClass="text-xs px-3 py-1 rounded-lg border border-[#E5E7EB] text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all">
+                                                                    Edit
+                                                                    <f:ajax render=":reviewsForm:reviewFormWrap"
+                                                                            onevent="function(d){ if(d.status==='success'){ syncReviewStars(); } }"/>
+                                                                </h:commandLink>
+
+                                                                <!-- DELETE -->
+                                                                <h:commandLink action="#{restaurantReviewBean.deleteReview(rev.reviewId)}"
+                                                                               onclick="return confirm('Delete this review?');"
+                                                                               styleClass="text-xs px-3 py-1 rounded-lg border border-[#FCA5A5] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-all">
+                                                                    Delete
+                                                                    <f:ajax render=":reviewsForm:reviewsSummary :reviewsForm:reviewsList :reviewsForm:loadMoreWrap :reviewsForm:reviewMsgs"/>
+                                                                </h:commandLink>
+
+                                                            </div>
+                                                        </ui:fragment>
+
+                                                    </div>
+
+
+                                                    <div class="flex items-center gap-3 text-sm text-[#4B5563]">
+                                                        <!-- stars -->
+                                                        <div class="flex items-center gap-0.5">
+                                                            <ui:repeat value="#{restaurantReviewBean.starList}" var="s">
+                                                                <span class="#{s le rev.rating ? 'text-[#D4AF37]' : 'text-[#E5E7EB]'}">★</span>
+                                                            </ui:repeat>
+                                                        </div>
+                                                        <span>•</span>
+                                                        <span>
+                                                            <h:outputText value="#{rev.createdAt}">
+                                                                <f:convertDateTime pattern="dd MMM yyyy"/>
+                                                            </h:outputText>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <p class="text-[#4B5563] text-sm leading-relaxed">
+                                                #{rev.comment}
+                                            </p>
+                                        </div>
+
+                                    </ui:repeat>
+
+                                </h:panelGroup>
+
+                                <!-- Load more -->
+                                <h:panelGroup id="loadMoreWrap" layout="block" class="mt-6 text-center">
+                                    <ui:fragment rendered="#{restaurantReviewBean.hasMore}">
+                                        <h:commandButton value="Load More Reviews"
+                                                         action="#{restaurantReviewBean.loadMore}"
+                                                         styleClass="px-8 py-3 border-2 border-[#E5E7EB] text-[#4B5563] font-medium rounded-xl hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all">
+                                            <f:ajax render="reviewsList loadMoreWrap"/>
+                                        </h:commandButton>
+                                    </ui:fragment>
+                                </h:panelGroup>
+
+
+                            </h:form>
                         </section>
+
 
                         <!-- AVAILABILITY -->
                         <section id="availability" class="scroll-mt-32">

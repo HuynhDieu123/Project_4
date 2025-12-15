@@ -1294,28 +1294,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    // ================== REVIEWS: WRITE & LOAD MORE ==================
-    const writeReviewBtn = qs('#reviews button', qs('#reviews'));
-    const loadMoreBtn = qs('#reviews button:nth-of-type(2)'); // second button inside #reviews
-
-    // ================== MENU ITEM SELECTION (FROM DATABASE) ==================
-
-
-    if (writeReviewBtn) {
-        writeReviewBtn.addEventListener('click', () => {
-            alert('Demo: The review form will be displayed here in the full version.');
-        });
-    }
-
-    const loadMoreReviewsBtn = qs('#reviews .mt-6.text-center button');
-    if (loadMoreReviewsBtn) {
-        loadMoreReviewsBtn.addEventListener('click', () => {
-            alert(
-                    'Demo: There are no more reviews. In the real version, more reviews will be loaded from the backend.'
-                    );
-        });
-    }
-
     // ================== DESKTOP CHECK AVAILABILITY BUTTON ==================
     // "Check Availability & Pricing" button in the right-hand booking card (desktop)
     qsa('button').forEach(btn => {
@@ -1346,5 +1324,72 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     });
+
+    window.scrollToReviewForm = function () {
+        const el = document.getElementById('reviewsForm:reviewFormCard');
+        if (el)
+            el.scrollIntoView({behavior: 'smooth', block: 'start'});
+    };
+
+    (function () {
+        function findHiddenRating() {
+            return document.querySelector("[id$=':ratingVal']");
+        }
+
+        function paintStars(val) {
+            const stars = document.querySelectorAll(".feast-star-btn");
+            stars.forEach(btn => {
+                const n = parseInt(btn.dataset.star, 10);
+                if (!isNaN(val) && n <= val) {
+                    btn.classList.remove("text-[#E5E7EB]");
+                    btn.classList.add("text-[#D4AF37]");
+                } else {
+                    btn.classList.remove("text-[#D4AF37]");
+                    btn.classList.add("text-[#E5E7EB]");
+                }
+            });
+        }
+
+        // Event delegation: không sợ bị rerender
+        document.addEventListener("click", function (e) {
+            const btn = e.target.closest(".feast-star-btn");
+            if (!btn)
+                return;
+
+            const val = parseInt(btn.dataset.star, 10);
+            const hidden = findHiddenRating();
+            if (!hidden || isNaN(val))
+                return;
+
+            hidden.value = String(val);
+            paintStars(val);
+        });
+
+        // Khi page load (hoặc rerender), đồng bộ màu theo hidden value
+        function syncFromHidden() {
+            const hidden = findHiddenRating();
+            if (!hidden)
+                return;
+            const val = parseInt(hidden.value, 10);
+            paintStars(isNaN(val) ? 0 : val);
+        }
+        window.syncReviewStars = syncFromHidden;
+
+        // sync on load
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", syncFromHidden);
+        } else {
+            syncFromHidden();
+        }
+
+        // sync after any JSF ajax update
+        if (window.jsf && jsf.ajax) {
+            jsf.ajax.addOnEvent(function (data) {
+                if (data.status === "success")
+                    syncFromHidden();
+            });
+        }
+    })();
+
 
 });

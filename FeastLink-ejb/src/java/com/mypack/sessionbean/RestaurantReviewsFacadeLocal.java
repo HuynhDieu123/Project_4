@@ -29,4 +29,14 @@ public interface RestaurantReviewsFacadeLocal {
 
     int count();
     
+    List<RestaurantReviews> findApprovedByRestaurant(Long restaurantId, int offset, int limit, String sortKey);
+
+    long countApprovedByRestaurant(Long restaurantId);
+
+    Double avgApprovedRating(Long restaurantId);
+
+    List<Object[]> ratingBreakdownApproved(Long restaurantId); // each row: [rating, count]
+
+    List<RestaurantReviews> findByRestaurantAndCustomer(Long restaurantId, Long customerId); // include pending (approved=false)
+    
 }
