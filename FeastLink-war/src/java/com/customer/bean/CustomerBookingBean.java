@@ -11,6 +11,8 @@ import com.mypack.entity.BookingMenuItems;
 import com.mypack.entity.BookingMenuItemsPK;
 import com.mypack.entity.MenuCombos;          // nếu đã có MenuCombosFacade
 import com.mypack.entity.MenuItems;
+import com.mypack.entity.Vouchers;
+import com.mypack.entity.UserVouchers;
 
 import com.mypack.sessionbean.BookingCombosFacadeLocal;
 import com.mypack.sessionbean.BookingMenuItemsFacadeLocal;
@@ -21,6 +23,9 @@ import com.mypack.sessionbean.BookingsFacadeLocal;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import com.mypack.sessionbean.EventTypesFacadeLocal;
 import com.mypack.sessionbean.ServiceTypesFacadeLocal;
+
+import com.mypack.sessionbean.VouchersFacadeLocal;
+import com.mypack.sessionbean.UserVouchersFacadeLocal;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
@@ -89,6 +94,13 @@ public class CustomerBookingBean implements Serializable {
     @EJB
     private PaymentsFacadeLocal paymentsFacade;
 
+    // ===== Voucher =====
+    @EJB
+    private VouchersFacadeLocal vouchersFacade;
+
+    @EJB
+    private UserVouchersFacadeLocal userVouchersFacade;
+
     private List<EventTypes> allEventTypes;
 
     // danh sách event type cho dropdown
@@ -140,6 +152,14 @@ public class CustomerBookingBean implements Serializable {
 
     // (giữ nguyên field này nếu bạn đang dùng chỗ khác, nhưng trong redirect VNPay sẽ dùng payAmount)
     private BigDecimal amount;
+
+    // ===== Voucher apply (server-side) =====
+    private String voucherCode;                 // input code (sync from JS -> hidden)
+    private BigDecimal totalBeforeDiscount;     // total before voucher (sync from JS -> hidden)
+    private BigDecimal voucherDiscount = BigDecimal.ZERO;
+    private Long appliedVoucherId;
+    private Long appliedUserVoucherId;
+    private String appliedVoucherName;
 
     // ====== INIT: load data từ param & DB ======
     @PostConstruct
@@ -642,6 +662,30 @@ public class CustomerBookingBean implements Serializable {
             }
             // ================== ✅ (HẾT CHÈN 1) ==================
 
+            // ================== ✅ VOUCHER (SERVER-SIDE APPLY) ==================
+            // NOTE: booking.xhtml cần sync voucherCode + totalBeforeDiscount vào hidden (nếu có).
+            // Nếu không sync thì bean sẽ bỏ qua voucher.
+            if (totalBeforeDiscount == null) {
+                totalBeforeDiscount = parseBigDecimalSafe(params.get("hf-total-before-discount"));
+            }
+            if (!notBlank(voucherCode)) {
+                // ưu tiên đọc param nếu JS gửi (không ảnh hưởng nếu không có)
+                String vcHidden = params.get("hf-voucher-code");
+                String vcAny = notBlank(vcHidden) ? vcHidden : params.get("voucherCode");
+                if (notBlank(vcAny)) voucherCode = vcAny;
+            }
+
+            // Nếu user có nhập code (được sync) thì apply vào total/deposit/payAmount
+            if (notBlank(voucherCode)) {
+                applyVoucherOnServer(currentUser, params);
+
+                // nếu voucher invalid => có message ERROR, chặn tạo booking để user sửa
+                if (appliedVoucherId == null) {
+                    return null;
+                }
+            }
+            // ================== ✅ END VOUCHER ==================
+
             // ===== Contact information từ form =====
             if (!notBlank(contactFullName)) {
                 String cName = params.get("contact-fullname");
@@ -780,6 +824,9 @@ public class CustomerBookingBean implements Serializable {
 
             // 5. Lưu DB
             bookingsFacade.create(booking);
+
+            // ✅ consume voucher (mark used) if applied
+            consumeAppliedVoucher(booking);
 
             // ================== ✅ (CHÈN 2) TẠO PAYMENT PENDING ==================
             Payments p = new Payments();
@@ -969,6 +1016,267 @@ public class CustomerBookingBean implements Serializable {
         }
     }
 
+    // ================== VOUCHER (SERVER-SIDE) ==================
+    private void applyVoucherOnServer(Users currentUser, Map<String, String> params) {
+        // reset (giữ cho an toàn)
+        voucherDiscount = BigDecimal.ZERO;
+        appliedVoucherId = null;
+        appliedUserVoucherId = null;
+        appliedVoucherName = null;
+
+        if (params == null) return;
+
+        // đọc code từ hidden / param (nếu JS sync)
+        String code = firstNotBlank(
+                params.get("hf-voucher-code"),
+                params.get("voucherCode"),
+                params.get("voucher-code"),
+                params.get("voucher_input"),
+                params.get("voucher-input")
+        );
+        if (!notBlank(code)) {
+            voucherCode = null;
+            totalBeforeDiscount = null;
+            return;
+        }
+
+        voucherCode = code.trim().toUpperCase();
+
+        // đọc total trước giảm (nếu có)
+        if (totalBeforeDiscount == null) {
+            totalBeforeDiscount = parseBigDecimalSafe(params.get("hf-total-before-discount"));
+        }
+        BigDecimal baseTotal = (totalBeforeDiscount != null && totalBeforeDiscount.compareTo(BigDecimal.ZERO) > 0)
+                ? totalBeforeDiscount
+                : totalAmount;
+
+        if (baseTotal == null || baseTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            // chưa có tổng tiền thì bỏ qua
+            return;
+        }
+
+        if (currentUser == null || currentUser.getUserId() == null) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Please sign in", "Login is required to use vouchers."));
+            return;
+        }
+
+        Vouchers v = findVoucherByCode(voucherCode);
+        if (v == null) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Invalid voucher", "This voucher code does not exist."));
+            return;
+        }
+
+        if (!isVoucherValidNow(v, new Date())) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Voucher unavailable", "This voucher is expired or inactive."));
+            return;
+        }
+
+        // user phải sở hữu voucher trong UserVouchers (đã redeem)
+        UserVouchers uv = findUsableUserVoucher(currentUser, v);
+        if (uv == null) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Voucher not in wallet", "You haven't redeemed this voucher yet."));
+            return;
+        }
+
+        // Min order
+        BigDecimal minOrder = safeBD(v.getMinOrderAmount());
+        if (minOrder.compareTo(BigDecimal.ZERO) > 0 && baseTotal.compareTo(minOrder) < 0) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Voucher conditions not met",
+                            "Order must be at least " + minOrder + " USD to use this voucher."));
+            return;
+        }
+
+        BigDecimal discount = calcDiscountAmount(v, baseTotal);
+        if (discount.compareTo(BigDecimal.ZERO) <= 0) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Voucher not applicable", "Discount amount is invalid."));
+            return;
+        }
+
+        // apply
+        voucherDiscount = discount;
+        appliedVoucherId = v.getVoucherId();
+        appliedUserVoucherId = uv.getUserVoucherId();
+        appliedVoucherName = v.getName();
+
+        // update totals
+        totalAmount = baseTotal.subtract(discount);
+        if (totalAmount.compareTo(BigDecimal.ZERO) < 0) totalAmount = BigDecimal.ZERO;
+
+        // Recalc deposit/remaining/pay based on paymentType
+        recalcPaymentAmounts();
+    }
+
+    private String firstNotBlank(String... arr) {
+        if (arr == null) return null;
+        for (String s : arr) {
+            if (notBlank(s)) return s;
+        }
+        return null;
+    }
+
+    private Vouchers findVoucherByCode(String code) {
+        if (!notBlank(code) || vouchersFacade == null) return null;
+        String c = code.trim().toUpperCase();
+        List<Vouchers> all = vouchersFacade.findAll();
+        if (all == null) return null;
+        for (Vouchers v : all) {
+            if (v == null || v.getCode() == null) continue;
+            if (v.getCode().trim().toUpperCase().equals(c)) return v;
+        }
+        return null;
+    }
+
+    private boolean isVoucherValidNow(Vouchers v, Date now) {
+        if (v == null) return false;
+
+        String st = v.getStatus();
+        if (st != null && !"ACTIVE".equalsIgnoreCase(st.trim())) return false;
+
+        Date start = v.getStartAt();
+        Date end = v.getEndAt();
+        if (start != null && now.before(start)) return false;
+        if (end != null && now.after(end)) return false;
+
+        return true;
+    }
+
+    private UserVouchers findUsableUserVoucher(Users user, Vouchers voucher) {
+        if (userVouchersFacade == null || user == null || voucher == null) return null;
+
+        List<UserVouchers> all = userVouchersFacade.findAll();
+        if (all == null) return null;
+
+        Long uid = user.getUserId();
+        Long vid = voucher.getVoucherId();
+
+        for (UserVouchers uv : all) {
+            if (uv == null || uv.getUserId() == null || uv.getVoucherId() == null) continue;
+            if (uv.getUserId().getUserId() == null || uv.getVoucherId().getVoucherId() == null) continue;
+
+            if (!uv.getUserId().getUserId().equals(uid)) continue;
+            if (!uv.getVoucherId().getVoucherId().equals(vid)) continue;
+
+            String st = uv.getStatus();
+            if (st != null && !"ACTIVE".equalsIgnoreCase(st.trim()) && !"NEW".equalsIgnoreCase(st.trim())) continue;
+
+            int qty = uv.getQuantity();
+            int used = uv.getUsedQuantity();
+            if (qty < 0) qty = 0;
+            if (used < 0) used = 0;
+
+            if (used < qty) return uv;
+        }
+        return null;
+    }
+
+    private BigDecimal calcDiscountAmount(Vouchers v, BigDecimal base) {
+        if (v == null || base == null) return BigDecimal.ZERO;
+
+        String type = (v.getDiscountType() == null) ? "" : v.getDiscountType().trim().toUpperCase();
+        BigDecimal val = safeBD(v.getDiscountValue());
+        BigDecimal max = safeBD(v.getMaxDiscount());
+
+        BigDecimal discount = BigDecimal.ZERO;
+
+        if ("PERCENT".equals(type)) {
+            // base * val/100
+            discount = base.multiply(val).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+        } else if ("AMOUNT".equals(type)) {
+            discount = val;
+        }
+
+        if (max.compareTo(BigDecimal.ZERO) > 0 && discount.compareTo(max) > 0) {
+            discount = max;
+        }
+
+        if (discount.compareTo(base) > 0) discount = base;
+        if (discount.compareTo(BigDecimal.ZERO) < 0) discount = BigDecimal.ZERO;
+
+        return discount;
+    }
+
+    private BigDecimal safeBD(Object val) {
+        if (val == null) return BigDecimal.ZERO;
+        if (val instanceof BigDecimal) return (BigDecimal) val;
+        if (val instanceof Number) return BigDecimal.valueOf(((Number) val).doubleValue());
+        try {
+            return new BigDecimal(String.valueOf(val));
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private void recalcPaymentAmounts() {
+        if (totalAmount == null) totalAmount = BigDecimal.ZERO;
+
+        // fallback 30%
+        BigDecimal depositPercent = new BigDecimal("30");
+        if (depositPercent.compareTo(BigDecimal.ZERO) <= 0) depositPercent = new BigDecimal("30");
+
+        if ("FULL".equalsIgnoreCase(paymentType)) {
+            depositAmount = totalAmount;
+            remainingAmount = BigDecimal.ZERO;
+            payAmount = totalAmount;
+        } else {
+            // DEPOSIT
+            depositAmount = totalAmount.multiply(depositPercent)
+                    .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+
+            if (depositAmount.compareTo(totalAmount) > 0) depositAmount = totalAmount;
+            if (depositAmount.compareTo(BigDecimal.ZERO) < 0) depositAmount = BigDecimal.ZERO;
+
+            remainingAmount = totalAmount.subtract(depositAmount);
+            if (remainingAmount.compareTo(BigDecimal.ZERO) < 0) remainingAmount = BigDecimal.ZERO;
+
+            payAmount = depositAmount;
+        }
+    }
+
+    private void consumeAppliedVoucher(Bookings booking) {
+        if (booking == null || appliedUserVoucherId == null || userVouchersFacade == null) return;
+
+        try {
+            UserVouchers uv = userVouchersFacade.find(appliedUserVoucherId);
+            if (uv == null) return;
+
+            int used = uv.getUsedQuantity();
+            int qty = uv.getQuantity();
+            if (used < 0) used = 0;
+            if (qty < 0) qty = 0;
+
+            if (used >= qty) {
+                // đã dùng hết
+                uv.setStatus("USED");
+                userVouchersFacade.edit(uv);
+                return;
+            }
+
+            uv.setUsedQuantity(used + 1);
+            uv.setUsedAt(new Date());
+            uv.setUsedBookingId(booking);
+
+            if (uv.getUsedQuantity() >= qty) {
+                uv.setStatus("USED");
+            } else {
+                if (uv.getStatus() == null || uv.getStatus().trim().isEmpty()) {
+                    uv.setStatus("ACTIVE");
+                }
+            }
+
+            userVouchersFacade.edit(uv);
+
+        } catch (Exception ex) {
+            // không cho fail booking
+            ex.printStackTrace();
+        }
+    }
+
     private EventTypes resolveEventType() {
         // 1. ƯU TIÊN id chọn từ dropdown
         if (selectedEventTypeId != null && eventTypesFacade != null) {
@@ -1018,6 +1326,55 @@ public class CustomerBookingBean implements Serializable {
             ex.printStackTrace();
             availableEventTypes = new ArrayList<>();
         }
+    }
+
+    // ===== Voucher getters/setters =====
+    public String getVoucherCode() {
+        return voucherCode;
+    }
+
+    public void setVoucherCode(String voucherCode) {
+        this.voucherCode = voucherCode;
+    }
+
+    public BigDecimal getTotalBeforeDiscount() {
+        return totalBeforeDiscount;
+    }
+
+    public void setTotalBeforeDiscount(BigDecimal totalBeforeDiscount) {
+        this.totalBeforeDiscount = totalBeforeDiscount;
+    }
+
+    public BigDecimal getVoucherDiscount() {
+        return voucherDiscount;
+    }
+
+    public void setVoucherDiscount(BigDecimal voucherDiscount) {
+        this.voucherDiscount = (voucherDiscount == null) ? BigDecimal.ZERO : voucherDiscount;
+    }
+
+    public Long getAppliedVoucherId() {
+        return appliedVoucherId;
+    }
+
+    public void setAppliedVoucherId(Long appliedVoucherId) {
+        this.appliedVoucherId = appliedVoucherId;
+    }
+
+    public Long getAppliedUserVoucherId() {
+        return appliedUserVoucherId;
+    }
+
+    public void setAppliedUserVoucherId(Long appliedUserVoucherId) {
+        this.appliedUserVoucherId = appliedUserVoucherId;
+    }
+
+    public String getAppliedVoucherName() {
+        return appliedVoucherName;
+    }
+
+    public void setAppliedVoucherName(String appliedVoucherName) {
+        this.appliedVoucherName = appliedVoucherName;
     }
 
     public Long getSelectedComboId() {

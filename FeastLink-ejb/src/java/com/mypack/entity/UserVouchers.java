@@ -10,6 +10,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
@@ -65,6 +67,15 @@ public class UserVouchers implements Serializable {
     @Column(name = "UsedAt")
     @Temporal(TemporalType.TIMESTAMP)
     private Date usedAt;
+    @JoinColumn(name = "UsedBookingId", referencedColumnName = "BookingId")
+    @ManyToOne
+    private Bookings usedBookingId;
+    @JoinColumn(name = "UserId", referencedColumnName = "UserId")
+    @ManyToOne(optional = false)
+    private Users userId;
+    @JoinColumn(name = "VoucherId", referencedColumnName = "VoucherId")
+    @ManyToOne(optional = false)
+    private Vouchers voucherId;
 
     public UserVouchers() {
     }
@@ -127,6 +138,28 @@ public class UserVouchers implements Serializable {
 
     public void setUsedAt(Date usedAt) {
         this.usedAt = usedAt;
+    }
+    public Users getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Users userId) {
+        this.userId = userId;
+    }
+
+    public Vouchers getVoucherId() {
+        return voucherId;
+    }
+
+    public void setVoucherId(Vouchers voucherId) {
+        this.voucherId = voucherId;
+    }
+    public Bookings getUsedBookingId() {
+        return usedBookingId;
+    }
+
+    public void setUsedBookingId(Bookings usedBookingId) {
+        this.usedBookingId = usedBookingId;
     }
 
     @Override
