@@ -76,8 +76,8 @@ public class CapacityAvailabilityBean implements Serializable {
 
         List<Restaurants> all = restaurantsFacade.findAll();
         for (Restaurants r : all) {
-            if (r.getEmail() != null &&
-                r.getEmail().equalsIgnoreCase(email)) {
+            if (r.getEmail() != null
+                    && r.getEmail().equalsIgnoreCase(email)) {
                 return r;
             }
         }
@@ -114,9 +114,9 @@ public class CapacityAvailabilityBean implements Serializable {
 
         if (currentSettings != null) {
             defaultMaxGuestsPerDay = Optional.ofNullable(currentSettings.getMaxGuestsPerSlot())
-                                             .orElse(150);
+                    .orElse(150);
             defaultMaxBookingsPerDay = Optional.ofNullable(currentSettings.getMaxBookingsPerDay())
-                                               .orElse(10);
+                    .orElse(10);
         } else {
             defaultMaxGuestsPerDay = 150;
             defaultMaxBookingsPerDay = 10;
@@ -127,7 +127,7 @@ public class CapacityAvailabilityBean implements Serializable {
         dayStatusMap.clear();
 
         LocalDate first = currentMonth.atDay(1);
-        LocalDate last  = currentMonth.atEndOfMonth();
+        LocalDate last = currentMonth.atEndOfMonth();
 
         List<RestaurantDayCapacity> list =
                 dayCapacityFacade.findByRestaurantAndDateRange(
@@ -152,6 +152,35 @@ public class CapacityAvailabilityBean implements Serializable {
         buildCalendar();
     }
 
+    // ===== NEW: MinDaysInAdvance =====
+    private int getMinDaysInAdvanceSafe() {
+        if (currentRestaurant == null) return 0;
+        Integer v = currentRestaurant.getMinDaysInAdvance(); // column MinDaysInAdvance
+        return (v != null && v > 0) ? v : 0;
+    }
+
+    // Theo ví dụ: hôm nay 15, min=3 -> 16,17,18 bị chặn; 19 mới được đặt
+    private boolean isTooSoonByMinAdvance(LocalDate date) {
+        if (date == null) return false;
+
+        int min = getMinDaysInAdvanceSafe();
+        if (min <= 0) return false;
+
+        LocalDate today = LocalDate.now();
+        LocalDate cutoff = today.plusDays(min); // 15+3 = 18
+
+        return date.isAfter(today) && !date.isAfter(cutoff); // (today, cutoff]
+    }
+
+    private StatusType applyMinAdvanceOverlay(LocalDate date, StatusType base) {
+        if (!isTooSoonByMinAdvance(date)) return base;
+
+        // Nếu đã blocked/full sẵn thì giữ nguyên
+        if (base == StatusType.BLOCKED || base == StatusType.FULL) return base;
+
+        return StatusType.TOO_SOON;
+    }
+
     private void buildCalendar() {
         calendarDays = new ArrayList<>();
 
@@ -162,10 +191,13 @@ public class CapacityAvailabilityBean implements Serializable {
         for (int i = 0; i < 42; i++) {
             LocalDate date = start.plusDays(i);
             boolean inMonth = date.getMonthValue() == currentMonth.getMonthValue();
-            StatusType status = dayStatusMap.getOrDefault(date, StatusType.NONE);
             boolean isSelected = (selectedDate != null && selectedDate.equals(date));
 
-            calendarDays.add(new CalendarDay(date, inMonth, status, isSelected));
+            StatusType baseStatus = dayStatusMap.getOrDefault(date, StatusType.NONE);
+            StatusType effectiveStatus = applyMinAdvanceOverlay(date, baseStatus);
+            boolean tooSoon = isTooSoonByMinAdvance(date);
+
+            calendarDays.add(new CalendarDay(date, inMonth, effectiveStatus, isSelected, tooSoon));
         }
     }
 
@@ -185,7 +217,17 @@ public class CapacityAvailabilityBean implements Serializable {
     public void selectDay(String dateIso) {
         if (dateIso == null || dateIso.isBlank()) return;
 
-        selectedDate = LocalDate.parse(dateIso); // yyyy-MM-dd
+        LocalDate d = LocalDate.parse(dateIso);
+
+        // ✅ chặn click các ngày chưa đủ MinDaysInAdvance
+        if (isTooSoonByMinAdvance(d)) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_WARN,
+                            "Ngày này chưa đủ số ngày đặt trước (MinDaysInAdvance).", null));
+            return;
+        }
+
+        selectedDate = d;
         // Khi chọn ngày -> load lại dữ liệu cho slot hiện tại
         loadSelectedDayData();
         buildCalendar();
@@ -313,7 +355,7 @@ public class CapacityAvailabilityBean implements Serializable {
             return;
         }
 
-        if (inputGuestCount == null)  inputGuestCount = 0;
+        if (inputGuestCount == null) inputGuestCount = 0;
         if (inputBookingCount == null) inputBookingCount = 0;
 
         boolean hasError = false;
@@ -389,7 +431,7 @@ public class CapacityAvailabilityBean implements Serializable {
             }
 
             LocalDate start = LocalDate.parse(blockStartDate);
-            LocalDate end   = LocalDate.parse(blockEndDate);
+            LocalDate end = LocalDate.parse(blockEndDate);
 
             while (!end.isBefore(start)) {
                 // Block cả ngày -> dùng slot ALLDAY
@@ -443,7 +485,7 @@ public class CapacityAvailabilityBean implements Serializable {
     }
 
     private StatusType computeStatusForRow(RestaurantDayCapacity d) {
-        Integer maxGuests   = d.getMaxGuests();
+        Integer maxGuests = d.getMaxGuests();
         Integer maxBookings = d.getMaxBookings();
 
         if (maxGuests != null && maxBookings != null
@@ -472,7 +514,7 @@ public class CapacityAvailabilityBean implements Serializable {
         }
 
         if ((maxGuests == null || maxGuests <= 0) &&
-            (maxBookings == null || maxBookings <= 0)) {
+                (maxBookings == null || maxBookings <= 0)) {
             return StatusType.NONE;
         }
 
@@ -514,6 +556,8 @@ public class CapacityAvailabilityBean implements Serializable {
                 return "Đã đầy (100%)";
             case BLOCKED:
                 return "Bị chặn";
+            case TOO_SOON:
+                return "Chưa đủ ngày đặt trước";
             default:
                 return "--";
         }
@@ -531,12 +575,20 @@ public class CapacityAvailabilityBean implements Serializable {
 
     private int weight(StatusType st) {
         switch (st) {
-            case NONE:       return 0;
-            case AVAILABLE:  return 1;
-            case NEAR_FULL:  return 2;
-            case FULL:       return 3;
-            case BLOCKED:    return 4;
-            default:         return 0;
+            case NONE:
+                return 0;
+            case AVAILABLE:
+                return 1;
+            case NEAR_FULL:
+                return 2;
+            case FULL:
+                return 3;
+            case TOO_SOON:
+                return 3;
+            case BLOCKED:
+                return 4;
+            default:
+                return 0;
         }
     }
 
@@ -637,7 +689,7 @@ public class CapacityAvailabilityBean implements Serializable {
     // INNER TYPES
     // ----------------------------------------------------
     public enum StatusType {
-        NONE, AVAILABLE, NEAR_FULL, FULL, BLOCKED
+        NONE, AVAILABLE, NEAR_FULL, FULL, BLOCKED, TOO_SOON
     }
 
     public static class CalendarDay implements Serializable {
@@ -645,13 +697,15 @@ public class CapacityAvailabilityBean implements Serializable {
         private final boolean inCurrentMonth;
         private final StatusType status;
         private final boolean selected;
+        private final boolean tooSoon;
 
         public CalendarDay(LocalDate date, boolean inCurrentMonth,
-                           StatusType status, boolean selected) {
+                           StatusType status, boolean selected, boolean tooSoon) {
             this.date = date;
             this.inCurrentMonth = inCurrentMonth;
             this.status = status;
             this.selected = selected;
+            this.tooSoon = tooSoon;
         }
 
         public String getDayNumber() {
@@ -672,6 +726,8 @@ public class CapacityAvailabilityBean implements Serializable {
                     return "bg-error-red";
                 case BLOCKED:
                     return "bg-gray-400";
+                case TOO_SOON:
+                    return "bg-error-red";
                 default:
                     return "";
             }
@@ -687,6 +743,10 @@ public class CapacityAvailabilityBean implements Serializable {
 
         public boolean isSelected() {
             return selected;
+        }
+
+        public boolean isTooSoon() {
+            return tooSoon;
         }
     }
 }

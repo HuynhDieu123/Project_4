@@ -98,8 +98,6 @@ public class Restaurants implements Serializable {
     private Date closeTime;
     @Column(name = "MinGuestCount")
     private Integer minGuestCount;
-    @Column(name = "MaxGuestCount")
-    private Integer maxGuestCount;
     @Column(name = "MinDaysInAdvance")
     private Integer minDaysInAdvance;
     @Column(name = "CancelFullRefundDays")
@@ -449,12 +447,4 @@ public class Restaurants implements Serializable {
     public String toString() {
         return "com.mypack.entity.Restaurants[ restaurantId=" + restaurantId + " ]";
     }
-    public Integer getMaxGuestCount() {
-    return maxGuestCount;
-}
-
-    public void setMaxGuestCount(Integer maxGuestCount) {
-        this.maxGuestCount = maxGuestCount;
-    }
-
 }
