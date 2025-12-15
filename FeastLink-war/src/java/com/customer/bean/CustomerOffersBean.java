@@ -5,11 +5,14 @@ import com.mypack.entity.PointWallets;
 import com.mypack.entity.Vouchers;
 import com.mypack.entity.Bookings;
 import com.mypack.entity.Users;
+import com.mypack.entity.UserVouchers;
 
 import com.mypack.sessionbean.PointSettingsFacadeLocal;
 import com.mypack.sessionbean.PointWalletsFacadeLocal;
 import com.mypack.sessionbean.VouchersFacadeLocal;
 import com.mypack.sessionbean.BookingsFacadeLocal;
+import com.mypack.sessionbean.UserVouchersFacadeLocal;
+import com.mypack.sessionbean.UsersFacadeLocal;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
@@ -41,6 +44,14 @@ public class CustomerOffersBean implements Serializable {
 
     @EJB
     private BookingsFacadeLocal bookingsFacade;
+
+    // ✅ NEW: lưu voucher user đã đổi
+    @EJB
+    private UserVouchersFacadeLocal userVouchersFacade;
+
+    // ✅ NEW (an toàn): lấy Users managed theo id
+    @EJB
+    private UsersFacadeLocal usersFacade;
 
     // ====== USER / LOGIN STATE ======
     private Users currentUser;
@@ -295,6 +306,71 @@ public class CustomerOffersBean implements Serializable {
         }
     }
 
+    // ✅ NEW: Lưu vào bảng UserVouchers (nếu đã có thì +quantity)
+    private void saveUserVoucherClaim(Users user, Vouchers voucher) {
+        if (user == null || user.getUserId() == null || voucher == null || voucher.getVoucherId() == null) {
+            return;
+        }
+
+        try {
+            Users managedUser = user;
+            try {
+                Users tmp = usersFacade.find(user.getUserId());
+                if (tmp != null) managedUser = tmp;
+            } catch (Exception ignore) {
+            }
+
+            UserVouchers existing = null;
+            List<UserVouchers> all = userVouchersFacade.findAll();
+            if (all != null && !all.isEmpty()) {
+                for (UserVouchers uv : all) {
+                    if (uv == null) continue;
+                    if (uv.getUserId() == null || uv.getVoucherId() == null) continue;
+                    if (uv.getUserId().getUserId() == null || uv.getVoucherId().getVoucherId() == null) continue;
+
+                    if (uv.getUserId().getUserId().equals(managedUser.getUserId())
+                            && uv.getVoucherId().getVoucherId().equals(voucher.getVoucherId())) {
+                        existing = uv;
+                        break;
+                    }
+                }
+            }
+
+            Date now = new Date();
+
+            if (existing == null) {
+                UserVouchers uv = new UserVouchers();
+                uv.setUserId(managedUser);
+                uv.setVoucherId(voucher);
+
+                uv.setQuantity(1);
+                uv.setUsedQuantity(0);
+                uv.setStatus("ACTIVE");
+                uv.setClaimedAt(now);
+
+                uv.setUsedAt(null);
+                uv.setUsedBookingId(null);
+
+                userVouchersFacade.create(uv);
+            } else {
+                int q = existing.getQuantity();
+                if (q < 0) q = 0;
+                existing.setQuantity(q + 1);
+
+                if (existing.getStatus() == null || existing.getStatus().trim().isEmpty()) {
+                    existing.setStatus("ACTIVE");
+                }
+                existing.setClaimedAt(now);
+
+                userVouchersFacade.edit(existing);
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            // không chặn luồng redeem (vì bạn đang nói phần này chỉ là lưu history)
+        }
+    }
+
     public void redeemVoucher(Vouchers voucher) {
         lastRedeemedCode = null;
         lastRedeemedName = null;
@@ -391,6 +467,9 @@ public class CustomerOffersBean implements Serializable {
 
             managed.setUpdatedAt(new Date());
             vouchersFacade.edit(managed);
+
+            // ✅ NEW: Lưu vào bảng UserVouchers
+            saveUserVoucherClaim(currentUser, managed);
 
             lastRedeemedCode = managed.getCode();
             lastRedeemedName = managed.getName();
