@@ -213,7 +213,7 @@ public class RestaurantDetailsBean implements Serializable {
             }
         } catch (Exception ignored) {
         }
-        avgRating = reviewCount > 0 ? (sumRating / reviewCount) : 4.8d;
+        avgRating = reviewCount > 0 ? (sumRating / reviewCount) : 0.0d;
 
         if (avgRating >= 4.9 && reviewCount >= 200) {
             badge = "TOP RATED";
@@ -699,5 +699,22 @@ public class RestaurantDetailsBean implements Serializable {
         public void setItems(List<MenuItems> items) {
             this.items = items;
         }
+
     }
+
+    public boolean isHasReviews() {
+        return reviewCount > 0;
+    }
+
+    public int getRatingPercent() {
+        double pct = (avgRating / 5.0d) * 100.0d;
+        if (pct < 0) {
+            pct = 0;
+        }
+        if (pct > 100) {
+            pct = 100;
+        }
+        return (int) Math.round(pct);
+    }
+
 }

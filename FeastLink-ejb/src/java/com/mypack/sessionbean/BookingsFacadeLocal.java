@@ -41,6 +41,8 @@ public interface BookingsFacadeLocal {
     int count();
     
     long countByEventType(Integer eventTypeId);
+    
+    List<Bookings> findCompletedBookingsForReview(Long restaurantId, Long customerId);
 
     
 }
