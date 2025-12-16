@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.math.RoundingMode;
 
 @Named("bookingManagementBean")
 @ViewScoped
@@ -58,6 +59,20 @@ public class BookingManagementBean implements Serializable {
 
     // lý do từ chối (optional, nhập trong prompt JS)
     private String rejectReason;
+
+    // ===== Edit booking (manager) =====
+    private Long editBookingId;
+    private Date editEventDate;
+    private Date editStartTime;
+    private Date editEndTime;
+    private Integer editGuestCount;
+    private String editLocationType;
+    private String editOutsideAddress;
+    private String editNote;
+    private String editContactFullName;
+    private String editContactEmail;
+    private String editContactPhone;
+    private boolean editSaveSuccess;
 
     @PostConstruct
     public void init() {
@@ -435,6 +450,296 @@ public class BookingManagementBean implements Serializable {
         return sum;
     }
 
+    /* ================= EDIT (MANAGER) ================= */
+    public boolean canEditBooking(Bookings b) {
+        if (b == null) {
+            return false;
+        }
+
+        // phải thuộc nhà hàng đang quản lý
+        if (!belongsToCurrentRestaurant(b)) {
+            return false;
+        }
+
+        String st = (b.getBookingStatus() != null) ? b.getBookingStatus().trim().toUpperCase() : "";
+        String pay = (b.getPaymentStatus() != null) ? b.getPaymentStatus().trim().toUpperCase() : "";
+
+        // chỉ cho sửa khi PENDING/CONFIRMED + UNPAID (an toàn nhất)
+        if (!("PENDING".equals(st) || "CONFIRMED".equals(st))) {
+            return false;
+        }
+        if (!"UNPAID".equals(pay)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Load booking vào form edit (AJAX)
+     */
+    public void prepareEdit(Bookings booking) {
+        if (booking == null || booking.getBookingId() == null) {
+            return;
+        }
+
+        try {
+            Bookings fresh = bookingsFacade.find(booking.getBookingId());
+            if (fresh == null) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Not found", "Booking not found."));
+                return;
+            }
+
+            if (!canEditBooking(fresh)) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_WARN, "Not allowed",
+                                "This booking cannot be edited at its current status."));
+                return;
+            }
+
+            this.editBookingId = fresh.getBookingId();
+            this.editEventDate = fresh.getEventDate();
+            this.editStartTime = fresh.getStartTime();
+            this.editEndTime = fresh.getEndTime();
+            this.editGuestCount = fresh.getGuestCount();
+            this.editLocationType = fresh.getLocationType();
+            this.editOutsideAddress = fresh.getOutsideAddress();
+            this.editNote = fresh.getNote();
+            this.editContactFullName = fresh.getContactFullName();
+            this.editContactEmail = fresh.getContactEmail();
+            this.editContactPhone = fresh.getContactPhone();
+            this.editSaveSuccess = false;
+
+        } catch (Exception ex) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Load failed", ex.getMessage()));
+        }
+    }
+
+    /**
+     * Save edit booking (AJAX)
+     */
+    public void saveEdit() {
+        editSaveSuccess = false;
+
+        if (editBookingId == null) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_WARN, "No booking", "No booking selected to edit."));
+            return;
+        }
+
+        try {
+            Bookings b = bookingsFacade.find(editBookingId);
+            if (b == null) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Not found", "Booking not found."));
+                return;
+            }
+
+            if (!canEditBooking(b)) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_WARN, "Not allowed",
+                                "This booking cannot be edited at its current status."));
+                return;
+            }
+
+            // ===== validate basic =====
+            if (editEventDate == null) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Event date is required."));
+                return;
+            }
+            if (editGuestCount == null || editGuestCount < 1) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Guest count must be at least 1."));
+                return;
+            }
+
+            // validate time range (optional)
+            if (editStartTime != null && editEndTime != null) {
+                if (!editEndTime.after(editStartTime)) {
+                    FacesContext.getCurrentInstance().addMessage(null,
+                            new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation",
+                                    "End time must be after start time."));
+                    return;
+                }
+            }
+
+            String lt = (editLocationType != null) ? editLocationType.trim().toUpperCase() : "";
+            if (lt.isEmpty()) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Location type is required."));
+                return;
+            }
+
+            // outside address required if OUTSIDE
+            if ("OUTSIDE".equals(lt)) {
+                String oa = (editOutsideAddress != null) ? editOutsideAddress.trim() : "";
+                if (oa.isEmpty()) {
+                    FacesContext.getCurrentInstance().addMessage(null,
+                            new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation",
+                                    "Outside address is required when location is OUTSIDE."));
+                    return;
+                }
+                b.setOutsideAddress(oa);
+            } else {
+                // in-restaurant: clear outsideAddress
+                b.setOutsideAddress(null);
+            }
+
+            // ===== apply changes =====
+            int oldGuests = b.getGuestCount();
+            BigDecimal oldTotal = b.getTotalAmount();
+            BigDecimal oldDeposit = b.getDepositAmount();
+
+// apply changes
+            b.setEventDate(editEventDate);
+            b.setStartTime(editStartTime);
+            b.setEndTime(editEndTime);
+            b.setGuestCount(editGuestCount);
+            b.setLocationType(lt);
+
+            b.setNote(trimToNull(editNote));
+            b.setContactFullName(trimToNull(editContactFullName));
+            b.setContactEmail(trimToNull(editContactEmail));
+            b.setContactPhone(trimToNull(editContactPhone));
+            recalculateAmountsAfterGuestChange(b, oldGuests, editGuestCount, oldTotal, oldDeposit);
+            try {
+                b.setUpdatedAt(new Date());
+            } catch (Exception ignore) {
+            }
+
+            bookingsFacade.edit(b);
+            loadBookings();
+            editSaveSuccess = true;
+
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_INFO, "Success", "Booking updated successfully."));
+        } catch (Exception ex) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Save failed", ex.getMessage()));
+        }
+    }
+
+    private void recalculateAmountsAfterGuestChange(Bookings b,
+            int oldGuests,
+            int newGuests,
+            BigDecimal oldTotal,
+            BigDecimal oldDeposit) {
+
+        if (b == null) {
+            return;
+        }
+        if (newGuests <= 0) {
+            return;
+        }
+
+        BigDecimal total = BigDecimal.ZERO;
+        boolean hasLines = false;
+
+        // ====== 1) Update COMBO (thường là theo bàn) ======
+        // Rule mặc định: 10 khách / 1 combo (giống data mẫu: 180 khách -> 18 combo)
+        final int GUESTS_PER_TABLE = 10;
+        int comboQty = (newGuests + GUESTS_PER_TABLE - 1) / GUESTS_PER_TABLE; // ceil
+
+        if (b.getBookingCombosCollection() != null && !b.getBookingCombosCollection().isEmpty()) {
+            for (BookingCombos bc : b.getBookingCombosCollection()) {
+                if (bc == null) {
+                    continue;
+                }
+
+                BigDecimal unit = (bc.getUnitPrice() != null) ? bc.getUnitPrice() : BigDecimal.ZERO;
+                BigDecimal lineTotal = unit.multiply(BigDecimal.valueOf(comboQty)).setScale(2, RoundingMode.HALF_UP);
+
+                bc.setQuantity(comboQty);
+                bc.setTotalPrice(lineTotal);
+
+                total = total.add(lineTotal);
+            }
+            hasLines = true;
+        }
+
+        // ====== 2) Update MENU ITEMS (thường tính theo người) ======
+        if (b.getBookingMenuItemsCollection() != null && !b.getBookingMenuItemsCollection().isEmpty()) {
+            for (BookingMenuItems mi : b.getBookingMenuItemsCollection()) {
+                if (mi == null) {
+                    continue;
+                }
+
+                BigDecimal unit = (mi.getUnitPrice() != null) ? mi.getUnitPrice() : BigDecimal.ZERO;
+
+                // mặc định: mỗi món tính theo người => quantity = số khách
+                BigDecimal lineTotal = unit.multiply(BigDecimal.valueOf(newGuests)).setScale(2, RoundingMode.HALF_UP);
+
+                mi.setQuantity(newGuests);
+                mi.setTotalPrice(lineTotal);
+
+                total = total.add(lineTotal);
+            }
+            hasLines = true;
+        }
+
+        // ====== 3) Fallback nếu booking không có combo/menu lines ======
+        if (!hasLines) {
+            if (oldTotal != null && oldGuests > 0) {
+                total = oldTotal
+                        .multiply(BigDecimal.valueOf(newGuests))
+                        .divide(BigDecimal.valueOf(oldGuests), 2, RoundingMode.HALF_UP);
+            } else {
+                total = oldTotal; // có gì giữ nguyên
+            }
+        }
+
+        // set total
+        b.setTotalAmount(total);
+
+        // ====== 4) Recalc deposit/remaining theo tỷ lệ cũ (an toàn nhất) ======
+        BigDecimal depositPercent;
+
+        if (oldDeposit != null && oldTotal != null && oldTotal.compareTo(BigDecimal.ZERO) > 0) {
+            // giữ nguyên % cọc theo booking cũ
+            depositPercent = oldDeposit.divide(oldTotal, 4, RoundingMode.HALF_UP);
+        } else {
+            // fallback % cọc mặc định (bro muốn bao nhiêu chỉnh ở đây)
+            depositPercent = new BigDecimal("0.30"); // 30%
+        }
+
+        BigDecimal deposit = total.multiply(depositPercent).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal remaining = total.subtract(deposit).setScale(2, RoundingMode.HALF_UP);
+
+        b.setDepositAmount(deposit);
+        b.setRemainingAmount(remaining);
+    }
+
+    public void clearEdit() {
+        editSaveSuccess = false;
+        editBookingId = null;
+        editEventDate = null;
+        editStartTime = null;
+        editEndTime = null;
+        editGuestCount = null;
+        editLocationType = null;
+        editOutsideAddress = null;
+        editNote = null;
+        editContactFullName = null;
+        editContactEmail = null;
+        editContactPhone = null;
+    }
+
+    public boolean isEditOutside() {
+        return editLocationType != null && "OUTSIDE".equalsIgnoreCase(editLocationType);
+    }
+
+    private String trimToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+
     /* ================= ACTIONS ================= */
     public String updateStatus(Bookings booking, String newStatus) {
         if (booking == null || newStatus == null) {
@@ -722,6 +1027,102 @@ public class BookingManagementBean implements Serializable {
 
     public void setCurrentRestaurantId(Integer currentRestaurantId) {
         this.currentRestaurantId = currentRestaurantId;
+    }
+
+    public Long getEditBookingId() {
+        return editBookingId;
+    }
+
+    public void setEditBookingId(Long editBookingId) {
+        this.editBookingId = editBookingId;
+    }
+
+    public Date getEditEventDate() {
+        return editEventDate;
+    }
+
+    public void setEditEventDate(Date editEventDate) {
+        this.editEventDate = editEventDate;
+    }
+
+    public Date getEditStartTime() {
+        return editStartTime;
+    }
+
+    public void setEditStartTime(Date editStartTime) {
+        this.editStartTime = editStartTime;
+    }
+
+    public Date getEditEndTime() {
+        return editEndTime;
+    }
+
+    public void setEditEndTime(Date editEndTime) {
+        this.editEndTime = editEndTime;
+    }
+
+    public Integer getEditGuestCount() {
+        return editGuestCount;
+    }
+
+    public void setEditGuestCount(Integer editGuestCount) {
+        this.editGuestCount = editGuestCount;
+    }
+
+    public String getEditLocationType() {
+        return editLocationType;
+    }
+
+    public void setEditLocationType(String editLocationType) {
+        this.editLocationType = editLocationType;
+    }
+
+    public String getEditOutsideAddress() {
+        return editOutsideAddress;
+    }
+
+    public void setEditOutsideAddress(String editOutsideAddress) {
+        this.editOutsideAddress = editOutsideAddress;
+    }
+
+    public String getEditNote() {
+        return editNote;
+    }
+
+    public void setEditNote(String editNote) {
+        this.editNote = editNote;
+    }
+
+    public String getEditContactFullName() {
+        return editContactFullName;
+    }
+
+    public void setEditContactFullName(String editContactFullName) {
+        this.editContactFullName = editContactFullName;
+    }
+
+    public String getEditContactEmail() {
+        return editContactEmail;
+    }
+
+    public void setEditContactEmail(String editContactEmail) {
+        this.editContactEmail = editContactEmail;
+    }
+
+    public String getEditContactPhone() {
+        return editContactPhone;
+    }
+
+    public void setEditContactPhone(String editContactPhone) {
+        this.editContactPhone = editContactPhone;
+    }
+
+    public boolean isEditSaveSuccess() {
+        return editSaveSuccess;
+    }
+
+    public void setEditSaveSuccess(boolean editSaveSuccess) {
+        this.editSaveSuccess = editSaveSuccess;
     }
 
 }

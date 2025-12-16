@@ -3,7 +3,8 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
-      xmlns:ui="jakarta.faces.facelets">
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:f="jakarta.faces.core">
 
     <h:head>
         <meta charset="UTF-8" />
@@ -21,6 +22,11 @@
     </h:head>
 
     <h:body class="bg-[#F9FAFB]">
+        <f:metadata>
+            <f:viewParam name="id" value="#{customerBookingDetailsBean.idParam}" />
+            <f:viewAction action="#{customerBookingDetailsBean.loadFromParam}" onPostback="false" />
+        </f:metadata>
+
         <ui:include src="/layout/header.xhtml" />
 
         <main class="pt-28 pb-16 min-h-screen bg-[#F9FAFB]">
