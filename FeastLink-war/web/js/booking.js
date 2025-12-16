@@ -18,6 +18,7 @@ const BookingUI = (function () {
         serviceLevel: 'premium',
         locationType: 'AT_RESTAURANT',
         tax: 0,
+        totalBeforeDiscount: 0,
         totalAmount: 0,
         depositAmount: 0,
         remainingAmount: 0,
@@ -105,7 +106,250 @@ const BookingUI = (function () {
         return n.toLocaleString('en-US');
     }
 
-    // ✅ Đồng bộ hidden fields payment cho server đọc (KHÔNG gọi updateSummary bên trong để tránh loop)
+    // =====================
+// VOUCHER (client-side)
+// =====================
+// - Nếu booking.xhtml có nhúng voucher catalog (JSON) => JS tự tính discount ngay khi "Apply".
+// - Nếu không có catalog => JS chỉ sync code/total để server (JSF/CDI) validate và áp dụng khi confirm.
+
+function ensureHiddenInput(id, name, formId) {
+    const fid = formId || 'bookingForm';
+    let form = document.getElementById(fid);
+    if (!form) {
+        // fallback: lấy form đầu tiên (tránh lỗi nếu id bị JSF prefix)
+        form = document.querySelector('form');
+    }
+    if (!form) return null;
+
+    // nếu đã có input (id chuẩn) thì dùng luôn
+    let el = document.getElementById(id);
+    if (el) return el;
+
+    // nếu JSF prependId => id dạng "bookingForm:hf-voucher-code"
+    el = form.querySelector("[id$=':" + id + "']");
+    if (el) return el;
+
+    // nếu không có, tự tạo hidden input không prefix để server đọc theo name
+    el = document.createElement('input');
+    el.type = 'hidden';
+    el.id = id;
+    el.name = name || id;
+    form.appendChild(el);
+    return el;
+}
+
+function ensureVoucherHiddenFields() {
+    ensureHiddenInput('hf-voucher-code', 'hf-voucher-code');
+    ensureHiddenInput('hf-total-before-discount', 'hf-total-before-discount');
+    ensureHiddenInput('hf-voucher-discount', 'hf-voucher-discount');
+}
+
+function normalizeCode(code) {
+    return (code || '').trim().toUpperCase();
+}
+
+function getVoucherCatalog() {
+    // 1) global list (optional)
+    if (window.__VOUCHER_CATALOG__ && Array.isArray(window.__VOUCHER_CATALOG__)) {
+        return window.__VOUCHER_CATALOG__;
+    }
+    // 2) script#voucher-catalog-json (optional)
+    const script = document.getElementById('voucher-catalog-json');
+    if (script && script.textContent) {
+        try {
+            const parsed = JSON.parse(script.textContent);
+            if (Array.isArray(parsed)) return parsed;
+        } catch (e) {
+            // ignore
+        }
+    }
+    return null;
+}
+
+function findVoucherByCode(code) {
+    const catalog = getVoucherCatalog();
+    if (!catalog) return null;
+    const c = normalizeCode(code);
+    if (!c) return null;
+
+    for (let i = 0; i < catalog.length; i++) {
+        const v = catalog[i];
+        const vc = normalizeCode(v && v.code);
+        if (vc && vc === c) return v;
+    }
+    return null;
+}
+
+function toNumber(x) {
+    const n = Number(x);
+    return isNaN(n) ? 0 : n;
+}
+
+function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
+}
+
+// Tính số tiền giảm giá theo rule của voucher
+// voucher = { discountType: 'PERCENT'|'AMOUNT', discountValue, maxDiscount, minOrderAmount }
+function calcVoucherDiscountAmount(voucher, totalBeforeDiscount) {
+    if (!voucher) return 0;
+    const base = toNumber(totalBeforeDiscount);
+    if (base <= 0) return 0;
+
+    const minOrder = toNumber(voucher.minOrderAmount);
+    if (minOrder > 0 && base < minOrder) {
+        return 0;
+    }
+
+    const type = normalizeCode(voucher.discountType);
+    const value = toNumber(voucher.discountValue);
+    const maxDiscount = toNumber(voucher.maxDiscount);
+
+    let discount = 0;
+    if (type === 'PERCENT') {
+        discount = base * (value / 100);
+    } else if (type === 'AMOUNT') {
+        discount = value;
+    }
+
+    if (maxDiscount > 0) {
+        discount = Math.min(discount, maxDiscount);
+    }
+
+    discount = clamp(discount, 0, base);
+    return Math.round(discount);
+}
+
+function syncVoucherHidden() {
+    // đảm bảo hidden tồn tại
+    ensureVoucherHiddenFields();
+
+    const codeEl = ensureHiddenInput('hf-voucher-code', 'hf-voucher-code');
+    const totalBeforeEl = ensureHiddenInput('hf-total-before-discount', 'hf-total-before-discount');
+    const discountEl = ensureHiddenInput('hf-voucher-discount', 'hf-voucher-discount');
+
+    const code = normalizeCode(state.voucherCode);
+    const totalBefore = state.totalBeforeDiscount || 0;
+    const disc = state.discount || 0;
+
+    if (codeEl) codeEl.value = code;
+    if (totalBeforeEl) totalBeforeEl.value = totalBefore;
+    if (discountEl) discountEl.value = disc;
+
+    // nếu JSF prefix id, cập nhật luôn input có id dạng "xxx:hf-voucher-code"
+    const form = document.querySelector('form');
+    if (form) {
+        const prefCode = form.querySelector("[id$=':hf-voucher-code']");
+        const prefTotal = form.querySelector("[id$=':hf-total-before-discount']");
+        const prefDisc = form.querySelector("[id$=':hf-voucher-discount']");
+        if (prefCode) prefCode.value = code;
+        if (prefTotal) prefTotal.value = totalBefore;
+        if (prefDisc) prefDisc.value = disc;
+    }
+}
+
+function setVoucherStatusUI(mode, message) {
+    const box = document.getElementById('voucher-success');
+    if (!box) return;
+
+    // reset tone classes
+    box.classList.remove(
+        'border-emerald-200','bg-emerald-50','text-emerald-700',
+        'border-amber-200','bg-amber-50','text-amber-700',
+        'border-red-200','bg-red-50','text-red-700'
+    );
+
+    if (mode === 'success') {
+        box.classList.add('border-emerald-200','bg-emerald-50','text-emerald-700');
+    } else if (mode === 'warn') {
+        box.classList.add('border-amber-200','bg-amber-50','text-amber-700');
+    } else {
+        box.classList.add('border-red-200','bg-red-50','text-red-700');
+    }
+
+    box.classList.remove('hidden');
+
+    const spans = box.querySelectorAll('span');
+    if (spans && spans.length > 0) {
+        if (spans[0]) spans[0].textContent = (mode === 'success') ? '✓' : (mode === 'warn' ? '!' : '✕');
+        if (spans[1]) spans[1].textContent = message || '';
+    } else {
+        box.textContent = message || '';
+    }
+}
+
+function hideVoucherStatusUI() {
+    const box = document.getElementById('voucher-success');
+    if (box) box.classList.add('hidden');
+}
+
+function formatMoneyUSD(n) {
+    const v = Math.round(toNumber(n));
+    return v.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' USD';
+}
+
+function parseDateSafe(val) {
+    if (!val) return null;
+    const d = (val instanceof Date) ? val : new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function validateVoucherAndCalc(voucher, totalBeforeDiscount) {
+    const base = toNumber(totalBeforeDiscount);
+    if (!voucher || base <= 0) {
+        return { ok: false, discount: 0, reason: 'NO_BASE' };
+    }
+
+    // optional date window
+    const now = new Date();
+    const start = parseDateSafe(voucher.startAt || voucher.start || voucher.start_date);
+    const end = parseDateSafe(voucher.endAt || voucher.end || voucher.end_date);
+
+    if (start && now < start) {
+        return { ok: false, discount: 0, reason: 'NOT_STARTED' };
+    }
+    if (end && now > end) {
+        return { ok: false, discount: 0, reason: 'EXPIRED' };
+    }
+
+    const minOrder = toNumber(voucher.minOrderAmount);
+    if (minOrder > 0 && base < minOrder) {
+        return { ok: false, discount: 0, reason: 'MIN_ORDER', minOrder, base };
+    }
+
+    const type = normalizeCode(voucher.discountType);
+    const value = toNumber(voucher.discountValue);
+    const maxDiscount = toNumber(voucher.maxDiscount);
+
+    if (!value || value <= 0) {
+        return { ok: false, discount: 0, reason: 'INVALID_VALUE' };
+    }
+
+    let discount = 0;
+
+    if (type === 'PERCENT') {
+        discount = base * (value / 100);
+    } else if (type === 'AMOUNT') {
+        discount = value;
+    } else {
+        return { ok: false, discount: 0, reason: 'UNKNOWN_TYPE' };
+    }
+
+    if (maxDiscount > 0) {
+        discount = Math.min(discount, maxDiscount);
+    }
+
+    discount = clamp(discount, 0, base);
+    discount = Math.round(discount);
+
+    if (discount <= 0) {
+        return { ok: false, discount: 0, reason: 'NO_DISCOUNT' };
+    }
+
+    return { ok: true, discount, reason: 'OK', type, value, maxDiscount, minOrder, base };
+}
+
+// ✅ Đồng bộ hidden fields payment cho server đọc (KHÔNG gọi updateSummary bên trong để tránh loop)
     function syncPaymentHidden() {
         const pmHidden = document.getElementById('hf-payment-method');
         const ptHidden = document.getElementById('hf-payment-type');
@@ -226,12 +470,20 @@ const BookingUI = (function () {
         const subtotal = packageSubtotal + menuSubtotal;
 
         const tax = Math.round((subtotal + state.serviceCharge) * 0.1);
-        const discount = state.discount;
-        const totalWithCharges = subtotal + state.serviceCharge + tax - discount;
-        const depositAmount = Math.round(totalWithCharges * (state.depositPercentage / 100));
-        const remainingAmount = totalWithCharges - depositAmount;
+
+const totalBeforeDiscount = subtotal + state.serviceCharge + tax;
+
+// discount là số tiền trừ trực tiếp vào tổng
+let discount = Math.round(state.discount || 0);
+if (discount < 0) discount = 0;
+if (discount > totalBeforeDiscount) discount = totalBeforeDiscount;
+
+const totalWithCharges = Math.max(totalBeforeDiscount - discount, 0);
+const depositAmount = Math.round(totalWithCharges * (state.depositPercentage / 100));
+const remainingAmount = totalWithCharges - depositAmount;
 
         state.tax = tax;
+        state.totalBeforeDiscount = totalBeforeDiscount;
         state.totalAmount = totalWithCharges;
         state.depositAmount = depositAmount;
         state.remainingAmount = remainingAmount;
@@ -248,6 +500,9 @@ const BookingUI = (function () {
         const remainingField = document.getElementById('hf-remaining-amount');
         if (remainingField)
             remainingField.value = remainingAmount;
+
+        // ✅ voucher hidden fields cho server xử lý
+        syncVoucherHidden();
 
         // DOM
         const pkgTotalEl = document.getElementById('summary-package-total');
@@ -559,6 +814,9 @@ const BookingUI = (function () {
         // ✅ đảm bảo hidden payment luôn đúng trước khi submit JSF
         syncPaymentHidden();
 
+        // ✅ đảm bảo hidden voucher luôn đúng trước khi submit JSF
+        syncVoucherHidden();
+
         // nếu mọi thứ ok: cho submit form để JSF lưu booking
         return true;
     }
@@ -589,6 +847,9 @@ const BookingUI = (function () {
 
     // ====== INIT ======
     function init() {
+        // tạo hidden voucher field nếu booking.xhtml chưa có
+        ensureVoucherHiddenFields();
+
         // init lucide
         if (window.lucide) {
             window.lucide.createIcons();

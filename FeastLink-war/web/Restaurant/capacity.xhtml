@@ -50,11 +50,10 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
             <!-- ================= LEFT: CALENDAR CARD ================= -->
-            <section
-                class="lg:col-span-2 bg-card-light border border-border-light rounded-2xl shadow-subtle overflow-hidden">
+            <section class="lg:col-span-2 bg-card-light border border-border-light rounded-2xl shadow-subtle overflow-hidden">
 
                 <!-- Header + calendar -->
-                <div class="px-6 pt-5 pb-4 
+                <div class="px-6 pt-5 pb-4
                      bg-gradient-to-r from-[#FFF7E6] via-white to-[#FFF7E6]
                      border-b border-border-light">
 
@@ -99,6 +98,11 @@
                                     <span class="w-2 h-2 rounded-full bg-gray-400"></span>
                                     Bị chặn
                                 </span>
+                                <!-- NEW: MinDaysInAdvance -->
+                                <span class="inline-flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-error-red"></span>
+                                    Chưa đủ ngày đặt trước
+                                </span>
                             </div>
                         </div>
 
@@ -124,31 +128,48 @@
                             <div class="mt-1 px-1 pb-1 grid grid-cols-7 gap-y-3 text-xs">
                                 <ui:repeat value="#{capacityAvailabilityBean.calendarDays}" var="day">
                                     <div class="flex justify-center">
-                                        <!-- CLICK NGÀY -->
-                                        <h:commandLink
-                                            action="#{capacityAvailabilityBean.selectDay(day.dateIso)}"
-                                            styleClass="
-                                            group flex flex-col items-center justify-center
-                                            w-10 h-10 rounded-xl cursor-pointer no-underline transition
-                                            #{day.inCurrentMonth
-                                              ? 'text-text-main-light bg-white border border-border-light shadow-[0_3px_8px_rgba(15,23,42,0.03)]'
-                                              : 'text-gray-400 border-transparent bg-transparent'}
-                                            #{day.selected
-                                              ? 'bg-[#0B1120] text-white border-[#0B1120] shadow-[0_8px_20px_rgba(15,23,42,0.4)] ring-2 ring-[#F97316]/70 ring-offset-2 ring-offset-white'
-                                              : 'hover:bg-[#FFF7E6] hover:border-[#FCD34D]'}">
 
-                                            <!-- Số ngày -->
-                                            <span class="text-[11px] font-medium">
-                                                #{day.dayNumber}
-                                            </span>
+                                        <!-- ✅ NGÀY BỊ CHẶN DO MinDaysInAdvance (đỏ + không click) -->
+                                        <ui:fragment rendered="#{day.tooSoon}">
+                                            <div class="
+                                                 group flex flex-col items-center justify-center
+                                                 w-10 h-10 rounded-xl cursor-not-allowed transition
+                                                 bg-[#FEF2F2] text-[#DC2626] border border-[#FCA5A5] opacity-80">
+                                                <span class="text-[11px] font-medium">
+                                                    #{day.dayNumber}
+                                                </span>
+                                                <span class="mt-1 w-1.5 h-1.5 rounded-full bg-[#DC2626] block"></span>
+                                            </div>
+                                        </ui:fragment>
 
-                                            <!-- chấm trạng thái -->
-                                            <h:panelGroup rendered="#{day.showDot}">
-                                                <span class="mt-1 w-1.5 h-1.5 rounded-full #{day.dotCss} block"></span>
-                                            </h:panelGroup>
+                                        <!-- ✅ NGÀY BÌNH THƯỜNG (click được) -->
+                                        <ui:fragment rendered="#{!day.tooSoon}">
+                                            <h:commandLink
+                                                action="#{capacityAvailabilityBean.selectDay(day.dateIso)}"
+                                                styleClass="
+                                                group flex flex-col items-center justify-center
+                                                w-10 h-10 rounded-xl cursor-pointer no-underline transition
+                                                #{day.inCurrentMonth
+                                                  ? 'text-text-main-light bg-white border border-border-light shadow-[0_3px_8px_rgba(15,23,42,0.03)]'
+                                                  : 'text-gray-400 border-transparent bg-transparent'}
+                                                #{day.selected
+                                                  ? 'bg-[#0B1120] text-white border-[#0B1120] shadow-[0_8px_20px_rgba(15,23,42,0.4)] ring-2 ring-[#F97316]/70 ring-offset-2 ring-offset-white'
+                                                  : 'hover:bg-[#FFF7E6] hover:border-[#FCD34D]'}">
 
-                                            <f:ajax render=":calendarForm :dayStatusForm"/>
-                                        </h:commandLink>
+                                                <!-- Số ngày -->
+                                                <span class="text-[11px] font-medium">
+                                                    #{day.dayNumber}
+                                                </span>
+
+                                                <!-- chấm trạng thái -->
+                                                <h:panelGroup rendered="#{day.showDot}">
+                                                    <span class="mt-1 w-1.5 h-1.5 rounded-full #{day.dotCss} block"></span>
+                                                </h:panelGroup>
+
+                                                <f:ajax render=":calendarForm :dayStatusForm"/>
+                                            </h:commandLink>
+                                        </ui:fragment>
+
                                     </div>
                                 </ui:repeat>
                             </div>
@@ -347,6 +368,5 @@
             </section>
 
         </div>
-
     </ui:define>
 </ui:composition>

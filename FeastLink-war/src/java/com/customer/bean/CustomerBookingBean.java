@@ -9,24 +9,30 @@ import com.mypack.entity.BookingCombos;
 import com.mypack.entity.BookingCombosPK;
 import com.mypack.entity.BookingMenuItems;
 import com.mypack.entity.BookingMenuItemsPK;
-import com.mypack.entity.MenuCombos;          // nếu đã có MenuCombosFacade
+import com.mypack.entity.MenuCombos;
 import com.mypack.entity.MenuItems;
+import com.mypack.entity.Vouchers;
+import com.mypack.entity.UserVouchers;
 
 import com.mypack.sessionbean.BookingCombosFacadeLocal;
 import com.mypack.sessionbean.BookingMenuItemsFacadeLocal;
 import com.mypack.sessionbean.MenuItemsFacadeLocal;
-import com.mypack.sessionbean.MenuCombosFacadeLocal;  // nếu project đã có
+import com.mypack.sessionbean.MenuCombosFacadeLocal;
 
 import com.mypack.sessionbean.BookingsFacadeLocal;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import com.mypack.sessionbean.EventTypesFacadeLocal;
 import com.mypack.sessionbean.ServiceTypesFacadeLocal;
 
+import com.mypack.sessionbean.VouchersFacadeLocal;
+import com.mypack.sessionbean.UserVouchersFacadeLocal;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
+import jakarta.faces.context.ExternalContext;
 import jakarta.inject.Named;
 
 import java.io.Serializable;
@@ -41,16 +47,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// moi them pay
+// payment
 import com.mypack.vnpay.VnPayService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.faces.context.ExternalContext;
 
 import com.mypack.entity.Payments;
 import com.mypack.sessionbean.PaymentsFacadeLocal;
 
 /**
- * Handle final booking confirmation from booking.xhtml (wizard).
+ * Customer Booking Bean (JSF/CDI) - Keep existing flow - Voucher: do NOT
+ * throw/block when not eligible (show message on client via JS only) - If
+ * restaurantId missing: redirect to Customer index instead of showing "Invalid
+ * access"
  */
 @Named("customerBookingBean")
 @RequestScoped
@@ -79,55 +87,53 @@ public class CustomerBookingBean implements Serializable {
     @EJB
     private BookingMenuItemsFacadeLocal bookingMenuItemsFacade;
 
-    // moi them
     @EJB
     private VnPayService vnPayService;
 
     @EJB
-    private MenuCombosFacadeLocal menuCombosFacade; // nếu có
+    private MenuCombosFacadeLocal menuCombosFacade;
 
     @EJB
     private PaymentsFacadeLocal paymentsFacade;
 
+    // ===== Voucher =====
+    @EJB
+    private VouchersFacadeLocal vouchersFacade;
+
+    @EJB
+    private UserVouchersFacadeLocal userVouchersFacade;
+
     private List<EventTypes> allEventTypes;
 
-    // danh sách event type cho dropdown
     private List<EventTypes> eventTypes = new ArrayList<>();
-
-    // id event type được chọn trên form
     private Integer selectedEventTypeId;
     private String selectedEventTypeName;
     private EventTypes selectedEventType;
 
-    // ====== Fields bound từ booking.xhtml (hidden inputs / form) ======
+    // ====== Fields bound from booking.xhtml ======
     private Long restaurantId;
 
-    // ===== Custom menu (selected dishes) =====
-    private String selectedMenuItemIds;        // raw: "1,2,3"
+    private String selectedMenuItemIds;
     private List<MenuItems> selectedMenuItems = new ArrayList<>();
 
-    // ===== Selected package / combo (MenuCombos) từ restaurant detail =====
     private Long selectedComboId;
 
-    private String eventDateStr;   // yyyy-MM-dd (URL / hidden field)
+    private String eventDateStr;
     private int guestCount;
-    private String locationType;   // AT_RESTAURANT / OUTSIDE
+    private String locationType;
     private String outsideAddress;
 
     private BigDecimal totalAmount;
     private BigDecimal depositAmount;
     private BigDecimal remainingAmount;
 
-    // ====== Thông tin hiển thị trên booking.xhtml ======
-    private Restaurants restaurant;        // venue đã load
+    private Restaurants restaurant;
     private String restaurantName;
     private String restaurantAddress;
 
-    // Loại tiệc & gói service lấy từ UI (hidden input)
-    private String eventTypeKey;  // label loại tiệc từ UI (vd: "Wedding", "Birthday")
-    private String serviceLevel;  // standard / premium / vip / exclusive
+    private String eventTypeKey;
+    private String serviceLevel;
 
-    // Contact information (step 2)
     private String contactFullName;
     private String contactEmail;
     private String contactPhone;
@@ -136,12 +142,20 @@ public class CustomerBookingBean implements Serializable {
 
     private String paymentMethod; // VNPAY / CASH
     private String paymentType;   // DEPOSIT / FULL
-    private BigDecimal payAmount; // số tiền sẽ thanh toán
+    private BigDecimal payAmount; // amount to pay now
 
-    // (giữ nguyên field này nếu bạn đang dùng chỗ khác, nhưng trong redirect VNPay sẽ dùng payAmount)
-    private BigDecimal amount;
+    private BigDecimal amount; // legacy
 
-    // ====== INIT: load data từ param & DB ======
+    // ===== Voucher apply (server-side) =====
+    private String voucherCode;
+    private BigDecimal totalBeforeDiscount;
+    private BigDecimal voucherDiscount = BigDecimal.ZERO;
+    private Long appliedVoucherId;
+    private Long appliedUserVoucherId;
+    private String appliedVoucherName;
+
+    private Map<Integer, String> eventTypeNameMap = new HashMap<>();
+
     @PostConstruct
     public void init() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -151,11 +165,8 @@ public class CustomerBookingBean implements Serializable {
 
         Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
 
-        // Lấy current user để prefill contact
-        Users currentUser = (Users) ctx.getExternalContext()
-                .getSessionMap()
-                .get("currentUser");
-
+        // Prefill contact
+        Users currentUser = (Users) ctx.getExternalContext().getSessionMap().get("currentUser");
         if (currentUser != null) {
             if (!notBlank(contactFullName)) {
                 contactFullName = safe(currentUser.getFullName());
@@ -168,11 +179,10 @@ public class CustomerBookingBean implements Serializable {
             }
         }
 
-        // ---- RestaurantId ----
+        // restaurantId from param/session
         if (restaurantId == null) {
             String rIdParam = params.get("restaurantId");
             if (rIdParam == null || rIdParam.isBlank()) {
-                // fallback: có thể lưu trong session
                 Object obj = ctx.getExternalContext().getSessionMap().get("selectedRestaurantId");
                 if (obj instanceof Long) {
                     restaurantId = (Long) obj;
@@ -187,39 +197,58 @@ public class CustomerBookingBean implements Serializable {
             }
         }
 
-        // ---- Load restaurant từ DB ----
         if (restaurantId != null) {
             restaurant = restaurantsFacade.find(restaurantId);
         }
 
-        // ❌ KHÔNG ĐƯỢC fallback lấy nhà hàng đầu tiên nữa
+        // ✅ FIX: Do NOT show "Invalid access" message on screen.
+        // Keep booking page quiet, and try to recover restaurantId from session across postbacks.
+        ExternalContext ec = ctx.getExternalContext();
+        Map<String, Object> session = ec.getSessionMap();
+
+        // store restaurantId when we have it (first request)
+        if (restaurantId != null) {
+            session.put("selectedRestaurantId", restaurantId);
+            session.put("bookingRestaurantId", restaurantId);
+        }
+
+        // recover from session if missing (ajax/postback)
+        if (restaurantId == null) {
+            Object sid = session.get("selectedRestaurantId");
+            Object bid = session.get("bookingRestaurantId");
+            Object pick = (sid != null) ? sid : bid;
+            if (pick instanceof Long) {
+                restaurantId = (Long) pick;
+            } else if (pick instanceof Integer) {
+                restaurantId = ((Integer) pick).longValue();
+            }
+
+            if (restaurantId != null) {
+                restaurant = restaurantsFacade.find(restaurantId);
+            }
+        }
+
+        // If still null -> just stop init silently (do not show red errors).
         if (restaurant == null) {
-            ctx.addMessage(null, new FacesMessage(
-                    FacesMessage.SEVERITY_ERROR,
-                    "Invalid access",
-                    "No restaurant was selected for this booking. Please go back and choose a venue again."
-            ));
             return;
         }
 
         restaurantName = safe(restaurant.getName());
         restaurantAddress = safe(restaurant.getAddress());
 
-        // ---- Selected combo / package (optional) ----
+        // combo/package
         String comboParam = params.get("comboId");
         if (comboParam == null || comboParam.isBlank()) {
-            // nếu bên restaurant detail dùng tên khác, ví dụ packageId thì vẫn bắt được
             comboParam = params.get("packageId");
         }
         if (comboParam != null && !comboParam.isBlank()) {
             try {
                 selectedComboId = Long.parseLong(comboParam.trim());
             } catch (NumberFormatException ignored) {
-                selectedComboId = null;
             }
         }
 
-        /* ===== Load selected menu items from query param ===== */
+        // menu items
         String menuItemsParam = params.get("menuItems");
         if (menuItemsParam != null && !menuItemsParam.trim().isEmpty()) {
             selectedMenuItemIds = menuItemsParam;
@@ -236,18 +265,13 @@ public class CustomerBookingBean implements Serializable {
                     Long id = Long.valueOf(trimmed);
                     MenuItems mi = menuItemsFacade.find(id);
                     if (mi != null) {
-                        // Optional: chỉ nhận món đúng nhà hàng này
-                        if (restaurant != null
-                                && mi.getRestaurantId() != null
-                                && !mi.getRestaurantId().getRestaurantId()
-                                        .equals(restaurant.getRestaurantId())) {
+                        if (restaurant != null && mi.getRestaurantId() != null
+                                && !mi.getRestaurantId().getRestaurantId().equals(restaurant.getRestaurantId())) {
                             continue;
                         }
-
                         selectedMenuItems.add(mi);
                     }
-                } catch (NumberFormatException ex) {
-                    // ignore invalid id
+                } catch (NumberFormatException ignored) {
                 }
             }
         } else {
@@ -255,7 +279,7 @@ public class CustomerBookingBean implements Serializable {
             selectedMenuItems = new ArrayList<>();
         }
 
-        // ---- Event date ----
+        // date
         if (eventDateStr == null || eventDateStr.isBlank()) {
             String dParam = params.get("date");
             if (dParam != null && !dParam.isBlank()) {
@@ -263,7 +287,7 @@ public class CustomerBookingBean implements Serializable {
             }
         }
 
-        // ---- Guest count ----
+        // guests
         if (guestCount <= 0) {
             String guestsParam = params.get("guests");
             if (guestsParam != null && !guestsParam.isBlank()) {
@@ -274,16 +298,16 @@ public class CustomerBookingBean implements Serializable {
             }
         }
         if (guestCount <= 0) {
-            // default demo: 20 bàn * 10 khách
             guestCount = 200;
         }
 
-        // ---- Location type ----
+        // location type default
         if (locationType == null || locationType.isBlank()) {
             locationType = "AT_RESTAURANT";
         }
 
-        eventTypes = eventTypesFacade.findAll();  // nếu bạn đặt tên khác thì giữ nguyên tên cũ
+        // eventTypes map
+        eventTypes = eventTypesFacade.findAll();
         if (eventTypes != null) {
             for (EventTypes et : eventTypes) {
                 if (et.getEventTypeId() != null) {
@@ -292,7 +316,6 @@ public class CustomerBookingBean implements Serializable {
             }
         }
 
-        // nếu muốn giá trị mặc định:
         selectedEventTypeId = null;
         selectedEventTypeName = null;
     }
@@ -305,11 +328,748 @@ public class CustomerBookingBean implements Serializable {
         }
     }
 
-    public String getSelectedEventTypeName() {
-        return selectedEventTypeName;
+    public String confirmBooking() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+
+        Users currentUser = (Users) ctx.getExternalContext().getSessionMap().get("currentUser");
+        if (currentUser == null) {
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Please sign in",
+                    "You need to log in before making a booking."
+            ));
+            return "login";
+        }
+
+        try {
+            Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
+
+            if (selectedComboId == null) {
+                String cHidden = params.get("hf-combo-id");
+                String cQuery1 = params.get("comboId");
+                String cQuery2 = params.get("packageId");
+                String rawCombo = notBlank(cHidden) ? cHidden : (notBlank(cQuery1) ? cQuery1 : cQuery2);
+                if (notBlank(rawCombo)) {
+                    try {
+                        selectedComboId = Long.valueOf(rawCombo.trim());
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+
+            if (!notBlank(selectedMenuItemIds)) {
+                String mHidden = params.get("hf-menu-items");
+                String mQuery = params.get("menuItems");
+                if (notBlank(mHidden)) {
+                    selectedMenuItemIds = mHidden;
+                } else if (notBlank(mQuery)) {
+                    selectedMenuItemIds = mQuery;
+                }
+            }
+
+            if (restaurantId == null) {
+                String rHidden = params.get("hf-restaurant-id");
+                String rQuery = params.get("restaurantId");
+                String raw = (notBlank(rHidden)) ? rHidden : rQuery;
+                if (notBlank(raw)) {
+                    try {
+                        restaurantId = Long.parseLong(raw);
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+
+            if (!notBlank(eventDateStr)) {
+                String dHidden = params.get("hf-event-date");
+                String dQuery = params.get("date");
+                if (notBlank(dHidden)) {
+                    eventDateStr = dHidden;
+                } else if (notBlank(dQuery)) {
+                    eventDateStr = dQuery;
+                }
+            }
+
+            if (guestCount <= 0) {
+                String gHidden = params.get("hf-guest-count");
+                if (notBlank(gHidden)) {
+                    try {
+                        guestCount = Integer.parseInt(gHidden);
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+            if (guestCount <= 0) {
+                guestCount = 200;
+            }
+
+            if (!notBlank(locationType)) {
+                String locHidden = params.get("hf-location-type");
+                if (notBlank(locHidden)) {
+                    locationType = locHidden;
+                } else {
+                    locationType = "AT_RESTAURANT";
+                }
+            }
+
+            if (!notBlank(outsideAddress)) {
+                String addrHidden = params.get("hf-outside-address");
+                if (notBlank(addrHidden)) {
+                    outsideAddress = addrHidden;
+                }
+            }
+
+            if (totalAmount == null) {
+                totalAmount = parseBigDecimalSafe(params.get("hf-total-amount"));
+            }
+            if (!notBlank(eventTypeKey)) {
+                eventTypeKey = params.get("hf-event-type");
+            }
+            if (!notBlank(serviceLevel)) {
+                serviceLevel = params.get("hf-service-level");
+            }
+            if (depositAmount == null) {
+                depositAmount = parseBigDecimalSafe(params.get("hf-deposit-amount"));
+            }
+            if (remainingAmount == null) {
+                remainingAmount = parseBigDecimalSafe(params.get("hf-remaining-amount"));
+            }
+
+            // payment
+            String pmHidden = params.get("hf-payment-method");
+            if (notBlank(pmHidden)) {
+                paymentMethod = pmHidden.trim();
+            }
+            String ptHidden = params.get("hf-payment-type");
+            if (notBlank(ptHidden)) {
+                paymentType = ptHidden.trim();
+            }
+            if (payAmount == null) {
+                payAmount = parseBigDecimalSafe(params.get("hf-pay-amount"));
+            }
+
+            if (!notBlank(paymentMethod)) {
+                paymentMethod = "VNPAY";
+            }
+            if (!notBlank(paymentType)) {
+                paymentType = "DEPOSIT";
+            }
+
+            if (payAmount == null) {
+                payAmount = ("FULL".equalsIgnoreCase(paymentType) && totalAmount != null)
+                        ? totalAmount
+                        : (depositAmount != null ? depositAmount : totalAmount);
+            }
+            if (payAmount == null) {
+                payAmount = BigDecimal.ZERO;
+            }
+
+            // ===== Voucher (server-side) =====
+            // ✅ FIX: Do NOT add FacesMessage/ERROR. Do NOT block booking.
+            // If voucher invalid or not eligible -> silently ignore and proceed.
+            if (totalBeforeDiscount == null) {
+                totalBeforeDiscount = parseBigDecimalSafe(params.get("hf-total-before-discount"));
+            }
+            if (!notBlank(voucherCode)) {
+                String vcHidden = params.get("hf-voucher-code");
+                if (notBlank(vcHidden)) {
+                    voucherCode = vcHidden;
+                }
+            }
+            if (notBlank(voucherCode)) {
+                applyVoucherOnServerSilent(currentUser, params);
+            }
+
+            // contact fields
+            if (!notBlank(contactFullName)) {
+                String cName = firstNotBlank(params.get("contact-fullname"), params.get("contactFullName"));
+                if (notBlank(cName)) {
+                    contactFullName = cName.trim();
+                }
+            }
+            if (!notBlank(contactEmail)) {
+                String cEmail = firstNotBlank(params.get("contact-email"), params.get("contactEmail"));
+                if (notBlank(cEmail)) {
+                    contactEmail = cEmail.trim();
+                }
+            }
+            if (!notBlank(contactPhone)) {
+                String cPhone = firstNotBlank(params.get("contact-phone"), params.get("contactPhone"));
+                if (notBlank(cPhone)) {
+                    contactPhone = cPhone.trim();
+                }
+            }
+
+            if (restaurant == null && restaurantId != null) {
+                restaurant = restaurantsFacade.find(restaurantId);
+            }
+            if (restaurant == null) {
+                // still allow but show friendly (this should not happen if flow correct)
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Please choose restaurant again."));
+                return null;
+            }
+
+            // Event date/time
+            LocalDate eventLocalDate;
+            if (notBlank(eventDateStr)) {
+                try {
+                    eventLocalDate = LocalDate.parse(eventDateStr);
+                } catch (Exception ex) {
+                    eventLocalDate = LocalDate.now().plusDays(7);
+                }
+            } else {
+                eventLocalDate = LocalDate.now().plusDays(7);
+            }
+
+            Date eventDate = java.sql.Date.valueOf(eventLocalDate);
+            ZoneId zone = ZoneId.systemDefault();
+            LocalDateTime startLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(18, 0));
+            LocalDateTime endLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(22, 0));
+            Date startTime = Date.from(startLdt.atZone(zone).toInstant());
+            Date endTime = Date.from(endLdt.atZone(zone).toInstant());
+
+            EventTypes et = resolveEventType();
+            ServiceTypes st = resolveServiceType();
+
+            String specialRequests = params.get("special-requests");
+
+            Bookings booking = new Bookings();
+            booking.setBookingCode(generateBookingCode());
+            booking.setCustomerId(currentUser);
+            booking.setRestaurantId(restaurant);
+            booking.setEventDate(eventDate);
+            booking.setGuestCount(guestCount);
+            booking.setLocationType(locationType);
+            booking.setStartTime(startTime);
+            booking.setEndTime(endTime);
+
+            if (notBlank(specialRequests)) {
+                booking.setNote(specialRequests.trim());
+            }
+            if (et != null) {
+                booking.setEventTypeId(et);
+            }
+            if (st != null) {
+                booking.setServiceTypeId(st);
+            }
+
+            booking.setOutsideAddress(notBlank(outsideAddress) ? outsideAddress : null);
+
+            if (totalAmount != null) {
+                booking.setTotalAmount(totalAmount);
+            }
+            if (depositAmount != null) {
+                booking.setDepositAmount(depositAmount);
+            }
+            if (remainingAmount != null) {
+                booking.setRemainingAmount(remainingAmount);
+            }
+
+            booking.setContactFullName(notBlank(contactFullName) ? contactFullName.trim() : null);
+            booking.setContactEmail(notBlank(contactEmail) ? contactEmail.trim() : null);
+            booking.setContactPhone(notBlank(contactPhone) ? contactPhone.trim() : null);
+
+            booking.setBookingStatus("PENDING");
+            booking.setPaymentStatus("VNPAY".equalsIgnoreCase(paymentMethod) ? "PENDING" : "UNPAID");
+            booking.setCreatedAt(new Date());
+
+            bookingsFacade.create(booking);
+
+            // consume voucher if applied
+            consumeAppliedVoucher(booking);
+
+            // payment record
+            Payments p = new Payments();
+            p.setBookingId(booking);
+            p.setPaymentMethod(paymentMethod);
+            p.setPaymentType(paymentType);
+            p.setPaymentGateway("VNPAY".equalsIgnoreCase(paymentMethod) ? "VNPAY" : "MANUAL");
+            p.setAmount(payAmount);
+            p.setStatus("PENDING");
+
+            String txnRef = "PAY" + System.currentTimeMillis();
+            p.setTransactionCode(txnRef);
+
+            paymentsFacade.create(p);
+
+            saveSelectedCombo(booking);
+            saveSelectedMenuItems(booking);
+
+            if ("VNPAY".equalsIgnoreCase(paymentMethod)) {
+                ExternalContext ec = ctx.getExternalContext();
+                HttpServletRequest req = (HttpServletRequest) ec.getRequest();
+                String orderInfo = "FeastLink booking #" + booking.getBookingId() + " - " + (paymentType == null ? "PAY" : paymentType);
+                String redirectUrl = vnPayService.buildRedirectUrl(req, txnRef, payAmount, orderInfo);
+                ec.redirect(redirectUrl);
+                ctx.responseComplete();
+                return null;
+            }
+
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, "Booking request sent", "Your booking has been created successfully."));
+            return "/Customer/index?faces-redirect=true";
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            FacesContext ctx2 = FacesContext.getCurrentInstance();
+            if (ctx2 != null) {
+                ctx2.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Could not create booking: " + ex.getMessage()));
+            }
+            return null;
+        }
     }
 
-    // ====== Getters / setters cho JSF ======
+    // ========== Voucher silent apply (NO FacesMessage, NO block) ==========
+    private void applyVoucherOnServerSilent(Users currentUser, Map<String, String> params) {
+        // reset
+        voucherDiscount = BigDecimal.ZERO;
+        appliedVoucherId = null;
+        appliedUserVoucherId = null;
+        appliedVoucherName = null;
+
+        String code = firstNotBlank(params.get("hf-voucher-code"), params.get("voucherCode"));
+        if (!notBlank(code)) {
+            voucherCode = null;
+            totalBeforeDiscount = null;
+            return;
+        }
+
+        voucherCode = code.trim().toUpperCase();
+
+        if (totalBeforeDiscount == null) {
+            totalBeforeDiscount = parseBigDecimalSafe(params.get("hf-total-before-discount"));
+        }
+
+        BigDecimal baseTotal = (totalBeforeDiscount != null && totalBeforeDiscount.compareTo(BigDecimal.ZERO) > 0)
+                ? totalBeforeDiscount
+                : totalAmount;
+
+        if (baseTotal == null || baseTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            // ignore silently
+            clearVoucherOnly();
+            return;
+        }
+
+        if (currentUser == null || currentUser.getUserId() == null) {
+            clearVoucherOnly();
+            return;
+        }
+
+        Vouchers v = findVoucherByCode(voucherCode);
+        if (v == null || !isVoucherValidNow(v, new Date())) {
+            clearVoucherOnly();
+            return;
+        }
+
+        UserVouchers uv = findUsableUserVoucher(currentUser, v);
+        if (uv == null) {
+            clearVoucherOnly();
+            return;
+        }
+
+        BigDecimal minOrder = safeBD(v.getMinOrderAmount());
+        if (minOrder.compareTo(BigDecimal.ZERO) > 0 && baseTotal.compareTo(minOrder) < 0) {
+            // not eligible -> ignore silently
+            clearVoucherOnly();
+            return;
+        }
+
+        BigDecimal discount = calcDiscountAmount(v, baseTotal);
+        if (discount.compareTo(BigDecimal.ZERO) <= 0) {
+            clearVoucherOnly();
+            return;
+        }
+
+        // apply
+        voucherDiscount = discount;
+        appliedVoucherId = v.getVoucherId();
+        appliedUserVoucherId = uv.getUserVoucherId();
+        appliedVoucherName = v.getName();
+
+        totalAmount = baseTotal.subtract(discount);
+        if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
+            totalAmount = BigDecimal.ZERO;
+        }
+
+        recalcPaymentAmounts();
+    }
+
+    private void clearVoucherOnly() {
+        appliedVoucherId = null;
+        appliedUserVoucherId = null;
+        appliedVoucherName = null;
+        voucherDiscount = BigDecimal.ZERO;
+        // IMPORTANT: clear code so it won't be consumed
+        voucherCode = null;
+    }
+
+    // ========== Save combo/package ==========
+    private void saveSelectedCombo(Bookings booking) {
+        if (selectedComboId == null || booking == null || booking.getBookingId() == null) {
+            return;
+        }
+
+        try {
+            MenuCombos combo = null;
+            BigDecimal unitPrice = BigDecimal.ZERO;
+
+            if (menuCombosFacade != null) {
+                combo = menuCombosFacade.find(selectedComboId);
+            }
+            if (combo != null && combo.getPriceTotal() != null) {
+                unitPrice = combo.getPriceTotal();
+            }
+
+            int quantity = 1;
+            BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+
+            BookingCombosPK pk = new BookingCombosPK(booking.getBookingId(), selectedComboId);
+            BookingCombos bc = new BookingCombos(pk);
+            bc.setBookings(booking);
+            if (combo != null) {
+                bc.setMenuCombos(combo);
+            }
+            bc.setUnitPrice(unitPrice);
+            bc.setQuantity(quantity);
+            bc.setTotalPrice(totalPrice);
+
+            bookingCombosFacade.create(bc);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    // ========== Save menu items ==========
+    private void saveSelectedMenuItems(Bookings booking) {
+        if (booking == null || booking.getBookingId() == null) {
+            return;
+        }
+        if (!notBlank(selectedMenuItemIds)) {
+            return;
+        }
+
+        int quantityPerDish = guestCount > 0 ? guestCount : 1;
+
+        String[] parts = selectedMenuItemIds.split(",");
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+
+            try {
+                Long itemId = Long.valueOf(trimmed);
+                MenuItems mi = menuItemsFacade.find(itemId);
+                if (mi == null) {
+                    continue;
+                }
+
+                BigDecimal unitPrice = mi.getPricePerPerson() != null ? mi.getPricePerPerson() : BigDecimal.ZERO;
+                BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantityPerDish));
+
+                BookingMenuItemsPK pk = new BookingMenuItemsPK(booking.getBookingId(), itemId);
+                BookingMenuItems bmi = new BookingMenuItems(pk);
+                bmi.setBookings(booking);
+                bmi.setMenuItems(mi);
+                bmi.setUnitPrice(unitPrice);
+                bmi.setQuantity(quantityPerDish);
+                bmi.setTotalPrice(totalPrice);
+
+                bookingMenuItemsFacade.create(bmi);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+    }
+
+    private String generateBookingCode() {
+        return "BK" + System.currentTimeMillis();
+    }
+
+    // ========== Voucher helpers ==========
+    private Vouchers findVoucherByCode(String code) {
+        if (!notBlank(code) || vouchersFacade == null) {
+            return null;
+        }
+        String c = code.trim().toUpperCase();
+        List<Vouchers> all = vouchersFacade.findAll();
+        if (all == null) {
+            return null;
+        }
+        for (Vouchers v : all) {
+            if (v == null || v.getCode() == null) {
+                continue;
+            }
+            if (v.getCode().trim().toUpperCase().equals(c)) {
+                return v;
+            }
+        }
+        return null;
+    }
+
+    private boolean isVoucherValidNow(Vouchers v, Date now) {
+        if (v == null) {
+            return false;
+        }
+        String st = v.getStatus();
+        if (st != null && !"ACTIVE".equalsIgnoreCase(st.trim())) {
+            return false;
+        }
+        Date start = v.getStartAt();
+        Date end = v.getEndAt();
+        if (start != null && now.before(start)) {
+            return false;
+        }
+        if (end != null && now.after(end)) {
+            return false;
+        }
+        return true;
+    }
+
+    private UserVouchers findUsableUserVoucher(Users user, Vouchers voucher) {
+        if (userVouchersFacade == null || user == null || voucher == null) {
+            return null;
+        }
+
+        List<UserVouchers> all = userVouchersFacade.findAll();
+        if (all == null) {
+            return null;
+        }
+
+        Long uid = user.getUserId();
+        Long vid = voucher.getVoucherId();
+
+        for (UserVouchers uv : all) {
+            if (uv == null || uv.getUserId() == null || uv.getVoucherId() == null) {
+                continue;
+            }
+            if (uv.getUserId().getUserId() == null || uv.getVoucherId().getVoucherId() == null) {
+                continue;
+            }
+
+            if (!uv.getUserId().getUserId().equals(uid)) {
+                continue;
+            }
+            if (!uv.getVoucherId().getVoucherId().equals(vid)) {
+                continue;
+            }
+
+            String st = uv.getStatus();
+            if (st != null && !"ACTIVE".equalsIgnoreCase(st.trim()) && !"NEW".equalsIgnoreCase(st.trim())) {
+                continue;
+            }
+
+            int qty = uv.getQuantity();
+            int used = uv.getUsedQuantity();
+            if (qty < 0) {
+                qty = 0;
+            }
+            if (used < 0) {
+                used = 0;
+            }
+
+            if (used < qty) {
+                return uv;
+            }
+        }
+        return null;
+    }
+
+    private BigDecimal calcDiscountAmount(Vouchers v, BigDecimal base) {
+        if (v == null || base == null) {
+            return BigDecimal.ZERO;
+        }
+
+        String type = (v.getDiscountType() == null) ? "" : v.getDiscountType().trim().toUpperCase();
+        BigDecimal val = safeBD(v.getDiscountValue());
+        BigDecimal max = safeBD(v.getMaxDiscount());
+
+        BigDecimal discount = BigDecimal.ZERO;
+        if ("PERCENT".equals(type)) {
+            discount = base.multiply(val).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+        } else if ("AMOUNT".equals(type)) {
+            discount = val;
+        }
+
+        if (max.compareTo(BigDecimal.ZERO) > 0 && discount.compareTo(max) > 0) {
+            discount = max;
+        }
+        if (discount.compareTo(base) > 0) {
+            discount = base;
+        }
+        if (discount.compareTo(BigDecimal.ZERO) < 0) {
+            discount = BigDecimal.ZERO;
+        }
+
+        return discount;
+    }
+
+    private BigDecimal safeBD(Object val) {
+        if (val == null) {
+            return BigDecimal.ZERO;
+        }
+        if (val instanceof BigDecimal) {
+            return (BigDecimal) val;
+        }
+        if (val instanceof Number) {
+            return BigDecimal.valueOf(((Number) val).doubleValue());
+        }
+        try {
+            return new BigDecimal(String.valueOf(val));
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private void recalcPaymentAmounts() {
+        if (totalAmount == null) {
+            totalAmount = BigDecimal.ZERO;
+        }
+
+        BigDecimal depositPercent = new BigDecimal("30"); // keep current default
+        if (depositPercent.compareTo(BigDecimal.ZERO) <= 0) {
+            depositPercent = new BigDecimal("30");
+        }
+
+        if ("FULL".equalsIgnoreCase(paymentType)) {
+            depositAmount = totalAmount;
+            remainingAmount = BigDecimal.ZERO;
+            payAmount = totalAmount;
+        } else {
+            depositAmount = totalAmount.multiply(depositPercent)
+                    .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+
+            if (depositAmount.compareTo(totalAmount) > 0) {
+                depositAmount = totalAmount;
+            }
+            if (depositAmount.compareTo(BigDecimal.ZERO) < 0) {
+                depositAmount = BigDecimal.ZERO;
+            }
+
+            remainingAmount = totalAmount.subtract(depositAmount);
+            if (remainingAmount.compareTo(BigDecimal.ZERO) < 0) {
+                remainingAmount = BigDecimal.ZERO;
+            }
+
+            payAmount = depositAmount;
+        }
+    }
+
+    private void consumeAppliedVoucher(Bookings booking) {
+        if (booking == null || appliedUserVoucherId == null || userVouchersFacade == null) {
+            return;
+        }
+
+        try {
+            UserVouchers uv = userVouchersFacade.find(appliedUserVoucherId);
+            if (uv == null) {
+                return;
+            }
+
+            int used = uv.getUsedQuantity();
+            int qty = uv.getQuantity();
+            if (used < 0) {
+                used = 0;
+            }
+            if (qty < 0) {
+                qty = 0;
+            }
+
+            if (used >= qty) {
+                uv.setStatus("USED");
+                userVouchersFacade.edit(uv);
+                return;
+            }
+
+            uv.setUsedQuantity(used + 1);
+            uv.setUsedAt(new Date());
+            uv.setUsedBookingId(booking);
+
+            if (uv.getUsedQuantity() >= qty) {
+                uv.setStatus("USED");
+            } else if (uv.getStatus() == null || uv.getStatus().trim().isEmpty()) {
+                uv.setStatus("ACTIVE");
+            }
+
+            userVouchersFacade.edit(uv);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    // ========== Resolve types ==========
+    private EventTypes resolveEventType() {
+        if (selectedEventTypeId != null && eventTypesFacade != null) {
+            return eventTypesFacade.find(selectedEventTypeId);
+        }
+        if (!notBlank(eventTypeKey) || eventTypesFacade == null) {
+            return null;
+        }
+
+        String key = eventTypeKey.trim().toLowerCase();
+        for (EventTypes et : eventTypesFacade.findAll()) {
+            if (et.getName() == null) {
+                continue;
+            }
+            String name = et.getName().trim().toLowerCase();
+            if (name.equals(key) || name.contains(key) || key.contains(name)) {
+                return et;
+            }
+        }
+        return null;
+    }
+
+    private ServiceTypes resolveServiceType() {
+        if (!notBlank(serviceLevel) || serviceTypesFacade == null) {
+            return null;
+        }
+
+        String key = serviceLevel.trim().toLowerCase();
+        for (ServiceTypes st : serviceTypesFacade.findAll()) {
+            if (st.getName() == null) {
+                continue;
+            }
+            String name = st.getName().trim().toLowerCase();
+            if (name.equals(key) || name.contains(key) || key.contains(name)) {
+                return st;
+            }
+        }
+        return null;
+    }
+
+    // ===== Helpers =====
+    private boolean notBlank(String s) {
+        return s != null && !s.trim().isEmpty();
+    }
+
+    private String safe(String s) {
+        return s == null ? "" : s;
+    }
+
+    private String firstNotBlank(String a, String b) {
+        if (notBlank(a)) {
+            return a;
+        }
+        if (notBlank(b)) {
+            return b;
+        }
+        return null;
+    }
+
+    private BigDecimal parseBigDecimalSafe(String raw) {
+        if (!notBlank(raw)) {
+            return null;
+        }
+        try {
+            String normalized = raw.replaceAll("[^0-9.]", "");
+            if (normalized.isEmpty()) {
+                return null;
+            }
+            return new BigDecimal(normalized);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    // ===== Getters / Setters (keep as before) =====
     public Long getRestaurantId() {
         return restaurantId;
     }
@@ -374,7 +1134,6 @@ public class CustomerBookingBean implements Serializable {
         this.remainingAmount = remainingAmount;
     }
 
-    // ====== Getters dùng cho booking.xhtml (hiển thị) ======
     public String getRestaurantName() {
         return restaurantName;
     }
@@ -403,7 +1162,6 @@ public class CustomerBookingBean implements Serializable {
         this.serviceLevel = serviceLevel;
     }
 
-    // Contact info
     public String getContactFullName() {
         return contactFullName;
     }
@@ -448,11 +1206,10 @@ public class CustomerBookingBean implements Serializable {
         this.selectedEventTypeId = selectedEventTypeId;
     }
 
-    public void setSelectedEventType(EventTypes selectedEventType) {
-        this.selectedEventType = selectedEventType;
+    public String getSelectedEventTypeName() {
+        return selectedEventTypeName;
     }
 
-    // Alias cho view cũ nếu dùng eventTypeId
     public Integer getEventTypeId() {
         return selectedEventTypeId;
     }
@@ -461,7 +1218,6 @@ public class CustomerBookingBean implements Serializable {
         this.selectedEventTypeId = eventTypeId;
     }
 
-    // Alias cho tên hiển thị nếu view dùng eventTypeName
     public String getEventTypeName() {
         return getSelectedEventTypeName();
     }
@@ -478,548 +1234,6 @@ public class CustomerBookingBean implements Serializable {
         return selectedMenuItems;
     }
 
-    private Map<Integer, String> eventTypeNameMap = new HashMap<>();
-
-    // ====== Main action: save booking ======
-    public String confirmBooking() {
-        FacesContext ctx = FacesContext.getCurrentInstance();
-
-        // 1. Require login
-        Users currentUser = (Users) ctx.getExternalContext()
-                .getSessionMap()
-                .get("currentUser");
-
-        if (currentUser == null) {
-            ctx.addMessage(null, new FacesMessage(
-                    FacesMessage.SEVERITY_ERROR,
-                    "Please sign in",
-                    "You need to log in before making a booking. After signing in, you can view your booking history, manage or cancel reservations, and track payments easily."
-            ));
-            return "login"; // hoặc "/Customer/login?faces-redirect=true"
-        }
-
-        try {
-            Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
-
-            // ===== Combo / package (selectedComboId) =====
-            if (selectedComboId == null) {
-                String cHidden = params.get("hf-combo-id");
-                String cQuery1 = params.get("comboId");
-                String cQuery2 = params.get("packageId");
-                String rawCombo = notBlank(cHidden) ? cHidden
-                        : (notBlank(cQuery1) ? cQuery1 : cQuery2);
-                if (notBlank(rawCombo)) {
-                    try {
-                        selectedComboId = Long.valueOf(rawCombo.trim());
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-            }
-
-            // ===== Custom menu ids (selectedMenuItemIds) =====
-            if (!notBlank(selectedMenuItemIds)) {
-                String mHidden = params.get("hf-menu-items");
-                String mQuery = params.get("menuItems");
-                if (notBlank(mHidden)) {
-                    selectedMenuItemIds = mHidden;
-                } else if (notBlank(mQuery)) {
-                    selectedMenuItemIds = mQuery;
-                }
-            }
-
-            // ===== Fallback đọc thêm từ request params khi field chưa bind =====
-            // restaurantId
-            if (restaurantId == null) {
-                String rHidden = params.get("hf-restaurant-id");
-                String rQuery = params.get("restaurantId");
-                String raw = (notBlank(rHidden)) ? rHidden : rQuery;
-                if (notBlank(raw)) {
-                    try {
-                        restaurantId = Long.parseLong(raw);
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-            }
-
-            // eventDateStr
-            if (!notBlank(eventDateStr)) {
-                String dHidden = params.get("hf-event-date");
-                String dQuery = params.get("date");
-                if (notBlank(dHidden)) {
-                    eventDateStr = dHidden;
-                } else if (notBlank(dQuery)) {
-                    eventDateStr = dQuery;
-                }
-            }
-
-            // guestCount
-            if (guestCount <= 0) {
-                String gHidden = params.get("hf-guest-count");
-                if (notBlank(gHidden)) {
-                    try {
-                        guestCount = Integer.parseInt(gHidden);
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-            }
-            if (guestCount <= 0) {
-                guestCount = 200;
-            }
-
-            // locationType
-            if (!notBlank(locationType)) {
-                String locHidden = params.get("hf-location-type");
-                if (notBlank(locHidden)) {
-                    locationType = locHidden;
-                } else {
-                    locationType = "AT_RESTAURANT";
-                }
-            }
-
-            // outsideAddress
-            if (!notBlank(outsideAddress)) {
-                String addrHidden = params.get("hf-outside-address");
-                if (notBlank(addrHidden)) {
-                    outsideAddress = addrHidden;
-                }
-            }
-
-            // total / deposit / remaining
-            if (totalAmount == null) {
-                String tHidden = params.get("hf-total-amount");
-                totalAmount = parseBigDecimalSafe(tHidden);
-            }
-
-            // eventTypeKey
-            if (!notBlank(eventTypeKey)) {
-                String eHidden = params.get("hf-event-type");
-                if (notBlank(eHidden)) {
-                    eventTypeKey = eHidden;
-                }
-            }
-
-            // serviceLevel
-            if (!notBlank(serviceLevel)) {
-                String sHidden = params.get("hf-service-level");
-                if (notBlank(sHidden)) {
-                    serviceLevel = sHidden;
-                }
-            }
-
-            if (depositAmount == null) {
-                String dHidden = params.get("hf-deposit-amount");
-                depositAmount = parseBigDecimalSafe(dHidden);
-            }
-            if (remainingAmount == null) {
-                String rHidden = params.get("hf-remaining-amount");
-                remainingAmount = parseBigDecimalSafe(rHidden);
-            }
-
-            // ================== ✅ (CHÈN 1) ĐỌC PAYMENT METHOD/TYPE/AMOUNT ==================
-            String pmHidden = params.get("hf-payment-method"); // VNPAY / CASH
-            if (notBlank(pmHidden)) paymentMethod = pmHidden.trim();
-
-            String ptHidden = params.get("hf-payment-type");   // DEPOSIT / FULL
-            if (notBlank(ptHidden)) paymentType = ptHidden.trim();
-
-            if (payAmount == null) {
-                String paHidden = params.get("hf-pay-amount");
-                payAmount = parseBigDecimalSafe(paHidden);
-            }
-
-            // default fallback
-            if (!notBlank(paymentMethod)) paymentMethod = "VNPAY";
-            if (!notBlank(paymentType)) paymentType = "DEPOSIT";
-
-            // ✅ đảm bảo payAmount luôn có (KHÔNG NULL)
-            if (payAmount == null) {
-                payAmount = ("FULL".equalsIgnoreCase(paymentType) && totalAmount != null)
-                        ? totalAmount
-                        : (depositAmount != null ? depositAmount : totalAmount);
-            }
-            if (payAmount == null) {
-                payAmount = BigDecimal.ZERO;
-            }
-            // ================== ✅ (HẾT CHÈN 1) ==================
-
-            // ===== Contact information từ form =====
-            if (!notBlank(contactFullName)) {
-                String cName = params.get("contact-fullname");
-                if (!notBlank(cName)) {
-                    cName = params.get("contactFullName");
-                }
-                if (notBlank(cName)) {
-                    contactFullName = cName.trim();
-                }
-            }
-
-            if (!notBlank(contactEmail)) {
-                String cEmail = params.get("contact-email");
-                if (!notBlank(cEmail)) {
-                    cEmail = params.get("contactEmail");
-                }
-                if (notBlank(cEmail)) {
-                    contactEmail = cEmail.trim();
-                }
-            }
-
-            if (!notBlank(contactPhone)) {
-                String cPhone = params.get("contact-phone");
-                if (!notBlank(cPhone)) {
-                    cPhone = params.get("contactPhone");
-                }
-                if (notBlank(cPhone)) {
-                    contactPhone = cPhone.trim();
-                }
-            }
-
-            // fallback cuối: nếu vẫn rỗng thì lấy từ profile
-            if (currentUser != null) {
-                if (!notBlank(contactFullName)) {
-                    contactFullName = safe(currentUser.getFullName());
-                }
-                if (!notBlank(contactEmail)) {
-                    contactEmail = safe(currentUser.getEmail());
-                }
-                if (!notBlank(contactPhone)) {
-                    contactPhone = safe(currentUser.getPhone());
-                }
-            }
-
-            // 2. Load restaurant (nếu chưa có)
-            if (restaurant == null && restaurantId != null) {
-                restaurant = restaurantsFacade.find(restaurantId);
-            }
-
-            // ❌ KHÔNG fallback lấy nhà hàng đầu tiên nữa
-            if (restaurant == null) {
-                ctx.addMessage(null, new FacesMessage(
-                        FacesMessage.SEVERITY_ERROR,
-                        "Cannot find restaurant",
-                        "We couldn't detect which venue you're booking. Please go back and choose the restaurant again."
-                ));
-                return null;
-            }
-
-            // 3. Event date + default time 18:00–22:00
-            LocalDate eventLocalDate;
-            if (notBlank(eventDateStr)) {
-                try {
-                    eventLocalDate = LocalDate.parse(eventDateStr);
-                } catch (Exception ex) {
-                    eventLocalDate = LocalDate.now().plusDays(7);
-                }
-            } else {
-                eventLocalDate = LocalDate.now().plusDays(7);
-            }
-
-            Date eventDate = java.sql.Date.valueOf(eventLocalDate);
-
-            ZoneId zone = ZoneId.systemDefault();
-            LocalDateTime startLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(18, 0));
-            LocalDateTime endLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(22, 0));
-            Date startTime = Date.from(startLdt.atZone(zone).toInstant());
-            Date endTime = Date.from(endLdt.atZone(zone).toInstant());
-
-            // 3.1 Resolve EventTypes & ServiceTypes từ DB
-            EventTypes selectedEventType = resolveEventType();
-            ServiceTypes selectedServiceType = resolveServiceType();
-
-            // special requests từ step 2
-            String specialRequests = params.get("special-requests");
-
-            // 4. Build entity Bookings
-            Bookings booking = new Bookings();
-            booking.setBookingCode(generateBookingCode());
-            booking.setCustomerId(currentUser);
-            booking.setRestaurantId(restaurant);
-            booking.setEventDate(eventDate);
-            booking.setGuestCount(guestCount);
-            booking.setLocationType(locationType);
-            booking.setStartTime(startTime);
-            booking.setEndTime(endTime);
-
-            // lưu special requests vào Note
-            if (notBlank(specialRequests)) {
-                booking.setNote(specialRequests.trim());
-            }
-
-            // Gán loại tiệc & gói dịch vụ nếu tìm được
-            if (selectedEventType != null) {
-                booking.setEventTypeId(selectedEventType);
-            }
-            if (selectedServiceType != null) {
-                booking.setServiceTypeId(selectedServiceType);
-            }
-
-            booking.setOutsideAddress(
-                    notBlank(outsideAddress) ? outsideAddress : null
-            );
-
-            if (totalAmount != null) {
-                booking.setTotalAmount(totalAmount);
-            }
-            if (depositAmount != null) {
-                booking.setDepositAmount(depositAmount);
-            }
-            if (remainingAmount != null) {
-                booking.setRemainingAmount(remainingAmount);
-            }
-
-            // *** GÁN CONTACT INFO VÀO BOOKING ***
-            booking.setContactFullName(notBlank(contactFullName) ? contactFullName.trim() : null);
-            booking.setContactEmail(notBlank(contactEmail) ? contactEmail.trim() : null);
-            booking.setContactPhone(notBlank(contactPhone) ? contactPhone.trim() : null);
-
-            booking.setBookingStatus("PENDING");
-
-            // ✅ sửa hợp lý: VNPAY là pending, CASH là unpaid
-            booking.setPaymentStatus("VNPAY".equalsIgnoreCase(paymentMethod) ? "PENDING" : "UNPAID");
-
-            booking.setCreatedAt(new Date());
-
-            // 5. Lưu DB
-            bookingsFacade.create(booking);
-
-            // ================== ✅ (CHÈN 2) TẠO PAYMENT PENDING ==================
-            Payments p = new Payments();
-            p.setBookingId(booking);
-            p.setPaymentMethod(paymentMethod);   // VNPAY / CASH
-            p.setPaymentType(paymentType);       // DEPOSIT / FULL
-            p.setPaymentGateway("VNPAY".equalsIgnoreCase(paymentMethod) ? "VNPAY" : "MANUAL");
-            p.setAmount(payAmount);
-            p.setStatus("PENDING");
-
-            String txnRef = "PAY" + System.currentTimeMillis();
-            p.setTransactionCode(txnRef);
-
-            paymentsFacade.create(p);
-
-            // 5.1. Lưu package/combo nếu có
-            saveSelectedCombo(booking);
-
-            // 5.2. Lưu custom menu (các món lẻ) nếu có
-            saveSelectedMenuItems(booking);
-
-            // ================== ✅ VNPAY redirect (NGAY TẠI ĐÂY) ==================
-            if ("VNPAY".equalsIgnoreCase(paymentMethod)) {
-
-                ExternalContext ec = ctx.getExternalContext();
-                HttpServletRequest req = (HttpServletRequest) ec.getRequest();
-
-                String orderInfo = "FeastLink booking #" + booking.getBookingId()
-                        + " - " + (paymentType == null ? "PAY" : paymentType);
-
-                // ✅ QUAN TRỌNG: build URL bằng payAmount (không dùng amount bị null)
-                String redirectUrl = vnPayService.buildRedirectUrl(req, txnRef, payAmount, orderInfo);
-
-                ec.redirect(redirectUrl);
-                ctx.responseComplete();
-                return null; // IMPORTANT
-            }
-            // ================== ✅ END VNPAY ==================
-
-            // 6. Message + điều hướng (chỉ chạy cho CASH / các method khác)
-            ctx.addMessage(null, new FacesMessage(
-                    FacesMessage.SEVERITY_INFO,
-                    "Booking request sent",
-                    "Your booking has been created successfully. Our team will contact you for confirmation."
-            ));
-
-            return "/Customer/index?faces-redirect=true";
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            FacesContext ctx2 = FacesContext.getCurrentInstance();
-            if (ctx2 != null) {
-                ctx2.addMessage(null, new FacesMessage(
-                        FacesMessage.SEVERITY_ERROR,
-                        "Error",
-                        "Could not create booking: " + ex.getMessage()
-                ));
-            }
-            return null;
-        }
-    }
-
-    // ========== Lưu package/combo vào BookingCombos ==========
-    private void saveSelectedCombo(Bookings booking) {
-        if (selectedComboId == null || booking == null || booking.getBookingId() == null) {
-            return;
-        }
-        if (bookingCombosFacade == null) {
-            return;
-        }
-
-        try {
-            // Lấy thông tin combo để có giá
-            MenuCombos combo = null;
-            BigDecimal unitPrice = BigDecimal.ZERO;
-
-            if (menuCombosFacade != null) {
-                combo = menuCombosFacade.find(selectedComboId);
-            }
-
-            if (combo != null && combo.getPriceTotal() != null) {
-                unitPrice = combo.getPriceTotal();
-            }
-
-            int quantity = 1; // 1 package cho cả event
-            BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
-
-            // Tạo PK (BookingId + ComboId)
-            BookingCombosPK pk = new BookingCombosPK(booking.getBookingId(), selectedComboId);
-
-            BookingCombos bc = new BookingCombos(pk);
-            bc.setBookings(booking);
-            if (combo != null) {
-                bc.setMenuCombos(combo);
-            }
-
-            bc.setUnitPrice(unitPrice);
-            bc.setQuantity(quantity);
-            bc.setTotalPrice(totalPrice);
-
-            bookingCombosFacade.create(bc);
-        } catch (Exception ex) {
-            // Không cho lỗi combo làm fail booking
-            ex.printStackTrace();
-        }
-    }
-
-    // ========== Lưu các món lẻ vào BookingMenuItems ==========
-    private void saveSelectedMenuItems(Bookings booking) {
-        if (booking == null || booking.getBookingId() == null) {
-            return;
-        }
-        if (bookingMenuItemsFacade == null || menuItemsFacade == null) {
-            return;
-        }
-        // lấy source id món: từ chuỗi selectedMenuItemIds
-        if (!notBlank(selectedMenuItemIds)) {
-            return;
-        }
-
-        int quantityPerDish = guestCount > 0 ? guestCount : 1;
-
-        String[] parts = selectedMenuItemIds.split(",");
-        for (String part : parts) {
-            String trimmed = part.trim();
-            if (trimmed.isEmpty()) {
-                continue;
-            }
-
-            try {
-                Long itemId = Long.valueOf(trimmed);
-                MenuItems mi = menuItemsFacade.find(itemId);
-                if (mi == null) {
-                    continue;
-                }
-
-                BigDecimal unitPrice = mi.getPricePerPerson() != null
-                        ? mi.getPricePerPerson()
-                        : BigDecimal.ZERO;
-
-                BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantityPerDish));
-
-                BookingMenuItemsPK pk = new BookingMenuItemsPK(
-                        booking.getBookingId(),
-                        itemId
-                );
-
-                BookingMenuItems bmi = new BookingMenuItems(pk);
-                bmi.setBookings(booking);
-                bmi.setMenuItems(mi);
-                bmi.setUnitPrice(unitPrice);
-                bmi.setQuantity(quantityPerDish);
-                bmi.setTotalPrice(totalPrice);
-
-                bookingMenuItemsFacade.create(bmi);
-            } catch (NumberFormatException ex) {
-                // bỏ qua id không hợp lệ
-            }
-        }
-    }
-
-    private String generateBookingCode() {
-        return "BK" + System.currentTimeMillis();
-    }
-
-    // ====== Helpers ======
-    private boolean notBlank(String s) {
-        return s != null && !s.trim().isEmpty();
-    }
-
-    private String safe(String s) {
-        return s == null ? "" : s;
-    }
-
-    private BigDecimal parseBigDecimalSafe(String raw) {
-        if (!notBlank(raw)) {
-            return null;
-        }
-        try {
-            String normalized = raw.replaceAll("[^0-9.]", "");
-            if (normalized.isEmpty()) {
-                return null;
-            }
-            return new BigDecimal(normalized);
-        } catch (Exception ignored) {
-            return null;
-        }
-    }
-
-    private EventTypes resolveEventType() {
-        // 1. ƯU TIÊN id chọn từ dropdown
-        if (selectedEventTypeId != null && eventTypesFacade != null) {
-            return eventTypesFacade.find(selectedEventTypeId);
-        }
-
-        // 2. Fallback cũ: dựa theo text eventTypeKey (nếu còn dùng hidden field)
-        if (!notBlank(eventTypeKey) || eventTypesFacade == null) {
-            return null;
-        }
-        String key = eventTypeKey.trim().toLowerCase();
-
-        for (EventTypes et : eventTypesFacade.findAll()) {
-            if (et.getName() == null) {
-                continue;
-            }
-            String name = et.getName().trim().toLowerCase();
-            if (name.equals(key) || name.contains(key) || key.contains(name)) {
-                return et;
-            }
-        }
-        return null;
-    }
-
-    private ServiceTypes resolveServiceType() {
-        if (!notBlank(serviceLevel) || serviceTypesFacade == null) {
-            return null;
-        }
-        String key = serviceLevel.trim().toLowerCase();
-
-        for (ServiceTypes st : serviceTypesFacade.findAll()) {
-            if (st.getName() == null) {
-                continue;
-            }
-            String name = st.getName().trim().toLowerCase();
-            if (name.equals(key) || name.contains(key) || key.contains(name)) {
-                return st;
-            }
-        }
-        return null;
-    }
-
-    private void loadEventTypes() {
-        try {
-            availableEventTypes = eventTypesFacade.findAll();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            availableEventTypes = new ArrayList<>();
-        }
-    }
-
     public Long getSelectedComboId() {
         return selectedComboId;
     }
@@ -1028,4 +1242,52 @@ public class CustomerBookingBean implements Serializable {
         this.selectedComboId = selectedComboId;
     }
 
+    // voucher getters/setters
+    public String getVoucherCode() {
+        return voucherCode;
+    }
+
+    public void setVoucherCode(String voucherCode) {
+        this.voucherCode = voucherCode;
+    }
+
+    public BigDecimal getTotalBeforeDiscount() {
+        return totalBeforeDiscount;
+    }
+
+    public void setTotalBeforeDiscount(BigDecimal totalBeforeDiscount) {
+        this.totalBeforeDiscount = totalBeforeDiscount;
+    }
+
+    public BigDecimal getVoucherDiscount() {
+        return voucherDiscount;
+    }
+
+    public void setVoucherDiscount(BigDecimal voucherDiscount) {
+        this.voucherDiscount = voucherDiscount;
+    }
+
+    public Long getAppliedVoucherId() {
+        return appliedVoucherId;
+    }
+
+    public void setAppliedVoucherId(Long appliedVoucherId) {
+        this.appliedVoucherId = appliedVoucherId;
+    }
+
+    public Long getAppliedUserVoucherId() {
+        return appliedUserVoucherId;
+    }
+
+    public void setAppliedUserVoucherId(Long appliedUserVoucherId) {
+        this.appliedUserVoucherId = appliedUserVoucherId;
+    }
+
+    public String getAppliedVoucherName() {
+        return appliedVoucherName;
+    }
+
+    public void setAppliedVoucherName(String appliedVoucherName) {
+        this.appliedVoucherName = appliedVoucherName;
+    }
 }
