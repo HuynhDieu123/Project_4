@@ -266,8 +266,8 @@ public class CustomerOffersBean implements Serializable {
         // Nếu muốn báo message khi điểm thay đổi:
         if (totalPoints != oldPoints) {
             addMessage(FacesMessage.SEVERITY_INFO,
-                    "Điểm đã được cập nhật",
-                    "Số điểm hiện tại của bạn: " + totalPoints + " pts.");
+                    "Scores have been updated.",
+                    "Your current score: " + totalPoints + " pts.");
         }
     }
 
@@ -377,8 +377,8 @@ public class CustomerOffersBean implements Serializable {
 
         if (!loggedIn || currentUser == null) {
             addMessage(FacesMessage.SEVERITY_WARN,
-                    "Vui lòng đăng nhập",
-                    "Bạn cần đăng nhập bằng tài khoản khách hàng để đổi voucher.");
+                    "Please log in",
+                    "You need to log in with your customer account to redeem the voucher.");
             return;
         }
 
@@ -394,31 +394,31 @@ public class CustomerOffersBean implements Serializable {
             Vouchers managed = vouchersFacade.find(voucher.getVoucherId());
             if (managed == null) {
                 addMessage(FacesMessage.SEVERITY_ERROR,
-                        "Không thể đổi",
-                        "Voucher không tồn tại hoặc đã bị xoá.");
+                        "Cannot be changed",
+                        "The voucher does not exist or has been deleted.");
                 return;
             }
 
             if (!Boolean.TRUE.equals(managed.getIsPointRedeemable())) {
                 addMessage(FacesMessage.SEVERITY_WARN,
-                        "Không thể đổi",
-                        "Voucher này không hỗ trợ đổi bằng điểm.");
+                        "Cannot be changed",
+                        "This voucher cannot be redeemed using points.");
                 return;
             }
 
             String status = managed.getStatus();
             if (status == null || !"ACTIVE".equalsIgnoreCase(status.trim())) {
                 addMessage(FacesMessage.SEVERITY_WARN,
-                        "Không thể đổi",
-                        "Voucher này hiện không còn hiệu lực.");
+                        "Cannot be changed",
+                        "This voucher is no longer valid.");
                 return;
             }
 
             Integer costObj = managed.getPointCost();
             if (costObj == null || costObj <= 0) {
                 addMessage(FacesMessage.SEVERITY_WARN,
-                        "Không thể đổi",
-                        "Voucher này chưa cấu hình chi phí điểm hợp lệ.");
+                        "Cannot be changed",
+                        "This voucher has not yet been configured with valid point costs.");
                 return;
             }
             long cost = costObj.longValue();
@@ -426,16 +426,16 @@ public class CustomerOffersBean implements Serializable {
             Integer totalQty = managed.getTotalQuantity();
             if (totalQty != null && totalQty <= 0) {
                 addMessage(FacesMessage.SEVERITY_WARN,
-                        "Hết lượt",
-                        "Voucher này đã được sử dụng hết số lượng cho phép.");
+                        "Turn over",
+                        "This voucher has been used up to the allowed number.");
                 return;
             }
 
             Integer perLimit = managed.getPerUserLimit();
             if (perLimit != null && perLimit <= 0) {
                 addMessage(FacesMessage.SEVERITY_WARN,
-                        "Đã đạt giới hạn",
-                        "Bạn đã đạt giới hạn đổi voucher này.");
+                        "The limit has been reached.",
+                        "You have reached the redemption limit for this voucher.");
                 return;
             }
 
@@ -443,8 +443,8 @@ public class CustomerOffersBean implements Serializable {
 
             if (current < cost) {
                 addMessage(FacesMessage.SEVERITY_ERROR,
-                        "Không đủ điểm",
-                        "Bạn cần " + cost + " điểm nhưng chỉ có " + current + " điểm.");
+                        "Not enough points",
+                        "You need " + cost + " points, but only " + current + " point.");
                 return;
             }
 
@@ -477,17 +477,17 @@ public class CustomerOffersBean implements Serializable {
             redeemedVoucherCount++;
 
             addMessage(FacesMessage.SEVERITY_INFO,
-                    "Đổi voucher thành công",
-                    "Bạn đã đổi voucher " + managed.getCode()
-                            + " với " + cost + " điểm. Điểm còn lại: " + wallet.getCurrentPoints());
+                    "Voucher redemption successful.",
+                    "You have redeemed the voucher. " + managed.getCode()
+                            + " with " + cost + " points. Remaining points: " + wallet.getCurrentPoints());
 
             loadRedeemableOffers();
 
         } catch (Exception ex) {
             ex.printStackTrace();
             addMessage(FacesMessage.SEVERITY_ERROR,
-                    "Lỗi",
-                    "Có lỗi xảy ra khi đổi voucher. Vui lòng thử lại sau.");
+                    "Error",
+                    "An error occurred while redeeming the voucher. Please try again later.");
         }
     }
 

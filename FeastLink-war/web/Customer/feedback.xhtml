@@ -446,12 +446,12 @@
 
                     <!-- HEADER -->
                     <header class="fl-feedback-header">
-                        <div class="fl-feedback-badge">FEASTLINK SYSTEM FEEDBACK</div>
+                     
                         <h1 class="fl-feedback-title">
                           SYSTEM FEEDBACK TO ADMIN FEASTLINK
                         </h1>
                         <p class="fl-feedback-subtitle">
-                            Admin FeastLink tiếp nhận góp ý, lỗi hệ thống và khiếu nại.
+                           Admin FeastLink receives feedback, system errors, and complaints.
                             
                         </p>
                     </header>
@@ -459,7 +459,7 @@
                     <!-- Nhắc login nếu chưa đăng nhập -->
                     <h:panelGroup rendered="#{customerFeedbackBean.currentUser == null}">
                         <div class="fl-login-hint">
-                            Bạn chưa đăng nhập. Hãy đăng nhập vào tài khoản FeastLink để gửi feedback và xem trạng thái xử lý.
+                          You are not logged in. Please log in to your FeastLink account to submit feedback and view the processing status.
                         </div>
                     </h:panelGroup>
 
@@ -471,37 +471,37 @@
 
                             <h2 class="fl-section-title">
                                 <span class="fl-dot"></span>
-                                Thông tin feedback gửi về Admin
+                              Feedback information sent to Admin
                             </h2>
                             <p class="fl-section-desc">
-                                Vui lòng mô tả rõ bối cảnh, màn hình bạn đang sử dụng và ảnh hưởng của vấn đề tới trải nghiệm đặt tiệc hoặc vận hành nhà hàng.
+                              Please describe the context, the screen you are using, and how the issue affects the catering experience or restaurant operations.
                             </p>
 
                             <!-- ACCOUNT -->
                             <div class="fl-field">
-                                <label class="fl-label">Tài khoản gửi feedback</label>
+                                <label class="fl-label">Feedback submission account</label>
                                 <h:inputText value="#{customerFeedbackBean.displayAccountName}"
                                              styleClass="fl-input"
                                              readonly="true" />
                                 <small class="fl-help-text">
-                                    Tự động lấy từ tài khoản đang đăng nhập.
+                                  Automatically retrieved from the currently logged-in account.
                                 </small>
                             </div>
 
                             <!-- EMAIL -->
                             <div class="fl-field">
-                                <label class="fl-label">Email liên hệ *</label>
+                                <label class="fl-label">Contact email *</label>
                                 <h:inputText value="#{customerFeedbackBean.contactEmail}"
                                              styleClass="fl-input" />
                                 <small class="fl-help-text">
-                                    Admin FeastLink sẽ dùng email này để trao đổi thêm với bạn nếu cần.
+                                    The FeastLink admin will use this email to communicate with you further if needed.
                                 </small>
                             </div>
 
                             <!-- RESTAURANT + BOOKING (2 CỘT) -->
                             <div class="fl-grid-2">
                                 <div class="fl-field">
-                                    <label class="fl-label">Nhà hàng / địa điểm liên quan</label>
+                                    <label class="fl-label">Restaurant/Related Location</label>
                                     <h:selectOneMenu value="#{customerFeedbackBean.selectedRestaurantId}"
                                                      styleClass="fl-select">
                                         <f:selectItem itemLabel="Chọn nhà hàng..." itemValue="#{null}" />
@@ -511,12 +511,12 @@
                                                        itemValue="#{r.restaurantId}" />
                                     </h:selectOneMenu>
                                     <small class="fl-help-text">
-                                        Chọn nếu feedback liên quan đến một venue cụ thể.
+                                        Select if the feedback relates to a specific venue.
                                     </small>
                                 </div>
 
                                 <div class="fl-field">
-                                    <label class="fl-label">Booking liên quan (nếu có)</label>
+                                    <label class="fl-label">Related bookings (if any)</label>
                                     <h:selectOneMenu value="#{customerFeedbackBean.selectedBookingId}"
                                                      styleClass="fl-select">
                                         <f:selectItem itemLabel="Chọn mã booking..." itemValue="#{null}" />
@@ -526,14 +526,14 @@
                                                        itemValue="#{b.bookingId}" />
                                     </h:selectOneMenu>
                                     <small class="fl-help-text">
-                                        Chỉ load những booking thuộc tài khoản của bạn.
+                                        Only load bookings that belong to your account.
                                     </small>
                                 </div>
                             </div>
 
                             <!-- TITLE -->
                             <div class="fl-field">
-                                <label class="fl-label">Tiêu đề feedback *</label>
+                                <label class="fl-label">Feedback title *</label>
                                 <h:inputText value="#{customerFeedbackBean.title}"
                                              styleClass="fl-input">
                                     <f:validateLength maximum="200" />
@@ -542,15 +542,16 @@
 
                             <!-- DESCRIPTION -->
                             <div class="fl-field">
-                                <label class="fl-label">Nội dung chi tiết *</label>
+                                <label class="fl-label">Detailed content *</label>
                                 <h:inputTextarea value="#{customerFeedbackBean.description}"
                                                  styleClass="fl-textarea"
                                                  rows="6">
                                     <f:validateLength maximum="2000" />
                                 </h:inputTextarea>
                                 <small class="fl-help-text">
-                                    Hãy mô tả: bạn đang ở màn hình nào (Homepage, Restaurant Detail, Booking, Manager Dashboard, Payment...), 
-                                    thao tác gì, hệ thống phản hồi ra sao (lỗi, chậm, hiển thị sai...), thời điểm và ảnh hưởng tới bạn / khách / nhà hàng.
+                                    Please describe: which screen you are currently on (Homepage, Restaurant Detail, Booking, Manager Dashboard, Payment...),
+
+                                    what action you are performing, how the system responds (error, slowness, incorrect display...), the time, and its impact on you/the customer/the restaurant.
                                 </small>
                             </div>
 
@@ -579,10 +580,10 @@
 
                             <h2 class="fl-section-title">
                                 <span class="fl-dot"></span>
-                                Trạng thái xử lý từ Admin
+                                Processing status from Admin
                             </h2>
                             <p class="fl-section-desc">
-                                Các trường này dùng cho hệ thống Admin để theo dõi vòng đời feedback và trao đổi lại với bạn.
+                              These fields are used by the Admin system to track the feedback lifecycle and communicate back to you.
                             </p>
 
                             <!-- STATUS BADGE -->
@@ -605,7 +606,7 @@
                                                  readonly="true" />
                                 </div>
                                 <div class="fl-field">
-                                    <label class="fl-label">Admin phụ trách</label>
+                                    <label class="fl-label">Admin in charge</label>
                                     <h:inputText value="#{customerFeedbackBean.lastAdminName}"
                                                  styleClass="fl-input fl-input-readonly"
                                                  readonly="true" />
@@ -614,7 +615,7 @@
 
                             <div class="fl-grid-2">
                                 <div class="fl-field">
-                                    <label class="fl-label">Ngày tạo</label>
+                                    <label class="fl-label">Creation date</label>
                                     <h:inputText value="#{customerFeedbackBean.lastCreatedAt}"
                                                  styleClass="fl-input fl-input-readonly"
                                                  readonly="true">
@@ -624,7 +625,7 @@
                                 </div>
 
                                 <div class="fl-field">
-                                    <label class="fl-label">Lần cập nhật gần nhất</label>
+                                    <label class="fl-label">Last updated</label>
                                     <h:inputText value="#{customerFeedbackBean.lastUpdatedAt}"
                                                  styleClass="fl-input fl-input-readonly"
                                                  readonly="true">
@@ -635,7 +636,7 @@
                             </div>
 
                             <div class="fl-field">
-                                <label class="fl-label">Ngày đóng feedback</label>
+                                <label class="fl-label">Feedback closing date</label>
                                 <h:inputText value="#{customerFeedbackBean.lastResolvedAt}"
                                              styleClass="fl-input fl-input-readonly"
                                              readonly="true">
@@ -645,7 +646,7 @@
                             </div>
 
                             <div class="fl-field">
-                                <label class="fl-label">Ghi chú xử lý của Admin</label>
+                                <label class="fl-label">Admin's processing notes</label>
                                 <h:inputTextarea value="#{customerFeedbackBean.lastResolutionNote}"
                                                  styleClass="fl-textarea fl-textarea-readonly"
                                                  rows="5"
@@ -654,12 +655,12 @@
 
                             <!-- TIPS -->
                             <div class="fl-tips">
-                                <h3 class="fl-tips-title">Tips gửi feedback hệ thống hiệu quả</h3>
+                                <h3 class="fl-tips-title">Tips for sending effective system feedback</h3>
                                 <ul class="fl-tips-list">
-                                    <li>Ghi rõ thời điểm, thiết bị (PC / Mobile) và trình duyệt nếu là lỗi hiển thị.</li>
-                                    <li>Nếu liên quan tới booking, hãy kèm mã booking và tên nhà hàng.</li>
-                                    <li>Nếu bạn là Manager: mô tả rõ module nào trên Dashboard (Menu, Booking, Pricing...).</li>
-                                    <li>Nếu bạn là Customer: mô tả từng bước tương tác trên màn hình (Tìm kiếm, Xem chi tiết, Thanh toán...).</li>
+                                    <li>Please specify the time, device (PC/Mobile), and browser if it's a display error.</li>
+                                    <li>If it relates to a booking, please include the booking code and the restaurant name.</li>
+                                    <li>If you are a Manager: clearly describe which module on the Dashboard you are referring to (Menu, Booking, Pricing, etc.).</li>
+                                    <li>If you are a Customer: describe each step of the interaction on the screen (Search, View details, Payment...).</li>
                                 </ul>
                             </div>
 
@@ -671,16 +672,16 @@
                     <section class="fl-history-card">
                         <h2 class="fl-section-title">
                             <span class="fl-dot"></span>
-                            Lịch sử feedback của bạn
+                          Your feedback history
                         </h2>
                         <p class="fl-section-desc">
-                            Các feedback gần đây mà bạn đã gửi cho Admin FeastLink và phản hồi tương ứng từ Admin.
+                       Recent feedback you have sent to the FeastLink Admin and the corresponding responses from the Admin.
                         </p>
 
                         <!-- Nếu chưa có feedback nào -->
                         <h:panelGroup rendered="#{empty customerFeedbackBean.myFeedbackHistory}">
                             <div class="fl-history-empty">
-                                Bạn chưa có feedback nào. Hãy gửi feedback đầu tiên để Admin FeastLink hỗ trợ bạn.
+                              You haven't left any feedback yet. Please submit your first feedback so that the FeastLink Admin can assist you.
                             </div>
                         </h:panelGroup>
 
@@ -731,8 +732,8 @@
                                             </h:panelGroup>
 
                                             <h:panelGroup rendered="#{fb.resolutionNote == null}">
-                                                <strong>Phản hồi từ Admin:</strong>
-                                                Đang chờ Admin xử lý...
+                                                <strong>Response from Admin:</strong>
+                                               Waiting for Admin to process...
                                             </h:panelGroup>
                                         </div>
                                     </li>

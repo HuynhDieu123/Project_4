@@ -279,7 +279,7 @@ public class CustomerFeedbackBean implements Serializable {
             if (currentUser == null) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
-                        "Bạn cần đăng nhập trước khi gửi feedback.",
+                        "You need to log in before submitting feedback.",
                         null));
                 return null;
             }
@@ -287,7 +287,7 @@ public class CustomerFeedbackBean implements Serializable {
             if (title == null || title.trim().isEmpty()) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_WARN,
-                        "Vui lòng nhập tiêu đề feedback.",
+                        "Please enter a title for your feedback.",
                         null));
                 return null;
             }
@@ -295,7 +295,7 @@ public class CustomerFeedbackBean implements Serializable {
             if (description == null || description.trim().isEmpty()) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_WARN,
-                        "Vui lòng mô tả chi tiết nội dung feedback.",
+                        "Please describe the content of your feedback in detail.",
                         null));
                 return null;
             }
@@ -337,14 +337,14 @@ public class CustomerFeedbackBean implements Serializable {
 
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
-                    "Gửi feedback thành công. Admin FeastLink sẽ sớm xem và phản hồi.",
+                    "Feedback submitted successfully. FeastLink admin will review and respond soon.",
                     null));
 
         } catch (Exception ex) {
             ex.printStackTrace();
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Có lỗi xảy ra khi gửi feedback. Vui lòng thử lại sau.",
+                    "An error occurred while submitting feedback. Please try again later.",
                     null));
         }
 
