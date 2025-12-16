@@ -39,13 +39,19 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
     private boolean loaded = false;
 
     public void load() {
-        if (loaded) return;
+        if (loaded) {
+            return;
+        }
         loaded = true;
 
-        if (restaurantId == null) return;
+        if (restaurantId == null) {
+            return;
+        }
 
         restaurant = restaurantsFacade.find(restaurantId);
-        if (restaurant == null) return;
+        if (restaurant == null) {
+            return;
+        }
 
         loadCalendarFromDb();
     }
@@ -97,8 +103,22 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
         buildCalendar();
     }
 
+    public String selectDayAndGoBooking(String dateIso) {
+        selectDay(dateIso);
+
+        if (!canProceed) {
+            return null;
+        }
+
+        return "/Customer/booking?faces-redirect=true"
+                + "&restaurantId=" + restaurantId
+                + "&eventDate=" + selectedDate;
+    }
+
     private void loadCalendarFromDb() {
-        if (restaurant == null) return;
+        if (restaurant == null) {
+            return;
+        }
 
         dayStatusMap.clear();
 
@@ -113,7 +133,9 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
 
         for (RestaurantDayCapacity d : list) {
             LocalDate date = toLocalDate(d.getEventDate());
-            if (date == null) continue;
+            if (date == null) {
+                continue;
+            }
 
             StatusType st = computeStatusForRow(d);
             StatusType existing = dayStatusMap.getOrDefault(date, StatusType.NONE);
@@ -124,7 +146,9 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
     }
 
     private LocalDate toLocalDate(Object raw) {
-        if (raw == null) return null;
+        if (raw == null) {
+            return null;
+        }
 
         if (raw instanceof java.sql.Date) {
             return ((java.sql.Date) raw).toLocalDate();
@@ -142,17 +166,23 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
 
     // ✅ default no DB row => AVAILABLE, + check PAST / TOO_SOON
     private StatusType resolveStatus(LocalDate date, boolean inMonth) {
-        if (!inMonth) return StatusType.NONE;
+        if (!inMonth) {
+            return StatusType.NONE;
+        }
 
         LocalDate today = LocalDate.now();
 
-        if (date.isBefore(today)) return StatusType.PAST;
+        if (date.isBefore(today)) {
+            return StatusType.PAST;
+        }
 
         int minDays = 0;
         if (restaurant != null && restaurant.getMinDaysInAdvance() != null) {
             minDays = restaurant.getMinDaysInAdvance();
         }
-        if (date.isBefore(today.plusDays(minDays))) return StatusType.TOO_SOON;
+        if (date.isBefore(today.plusDays(minDays))) {
+            return StatusType.TOO_SOON;
+        }
 
         return dayStatusMap.getOrDefault(date, StatusType.AVAILABLE);
     }
@@ -202,8 +232,12 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
         double bookRatio = (maxBookings > 0) ? (double) cb / maxBookings : 0d;
 
         double ratio = Math.max(guestRatio, bookRatio);
-        if (ratio >= 1.0) return StatusType.FULL;
-        if (ratio >= 0.5) return StatusType.NEAR_FULL;
+        if (ratio >= 1.0) {
+            return StatusType.FULL;
+        }
+        if (ratio >= 0.5) {
+            return StatusType.NEAR_FULL;
+        }
         return StatusType.AVAILABLE;
     }
 
@@ -212,27 +246,44 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
     }
 
     private int weight(StatusType st) {
-        if (st == null) return 0;
+        if (st == null) {
+            return 0;
+        }
         switch (st) {
-            case NONE:      return 0;
-            case AVAILABLE: return 1;
-            case NEAR_FULL: return 2;
-            case FULL:      return 3;
-            case BLOCKED:   return 4;
-            default:        return 0;
+            case NONE:
+                return 0;
+            case AVAILABLE:
+                return 1;
+            case NEAR_FULL:
+                return 2;
+            case FULL:
+                return 3;
+            case BLOCKED:
+                return 4;
+            default:
+                return 0;
         }
     }
 
     private String translateStatus(StatusType st) {
-        if (st == null) return "--";
+        if (st == null) {
+            return "--";
+        }
         switch (st) {
-            case AVAILABLE: return "Available";
-            case NEAR_FULL: return "Limited";
-            case FULL:      return "Fully booked";
-            case BLOCKED:   return "Blocked";
-            case TOO_SOON:  return "Not enough days in advance";
-            case PAST:      return "Past date";
-            default:        return "--";
+            case AVAILABLE:
+                return "Available";
+            case NEAR_FULL:
+                return "Limited";
+            case FULL:
+                return "Fully booked";
+            case BLOCKED:
+                return "Blocked";
+            case TOO_SOON:
+                return "Not enough days in advance";
+            case PAST:
+                return "Past date";
+            default:
+                return "--";
         }
     }
 
@@ -249,16 +300,28 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
     }
 
     // ===== getters/setters =====
-    public Long getRestaurantId() { return restaurantId; }
-    public void setRestaurantId(Long restaurantId) { this.restaurantId = restaurantId; }
-    public List<CalendarDay> getCalendarDays() { return calendarDays; }
-    public String getSelectedStatusLabel() { return selectedStatusLabel; }
+    public Long getRestaurantId() {
+        return restaurantId;
+    }
+
+    public void setRestaurantId(Long restaurantId) {
+        this.restaurantId = restaurantId;
+    }
+
+    public List<CalendarDay> getCalendarDays() {
+        return calendarDays;
+    }
+
+    public String getSelectedStatusLabel() {
+        return selectedStatusLabel;
+    }
 
     public enum StatusType {
         NONE, AVAILABLE, NEAR_FULL, FULL, BLOCKED, TOO_SOON, PAST
     }
 
     public static class CalendarDay implements Serializable {
+
         private final LocalDate date;
         private final boolean inCurrentMonth;
         private final StatusType status;
@@ -271,14 +334,27 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
             this.selected = selected;
         }
 
-        public String getDayNumber() { return String.valueOf(date.getDayOfMonth()); }
-        public String getDateIso() { return date.toString(); }
-        public boolean isInCurrentMonth() { return inCurrentMonth; }
-        public boolean isSelected() { return selected; }
+        public String getDayNumber() {
+            return String.valueOf(date.getDayOfMonth());
+        }
+
+        public String getDateIso() {
+            return date.toString();
+        }
+
+        public boolean isInCurrentMonth() {
+            return inCurrentMonth;
+        }
+
+        public boolean isSelected() {
+            return selected;
+        }
 
         // ✅ disable only for: out-month / past / too soon
         public boolean isDisabled() {
-            if (!inCurrentMonth) return true;
+            if (!inCurrentMonth) {
+                return true;
+            }
             return status == StatusType.PAST || status == StatusType.TOO_SOON;
         }
 
@@ -289,8 +365,10 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
 
         public String getDotCss() {
             switch (status) {
-                case NEAR_FULL: return "bg-amber-500";
-                default:        return "";
+                case NEAR_FULL:
+                    return "bg-amber-500";
+                default:
+                    return "";
             }
         }
 
@@ -334,13 +412,23 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
         }
 
         public String getTextCss() {
-            if (!inCurrentMonth) return "text-gray-400 text-sm font-medium";
+            if (!inCurrentMonth) {
+                return "text-gray-400 text-sm font-medium";
+            }
 
-            if (status == StatusType.PAST) return "text-gray-400 text-sm font-medium";
-            if (status == StatusType.TOO_SOON) return "text-rose-600 text-sm font-semibold";
-            if (status == StatusType.FULL || status == StatusType.BLOCKED) return "text-gray-600 text-sm font-semibold";
+            if (status == StatusType.PAST) {
+                return "text-gray-400 text-sm font-medium";
+            }
+            if (status == StatusType.TOO_SOON) {
+                return "text-rose-600 text-sm font-semibold";
+            }
+            if (status == StatusType.FULL || status == StatusType.BLOCKED) {
+                return "text-gray-600 text-sm font-semibold";
+            }
 
-            if (selected) return "text-gray-900 text-sm font-extrabold";
+            if (selected) {
+                return "text-gray-900 text-sm font-extrabold";
+            }
             return "text-gray-800 text-sm font-semibold";
         }
     }
