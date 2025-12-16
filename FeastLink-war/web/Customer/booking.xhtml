@@ -128,6 +128,8 @@
 
 
 
+            <h:inputHidden id="hf-start-time" value="#{customerBookingBean.startTimeStr}" />
+            <h:inputHidden id="hf-end-time"   value="#{customerBookingBean.endTimeStr}" />
 
 
             <input type="hidden" id="hf-payment-method" name="hf-payment-method" value=""/>
@@ -291,24 +293,56 @@
                                         </div>
 
                                         <!-- Date & time -->
-                                        <div
-                                            class="flex items-center justify-between pb-6 border-b border-[#E5E7EB]">
-                                            <div class="flex items-center gap-3">
-                                                <i data-lucide="calendar"
-                                                   class="w-5 h-5 text-[#D4AF37]"></i>
+                                        <div class="pb-6 border-b border-[#E5E7EB]">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center gap-3">
+                                                    <i data-lucide="calendar" class="w-5 h-5 text-[#D4AF37]"></i>
+                                                    <div>
+                                                        <p class="text-sm text-[#4B5563]">Event date &amp; time</p>
+                                                        <p class="font-medium text-[#111827]">
+                                                            <h:outputText id="eventDateText"
+                                                                          value="#{customerBookingBean.eventDateDisplay}" />
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <button type="button"
+                                                        id="btn-change-datetime"
+                                                        class="text-sm text-[#D4AF37] hover:text-[#E6C77F] underline">
+                                                    Change date &amp; time
+                                                </button>
+                                            </div>
+
+                                            <!-- time dropdowns -->
+                                            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
-                                                    <p class="text-sm text-[#4B5563]">Event date &amp; time</p>
-                                                    <p class="font-medium text-[#111827]" id="event-datetime">
-                                                        19 Nov 2025 – Dinner (18:00–22:00)
-                                                    </p>
+                                                    <label class="block text-sm font-medium text-[#111827] mb-2">Start time</label>
+                                                    <h:selectOneMenu id="startTime"
+                                                                     value="#{customerBookingBean.startTimeStr}"
+                                                                     styleClass="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-white
+                                                                     text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent">
+                                                        <f:ajax listener="#{customerBookingBean.onStartTimeChange}"
+                                                                render="endTime hf-start-time hf-end-time" />
+                                                        <f:selectItems value="#{customerBookingBean.startTimeOptions}"
+                                                                       var="t" itemValue="#{t}" itemLabel="#{t}" />
+                                                    </h:selectOneMenu>
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-sm font-medium text-[#111827] mb-2">End time</label>
+                                                    <h:selectOneMenu id="endTime"
+                                                                     value="#{customerBookingBean.endTimeStr}"
+                                                                     styleClass="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-white
+                                                                     text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent">
+                                                        <f:ajax render="hf-end-time" />
+                                                        <f:selectItems value="#{customerBookingBean.endTimeOptions}"
+                                                                       var="t" itemValue="#{t}" itemLabel="#{t}" />
+                                                    </h:selectOneMenu>
                                                 </div>
                                             </div>
-                                            <button type="button"
-                                                    id="btn-change-datetime"
-                                                    class="text-sm text-[#D4AF37] hover:text-[#E6C77F] underline">
-                                                Change date &amp; time
-                                            </button>
                                         </div>
+
+
 
                                         <!-- Event type -->
                                         <div>

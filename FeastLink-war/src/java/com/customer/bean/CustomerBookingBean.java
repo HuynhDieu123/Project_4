@@ -37,11 +37,14 @@ import jakarta.inject.Named;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -54,12 +57,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import com.mypack.entity.Payments;
 import com.mypack.sessionbean.PaymentsFacadeLocal;
 
-/**
- * Customer Booking Bean (JSF/CDI) - Keep existing flow - Voucher: do NOT
- * throw/block when not eligible (show message on client via JS only) - If
- * restaurantId missing: redirect to Customer index instead of showing "Invalid
- * access"
- */
 @Named("customerBookingBean")
 @RequestScoped
 public class CustomerBookingBean implements Serializable {
@@ -156,6 +153,17 @@ public class CustomerBookingBean implements Serializable {
 
     private Map<Integer, String> eventTypeNameMap = new HashMap<>();
 
+    // ===== Time selection =====
+    private String startTimeStr; // "HH:mm"
+    private String endTimeStr;   // "HH:mm"
+    private List<String> startTimeOptions = new ArrayList<>();
+    private List<String> endTimeOptions = new ArrayList<>();
+
+    private static final int SLOT_MINUTES = 30;
+    private static final int MIN_DURATION_MINUTES = 60;
+    private static final DateTimeFormatter HHMM = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter DATE_DISPLAY = DateTimeFormatter.ofPattern("dd MMM yyyy");
+
     @PostConstruct
     public void init() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -201,18 +209,15 @@ public class CustomerBookingBean implements Serializable {
             restaurant = restaurantsFacade.find(restaurantId);
         }
 
-        // ✅ FIX: Do NOT show "Invalid access" message on screen.
-        // Keep booking page quiet, and try to recover restaurantId from session across postbacks.
+        // keep booking page quiet, and try to recover restaurantId from session across postbacks.
         ExternalContext ec = ctx.getExternalContext();
         Map<String, Object> session = ec.getSessionMap();
 
-        // store restaurantId when we have it (first request)
         if (restaurantId != null) {
             session.put("selectedRestaurantId", restaurantId);
             session.put("bookingRestaurantId", restaurantId);
         }
 
-        // recover from session if missing (ajax/postback)
         if (restaurantId == null) {
             Object sid = session.get("selectedRestaurantId");
             Object bid = session.get("bookingRestaurantId");
@@ -228,7 +233,6 @@ public class CustomerBookingBean implements Serializable {
             }
         }
 
-        // If still null -> just stop init silently (do not show red errors).
         if (restaurant == null) {
             return;
         }
@@ -279,9 +283,9 @@ public class CustomerBookingBean implements Serializable {
             selectedMenuItems = new ArrayList<>();
         }
 
-        // date
+        // date (FIX: eventDate first)
         if (eventDateStr == null || eventDateStr.isBlank()) {
-            String dParam = params.get("date");
+            String dParam = firstNotBlank(params.get("eventDate"), params.get("date"));
             if (dParam != null && !dParam.isBlank()) {
                 eventDateStr = dParam;
             }
@@ -318,6 +322,9 @@ public class CustomerBookingBean implements Serializable {
 
         selectedEventTypeId = null;
         selectedEventTypeName = null;
+
+        // ===== build time slots based on restaurant open/close =====
+        initTimeSlotsIfNeeded();
     }
 
     public void onEventTypeChange() {
@@ -326,6 +333,123 @@ public class CustomerBookingBean implements Serializable {
         } else {
             selectedEventTypeName = eventTypeNameMap.get(selectedEventTypeId);
         }
+    }
+
+    // =========================
+    // TIME SLOT LOGIC (NEW)
+    // =========================
+    private void initTimeSlotsIfNeeded() {
+        if (restaurant == null) {
+            return;
+        }
+
+        LocalTime open = extractLocalTime(restaurant.getOpenTime(), LocalTime.of(8, 0));
+        LocalTime close = extractLocalTime(restaurant.getCloseTime(), LocalTime.of(22, 0));
+
+        if (!close.isAfter(open)) {
+            open = LocalTime.of(8, 0);
+            close = LocalTime.of(22, 0);
+        }
+
+        LocalTime latestStart = close.minusMinutes(MIN_DURATION_MINUTES);
+        if (latestStart.isBefore(open)) {
+            startTimeOptions = new ArrayList<>();
+            endTimeOptions = new ArrayList<>();
+            startTimeStr = null;
+            endTimeStr = null;
+            return;
+        }
+
+        startTimeOptions = buildSlots(open, latestStart, SLOT_MINUTES);
+
+        if (!notBlank(startTimeStr) || !startTimeOptions.contains(startTimeStr)) {
+            startTimeStr = startTimeOptions.isEmpty() ? null : startTimeOptions.get(0);
+        }
+
+        rebuildEndTimes(open, close);
+    }
+
+    public void onStartTimeChange() {
+        if (restaurant == null) {
+            return;
+        }
+
+        LocalTime open = extractLocalTime(restaurant.getOpenTime(), LocalTime.of(8, 0));
+        LocalTime close = extractLocalTime(restaurant.getCloseTime(), LocalTime.of(22, 0));
+        if (!close.isAfter(open)) {
+            open = LocalTime.of(8, 0);
+            close = LocalTime.of(22, 0);
+        }
+
+        rebuildEndTimes(open, close);
+    }
+
+    private void rebuildEndTimes(LocalTime open, LocalTime close) {
+        if (!notBlank(startTimeStr)) {
+            return;
+        }
+
+        LocalTime start = parseHHmm(startTimeStr);
+        if (start == null) {
+            return;
+        }
+
+        LocalTime minEnd = start.plusMinutes(MIN_DURATION_MINUTES);
+        if (minEnd.isBefore(open)) {
+            minEnd = open;
+        }
+
+        if (minEnd.isAfter(close)) {
+            endTimeOptions = new ArrayList<>();
+            endTimeStr = null;
+            return;
+        }
+
+        endTimeOptions = buildSlots(minEnd, close, SLOT_MINUTES);
+
+        if (!notBlank(endTimeStr) || !endTimeOptions.contains(endTimeStr)) {
+            endTimeStr = endTimeOptions.isEmpty() ? null : endTimeOptions.get(0);
+        }
+    }
+
+    private List<String> buildSlots(LocalTime from, LocalTime to, int stepMinutes) {
+        List<String> out = new ArrayList<>();
+        LocalTime t = from;
+        while (!t.isAfter(to)) {
+            out.add(t.format(HHMM));
+            t = t.plusMinutes(stepMinutes);
+        }
+        return out;
+    }
+
+    private LocalTime parseHHmm(String s) {
+        try {
+            return LocalTime.parse(s.trim(), HHMM);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private LocalTime extractLocalTime(Object timeObj, LocalTime fallback) {
+        if (timeObj == null) {
+            return fallback;
+        }
+
+        if (timeObj instanceof Date) {
+            Calendar cal = Calendar.getInstance();
+            cal.setTime((Date) timeObj);
+            return LocalTime.of(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE));
+        }
+
+        if (timeObj instanceof java.sql.Time) {
+            return ((java.sql.Time) timeObj).toLocalTime();
+        }
+
+        if (timeObj instanceof LocalTime) {
+            return (LocalTime) timeObj;
+        }
+
+        return fallback;
     }
 
     public String confirmBooking() {
@@ -379,13 +503,28 @@ public class CustomerBookingBean implements Serializable {
                 }
             }
 
+            // FIX: read eventDate first (then date)
             if (!notBlank(eventDateStr)) {
                 String dHidden = params.get("hf-event-date");
-                String dQuery = params.get("date");
+                String dQuery = firstNotBlank(params.get("eventDate"), params.get("date"));
                 if (notBlank(dHidden)) {
                     eventDateStr = dHidden;
                 } else if (notBlank(dQuery)) {
                     eventDateStr = dQuery;
+                }
+            }
+
+            // read start/end time
+            if (!notBlank(startTimeStr)) {
+                startTimeStr = firstNotBlank(params.get("hfStartTime"), params.get("hf-start-time"));
+                if (!notBlank(startTimeStr)) {
+                    startTimeStr = params.get("startTime");
+                }
+            }
+            if (!notBlank(endTimeStr)) {
+                endTimeStr = firstNotBlank(params.get("hfEndTime"), params.get("hf-end-time"));
+                if (!notBlank(endTimeStr)) {
+                    endTimeStr = params.get("endTime");
                 }
             }
 
@@ -464,8 +603,6 @@ public class CustomerBookingBean implements Serializable {
             }
 
             // ===== Voucher (server-side) =====
-            // ✅ FIX: Do NOT add FacesMessage/ERROR. Do NOT block booking.
-            // If voucher invalid or not eligible -> silently ignore and proceed.
             if (totalBeforeDiscount == null) {
                 totalBeforeDiscount = parseBigDecimalSafe(params.get("hf-total-before-discount"));
             }
@@ -503,12 +640,11 @@ public class CustomerBookingBean implements Serializable {
                 restaurant = restaurantsFacade.find(restaurantId);
             }
             if (restaurant == null) {
-                // still allow but show friendly (this should not happen if flow correct)
                 ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Please choose restaurant again."));
                 return null;
             }
 
-            // Event date/time
+            // Event date
             LocalDate eventLocalDate;
             if (notBlank(eventDateStr)) {
                 try {
@@ -521,9 +657,41 @@ public class CustomerBookingBean implements Serializable {
             }
 
             Date eventDate = java.sql.Date.valueOf(eventLocalDate);
+
+            // ===== NEW: parse + validate start/end time within open/close =====
+            LocalTime startLt = parseHHmm(startTimeStr);
+            LocalTime endLt = parseHHmm(endTimeStr);
+
+            if (startLt == null || endLt == null || !endLt.isAfter(startLt)) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                        "Invalid time", "Please select a valid start/end time."));
+                return null;
+            }
+
+            long minutes = Duration.between(startLt, endLt).toMinutes();
+            if (minutes < MIN_DURATION_MINUTES) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                        "Too short", "Minimum duration is " + MIN_DURATION_MINUTES + " minutes."));
+                return null;
+            }
+
+            LocalTime openLt = extractLocalTime(restaurant.getOpenTime(), LocalTime.of(8, 0));
+            LocalTime closeLt = extractLocalTime(restaurant.getCloseTime(), LocalTime.of(22, 0));
+            if (!closeLt.isAfter(openLt)) {
+                openLt = LocalTime.of(8, 0);
+                closeLt = LocalTime.of(22, 0);
+            }
+
+            if (startLt.isBefore(openLt) || endLt.isAfter(closeLt)) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                        "Outside opening hours",
+                        "Please choose a time within " + openLt.format(HHMM) + " - " + closeLt.format(HHMM)));
+                return null;
+            }
+
             ZoneId zone = ZoneId.systemDefault();
-            LocalDateTime startLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(18, 0));
-            LocalDateTime endLdt = LocalDateTime.of(eventLocalDate, LocalTime.of(22, 0));
+            LocalDateTime startLdt = LocalDateTime.of(eventLocalDate, startLt);
+            LocalDateTime endLdt = LocalDateTime.of(eventLocalDate, endLt);
             Date startTime = Date.from(startLdt.atZone(zone).toInstant());
             Date endTime = Date.from(endLdt.atZone(zone).toInstant());
 
@@ -539,6 +707,8 @@ public class CustomerBookingBean implements Serializable {
             booking.setEventDate(eventDate);
             booking.setGuestCount(guestCount);
             booking.setLocationType(locationType);
+
+            // SAVE selected times
             booking.setStartTime(startTime);
             booking.setEndTime(endTime);
 
@@ -595,11 +765,11 @@ public class CustomerBookingBean implements Serializable {
             saveSelectedMenuItems(booking);
 
             if ("VNPAY".equalsIgnoreCase(paymentMethod)) {
-                ExternalContext ec = ctx.getExternalContext();
-                HttpServletRequest req = (HttpServletRequest) ec.getRequest();
+                ExternalContext ec2 = ctx.getExternalContext();
+                HttpServletRequest req = (HttpServletRequest) ec2.getRequest();
                 String orderInfo = "FeastLink booking #" + booking.getBookingId() + " - " + (paymentType == null ? "PAY" : paymentType);
                 String redirectUrl = vnPayService.buildRedirectUrl(req, txnRef, payAmount, orderInfo);
-                ec.redirect(redirectUrl);
+                ec2.redirect(redirectUrl);
                 ctx.responseComplete();
                 return null;
             }
@@ -619,7 +789,6 @@ public class CustomerBookingBean implements Serializable {
 
     // ========== Voucher silent apply (NO FacesMessage, NO block) ==========
     private void applyVoucherOnServerSilent(Users currentUser, Map<String, String> params) {
-        // reset
         voucherDiscount = BigDecimal.ZERO;
         appliedVoucherId = null;
         appliedUserVoucherId = null;
@@ -643,7 +812,6 @@ public class CustomerBookingBean implements Serializable {
                 : totalAmount;
 
         if (baseTotal == null || baseTotal.compareTo(BigDecimal.ZERO) <= 0) {
-            // ignore silently
             clearVoucherOnly();
             return;
         }
@@ -667,7 +835,6 @@ public class CustomerBookingBean implements Serializable {
 
         BigDecimal minOrder = safeBD(v.getMinOrderAmount());
         if (minOrder.compareTo(BigDecimal.ZERO) > 0 && baseTotal.compareTo(minOrder) < 0) {
-            // not eligible -> ignore silently
             clearVoucherOnly();
             return;
         }
@@ -678,7 +845,6 @@ public class CustomerBookingBean implements Serializable {
             return;
         }
 
-        // apply
         voucherDiscount = discount;
         appliedVoucherId = v.getVoucherId();
         appliedUserVoucherId = uv.getUserVoucherId();
@@ -697,7 +863,6 @@ public class CustomerBookingBean implements Serializable {
         appliedUserVoucherId = null;
         appliedVoucherName = null;
         voucherDiscount = BigDecimal.ZERO;
-        // IMPORTANT: clear code so it won't be consumed
         voucherCode = null;
     }
 
@@ -923,10 +1088,7 @@ public class CustomerBookingBean implements Serializable {
             totalAmount = BigDecimal.ZERO;
         }
 
-        BigDecimal depositPercent = new BigDecimal("30"); // keep current default
-        if (depositPercent.compareTo(BigDecimal.ZERO) <= 0) {
-            depositPercent = new BigDecimal("30");
-        }
+        BigDecimal depositPercent = new BigDecimal("30");
 
         if ("FULL".equalsIgnoreCase(paymentType)) {
             depositAmount = totalAmount;
@@ -995,7 +1157,6 @@ public class CustomerBookingBean implements Serializable {
         }
     }
 
-    // ========== Resolve types ==========
     private EventTypes resolveEventType() {
         if (selectedEventTypeId != null && eventTypesFacade != null) {
             return eventTypesFacade.find(selectedEventTypeId);
@@ -1069,7 +1230,35 @@ public class CustomerBookingBean implements Serializable {
         }
     }
 
-    // ===== Getters / Setters (keep as before) =====
+    public String getEventDateDisplay() {
+        if (eventDateStr == null || eventDateStr.isBlank()) {
+            return "";
+        }
+        try {
+            LocalDate d = LocalDate.parse(eventDateStr.trim()); // yyyy-MM-dd
+            return d.format(DATE_DISPLAY);
+        } catch (Exception e) {
+            return eventDateStr; // fallback nếu lỗi format
+        }
+    }
+
+    public String getEventTimeDisplay() {
+        String s = (startTimeStr != null && !startTimeStr.isBlank()) ? startTimeStr : "18:00";
+        String e = (endTimeStr != null && !endTimeStr.isBlank()) ? endTimeStr : "22:00";
+        return "Dinner (" + s + "–" + e + ")";
+    }
+
+    public String getEventDateTimeDisplay() {
+        String date = getEventDateDisplay();
+        if (date.isBlank()) {
+            return "";
+        }
+        String s = (startTimeStr != null && !startTimeStr.isBlank()) ? startTimeStr : "18:00";
+        String e = (endTimeStr != null && !endTimeStr.isBlank()) ? endTimeStr : "22:00";
+        return date + " – Dinner (" + s + "–" + e + ")";
+    }
+
+    // ===== Getters / Setters =====
     public Long getRestaurantId() {
         return restaurantId;
     }
@@ -1289,5 +1478,30 @@ public class CustomerBookingBean implements Serializable {
 
     public void setAppliedVoucherName(String appliedVoucherName) {
         this.appliedVoucherName = appliedVoucherName;
+    }
+
+    // time getters/setters
+    public String getStartTimeStr() {
+        return startTimeStr;
+    }
+
+    public void setStartTimeStr(String startTimeStr) {
+        this.startTimeStr = startTimeStr;
+    }
+
+    public String getEndTimeStr() {
+        return endTimeStr;
+    }
+
+    public void setEndTimeStr(String endTimeStr) {
+        this.endTimeStr = endTimeStr;
+    }
+
+    public List<String> getStartTimeOptions() {
+        return startTimeOptions;
+    }
+
+    public List<String> getEndTimeOptions() {
+        return endTimeOptions;
     }
 }
