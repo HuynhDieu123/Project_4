@@ -3,25 +3,29 @@
       xmlns:h="jakarta.faces.html"
       xmlns:f="jakarta.faces.core"
       xmlns:ui="jakarta.faces.facelets"
-        encoding="UTF-8"
-        contentType="text/html">
+      xmlns:pass="jakarta.faces.passthrough">
+
+<f:view contentType="text/html" encoding="UTF-8">
 
     <h:head>
         <title>FeastLink – Sign in</title>
         <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
         <link rel="stylesheet" type="text/css"
               href="#{request.contextPath}/css/auth.css" />
-         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
 
         <!-- Lucide Icons CDN -->
         <script src="https://unpkg.com/lucide@latest"></script>
     </h:head>
 
     <h:body>
-         <div id="top"></div>
+        <div id="top"></div>
 
         <!-- HEADER -->
         <ui:include src="layout/header.xhtml" />
+
         <div class="auth-shell">
             <div class="auth-shell-inner">
 
@@ -127,10 +131,18 @@
                                              action="#{loginBean.login}"
                                              styleClass="btn-primary" />
 
+                            <!-- ✅ Google OAuth2 Button -->
+                            <h:commandButton value="Continue with Google"
+                                             immediate="true"
+                                             action="#{loginBean.loginWithGoogle}"
+                                             styleClass="btn-secondary"
+                                             style="margin-top:10px;" />
+
                             <h:commandButton value="Create account"
                                              immediate="true"
                                              action="register?faces-redirect=true"
-                                             styleClass="btn-secondary" />
+                                             styleClass="btn-secondary"
+                                             style="margin-top:10px;" />
 
                             <div class="auth-footer">
                                 New to FeastLink?
@@ -145,7 +157,8 @@
 
             </div>
         </div>
-         <ui:include src="layout/footer.xhtml" />
+
+        <ui:include src="layout/footer.xhtml" />
 
         <!-- JS: eye toggle -->
         <script type="text/javascript">
@@ -157,8 +170,8 @@
                         (function (t) {
                             var targetId = t.getAttribute('data-target');
                             var input = document.getElementById(targetId);
-                            if (!input)
-                                return;
+                            if (!input) return;
+
                             t.addEventListener('click', function () {
                                 if (input.type === "password") {
                                     input.type = "text";
@@ -175,5 +188,7 @@
             })();
             //]]>
         </script>
+
     </h:body>
+</f:view>
 </html>

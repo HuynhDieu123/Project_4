@@ -29,6 +29,9 @@ import java.util.Map;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import com.mypack.entity.Restaurants;
+import java.util.LinkedHashMap;
+import java.util.HashMap;
 
 import jakarta.faces.view.ViewScoped;
 
@@ -40,6 +43,22 @@ public class CustomerMyBookingsBean implements Serializable {
     private BookingsFacadeLocal bookingsFacade;
 
     private List<Bookings> myBookings = new ArrayList<>();
+    private List<Restaurants> bookedRestaurants = new ArrayList<>();
+
+    // ===== EDIT (Customer) =====
+    private Long editBookingId;
+    private Date editEventDate;
+    private Date editStartTime;
+    private Date editEndTime;
+    private Integer editGuestCount;
+    private String editLocationType;
+    private String editOutsideAddress;
+    private String editNote;
+    private String editContactFullName;
+    private String editContactEmail;
+    private String editContactPhone;
+    private boolean editSaveSuccess;
+
     // ========= PAGINATION =========
     // Số booking mỗi trang (bro muốn 5, 6, 10 tùy chỉnh)
     private int pageSize = 5;
@@ -82,30 +101,62 @@ public class CustomerMyBookingsBean implements Serializable {
                 }
             }
 
-            // *** Sort: eventDate / createdAt DESC (mới nhất nằm trên cùng) ***
+            // *** Sort: CREATED_AT DESC (booking mới tạo nhất lên đầu) ***
             Collections.sort(myBookings, new Comparator<Bookings>() {
                 @Override
-                public int compare(Bookings o1, Bookings o2) {
-                    Date d1 = (o1 != null)
-                            ? (o1.getEventDate() != null ? o1.getEventDate() : o1.getCreatedAt())
-                            : null;
-                    Date d2 = (o2 != null)
-                            ? (o2.getEventDate() != null ? o2.getEventDate() : o2.getCreatedAt())
-                            : null;
-
-                    if (d1 == null && d2 == null) {
+                public int compare(Bookings a, Bookings b) {
+                    if (a == null && b == null) {
                         return 0;
                     }
-                    if (d1 == null) {
-                        return 1;   // d1 null => đứng sau
+                    if (a == null) {
+                        return 1;
                     }
-                    if (d2 == null) {
-                        return -1;  // d2 null => đứng sau
+                    if (b == null) {
+                        return -1;
                     }
-                    // DESC
-                    return d2.compareTo(d1);
+
+                    Date c1 = a.getCreatedAt();
+                    Date c2 = b.getCreatedAt();
+
+                    if (c1 != null && c2 != null) {
+                        return c2.compareTo(c1); // DESC
+                    }
+                    if (c1 == null && c2 != null) {
+                        return 1;
+                    }
+                    if (c1 != null && c2 == null) {
+                        return -1;
+                    }
+
+                    // fallback: bookingId DESC
+                    Long id1 = a.getBookingId();
+                    Long id2 = b.getBookingId();
+                    if (id1 == null && id2 == null) {
+                        return 0;
+                    }
+                    if (id1 == null) {
+                        return 1;
+                    }
+                    if (id2 == null) {
+                        return -1;
+                    }
+                    return id2.compareTo(id1);
                 }
             });
+
+            // Build danh sách nhà hàng đã booking (distinct)
+            Map<Long, Restaurants> map = new LinkedHashMap<>();
+            for (Bookings b : myBookings) {
+                if (b == null || b.getRestaurantId() == null) {
+                    continue;
+                }
+                Restaurants r = b.getRestaurantId();
+                if (r.getRestaurantId() != null) {
+                    map.putIfAbsent(r.getRestaurantId(), r);
+                }
+            }
+            bookedRestaurants = new ArrayList<>(map.values());
+
         }
     }
 
@@ -194,8 +245,7 @@ public class CustomerMyBookingsBean implements Serializable {
         return nf.format(value);
     }
 
-        // ========== PACKAGE & MENU CHO TỪNG BOOKING ==========
-
+    // ========== PACKAGE & MENU CHO TỪNG BOOKING ==========
     public boolean hasPackage(Bookings b) {
         return b != null
                 && b.getBookingCombosCollection() != null
@@ -279,7 +329,6 @@ public class CustomerMyBookingsBean implements Serializable {
     }
 
     // ===== Bridge methods cho EL gọi kiểu method-expression =====
-
     // dùng cho #{customerMyBookingsBean.packageName(b)}
     public String packageName(Bookings b) {
         return getPackageName(b);
@@ -444,6 +493,271 @@ public class CustomerMyBookingsBean implements Serializable {
         return sb.toString();
     }
 
+    /* ================= EDIT (CUSTOMER) ================= */
+    public boolean canEditBooking(Bookings b) {
+        if (b == null) {
+            return false;
+        }
+
+        String st = safe(b.getBookingStatus()).trim().toUpperCase();
+        String pay = safe(b.getPaymentStatus()).trim().toUpperCase();
+
+        // chỉ cho edit khi PENDING + UNPAID
+        return "PENDING".equals(st) && "UNPAID".equals(pay);
+    }
+
+    public void prepareEdit(Long bookingId) {
+        editSaveSuccess = false;
+
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        Object userObj = ctx.getExternalContext().getSessionMap().get("currentUser");
+        if (!(userObj instanceof Users)) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Please login again.");
+            return;
+        }
+        Users currentUser = (Users) userObj;
+
+        if (bookingId == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Missing booking id.");
+            return;
+        }
+
+        Bookings b = bookingsFacade.find(bookingId);
+        if (b == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Booking not found.");
+            return;
+        }
+
+        // ownership check
+        if (b.getCustomerId() == null || !b.getCustomerId().getUserId().equals(currentUser.getUserId())) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "You cannot edit this booking.");
+            return;
+        }
+
+        if (!canEditBooking(b)) {
+            addMessage(FacesMessage.SEVERITY_WARN, "Not allowed", "This booking cannot be edited at its current status.");
+            return;
+        }
+
+        // load into edit fields
+        editBookingId = b.getBookingId();
+        editEventDate = b.getEventDate();
+        editStartTime = b.getStartTime();
+        editEndTime = b.getEndTime();
+        editGuestCount = b.getGuestCount();
+        editLocationType = b.getLocationType();
+        editOutsideAddress = b.getOutsideAddress();
+        editNote = b.getNote();
+        editContactFullName = b.getContactFullName();
+        editContactEmail = b.getContactEmail();
+        editContactPhone = b.getContactPhone();
+    }
+
+    /**
+     * Save edit (AJAX). Nếu OK thì JS sẽ reload page
+     */
+    public void saveEdit() {
+        editSaveSuccess = false;
+
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        Object userObj = ctx.getExternalContext().getSessionMap().get("currentUser");
+        if (!(userObj instanceof Users)) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Please login again.");
+            return;
+        }
+        Users currentUser = (Users) userObj;
+
+        if (editBookingId == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "No booking selected.");
+            return;
+        }
+
+        Bookings b = bookingsFacade.find(editBookingId);
+        if (b == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Booking not found.");
+            return;
+        }
+
+        // ownership check
+        if (b.getCustomerId() == null || !b.getCustomerId().getUserId().equals(currentUser.getUserId())) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "You cannot edit this booking.");
+            return;
+        }
+
+        if (!canEditBooking(b)) {
+            addMessage(FacesMessage.SEVERITY_WARN, "Not allowed", "This booking cannot be edited at its current status.");
+            return;
+        }
+
+        // ===== validate basic =====
+        if (editEventDate == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Event date is required.");
+            return;
+        }
+        if (editGuestCount == null || editGuestCount < 1) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Guest count must be at least 1.");
+            return;
+        }
+        if (editStartTime != null && editEndTime != null && !editEndTime.after(editStartTime)) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "End time must be after start time.");
+            return;
+        }
+
+        String lt = (editLocationType != null) ? editLocationType.trim().toUpperCase() : "";
+        if (lt.isEmpty()) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Location type is required.");
+            return;
+        }
+
+        if ("OUTSIDE".equals(lt)) {
+            String oa = (editOutsideAddress != null) ? editOutsideAddress.trim() : "";
+            if (oa.isEmpty()) {
+                addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Outside address is required when location is OUTSIDE.");
+                return;
+            }
+            b.setOutsideAddress(oa);
+        } else {
+            b.setOutsideAddress(null);
+            lt = "AT_RESTAURANT"; // chuẩn hoá theo DB của bro
+        }
+
+        int oldGuests = b.getGuestCount();
+        BigDecimal oldTotal = (b.getTotalAmount() != null) ? b.getTotalAmount() : BigDecimal.ZERO;
+
+        // ===== apply changes =====
+        b.setEventDate(editEventDate);
+        b.setStartTime(editStartTime);
+        b.setEndTime(editEndTime);
+        b.setGuestCount(editGuestCount);
+        b.setLocationType(lt);
+
+        b.setNote(trimToNull(editNote));
+        b.setContactFullName(trimToNull(editContactFullName));
+        b.setContactEmail(trimToNull(editContactEmail));
+        b.setContactPhone(trimToNull(editContactPhone));
+
+        b.setUpdatedAt(new Date());
+
+        // ===== recalc money if guest changed (PENDING+UNPAID) =====
+        if (oldGuests != editGuestCount) {
+            BigDecimal oldPkg = sumComboTotal(b);
+            BigDecimal oldMenu = sumMenuTotal(b);
+            BigDecimal oldOther = oldTotal.subtract(oldPkg.add(oldMenu));
+            if (oldOther.compareTo(BigDecimal.ZERO) < 0) {
+                oldOther = BigDecimal.ZERO;
+            }
+
+            recalcTotalsByGuest(b, oldGuests, editGuestCount, oldOther);
+        }
+
+        bookingsFacade.edit(b);
+
+        addMessage(FacesMessage.SEVERITY_INFO, "Success", "Booking updated successfully.");
+        editSaveSuccess = true;
+    }
+
+    public boolean isEditOutside() {
+        return editLocationType != null && "OUTSIDE".equalsIgnoreCase(editLocationType);
+    }
+
+    private String trimToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+// ===== SUM helpers =====
+    private BigDecimal sumComboTotal(Bookings b) {
+        BigDecimal sum = BigDecimal.ZERO;
+        if (b.getBookingCombosCollection() == null) {
+            return sum;
+        }
+        for (BookingCombos bc : b.getBookingCombosCollection()) {
+            if (bc != null && bc.getTotalPrice() != null) {
+                sum = sum.add(bc.getTotalPrice());
+            }
+        }
+        return sum;
+    }
+
+    private BigDecimal sumMenuTotal(Bookings b) {
+        BigDecimal sum = BigDecimal.ZERO;
+        if (b.getBookingMenuItemsCollection() == null) {
+            return sum;
+        }
+        for (BookingMenuItems mi : b.getBookingMenuItemsCollection()) {
+            if (mi != null && mi.getTotalPrice() != null) {
+                sum = sum.add(mi.getTotalPrice());
+            }
+        }
+        return sum;
+    }
+
+// ===== Recalc by guest count without needing unitPrice getter =====
+    private void recalcTotalsByGuest(Bookings b, int oldGuests, int newGuests, BigDecimal otherCharges) {
+        if (b == null || newGuests <= 0) {
+            return;
+        }
+
+        // combos: theo bàn (default 10 khách/bàn)
+        final int GUESTS_PER_TABLE = 10;
+        int newTables = (newGuests + GUESTS_PER_TABLE - 1) / GUESTS_PER_TABLE;
+
+        BigDecimal newPkg = BigDecimal.ZERO;
+        if (b.getBookingCombosCollection() != null) {
+            for (BookingCombos bc : b.getBookingCombosCollection()) {
+                if (bc == null) {
+                    continue;
+                }
+
+                int oldQty = bc.getQuantity();
+                if (oldQty <= 0) {
+                    oldQty = 1;
+                }
+
+                BigDecimal oldLine = (bc.getTotalPrice() != null) ? bc.getTotalPrice() : BigDecimal.ZERO;
+                BigDecimal unit = oldLine.divide(BigDecimal.valueOf(oldQty), 2, java.math.RoundingMode.HALF_UP);
+
+                bc.setQuantity(newTables);
+                bc.setTotalPrice(unit.multiply(BigDecimal.valueOf(newTables)));
+
+                newPkg = newPkg.add(bc.getTotalPrice());
+            }
+        }
+
+        // menu items: mặc định theo người (quantity = guests)
+        BigDecimal newMenu = BigDecimal.ZERO;
+        if (b.getBookingMenuItemsCollection() != null) {
+            for (BookingMenuItems mi : b.getBookingMenuItemsCollection()) {
+                if (mi == null) {
+                    continue;
+                }
+
+                int oldQty = mi.getQuantity();
+                if (oldQty <= 0) {
+                    oldQty = (oldGuests > 0 ? oldGuests : 1);
+                }
+
+                BigDecimal oldLine = (mi.getTotalPrice() != null) ? mi.getTotalPrice() : BigDecimal.ZERO;
+                BigDecimal unit = oldLine.divide(BigDecimal.valueOf(oldQty), 2, java.math.RoundingMode.HALF_UP);
+
+                mi.setQuantity(newGuests);
+                mi.setTotalPrice(unit.multiply(BigDecimal.valueOf(newGuests)));
+
+                newMenu = newMenu.add(mi.getTotalPrice());
+            }
+        }
+
+        BigDecimal newTotal = newPkg.add(newMenu).add(otherCharges != null ? otherCharges : BigDecimal.ZERO);
+        b.setTotalAmount(newTotal);
+
+        // UNPAID => giữ depositAmount như hiện có, remaining = total - depositPaid
+        BigDecimal depositPaid = (b.getDepositAmount() != null) ? b.getDepositAmount() : BigDecimal.ZERO;
+        b.setRemainingAmount(newTotal.subtract(depositPaid));
+    }
+
     // ========== ACTION: VIEW DETAILS ==========
     public String viewDetails(Long bookingId) {
         if (bookingId == null) {
@@ -518,17 +832,22 @@ public class CustomerMyBookingsBean implements Serializable {
     }
 
     // Dùng cho sort: trả về millis của ngày tạo booking (hoặc eventDate nếu createdAt = null)
-    public long bookingCreatedAtMillis(com.mypack.entity.Bookings b) {
+    public long bookingCreatedAtMillis(Bookings b) {
         if (b == null) {
             return 0L;
         }
 
-        java.util.Date created = b.getCreatedAt();
+        Date created = b.getCreatedAt();
         if (created != null) {
             return created.getTime();
         }
 
-        java.util.Date event = b.getEventDate();
+        // fallback: dùng bookingId cho đúng "mới nhất" (identity tăng dần)
+        if (b.getBookingId() != null) {
+            return b.getBookingId() * 1000L;
+        }
+
+        Date event = b.getEventDate();
         return (event != null) ? event.getTime() : 0L;
     }
 
@@ -623,6 +942,106 @@ public class CustomerMyBookingsBean implements Serializable {
     public String changePage() {
         // currentPage đã được set bởi f:setPropertyActionListener
         return null;
+    }
+
+    public List<Restaurants> getBookedRestaurants() {
+        return bookedRestaurants != null ? bookedRestaurants : new ArrayList<>();
+    }
+
+    public Long getEditBookingId() {
+        return editBookingId;
+    }
+
+    public void setEditBookingId(Long editBookingId) {
+        this.editBookingId = editBookingId;
+    }
+
+    public Date getEditEventDate() {
+        return editEventDate;
+    }
+
+    public void setEditEventDate(Date editEventDate) {
+        this.editEventDate = editEventDate;
+    }
+
+    public Date getEditStartTime() {
+        return editStartTime;
+    }
+
+    public void setEditStartTime(Date editStartTime) {
+        this.editStartTime = editStartTime;
+    }
+
+    public Date getEditEndTime() {
+        return editEndTime;
+    }
+
+    public void setEditEndTime(Date editEndTime) {
+        this.editEndTime = editEndTime;
+    }
+
+    public Integer getEditGuestCount() {
+        return editGuestCount;
+    }
+
+    public void setEditGuestCount(Integer editGuestCount) {
+        this.editGuestCount = editGuestCount;
+    }
+
+    public String getEditLocationType() {
+        return editLocationType;
+    }
+
+    public void setEditLocationType(String editLocationType) {
+        this.editLocationType = editLocationType;
+    }
+
+    public String getEditOutsideAddress() {
+        return editOutsideAddress;
+    }
+
+    public void setEditOutsideAddress(String editOutsideAddress) {
+        this.editOutsideAddress = editOutsideAddress;
+    }
+
+    public String getEditNote() {
+        return editNote;
+    }
+
+    public void setEditNote(String editNote) {
+        this.editNote = editNote;
+    }
+
+    public String getEditContactFullName() {
+        return editContactFullName;
+    }
+
+    public void setEditContactFullName(String editContactFullName) {
+        this.editContactFullName = editContactFullName;
+    }
+
+    public String getEditContactEmail() {
+        return editContactEmail;
+    }
+
+    public void setEditContactEmail(String editContactEmail) {
+        this.editContactEmail = editContactEmail;
+    }
+
+    public String getEditContactPhone() {
+        return editContactPhone;
+    }
+
+    public void setEditContactPhone(String editContactPhone) {
+        this.editContactPhone = editContactPhone;
+    }
+
+    public boolean isEditSaveSuccess() {
+        return editSaveSuccess;
+    }
+
+    public void setEditSaveSuccess(boolean editSaveSuccess) {
+        this.editSaveSuccess = editSaveSuccess;
     }
 
 }

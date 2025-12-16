@@ -11,6 +11,7 @@ import com.mypack.sessionbean.BookingsFacadeLocal;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.inject.Named;
 
@@ -35,28 +36,32 @@ public class CustomerBookingDetailsBean implements Serializable {
     private Bookings booking;
 
     private final Locale locale = Locale.US;
-    private final SimpleDateFormat fullDateFmt =
-            new SimpleDateFormat("EEEE, dd MMMM yyyy", locale);
-    private final SimpleDateFormat timeFmt =
-            new SimpleDateFormat("HH:mm", locale);
-    private final SimpleDateFormat dateTimeFmt =
-            new SimpleDateFormat("dd MMM yyyy HH:mm", locale);
-    private final SimpleDateFormat shortDateFmt =
-            new SimpleDateFormat("EEE, dd MMM yyyy", locale);
+    private final SimpleDateFormat fullDateFmt
+            = new SimpleDateFormat("EEEE, dd MMMM yyyy", locale);
+    private final SimpleDateFormat timeFmt
+            = new SimpleDateFormat("HH:mm", locale);
+    private final SimpleDateFormat dateTimeFmt
+            = new SimpleDateFormat("dd MMM yyyy HH:mm", locale);
+    private final SimpleDateFormat shortDateFmt
+            = new SimpleDateFormat("EEE, dd MMM yyyy", locale);
 
-    private final NumberFormat currencyFmt =
-            NumberFormat.getCurrencyInstance(locale);
-        // ====== Payment breakdown subtotals ======
+    private final NumberFormat currencyFmt
+            = NumberFormat.getCurrencyInstance(locale);
+    // ====== Payment breakdown subtotals ======
     private BigDecimal packageSubtotal = BigDecimal.ZERO;
     private BigDecimal menuSubtotal = BigDecimal.ZERO;
+    private String idParam;
+    private boolean notFound;
 
     @PostConstruct
     public void init() {
         FacesContext ctx = FacesContext.getCurrentInstance();
-        if (ctx == null) return;
+        if (ctx == null) {
+            return;
+        }
 
-        Map<String, String> params =
-                ctx.getExternalContext().getRequestParameterMap();
+        Map<String, String> params
+                = ctx.getExternalContext().getRequestParameterMap();
 
         // Ưu tiên ?bookingId= trên URL
         String idParam = params.get("bookingId");
@@ -93,14 +98,17 @@ public class CustomerBookingDetailsBean implements Serializable {
     }
 
     // ========= FORMATTER =========
-
     public String formatDate() {
-        if (booking == null || booking.getEventDate() == null) return "";
+        if (booking == null || booking.getEventDate() == null) {
+            return "";
+        }
         return fullDateFmt.format(booking.getEventDate());
     }
 
     public String formatTimeRange() {
-        if (booking == null) return "";
+        if (booking == null) {
+            return "";
+        }
         String start = (booking.getStartTime() != null)
                 ? timeFmt.format(booking.getStartTime())
                 : "";
@@ -114,19 +122,24 @@ public class CustomerBookingDetailsBean implements Serializable {
     }
 
     public String formatDateTime(Date d) {
-        if (d == null) return "";
+        if (d == null) {
+            return "";
+        }
         return dateTimeFmt.format(d);
     }
 
     public String formatMoney(BigDecimal value) {
-        if (value == null) return "$0.00";
+        if (value == null) {
+            return "$0.00";
+        }
         return currencyFmt.format(value);
     }
 
     // ========= LABELS =========
-
     public String getBookingStatusLabel() {
-        if (booking == null || booking.getBookingStatus() == null) return "";
+        if (booking == null || booking.getBookingStatus() == null) {
+            return "";
+        }
         String s = booking.getBookingStatus().toUpperCase();
         switch (s) {
             case "PENDING":
@@ -143,7 +156,9 @@ public class CustomerBookingDetailsBean implements Serializable {
     }
 
     public String getPaymentStatusLabel() {
-        if (booking == null || booking.getPaymentStatus() == null) return "";
+        if (booking == null || booking.getPaymentStatus() == null) {
+            return "";
+        }
         String s = booking.getPaymentStatus().toUpperCase();
         switch (s) {
             case "UNPAID":
@@ -158,7 +173,9 @@ public class CustomerBookingDetailsBean implements Serializable {
     }
 
     public String getLocationDisplay() {
-        if (booking == null) return "";
+        if (booking == null) {
+            return "";
+        }
         String locType = safe(booking.getLocationType());
         if ("AT_RESTAURANT".equalsIgnoreCase(locType)) {
             if (booking.getRestaurantId() != null) {
@@ -209,8 +226,7 @@ public class CustomerBookingDetailsBean implements Serializable {
                 && !booking.getCancelReason().trim().isEmpty();
     }
 
-        // ========= CONTACT INFO =========
-
+    // ========= CONTACT INFO =========
     private Users getCustomer() {
         return booking != null ? booking.getCustomerId() : null;
     }
@@ -274,11 +290,11 @@ public class CustomerBookingDetailsBean implements Serializable {
         return u != null ? safe(u.getAddress()) : "";
     }
 
-
     // ========= SPECIAL REQUESTS & PAYMENT TYPE =========
-
     public String getSpecialRequests() {
-        if (booking == null) return "";
+        if (booking == null) {
+            return "";
+        }
         String note = safe(booking.getNote());
         if (note.isEmpty()) {
             return "No additional notes were provided for this booking.";
@@ -287,18 +303,55 @@ public class CustomerBookingDetailsBean implements Serializable {
     }
 
     public String getPaymentTypeLabel() {
-        if (booking == null) return "";
+        if (booking == null) {
+            return "";
+        }
         BigDecimal remaining = booking.getRemainingAmount();
         if (remaining != null && remaining.compareTo(BigDecimal.ZERO) > 0) {
             return "Pay deposit only (30%)";
         }
         return "Pay full amount now";
     }
-    
-        // =========================================
+
+    public void loadFromParam() {
+        notFound = false;
+
+        Long id = null;
+        try {
+            if (idParam == null || idParam.trim().isEmpty()) {
+                notFound = true;
+                return;
+            }
+            id = Long.valueOf(idParam.trim());
+        } catch (Exception e) {
+            notFound = true;
+            return;
+        }
+
+        Bookings b = bookingsFacade.find(id);
+        if (b == null) {
+            notFound = true;
+            return;
+        }
+
+        // check owner (customer đang login)
+        Object u = FacesContext.getCurrentInstance().getExternalContext().getSessionMap().get("currentUser");
+        if (u instanceof Users) {
+            Users user = (Users) u;
+            if (b.getCustomerId() == null || !b.getCustomerId().getUserId().equals(user.getUserId())) {
+                notFound = true;
+                return;
+            }
+        }
+
+        // ✅ gán vào biến booking hiện tại của trang details
+        // đổi tên biến này cho đúng bean của bro (vd: selectedBooking / booking / currentBooking)
+        this.booking = b;
+    }
+
+    // =========================================
     //  PRICE BREAKDOWN: PACKAGE / MENU / OTHER
     // =========================================
-
     private void calculatePriceBreakdown() {
         packageSubtotal = BigDecimal.ZERO;
         menuSubtotal = BigDecimal.ZERO;
@@ -363,10 +416,29 @@ public class CustomerBookingDetailsBean implements Serializable {
         return getOtherCharges().compareTo(BigDecimal.ZERO) > 0;
     }
 
-
     // ========= HELPERS =========
-
     private String safe(String s) {
         return (s == null) ? "" : s.trim();
     }
+
+    public Long getBookingId() {
+        return bookingId;
+    }
+
+    public void setBookingId(Long bookingId) {
+        this.bookingId = bookingId;
+    }
+
+    public String getIdParam() {
+        return idParam;
+    }
+
+    public void setIdParam(String idParam) {
+        this.idParam = idParam;
+    }
+
+    public boolean isNotFound() {
+        return notFound;
+    }
+
 }
