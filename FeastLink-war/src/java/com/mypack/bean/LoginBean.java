@@ -2,16 +2,21 @@ package com.mypack.bean;
 
 import com.mypack.entity.Users;
 import com.mypack.sessionbean.UsersFacadeLocal;
+
 import jakarta.ejb.EJB;
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.inject.Named;
 import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.ExternalContext;
 import jakarta.faces.context.FacesContext;
+import jakarta.inject.Named;
 
 import java.io.Serializable;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
-// Thêm import BCrypt
 import org.mindrot.jbcrypt.BCrypt;
 
 @Named("loginBean")
@@ -21,101 +26,79 @@ public class LoginBean implements Serializable {
     @EJB
     private UsersFacadeLocal usersFacade;
 
-    private String identifier;   // email hoặc phone
+    private String identifier;   // email or phone
     private String password;
     private boolean rememberMe;
 
+    // ✅ OAuth2 Web Client (Google Console)
+    private static final String GOOGLE_CLIENT_ID =
+            "718278911834-kbcfe7nbb79b263qdq0ha1vscven73kb.apps.googleusercontent.com";
+
+    // ✅ MUST match Google Console exactly
+    private static final String GOOGLE_REDIRECT_URI =
+            "http://localhost:8080/FeastLink-war/google-oauth-callback";
+
     // ====== GET/SET ======
-    public String getIdentifier() {
-        return identifier;
-    }
+    public String getIdentifier() { return identifier; }
+    public void setIdentifier(String identifier) { this.identifier = identifier; }
 
-    public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-    }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public boolean isRememberMe() {
-        return rememberMe;
-    }
-
-    public void setRememberMe(boolean rememberMe) {
-        this.rememberMe = rememberMe;
-    }
+    public boolean isRememberMe() { return rememberMe; }
+    public void setRememberMe(boolean rememberMe) { this.rememberMe = rememberMe; }
     // =====================
 
     public String login() {
         FacesContext ctx = FacesContext.getCurrentInstance();
 
-        // 0. Validate input đơn giản
+        // validate
         if (identifier == null || identifier.trim().isEmpty()
                 || password == null || password.trim().isEmpty()) {
-
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
                     "Missing information",
                     "Please enter your email/phone and password."
             ));
-            return null;   // ở lại login.xhtml
+            return null;
         }
 
         String input = identifier.trim();
 
-        // 1. Account cứng admin / 123 (giữ nguyên)
+        // admin hardcode
         if ("admin".equalsIgnoreCase(input) && "123".equals(password)) {
             ctx.getExternalContext().getSessionMap().put("currentUserRole", "ADMIN");
             ctx.getExternalContext().getSessionMap().put("loginIdentifier", input);
-
-            // KHÔNG dùng ?faces-redirect=true để tránh lỗi Flash
-            return "Admin/dashboard";
+            return "/Admin/dashboard?faces-redirect=true";
         }
 
-        // 2. Tìm trong DB theo email hoặc phone
+        // find by email/phone
         List<Users> list = usersFacade.findAll();
         Users matched = null;
 
         for (Users u : list) {
-            boolean sameEmail = u.getEmail() != null
-                    && input.equalsIgnoreCase(u.getEmail());
-            boolean samePhone = u.getPhone() != null
-                    && input.equals(u.getPhone());
+            boolean sameEmail = u.getEmail() != null && input.equalsIgnoreCase(u.getEmail());
+            boolean samePhone = u.getPhone() != null && input.equals(u.getPhone());
+            if (!(sameEmail || samePhone)) continue;
 
             boolean samePassword = false;
             String storedPassword = u.getPassword();
 
             if (storedPassword != null) {
-                // Nếu là password hash BCrypt
                 if (storedPassword.startsWith("$2a$") ||
                     storedPassword.startsWith("$2b$") ||
                     storedPassword.startsWith("$2y$")) {
-
-                    try {
-                        samePassword = BCrypt.checkpw(password, storedPassword);
-                    } catch (IllegalArgumentException e) {
-                        // Nếu hash lỗi format, default là false
-                        samePassword = false;
-                    }
+                    try { samePassword = BCrypt.checkpw(password, storedPassword); }
+                    catch (Exception ignore) { samePassword = false; }
                 } else {
-                    // Trường hợp cũ: nếu db đang còn plain text (để tương thích tạm)
                     samePassword = password.equals(storedPassword);
                 }
             }
 
-            if ((sameEmail || samePhone) && samePassword) {
-                matched = u;
-                break;
-            }
+            if (samePassword) { matched = u; break; }
         }
 
         if (matched == null) {
-            // Sai thông tin -> ở lại trang login
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
                     "Invalid credentials",
@@ -124,35 +107,71 @@ public class LoginBean implements Serializable {
             return null;
         }
 
-        // 3. Đăng nhập thành công
-        String role = matched.getRole();  // dùng role trong bảng Users
-
-        // Nếu là MANAGER -> vào Restaurant/dashboard.xhtml
-        if (role != null && "MANAGER".equalsIgnoreCase(role)) {
-            ctx.getExternalContext().getSessionMap().put("currentUser", matched);
-            ctx.getExternalContext().getSessionMap().put("currentUserRole", "MANAGER");
-            ctx.getExternalContext().getSessionMap().put("loginIdentifier", input);
-
-            return "/Restaurant/dashboard";
+        // status check
+        if (matched.getStatus() != null && !"ACTIVE".equalsIgnoreCase(matched.getStatus())) {
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Account is not active",
+                    "Your account is currently " + matched.getStatus() + "."
+            ));
+            return null;
         }
 
-        // Mặc định (CUSTOMER) -> về trang Customer home
+        // update last login
+        try { matched.setLastLoginAt(new Date()); usersFacade.edit(matched); } catch (Exception ignore) {}
+
+        // session
         ctx.getExternalContext().getSessionMap().put("currentUser", matched);
-        ctx.getExternalContext().getSessionMap().put("currentUserRole", "CUSTOMER");
         ctx.getExternalContext().getSessionMap().put("loginIdentifier", input);
 
-        // Về trang Customer home – KHÔNG redirect
-        return "/Customer/index";
+        String role = matched.getRole();
+        if (role != null && "MANAGER".equalsIgnoreCase(role)) {
+            ctx.getExternalContext().getSessionMap().put("currentUserRole", "MANAGER");
+            return "/Restaurant/dashboard?faces-redirect=true";
+        }
+
+        ctx.getExternalContext().getSessionMap().put("currentUserRole", "CUSTOMER");
+        return "/Customer/index?faces-redirect=true";
+    }
+
+    // ✅ Redirect to Google OAuth2 consent screen
+    public String loginWithGoogle() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        ExternalContext ec = ctx.getExternalContext();
+
+        try {
+            String state = UUID.randomUUID().toString();
+            ec.getSessionMap().put("google_oauth_state", state);
+
+            String authUrl =
+                    "https://accounts.google.com/o/oauth2/v2/auth"
+                            + "?client_id=" + enc(GOOGLE_CLIENT_ID)
+                            + "&redirect_uri=" + enc(GOOGLE_REDIRECT_URI)
+                            + "&response_type=code"
+                            + "&scope=" + enc("openid email profile")
+                            + "&prompt=select_account"
+                            + "&state=" + enc(state);
+
+            ec.redirect(authUrl);
+            ctx.responseComplete();
+            return null;
+
+        } catch (Exception e) {
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Google login failed",
+                    "Unable to redirect to Google."
+            ));
+            return null;
+        }
     }
 
     public String logout() {
-        FacesContext ctx = FacesContext.getCurrentInstance();
+        FacesContext.getCurrentInstance().getExternalContext().invalidateSession();
+        return "/Customer/index?faces-redirect=true";
+    }
 
-        // Hủy session hiện tại (xóa luôn currentUser, loginIdentifier, ...)
-        ctx.getExternalContext().invalidateSession();
-
-        // Quay về trang login – KHÔNG redirect
-        return "/Customer/index";
+    private static String enc(String s) {
+        return URLEncoder.encode(s == null ? "" : s, StandardCharsets.UTF_8);
     }
 }
-    
