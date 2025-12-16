@@ -4,7 +4,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
       xmlns:f="jakarta.faces.core"
-      xmlns:ui="jakarta.faces.facelets">
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:pass="jakarta.faces.passthrough">
 
     <h:head>
         <meta charset="UTF-8" />
@@ -161,6 +162,23 @@
                                     <option value="oldest">Oldest first</option>
                                 </select>
                             </div>
+
+                            <!-- Venue -->
+                            <div class="flex items-center gap-2">
+                                <span class="hidden sm:inline text-xs text-[#6B7280] uppercase tracking-wide">
+                                    Venue
+                                </span>
+                                <select id="restaurant-select"
+                                        class="px-3 py-2 rounded-full border border-[#E5E7EB] bg-[#F9FAFB] text-sm text-[#111827]
+                                        focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37]">
+                                    <option value="all" selected="selected">All venues</option>
+                                    <ui:repeat value="#{customerMyBookingsBean.bookedRestaurants}" var="r">
+                                        <option value="#{r.restaurantId}">#{r.name}</option>
+                                    </ui:repeat>
+                                </select>
+                            </div>
+
+
                         </div>
 
                     </div>
@@ -209,6 +227,12 @@
 
                     <!-- Bọc danh sách bằng FORM để commandLink hoạt động -->
                     <h:form id="myBookingsForm">
+                        <h:messages id="msgs" globalOnly="true" layout="list"
+                                    styleClass="mt-4 space-y-2 text-sm"
+                                    errorClass="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700"
+                                    infoClass="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800"
+                                    warnClass="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800"/>
+
                         <!-- DANH SÁCH BOOKING -->
                         <div id="bookings-list" class="grid grid-cols-1 gap-6 mt-8">
                             <ui:repeat value="#{customerMyBookingsBean.pagedBookings}" var="b">
@@ -219,7 +243,9 @@
                                     data-payment-status="#{b.paymentStatus}"
                                     data-booking-code="#{b.bookingCode}"
                                     data-restaurant-name="#{b.restaurantId.name}"
+                                    data-restaurant-id="#{b.restaurantId.restaurantId}"
                                     data-created-at="#{customerMyBookingsBean.bookingCreatedAtMillis(b)}">
+
 
                                     <div class="p-6 sm:p-8">
                                         <!-- Top row -->
@@ -453,6 +479,21 @@
                                                     </button>
                                                 </h:panelGroup>
 
+                                                <!-- Edit (only PENDING + UNPAID) -->
+                                                <h:panelGroup rendered="#{customerMyBookingsBean.canEditBooking(b)}">
+                                                    <h:commandLink
+                                                        actionListener="#{customerMyBookingsBean.prepareEdit(b.bookingId)}"
+                                                        styleClass="px-6 py-3 bg-white hover:bg-[#FFFBEB] text-[#D4AF37] border-2 border-[#D4AF37]
+                                                        font-semibold rounded-xl transition-all duration-300 flex items-center gap-2">
+                                                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                                                        <span>Edit</span>
+                                                        <f:ajax execute="@this" render=":myBookingsForm:editModal :myBookingsForm:msgs"
+                                                                onevent="feastlinkCustomerEditEvent"/>
+
+                                                    </h:commandLink>
+                                                </h:panelGroup>
+
+
                                                 <!-- Cancel booking: gọi action bean -->
                                                 <h:panelGroup rendered="#{customerMyBookingsBean.canCancel(b)}">
                                                     <h:commandLink
@@ -465,12 +506,13 @@
                                                 </h:panelGroup>
 
                                                 <!-- View details: sang trang booking-details -->
-                                                <h:commandLink
-                                                    action="#{customerMyBookingsBean.viewDetails(b.bookingId)}"
-                                                    styleClass="btn-view-details px-6 py-3 bg-gradient-to-r from-[#F97316] to-[#EAB308] hover:from-[#EA580C] hover:to-[#D4AF37] text-white font-semibold rounded-xl transition-all duration-300 shadow-md hover:shadow-xl flex items-center gap-2">
+                                                <h:link outcome="/Customer/booking-details"
+                                                        styleClass="btn-view-details px-6 py-3 bg-gradient-to-r from-[#F97316] to-[#EAB308] hover:from-[#EA580C] hover:to-[#D4AF37] text-white font-semibold rounded-xl transition-all duration-300 shadow-md hover:shadow-xl flex items-center gap-2">
+                                                    <f:param name="id" value="#{b.bookingId}" />
                                                     <span>View Details</span>
                                                     <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                                                </h:commandLink>
+                                                </h:link>
+
                                             </div>
                                         </div>
                                     </div>
@@ -529,6 +571,141 @@
                                 </div>
                             </div>
                         </h:panelGroup>
+                        <!-- EDIT MODAL -->
+                        <h:panelGroup id="editModal">
+                            <h:inputHidden id="editSaveOk" value="#{customerMyBookingsBean.editSaveSuccess}"/>
+
+                            <div id="customerEditModal" class="fixed inset-0 z-50 hidden">
+                                <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeCustomerEditModal()"></div>
+
+                                <div class="relative mx-auto mt-10 sm:mt-16 w-[92%] max-w-2xl rounded-3xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
+                                    <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                                        <div>
+                                            <p class="text-[11px] uppercase tracking-widest text-gray-500">Edit booking</p>
+                                            <p class="text-lg font-semibold text-[#0B1120]">
+                                                #{customerMyBookingsBean.editBookingId}
+                                            </p>
+                                        </div>
+                                        <button type="button"
+                                                class="w-10 h-10 rounded-2xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-700"
+                                                onclick="closeCustomerEditModal()">✕</button>
+                                    </div>
+
+                                    <div class="px-6 py-6 space-y-5">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-2">Event date</label>
+                                                <h:inputText value="#{customerMyBookingsBean.editStartTime}"
+                                                             required="true"
+                                                             pass:type="time"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
+                                                    <f:convertDateTime  type="time" pattern="HH:mm"/>
+                                                </h:inputText>
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-2">Guests</label>
+                                                <h:inputText value="#{customerMyBookingsBean.editGuestCount}"
+                                                             required="true"
+                                                             pass:type="number" pass:min="1"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
+                                                    <f:validateLongRange minimum="1" />
+                                                </h:inputText>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-2">Start time</label>
+                                                <h:inputText value="#{customerMyBookingsBean.editStartTime}"
+                                                             pass:type="time"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
+                                                    <f:convertDateTime pattern="HH:mm"/>
+                                                </h:inputText>
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-2">End time</label>
+                                                <h:inputText value="#{customerMyBookingsBean.editEndTime}"
+                                                             pass:type="time"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
+                                                    <f:convertDateTime pattern="HH:mm"/>
+                                                </h:inputText>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-2">Location</label>
+                                                <h:selectOneMenu value="#{customerMyBookingsBean.editLocationType}"
+                                                                 styleClass="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700
+                                                                 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
+                                                    <f:selectItem itemLabel="At restaurant" itemValue="AT_RESTAURANT"/>
+                                                    <f:selectItem itemLabel="Outside" itemValue="OUTSIDE"/>
+                                                    <f:ajax render="editModal"/>
+                                                </h:selectOneMenu>
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-2">Outside address</label>
+                                                <h:inputText value="#{customerMyBookingsBean.editOutsideAddress}"
+                                                             disabled="#{not customerMyBookingsBean.editOutside}"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37] disabled:opacity-50"/>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-2">Contact name</label>
+                                                <h:inputText value="#{customerMyBookingsBean.editContactFullName}"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"/>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-2">Contact phone</label>
+                                                <h:inputText value="#{customerMyBookingsBean.editContactPhone}"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"/>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-2">Contact email</label>
+                                            <h:inputText value="#{customerMyBookingsBean.editContactEmail}"
+                                                         styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                         focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"/>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-2">Note</label>
+                                            <h:inputTextarea value="#{customerMyBookingsBean.editNote}"
+                                                             rows="3"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"/>
+                                        </div>
+                                    </div>
+
+                                    <div class="px-6 py-5 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50">
+                                        <button type="button"
+                                                class="px-4 py-2.5 rounded-2xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                                onclick="closeCustomerEditModal()">Cancel</button>
+
+                                        <h:commandButton value="Save changes"
+                                                         styleClass="px-5 py-2.5 rounded-2xl bg-[#0B1120] text-white text-sm font-semibold hover:bg-[#020617] transition-all shadow-sm"
+                                                         action="#{customerMyBookingsBean.saveEdit}">
+                                            <f:ajax execute="editModal" render=":myBookingsForm:editModal :myBookingsForm:msgs"
+                                                    onevent="feastlinkCustomerSaveEditEvent"/>
+
+                                        </h:commandButton>
+                                    </div>
+                                </div>
+                            </div>
+                        </h:panelGroup>
 
                     </h:form>
                 </h:panelGroup>
@@ -548,6 +725,8 @@
                 var statusFilter = 'all';
                 var searchQuery = '';
                 var sortOrder = 'newest';
+                var restaurantFilter = 'all';
+
 
                 var cards = Array.prototype.slice.call(
                         document.querySelectorAll('[data-role="booking-card"]')
@@ -567,6 +746,20 @@
                         sortCards();
                         applyFilters();
                     });
+                }
+                var restaurantSelect = document.getElementById('restaurant-select');
+                if (restaurantSelect) {
+                    restaurantSelect.addEventListener('change', function (e) {
+                        restaurantFilter = e.target.value || 'all';
+                        applyFilters();
+                    });
+                }
+
+                function matchesRestaurant(card) {
+                    if (!restaurantFilter || restaurantFilter === 'all')
+                        return true;
+                    var rid = card.getAttribute('data-restaurant-id') || '';
+                    return rid === restaurantFilter;
                 }
 
 
@@ -659,7 +852,8 @@
                 function applyFilters() {
                     var visibleCount = 0;
                     cards.forEach(function (card) {
-                        var ok = matchesStatus(card) && matchesSearch(card);
+                        var ok = matchesStatus(card) && matchesSearch(card) && matchesRestaurant(card);
+
                         if (ok) {
                             card.classList.remove('hidden');
                             visibleCount++;
@@ -701,6 +895,43 @@
                 applyFilters();
 
             });
+            function openCustomerEditModal() {
+                var m = document.getElementById('customerEditModal');
+                if (m)
+                    m.classList.remove('hidden');
+            }
+            function closeCustomerEditModal() {
+                var m = document.getElementById('customerEditModal');
+                if (m)
+                    m.classList.add('hidden');
+            }
+
+            function feastlinkCustomerEditEvent(data) {
+                if (data.status === 'success') {
+                    setTimeout(function () {
+                        openCustomerEditModal();
+                        if (window.lucide)
+                            window.lucide.createIcons();
+                    }, 0);
+                }
+            }
+
+
+            function feastlinkCustomerSaveEditEvent(data) {
+                if (data.status !== 'success')
+                    return;
+                var okEl = document.getElementById('myBookingsForm:editSaveOk');
+                var ok = okEl && (okEl.value === 'true' || okEl.value === 'True');
+                if (ok) {
+                    // reload để list + filter JS init lại sạch sẽ
+                    window.location.reload();
+                } else {
+                    openCustomerEditModal();
+                    if (window.lucide)
+                        window.lucide.createIcons();
+                }
+            }
+
             //]]>
         </script>
 

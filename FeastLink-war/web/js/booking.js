@@ -11,11 +11,6 @@ const BookingUI = (function () {
         baseServiceCharge: 3000,
         serviceCharge: 3000,
 
-        addOns: [
-            {id: 1, name: 'Extra dessert table', price: 50, unit: 'table', quantity: 0},
-            {id: 2, name: 'Premium wine pairing', price: 50, unit: 'table', quantity: 0},
-            {id: 3, name: 'Late-night snacks', price: 35, unit: 'table', quantity: 0}
-        ],
         depositPercentage: 30,
         discount: 0,
         voucherCode: '',
@@ -29,7 +24,7 @@ const BookingUI = (function () {
         remainingAmount: 0,
         menuPricePerTable: 0,
 
-        paymentMethod: 'VNPAY',   // default
+        paymentMethod: 'VNPAY', // default
         paymentType: 'deposit'    // bạn đang dùng rồi (deposit/full)
     };
 
@@ -78,7 +73,8 @@ const BookingUI = (function () {
         Object.keys(SERVICE_LEVEL_CONFIGS).forEach(key => {
             const cfg = SERVICE_LEVEL_CONFIGS[key];
             const el = document.getElementById('service-level-price-' + key);
-            if (!el) return;
+            if (!el)
+                return;
 
             const price = Math.round(base * cfg.feeMultiplier);
             el.textContent = '$' + formatNumber(price) + ' service fee';
@@ -362,9 +358,12 @@ function validateVoucherAndCalc(voucher, totalBeforeDiscount) {
         const pt = (state.paymentType || 'deposit').toLowerCase();
         const payAmount = (pt === 'full') ? (state.totalAmount || 0) : (state.depositAmount || 0);
 
-        if (pmHidden) pmHidden.value = state.paymentMethod || 'VNPAY';
-        if (ptHidden) ptHidden.value = (pt === 'full') ? 'FULL' : 'DEPOSIT';
-        if (payHidden) payHidden.value = payAmount;
+        if (pmHidden)
+            pmHidden.value = state.paymentMethod || 'VNPAY';
+        if (ptHidden)
+            ptHidden.value = (pt === 'full') ? 'FULL' : 'DEPOSIT';
+        if (payHidden)
+            payHidden.value = payAmount;
     }
 
     function applyPackageFromParam(packageName) {
@@ -378,21 +377,30 @@ function validateVoucherAndCalc(voucher, totalBeforeDiscount) {
 
         // Không có package hoặc không map trong config -> ẩn card, hiện empty-state
         if (!packageName || !PACKAGE_CONFIGS[packageName]) {
-            if (packageCardEl) packageCardEl.classList.add('hidden');
-            if (noPackageEl) noPackageEl.classList.remove('hidden');
-            if (summaryPkgNameEl) summaryPkgNameEl.textContent = 'No package selected';
+            if (packageCardEl)
+                packageCardEl.classList.add('hidden');
+            if (noPackageEl)
+                noPackageEl.classList.remove('hidden');
+            if (summaryPkgNameEl)
+                summaryPkgNameEl.textContent = 'No package selected';
             return;
         }
 
         const cfg = PACKAGE_CONFIGS[packageName];
 
-        if (packageCardEl) packageCardEl.classList.remove('hidden');
-        if (noPackageEl) noPackageEl.classList.add('hidden');
+        if (packageCardEl)
+            packageCardEl.classList.remove('hidden');
+        if (noPackageEl)
+            noPackageEl.classList.add('hidden');
 
-        if (packageNameEl) packageNameEl.textContent = packageName;
-        if (summaryPkgNameEl) summaryPkgNameEl.textContent = packageName;
-        if (badgeEl && cfg.badge) badgeEl.textContent = cfg.badge;
-        if (guestRangeEl && cfg.guestRange) guestRangeEl.textContent = cfg.guestRange;
+        if (packageNameEl)
+            packageNameEl.textContent = packageName;
+        if (summaryPkgNameEl)
+            summaryPkgNameEl.textContent = packageName;
+        if (badgeEl && cfg.badge)
+            badgeEl.textContent = cfg.badge;
+        if (guestRangeEl && cfg.guestRange)
+            guestRangeEl.textContent = cfg.guestRange;
         if (priceEl && cfg.pricePerGuest != null) {
             priceEl.textContent = '$' + formatNumber(cfg.pricePerGuest);
         }
@@ -410,7 +418,8 @@ function validateVoucherAndCalc(voucher, totalBeforeDiscount) {
         const totalGuests = state.tableCount * 10;
         const capacityEl = document.getElementById('capacity-status');
         const guestLabel = document.getElementById('guest-count-label');
-        if (!capacityEl || !guestLabel) return;
+        if (!capacityEl || !guestLabel)
+            return;
 
         let color = '#22C55E';
         let message = 'Within capacity';
@@ -447,34 +456,18 @@ function validateVoucherAndCalc(voucher, totalBeforeDiscount) {
         }
 
         const guestHidden = document.getElementById('hf-guest-count');
-        if (guestHidden) guestHidden.value = totalGuests;
-    }
-
-    function collectAddonQuantities() {
-        const rows = document.querySelectorAll('.addon-row');
-        rows.forEach(row => {
-            const id = parseInt(row.getAttribute('data-addon-id'), 10);
-            const qtyEl = row.querySelector('.addon-qty');
-            const qty = parseInt(qtyEl.textContent || '0', 10);
-            const addon = state.addOns.find(a => a.id === id);
-            if (addon) addon.quantity = qty;
-        });
+        if (guestHidden)
+            guestHidden.value = totalGuests;
     }
 
     function updateSummary() {
-        collectAddonQuantities();
 
         const packageSubtotal = state.pricePerGuest * state.tableCount; // giá theo bàn
 
         // tiền custom menu (tính từ list món đã chọn)
         const menuSubtotal = state.menuPricePerTable * state.tableCount;
 
-        const addOnsSubtotal = state.addOns.reduce(
-                (sum, a) => sum + a.price * a.quantity,
-                0
-        );
-
-        const subtotal = packageSubtotal + menuSubtotal + addOnsSubtotal;
+        const subtotal = packageSubtotal + menuSubtotal;
 
         const tax = Math.round((subtotal + state.serviceCharge) * 0.1);
 
@@ -497,29 +490,36 @@ const remainingAmount = totalWithCharges - depositAmount;
 
         // hidden fields
         const totalField = document.getElementById('hf-total-amount');
-        if (totalField) totalField.value = totalWithCharges;
+        if (totalField)
+            totalField.value = totalWithCharges;
 
         const depositField = document.getElementById('hf-deposit-amount');
-        if (depositField) depositField.value = depositAmount;
+        if (depositField)
+            depositField.value = depositAmount;
 
         const remainingField = document.getElementById('hf-remaining-amount');
-        if (remainingField) remainingField.value = remainingAmount;
+        if (remainingField)
+            remainingField.value = remainingAmount;
 
         // ✅ voucher hidden fields cho server xử lý
         syncVoucherHidden();
 
         // DOM
         const pkgTotalEl = document.getElementById('summary-package-total');
-        if (pkgTotalEl) pkgTotalEl.textContent = '$' + formatNumber(packageSubtotal);
+        if (pkgTotalEl)
+            pkgTotalEl.textContent = '$' + formatNumber(packageSubtotal);
 
         const menuEl = document.getElementById('summary-menu-total');
-        if (menuEl) menuEl.textContent = '$' + formatNumber(menuSubtotal);
+        if (menuEl)
+            menuEl.textContent = '$' + formatNumber(menuSubtotal);
 
         const serviceEl = document.getElementById('summary-service-charge');
-        if (serviceEl) serviceEl.textContent = '$' + formatNumber(state.serviceCharge);
+        if (serviceEl)
+            serviceEl.textContent = '$' + formatNumber(state.serviceCharge);
 
         const taxEl = document.getElementById('summary-tax');
-        if (taxEl) taxEl.textContent = '$' + formatNumber(tax);
+        if (taxEl)
+            taxEl.textContent = '$' + formatNumber(tax);
 
         const discountRow = document.getElementById('summary-discount-row');
         const discountEl = document.getElementById('summary-discount');
@@ -533,34 +533,17 @@ const remainingAmount = totalWithCharges - depositAmount;
         }
 
         // add-ons rows in summary
-        const container = document.getElementById('summary-addons-container');
-        if (container) {
-            container.innerHTML = '';
-            state.addOns
-                    .filter(a => a.quantity > 0)
-                    .forEach(addon => {
-                        const row = document.createElement('div');
-                        row.className = 'flex justify-between';
-                        row.innerHTML =
-                                '<span class="text-[#4B5563]">' +
-                                addon.name +
-                                ' (' +
-                                addon.quantity +
-                                ')</span>' +
-                                '<span class="font-medium text-[#111827]">$' +
-                                formatNumber(addon.price * addon.quantity) +
-                                '</span>';
 
-                        container.appendChild(row);
-                    });
-        }
 
         const totalEl = document.getElementById('summary-total-amount');
         const depositEl = document.getElementById('summary-deposit');
         const remainingEl = document.getElementById('summary-remaining');
-        if (totalEl) totalEl.textContent = '$' + formatNumber(totalWithCharges);
-        if (depositEl) depositEl.textContent = '$' + formatNumber(depositAmount);
-        if (remainingEl) remainingEl.textContent = '$' + formatNumber(remainingAmount);
+        if (totalEl)
+            totalEl.textContent = '$' + formatNumber(totalWithCharges);
+        if (depositEl)
+            depositEl.textContent = '$' + formatNumber(depositAmount);
+        if (remainingEl)
+            remainingEl.textContent = '$' + formatNumber(remainingAmount);
 
         // ✅ luôn đồng bộ hidden payment sau khi tính tiền xong
         syncPaymentHidden();
@@ -594,7 +577,8 @@ const remainingAmount = totalWithCharges - depositAmount;
 
         // Cập nhật text ở summary
         const summary = document.getElementById('summary-service-level');
-        if (summary) summary.textContent = cfg.label;
+        if (summary)
+            summary.textContent = cfg.label;
 
         // Tính lại serviceCharge theo level
         const base = state.baseServiceCharge || state.serviceCharge || 0;
@@ -628,7 +612,8 @@ const remainingAmount = totalWithCharges - depositAmount;
         state.locationType = type === 'outside' ? 'OUTSIDE' : 'AT_RESTAURANT';
 
         const locHidden = document.getElementById('hf-location-type');
-        if (locHidden) locHidden.value = state.locationType;
+        if (locHidden)
+            locHidden.value = state.locationType;
     }
 
     function setPaymentMethod(method) {
@@ -650,7 +635,8 @@ const remainingAmount = totalWithCharges - depositAmount;
         state.paymentMethod = serverMethod;
 
         const pmHidden = document.getElementById('hf-payment-method');
-        if (pmHidden) pmHidden.value = serverMethod;
+        if (pmHidden)
+            pmHidden.value = serverMethod;
 
         syncPaymentHidden();
     }
@@ -665,13 +651,17 @@ const remainingAmount = totalWithCharges - depositAmount;
             if (val === type) {
                 btn.className =
                         'pay-type w-full p-6 rounded-xl border-2 transition-all duration-200 text-left border-[#D4AF37] bg-[#D4AF37]/5';
-                if (radioOuter) radioOuter.classList.add('border-[#D4AF37]');
-                if (radioInner) radioInner.classList.add('bg-[#D4AF37]');
+                if (radioOuter)
+                    radioOuter.classList.add('border-[#D4AF37]');
+                if (radioInner)
+                    radioInner.classList.add('bg-[#D4AF37]');
             } else {
                 btn.className =
                         'pay-type w-full p-6 rounded-xl border-2 transition-all duration-200 text-left border-[#E5E7EB] hover:border-[#D4AF37]';
-                if (radioOuter) radioOuter.classList.remove('border-[#D4AF37]');
-                if (radioInner) radioInner.classList.remove('bg-[#D4AF37]');
+                if (radioOuter)
+                    radioOuter.classList.remove('border-[#D4AF37]');
+                if (radioInner)
+                    radioInner.classList.remove('bg-[#D4AF37]');
             }
         });
 
@@ -679,7 +669,8 @@ const remainingAmount = totalWithCharges - depositAmount;
         state.depositPercentage = type === 'full' ? 100 : 30;
 
         const ptHidden = document.getElementById('hf-payment-type');
-        if (ptHidden) ptHidden.value = (type === 'full') ? 'FULL' : 'DEPOSIT';
+        if (ptHidden)
+            ptHidden.value = (type === 'full') ? 'FULL' : 'DEPOSIT';
 
         updateSummary();      // tính lại tiền
         syncPaymentHidden();  // đồng bộ hidden payment
@@ -691,7 +682,8 @@ const remainingAmount = totalWithCharges - depositAmount;
         // Ẩn / hiện 3 section
         ['step-1', 'step-2', 'step-3'].forEach((id, index) => {
             const sec = document.getElementById(id);
-            if (!sec) return;
+            if (!sec)
+                return;
 
             if (index + 1 === step) {
                 sec.classList.remove('hidden');
@@ -767,7 +759,8 @@ const remainingAmount = totalWithCharges - depositAmount;
         let valid = true;
 
         function mark(el, ok) {
-            if (!el) return;
+            if (!el)
+                return;
             el.classList.remove('border-red-500', 'ring-1', 'ring-red-300');
             if (!ok) {
                 el.classList.remove('border-[#E5E7EB]');
@@ -814,7 +807,7 @@ const remainingAmount = totalWithCharges - depositAmount;
             }
             alert(
                     'Please fill in your contact details and accept the booking policies before confirming.'
-            );
+                    );
             return false; // chặn form submit
         }
 
@@ -831,7 +824,8 @@ const remainingAmount = totalWithCharges - depositAmount;
     function setupFullMenuToggle() {
         const btn = document.getElementById('view-full-menu-btn');
         const panel = document.getElementById('full-menu-details-panel');
-        if (!btn || !panel) return;
+        if (!btn || !panel)
+            return;
 
         const icon = btn.querySelector('i');
 
@@ -872,7 +866,8 @@ const remainingAmount = totalWithCharges - depositAmount;
 
         // Format ngày cho hiển thị: 2025-11-19 -> 19 Nov 2025
         function formatDateDisplay(isoDate) {
-            if (!isoDate) return '';
+            if (!isoDate)
+                return '';
             const d = new Date(isoDate);
             if (isNaN(d.getTime())) {
                 return isoDate; // nếu parse lỗi thì hiện raw
@@ -922,7 +917,8 @@ const remainingAmount = totalWithCharges - depositAmount;
         if (minusBtn && plusBtn && tableInput) {
             minusBtn.addEventListener('click', function () {
                 let val = parseInt(tableInput.value || '1', 10);
-                if (val > 1) val--;
+                if (val > 1)
+                    val--;
                 tableInput.value = String(val);
                 state.tableCount = val;
                 updateCapacity();
@@ -938,7 +934,8 @@ const remainingAmount = totalWithCharges - depositAmount;
             });
             tableInput.addEventListener('input', function () {
                 let val = parseInt(tableInput.value || '1', 10);
-                if (isNaN(val) || val < 1) val = 1;
+                if (isNaN(val) || val < 1)
+                    val = 1;
                 tableInput.value = String(val);
                 state.tableCount = val;
                 updateCapacity();
@@ -962,34 +959,7 @@ const remainingAmount = totalWithCharges - depositAmount;
             });
         });
 
-        // addons
-        document.querySelectorAll('.addon-row').forEach(row => {
-            const minus = row.querySelector('.btn-addon-minus');
-            const plus = row.querySelector('.btn-addon-plus');
-            const qtyEl = row.querySelector('.addon-qty');
 
-            function update(q) {
-                qtyEl.textContent = String(q);
-                if (minus) minus.disabled = q === 0;
-                updateSummary();
-            }
-
-            if (minus) {
-                minus.addEventListener('click', function () {
-                    let q = parseInt(qtyEl.textContent || '0', 10);
-                    if (q > 0) q--;
-                    update(q);
-                });
-            }
-            if (plus) {
-                plus.addEventListener('click', function () {
-                    let q = parseInt(qtyEl.textContent || '0', 10);
-                    q++;
-                    update(q);
-                });
-            }
-            if (minus) minus.disabled = true;
-        });
 
         // event type -> summary
         const eventTypeSelect = document.getElementById('event-type');
@@ -1001,7 +971,8 @@ const remainingAmount = totalWithCharges - depositAmount;
                 const label = this.options[this.selectedIndex]
                         ? this.options[this.selectedIndex].text
                         : this.value;
-                if (summary) summary.textContent = label;
+                if (summary)
+                    summary.textContent = label;
 
                 // đẩy tên loại tiệc (label) xuống hidden để server đọc
                 const hidden = document.getElementById('hf-event-type');
@@ -1014,26 +985,6 @@ const remainingAmount = totalWithCharges - depositAmount;
             eventTypeSelect.dispatchEvent(event);
         }
 
-        // tax invoice checkbox
-        const needTax = document.getElementById('contact-need-tax');
-        if (needTax) {
-            needTax.addEventListener('change', function () {
-                const box = document.getElementById('contact-need-tax-box');
-                const detail = document.getElementById('tax-details');
-                if (box) {
-                    if (this.checked) {
-                        box.classList.remove('bg-white', 'border-[#E5E7EB]');
-                        box.classList.add('bg-[#D4AF37]', 'border-[#D4AF37]');
-                    } else {
-                        box.classList.add('bg-white', 'border-[#E5E7EB]');
-                        box.classList.remove('bg-[#D4AF37]', 'border-[#D4AF37]');
-                    }
-                }
-                if (detail) {
-                    detail.classList.toggle('hidden', !this.checked);
-                }
-            });
-        }
 
         // policies checkbox
         const accept = document.getElementById('accept-policies');
@@ -1056,7 +1007,8 @@ const remainingAmount = totalWithCharges - depositAmount;
         // contact validation on input
         ['contact-fullname', 'contact-email', 'contact-phone'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.addEventListener('input', validateContact);
+            if (el)
+                el.addEventListener('input', validateContact);
         });
 
         // step buttons
@@ -1085,7 +1037,7 @@ const remainingAmount = totalWithCharges - depositAmount;
                     }
                     alert(
                             'Please fill in your full name, email, phone number and accept the booking policies before continuing to payment.'
-                    );
+                            );
                     return;
                 }
 
@@ -1128,74 +1080,26 @@ const remainingAmount = totalWithCharges - depositAmount;
         });
 
         // voucher
-const voucherInput = document.getElementById('voucher-input');
-const voucherBtn = document.getElementById('btn-apply-voucher');
-
-if (voucherBtn && voucherInput) {
-    voucherBtn.addEventListener('click', function () {
-const code = normalizeCode(voucherInput.value);
-state.voucherCode = code;
-
-// Clear
-if (!code) {
-    state.discount = 0;
-    hideVoucherStatusUI();
-    updateSummary();
-    return;
-}
-
-// Luôn tính trên TOTAL BEFORE DISCOUNT hiện tại
-const totalBefore = toNumber(state.totalBeforeDiscount || state.totalAmount || 0);
-
-// Nếu có catalog ở client -> validate + tính theo loại voucher (PERCENT/AMOUNT)
-const voucher = findVoucherByCode(code);
-
-if (voucher) {
-    const res = validateVoucherAndCalc(voucher, totalBefore);
-
-    if (res.ok) {
-        state.discount = res.discount;
-        updateSummary();
-
-        if (res.type === 'PERCENT') {
-            const extra = (toNumber(res.maxDiscount) > 0) ? ` (max ${formatMoneyUSD(res.maxDiscount)})` : '';
-            setVoucherStatusUI('success', `Applied ${res.value}% off${extra} → -${formatMoneyUSD(res.discount)}`);
-        } else {
-            setVoucherStatusUI('success', `Applied -${formatMoneyUSD(res.discount)} discount`);
-        }
-        return;
-    }
-
-    // Không đủ điều kiện / hết hạn / chưa tới ngày… => KHÔNG ném lỗi, chỉ báo user và không áp dụng
-    state.discount = 0;
-    // clear hidden voucher so user can still confirm booking without being blocked by server-side validation
-    state.voucherCode = '';
-    updateSummary();
-
-    setVoucherStatusUI('warn', 'Không đủ điều kiện để sử dụng voucher');
-return;
-}
-
-// Không có catalog client -> vẫn cho nhập code, server sẽ validate khi confirm
-state.discount = 0;
-updateSummary();
-setVoucherStatusUI('warn', 'Voucher saved. Discount will be validated when you confirm.');
-});
-        }
-
-        // Change venue
-        const changeVenueBtn = document.getElementById('btn-change-venue');
-        if (changeVenueBtn) {
-            changeVenueBtn.addEventListener('click', function () {
-                if (restaurantId) {
-                    window.location.href =
-                            'restaurant-details.xhtml?restaurantId=' +
-                            encodeURIComponent(restaurantId);
+        const voucherInput = document.getElementById('voucher-input');
+        const voucherBtn = document.getElementById('btn-apply-voucher');
+        const voucherSuccess = document.getElementById('voucher-success');
+        if (voucherBtn && voucherInput) {
+            voucherBtn.addEventListener('click', function () {
+                const code = voucherInput.value.trim().toUpperCase();
+                state.voucherCode = code;
+                if (code) {
+                    state.discount = 2000000; // demo
+                    if (voucherSuccess)
+                        voucherSuccess.classList.remove('hidden');
                 } else {
-                    window.location.href = 'restaurants.xhtml';
+                    state.discount = 0;
+                    if (voucherSuccess)
+                        voucherSuccess.classList.add('hidden');
                 }
+                updateSummary();
             });
         }
+
 
         // Change date & time: quay lại restaurant-details để chọn lại
         const changeDatetimeBtn = document.getElementById('btn-change-datetime');
