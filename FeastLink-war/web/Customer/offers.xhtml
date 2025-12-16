@@ -84,18 +84,19 @@
                             FeastLink Reward Points &amp; Exclusive Offers
                         </h1>
                         <p class="mt-3 text-sm md:text-[15px] text-[#E5E7EB] max-w-xl">
-                            Mỗi lần đặt tiệc, bạn đều tích luỹ điểm. Đổi điểm để nhận voucher giảm giá,
-                            nâng cấp dịch vụ và ưu đãi đặc biệt cho những bữa tiệc tiếp theo.
+                           Every time you book a party, you accumulate points. Redeem your points for discount vouchers,
+
+                            service upgrades, and special offers for future parties.
                         </p>
                         <div class="mt-4 flex flex-wrap gap-2">
                             <span
                                     class="inline-flex items-center px-3 py-1 rounded-full border border-[rgba(249,250,251,0.6)] bg-[rgba(15,23,42,0.5)] text-[11px] text-[#E5E7EB]">
-                                Hạng hiện tại:
+                              Current rank:
                                 <span class="ml-1 font-semibold text-[var(--gold-soft)]">Gold Member</span>
                             </span>
                             <span
                                     class="inline-flex items-center px-3 py-1 rounded-full border border-[rgba(249,250,251,0.25)] bg-[rgba(15,23,42,0.35)] text-[11px] text-[#E5E7EB]">
-                                Ưu đãi chỉ dành cho tài khoản đã đăng nhập
+                               This offer is only available for logged-in accounts.
                             </span>
                         </div>
                     </div>
@@ -130,7 +131,7 @@
                                         <h:outputText value="#{customerOffersBean.pointsPerAmount}" /> pts /
                                         <h:outputText value="#{customerOffersBean.amountPerPoint}">
                                             <f:convertNumber groupingUsed="true" />
-                                        </h:outputText> USD
+                                        </h:outputText> 
                                     </p>
                                 </div>
                             </div>
@@ -146,7 +147,7 @@
                                 </div>
                                 <div class="text-[11px] text-[#9CA3AF]">
                                     <p class="mb-0.5">Tips</p>
-                                    <p>Thanh toán đủ &amp; đúng hạn để được cộng điểm tự động.</p>
+                                    <p>Pay in full and on time to receive points automatically.</p>
                                 </div>
                             </div>
                         </div>
@@ -160,14 +161,15 @@
                                 Points Overview
                             </p>
                             <p class="text-sm text-[#E5E7EB]">
-                                Vui lòng đăng nhập bằng tài khoản khách hàng để xem số điểm thưởng
-                                và các ưu đãi có thể đổi.
+                                Please log in with your customer account to view your reward points
+
+                                and redeemable offers.
                             </p>
                             <div class="mt-2">
                                 <h:link outcome="/login.xhtml"
                                         styleClass="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-gold)] px-4 py-2 text-xs font-semibold text-[#111827] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
                                     <i data-lucide="log-in" class="w-4 h-4 mr-2"></i>
-                                    Đăng nhập ngay
+                                   Log in now
                                 </h:link>
                             </div>
                         </div>
@@ -182,16 +184,17 @@
                 <div
                         class="mb-6 rounded-2xl border border-dashed border-[rgba(148,163,184,0.9)] bg-white px-6 py-7 text-center text-sm text-[var(--text-muted)] shadow-sm">
                     <p class="mb-2 font-semibold text-[var(--text-main)]">
-                        Vui lòng đăng nhập để sử dụng điểm thưởng và đổi voucher.
+                      Please log in to use your reward points and redeem vouchers.
                     </p>
                     <p class="text-xs md:text-sm mb-4">
-                        Hệ thống sẽ tự động cộng điểm cho các booking đã thanh toán (PAID)
-                        đúng theo cấu hình trong phần Point Settings.
+                        The system will automatically add points to paid bookings
+
+                        according to the configuration in the Point Settings section.
                     </p>
                     <h:link outcome="/login.xhtml"
                             styleClass="inline-flex items-center justify-center rounded-full bg-[var(--navy)] px-5 py-2 text-xs font-semibold text-white hover:bg-[var(--navy-dark)] transition">
                         <i data-lucide="log-in" class="w-4 h-4 mr-2"></i>
-                        Đăng nhập FeastLink
+                        Log in to FeastLink
                     </h:link>
                 </div>
             </h:panelGroup>
@@ -241,9 +244,10 @@
                                     </div>
 
                                     <p class="text-xs text-[#E5E7EB]/85 mb-4">
-                                        Điểm sẽ được cộng sau khi đơn đặt tiệc của bạn được
-                                        <strong>xác nhận</strong> và <strong>thanh toán đủ</strong>. Bạn có thể dùng điểm
-                                        để đổi các voucher bên phải.
+                                       Points will be added after your party order is processed.
+                                        <strong>confirm</strong> and <strong>full payment</strong>You can use your points
+
+                                    to redeem the vouchers on the right.
                                     </p>
 
                                     <div
@@ -271,7 +275,7 @@
                                                 <h:outputText value="#{customerOffersBean.pointsPerAmount}" /> pts /
                                                 <h:outputText value="#{customerOffersBean.amountPerPoint}">
                                                     <f:convertNumber groupingUsed="true" />
-                                                </h:outputText> USD
+                                                </h:outputText>
                                             </p>
                                         </div>
                                     </div>
@@ -288,9 +292,9 @@
                                     <span class="font-semibold text-[var(--text-main)]">How points work</span>
                                 </div>
                                 <ul class="list-disc pl-5 space-y-1">
-                                    <li>Điểm được cộng sau khi đơn đặt tiệc được xác nhận &amp; thanh toán đủ.</li>
-                                    <li>Voucher bên phải chỉ xuất hiện khi có thể đổi bằng điểm.</li>
-                                    <li>Một số voucher có yêu cầu giá trị đơn tối thiểu hoặc ngày hết hạn.</li>
+                                    <li>Points are awarded after the party order is confirmed. &amp; Full payment.</li>
+                                    <li>The voucher on the right only appears when it can be redeemed with points.</li>
+                                    <li>Some vouchers have minimum order values ​​or expiration dates.</li>
                                 </ul>
                             </div>
                         </section>
@@ -304,7 +308,7 @@
                                         Available offers
                                     </h2>
                                     <p class="text-xs text-[var(--text-muted)]">
-                                        Các voucher có thể đổi bằng số điểm hiện tại của bạn.
+                                       The vouchers can be redeemed using your current points.
                                     </p>
                                 </div>
                                 <div
@@ -331,7 +335,7 @@
                                             <h:outputText value="#{customerOffersBean.lastRedeemedName}" />
                                         </p>
                                         <p class="mt-1 text-xs text-[var(--text-muted)]">
-                                            Đây là mã voucher bạn vừa đổi thành công. Hãy lưu lại để sử dụng khi thanh toán.
+                                          This is the voucher code you have successfully redeemed. Please save it to use when making your payment.
                                         </p>
                                     </div>
                                     <div class="flex flex-col items-start md:items-end gap-1">
@@ -341,10 +345,10 @@
                                             <h:outputText value="#{customerOffersBean.lastRedeemedCode}" />
                                         </div>
                                         <p class="text-[10px] text-[var(--text-muted)]">
-                                            Áp dụng theo điều kiện của voucher.
+                                          Terms and conditions of the voucher apply.
                                         </p>
                                         <p class="text-[10px] text-[var(--text-muted)]">
-                                            Tổng số voucher bạn đã đổi:&nbsp;
+                                          Total number of vouchers you have redeemed:&nbsp;
                                             <span class="font-semibold text-[var(--accent-orange)]">
                                                 <h:outputText value="#{customerOffersBean.redeemedVoucherCount}" />
                                             </span>
@@ -361,7 +365,7 @@
                                         There are no redeemable offers at the moment.
                                     </p>
                                     <p class="text-xs md:text-sm">
-                                        Hãy tiếp tục đặt tiệc trên FeastLink hoặc quay lại khi có chiến dịch khuyến mãi mới.
+                                       Continue booking your parties on FeastLink or come back when there are new promotions.
                                     </p>
                                 </div>
                             </h:panelGroup>
