@@ -3,10 +3,12 @@ package com.customer.bean;
 import com.mypack.entity.Bookings;
 import com.mypack.entity.EventTypes;
 import com.mypack.entity.MenuCombos;
+import com.mypack.entity.RestaurantCapacitySettings;
 import com.mypack.entity.RestaurantImages;
 import com.mypack.entity.RestaurantReviews;
 import com.mypack.entity.Restaurants;
 import com.mypack.sessionbean.EventTypesFacadeLocal;
+import com.mypack.sessionbean.RestaurantCapacitySettingsFacadeLocal;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
@@ -41,6 +43,9 @@ public class CustomerRestaurantsBean implements Serializable {
 
     @EJB
     private EventTypesFacadeLocal eventTypesFacade;
+
+    @EJB
+    private RestaurantCapacitySettingsFacadeLocal capacitySettingsFacade;
 
     @PostConstruct
     public void init() {
@@ -95,9 +100,29 @@ public class CustomerRestaurantsBean implements Serializable {
             card.setDepositPercent(nvlDecimal(r.getDefaultDepositPercent(), 0d));
 
             // Sức chứa: dùng MinGuestCount, Max gấp 3 lần (demo)
-            int minGuests = nvlInt(r.getMinGuestCount(), 0);
-            int maxGuests = minGuests > 0 ? minGuests * 3 : 200;
-            card.setCapacityMin(minGuests > 0 ? minGuests : 30);
+            int minGuests = (r.getMinGuestCount() != null) ? r.getMinGuestCount() : 0;
+
+// ✅ lấy max từ RestaurantCapacitySettings
+            Integer maxFromSetting = null;
+            try {
+                RestaurantCapacitySettings s = capacitySettingsFacade.findByRestaurant(r);
+                if (s != null) {
+                    maxFromSetting = s.getMaxGuestsPerSlot(); // cột MaxGuestsPerSlot
+                }
+            } catch (Exception ignore) {
+            }
+
+// fallback nếu chưa có setting
+            int maxGuests = (maxFromSetting != null && maxFromSetting > 0)
+                    ? maxFromSetting
+                    : ((minGuests > 0) ? (minGuests * 3) : 200);
+
+// đảm bảo max không nhỏ hơn min
+            if (maxGuests < minGuests) {
+                maxGuests = minGuests;
+            }
+
+            card.setCapacityMin(minGuests);
             card.setCapacityMax(maxGuests);
 
             // Ảnh: lấy từ RestaurantImages (ưu tiên IsPrimary)

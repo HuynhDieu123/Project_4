@@ -49,15 +49,15 @@
                                     <span class="material-symbols-outlined text-base align-middle">event</span>
                                     <span>
                                         <h:outputText value="#{bookingDetailBean.booking.eventDate}">
-                                            <f:convertDateTime type="date" pattern="EEE, MMM d, yyyy"/>
+                                            <f:convertDateTime type="date" pattern="EEE, MMM d, yyyy" timeZone="Asia/Ho_Chi_Minh"/>
                                         </h:outputText>
                                         ·
                                         <h:outputText value="#{bookingDetailBean.booking.startTime}">
-                                            <f:convertDateTime type="time" pattern="HH:mm"/>
+                                            <f:convertDateTime type="time" pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
                                         </h:outputText>
                                         -
                                         <h:outputText value="#{bookingDetailBean.booking.endTime}">
-                                            <f:convertDateTime type="time" pattern="HH:mm"/>
+                                            <f:convertDateTime type="time" pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
                                         </h:outputText>
                                     </span>
 
@@ -104,15 +104,15 @@
                                         </p>
                                         <p>
                                             <h:outputText value="#{bookingDetailBean.booking.eventDate}">
-                                                <f:convertDateTime type="date" pattern="EEE, MMM d, yyyy"/>
+                                                <f:convertDateTime type="date" pattern="EEE, MMM d, yyyy" timeZone="Asia/Ho_Chi_Minh"/>
                                             </h:outputText>
                                             ·
                                             <h:outputText value="#{bookingDetailBean.booking.startTime}">
-                                                <f:convertDateTime type="time" pattern="HH:mm"/>
+                                                <f:convertDateTime type="time" pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
                                             </h:outputText>
                                             -
                                             <h:outputText value="#{bookingDetailBean.booking.endTime}">
-                                                <f:convertDateTime type="time" pattern="HH:mm"/>
+                                                <f:convertDateTime type="time" pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
                                             </h:outputText>
                                         </p>
 

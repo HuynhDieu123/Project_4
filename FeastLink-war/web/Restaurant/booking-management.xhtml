@@ -317,12 +317,12 @@
                                         <td class="px-4 py-4">
                                             <div class="text-xs sm:text-sm font-medium text-[#0B1120]">
                                                 <h:outputText value="#{b.eventDate}">
-                                                    <f:convertDateTime pattern="MMM dd, yyyy"/>
+                                                    <f:convertDateTime pattern="MMM dd, yyyy" timeZone="Asia/Ho_Chi_Minh"/>
                                                 </h:outputText>
                                             </div>
                                             <div class="text-[11px] text-gray-500 mt-0.5">
                                                 <h:outputText value="#{b.startTime}">
-                                                    <f:convertDateTime pattern="HH:mm"/>
+                                                    <f:convertDateTime pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
                                                 </h:outputText>
                                             </div>
                                         </td>
@@ -594,7 +594,7 @@
                                                  styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
                                                  focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
                                                  p:type="date">
-                                        <f:convertDateTime pattern="yyyy-MM-dd"/>
+                                        <f:convertDateTime pattern="yyyy-MM-dd" timeZone="Asia/Ho_Chi_Minh"/>
                                     </h:inputText>
                                 </div>
 
@@ -617,7 +617,7 @@
                                                  styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
                                                  focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
                                                  p:type="time">
-                                        <f:convertDateTime pattern="HH:mm"/>
+                                        <f:convertDateTime pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
                                     </h:inputText>
                                 </div>
 
@@ -627,7 +627,7 @@
                                                  styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
                                                  focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
                                                  p:type="time">
-                                        <f:convertDateTime pattern="HH:mm"/>
+                                        <f:convertDateTime pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
                                     </h:inputText>
                                 </div>
                             </div>

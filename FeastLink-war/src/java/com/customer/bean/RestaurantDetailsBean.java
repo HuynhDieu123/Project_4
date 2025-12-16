@@ -9,8 +9,10 @@ import com.mypack.entity.Restaurants;
 import com.mypack.sessionbean.RestaurantsFacadeLocal;
 import com.mypack.entity.MenuCategories;
 import com.mypack.entity.MenuItems;
+import com.mypack.entity.RestaurantCapacitySettings;
 import com.mypack.sessionbean.MenuCategoriesFacadeLocal;
 import com.mypack.sessionbean.MenuItemsFacadeLocal;
+import com.mypack.sessionbean.RestaurantCapacitySettingsFacadeLocal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +38,10 @@ public class RestaurantDetailsBean implements Serializable {
 
     @EJB
     private MenuItemsFacadeLocal menuItemsFacade;
+
+    @EJB
+    private RestaurantCapacitySettingsFacadeLocal capacitySettingsFacade;
+    private Integer maxGuestsPerSlot;
 
     private Restaurants restaurant;
 
@@ -429,6 +435,30 @@ public class RestaurantDetailsBean implements Serializable {
         }
     }
 
+    private void loadCapacitySettingsFor(Restaurants r) {
+        maxGuestsPerSlot = null;
+        if (r == null) {
+            return;
+        }
+
+        try {
+            RestaurantCapacitySettings s = capacitySettingsFacade.findByRestaurant(r);
+            if (s != null) {
+                maxGuestsPerSlot = s.getMaxGuestsPerSlot();
+            }
+        } catch (Exception ignore) {
+        }
+
+        // fallback để UI không trống
+        Integer min = (r.getMinGuestCount() != null) ? r.getMinGuestCount() : 0;
+        if (maxGuestsPerSlot == null || maxGuestsPerSlot <= 0) {
+            maxGuestsPerSlot = min; // hoặc min*3 nếu bro muốn giữ logic cũ khi chưa có settings
+        }
+        if (maxGuestsPerSlot < min) {
+            maxGuestsPerSlot = min;
+        }
+    }
+
     private boolean isSkipMenuItem(MenuItems mi) {
         boolean skip = false;
 
@@ -594,6 +624,11 @@ public class RestaurantDetailsBean implements Serializable {
         public void setHighlightTag(String highlightTag) {
             this.highlightTag = highlightTag;
         }
+
+        public double getPricePerPerson() {
+            return (priceTotal > 0) ? priceTotal : 0d;
+        }
+
     }
 
     // ====== Inner class: menu item card (for UI) ======
