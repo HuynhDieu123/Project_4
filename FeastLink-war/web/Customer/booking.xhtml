@@ -132,6 +132,7 @@
             <h:inputHidden id="hf-end-time"   value="#{customerBookingBean.endTimeStr}" />
 
 
+
             <input type="hidden" id="hf-payment-method" name="hf-payment-method" value=""/>
             <input type="hidden" id="hf-payment-type"   name="hf-payment-type"   value=""/>
             <input type="hidden" id="hf-pay-amount"     name="hf-pay-amount"     value=""/>
@@ -430,37 +431,43 @@
 
                                         </div>
 
-                                        <!-- Number of tables -->
+                                        <!-- Number of guests -->
                                         <div>
-                                            <label
-                                                class="block text-sm font-medium text-[#111827] mb-3">Number
-                                                of tables</label>
+                                            <label class="block text-sm font-medium text-[#111827] mb-3">
+                                                Number of guests
+                                            </label>
+
                                             <div class="flex items-center gap-4">
-                                                <button type="button" id="btn-minus-table"
-                                                        class="w-10 h-10 rounded-xl border-2 border-[#E5E7EB] hover:border-[#D4AF37] text-[#4B5563] hover:text-[#D4AF37] transition-colors flex items-center justify-center">
+                                                <button type="button" id="btn-minus-guest"
+                                                        class="w-10 h-10 rounded-xl border-2 border-[#E5E7EB] hover:border-[#D4AF37]
+                                                        text-[#4B5563] hover:text-[#D4AF37] transition-colors flex items-center justify-center">
                                                     -
                                                 </button>
+
                                                 <div class="flex-1 text-center">
-                                                    <input type="number" id="table-count-input" min="1"
-                                                           value="20"
-                                                           class="w-full text-3xl font-bold text-[#111827] text-center bg-transparent border-0 focus:outline-none focus:ring-0"/>
+                                                    <input type="number" id="guest-count-input" min="1" value="200"
+                                                           class="w-full text-3xl font-bold text-[#111827] text-center bg-transparent border-0
+                                                           focus:outline-none focus:ring-0"/>
+
                                                     <div id="capacity-status"
                                                          class="text-sm font-medium text-[#22C55E] flex items-center justify-center gap-1">
-                                                        <i data-lucide="users"
-                                                           class="w-4 h-4"></i>
-                                                        Ideal for 15–25 tables (150–250 guests)
+                                                        <i data-lucide="users" class="w-4 h-4"></i>
+                                                        Ideal for 150–250 guests
                                                     </div>
-                                                    <div class="text-xs text-[#4B5563] mt-1"
-                                                         id="guest-count-label">
-                                                        (~100 guests at 10 per table)
+
+                                                    <div class="text-xs text-[#4B5563] mt-1" id="guest-count-label">
+                                                        (~20 tables at 10 guests/table)
                                                     </div>
                                                 </div>
-                                                <button type="button" id="btn-plus-table"
-                                                        class="w-10 h-10 rounded-xl border-2 border-[#E5E7EB] hover:border-[#D4AF37] text-[#4B5563] hover:text-[#D4AF37] transition-colors flex items-center justify-center">
+
+                                                <button type="button" id="btn-plus-guest"
+                                                        class="w-10 h-10 rounded-xl border-2 border-[#E5E7EB] hover:border-[#D4AF37]
+                                                        text-[#4B5563] hover:text-[#D4AF37] transition-colors flex items-center justify-center">
                                                     +
                                                 </button>
                                             </div>
                                         </div>
+
 
                                         <!-- Location type -->
                                         <div>
@@ -543,7 +550,7 @@
                                                      id="package-price">
                                                     $1,200
                                                 </div>
-                                                <div class="text-sm text-[#E6C77F]">per table</div>
+                                                <div class="text-sm text-[#E6C77F]">per guest</div>
 
                                             </div>
                                         </div>
@@ -735,7 +742,7 @@
                                         </div>
 
 
-                                        
+
                                     </div>
                                 </div>
 

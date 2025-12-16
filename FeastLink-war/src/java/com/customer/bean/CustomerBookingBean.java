@@ -49,6 +49,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 // payment
 import com.mypack.vnpay.VnPayService;
@@ -100,6 +102,8 @@ public class CustomerBookingBean implements Serializable {
     @EJB
     private UserVouchersFacadeLocal userVouchersFacade;
 
+
+
     private List<EventTypes> allEventTypes;
 
     private List<EventTypes> eventTypes = new ArrayList<>();
@@ -134,7 +138,6 @@ public class CustomerBookingBean implements Serializable {
     private String contactFullName;
     private String contactEmail;
     private String contactPhone;
-
     private List<EventTypes> availableEventTypes;
 
     private String paymentMethod; // VNPAY / CASH
@@ -208,6 +211,7 @@ public class CustomerBookingBean implements Serializable {
         if (restaurantId != null) {
             restaurant = restaurantsFacade.find(restaurantId);
         }
+
 
         // keep booking page quiet, and try to recover restaurantId from session across postbacks.
         ExternalContext ec = ctx.getExternalContext();
@@ -1504,4 +1508,5 @@ public class CustomerBookingBean implements Serializable {
     public List<String> getEndTimeOptions() {
         return endTimeOptions;
     }
+
 }

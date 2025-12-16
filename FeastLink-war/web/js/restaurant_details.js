@@ -153,9 +153,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function handleBookingRedirect(qsParams) {
 
+
         if (selectedPackageId) {
             qsParams.set('comboId', selectedPackageId);            // 👈 NEW
         }
+        if (selectedPackageName) {
+            qsParams.set('package', selectedPackageName);
+        }
+        // ✅ đẩy giá package theo khách qua booking
+        if (selectedPackagePricePerPerson != null && !isNaN(selectedPackagePricePerPerson) && selectedPackagePricePerPerson > 0) {
+            qsParams.set('pkgPricePerPerson', selectedPackagePricePerPerson.toFixed(2));
+        }
+
         // Gắn menu items (nếu có chọn) vào query string để booking.xhtml xử lý
         if (selectedMenuItemIds.size > 0) {
             qsParams.set('menuItems', Array.from(selectedMenuItemIds).join(','));
@@ -177,6 +186,59 @@ document.addEventListener('DOMContentLoaded', function () {
         alert(
                 'Please sign in or create a FeastLink account to complete your booking and unlock your booking history and faster checkout.'
                 );
+    }
+// ================== JSF CALENDAR (calendar-days-jsf) → select date + Book button ==================
+    let selectedDateIso = null;
+
+    window.FEASTLINK_RD_selectDate = function (btn) {
+        if (!btn)
+            return;
+        const iso = btn.getAttribute('data-date-iso');
+        if (!iso)
+            return;
+
+        selectedDateIso = iso;
+
+        // highlight selected day (optional)
+        const root = document.getElementById('calendar-days-jsf');
+        if (root) {
+            root.querySelectorAll('button[data-date-iso]').forEach(b => {
+                b.classList.remove('ring-2', 'ring-[#D4AF37]', 'ring-offset-2');
+            });
+        }
+        btn.classList.add('ring-2', 'ring-[#D4AF37]', 'ring-offset-2');
+
+        const hint = document.getElementById('selected-date-hint');
+        if (hint)
+            hint.textContent = 'Selected: ' + selectedDateIso;
+    };
+
+    const bookBtn = document.getElementById('book-date-btn');
+    if (bookBtn) {
+        bookBtn.addEventListener('click', () => {
+            if (!selectedDateIso) {
+                alert('Please select a date first.');
+                return;
+            }
+            if (!selectedPackageName) {
+                alert('Please select a package before continuing.');
+                return;
+            }
+
+            const qsParams = new URLSearchParams();
+            if (restaurantId)
+                qsParams.set('restaurantId', restaurantId);
+
+            // gửi cả 2 key để booking bean/booking.js nhận kiểu nào cũng ok
+            qsParams.set('date', selectedDateIso);
+            qsParams.set('eventDate', selectedDateIso);
+
+            if (selectedPackageName)
+                qsParams.set('package', selectedPackageName);
+
+            // handleBookingRedirect sẽ tự append comboId + menuItems
+            handleBookingRedirect(qsParams);
+        });
     }
 
 
@@ -882,6 +944,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let selectedCard = null;
     let selectedPackageName = null;
     let selectedPackageId = null;
+    let selectedPackagePricePerPerson = null;
     const packagesSection = qs('#packages');
 
     function getPackageIdFromCard(card) {
@@ -890,10 +953,27 @@ document.addEventListener('DOMContentLoaded', function () {
         return card.getAttribute('data-combo-id') || null; // lấy từ data-combo-id trên card
     }
 
+    function getPackagePricePerPersonFromCard(card) {
+        if (!card)
+            return null;
+
+        const total = parseFloat(card.getAttribute('data-price-total') || '0');
+        if (isNaN(total) || total <= 0)
+            return null;
+
+        // ✅ PriceTotal được hiểu là price per person
+        return total;
+    }
+
+
+
+
+
 
     function getCardFromButton(btn) {
-        return btn.closest('.group');
+        return btn.closest('[data-combo-id]') || btn.closest('.group');
     }
+
 
     function getPackageNameFromCard(card) {
         const title = card ? qs('h3', card) : null;
@@ -974,14 +1054,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     resetAllPackageCards();
                     selectedCard = null;
                     selectedPackageName = null;
-                    selectedPackageId = null;                 // 👈 reset id
+                    selectedPackageId = null;
+                    selectedPackagePricePerPerson = null;
                     alert('Package selection has been cleared.');
                 } else {
                     // chọn mới
                     resetAllPackageCards();
                     selectedCard = card;
                     selectedPackageName = getPackageNameFromCard(card);
-                    selectedPackageId = getPackageIdFromCard(card);   // 👈 lấy ComboId từ data-combo-id
+                    selectedPackageId = getPackageIdFromCard(card);
+                    selectedPackagePricePerPerson = getPackagePricePerPersonFromCard(card);
+                    console.log('[RD] selected pkg pricePerPerson=', selectedPackagePricePerPerson);
+                    if (!selectedPackageId) {
+                        alert('⚠️ Package selected but missing data-combo-id on card. Please check restaurant-details.xhtml.');
+                    }
+
                     applySelectedState(card);
                     alert(
                             'Selected package: ' +
