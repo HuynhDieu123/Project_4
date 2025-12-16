@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ================== TABS + SCROLL ==================
     const tabButtons = qsa('.tab-btn');
-    const sectionIds = ['overview', 'packages', 'gallery', 'reviews', 'availability'];
+    const sectionIds = ['overview', 'packages', 'menu', 'reviews', 'availability'];
 
     function setActiveTab(id) {
         tabButtons.forEach(btn => {

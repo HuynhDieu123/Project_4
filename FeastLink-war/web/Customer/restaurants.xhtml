@@ -216,9 +216,9 @@
                             <div class="space-y-2 group/field">
                                 <label class="flex items-center gap-2 text-sm font-semibold text-[#111827]">
                                     <i data-lucide="dollar-sign" class="w-4 h-4 text-[#D4AF37]"></i>
-                                    Budget per table
+                                    Budget per guest
                                 </label>
-                                <input id="budgetInput" type="text" placeholder="e.g., 5,000 $"
+                                <input id="budgetInput" type="text" placeholder="e.g., 10,000 $"
                                        class="w-full px-4 py-3 rounded-xl border-2 border-[#E5E7EB] bg-white text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] hover:border-[#E6C77F] transition-all" />
                             </div>
                         </div>
@@ -306,16 +306,18 @@
 
                                 <!-- Price Range -->
                                 <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Price per table</h3>
-                                    <input id="priceRangeDesktop" type="range" min="0" max="10000" step="100" value="10000"
+                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Price per guest</h3>
+                                    <input id="priceRangeMobile" type="range" min="0" max="10000" step="100" value="10000"
                                            class="js-price-range w-full h-2 bg-[#F5F5F4] rounded-full appearance-none cursor-pointer accent-[#E6C77F]" />
+
                                     <div class="flex justify-between mt-2 text-xs text-[#4B5563]">
-                                        <span>0 $</span>
-                                        <span class="js-price-label">10,000 $</span>
+                                        <span>$0</span>
+                                        <span class="js-price-label">$10,000</span>
                                     </div>
-                                    <p class="mt-1 text-[11px] text-[#6B7280] italic">
-                                        *1 table ≈ 10   guests (estimated)
-                                    </p>
+
+                                    <!--                                    <p class="mt-1 text-[11px] text-[#6B7280] italic">
+                                                                            *1 table ≈ 10   guests (estimated)
+                                                                        </p>-->
                                 </div>
 
                                 <!-- Event Types (multi-select) -->
@@ -547,16 +549,14 @@
 
                         <!-- Price -->
                         <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-                            <h3 class="text-sm font-semibold text-[#111827] mb-3">Price per table</h3>
-                            <input id="priceRangeMobile" type="range" min="0" max="2000000" step="50000" value="2000000"
+                            <h3 class="text-sm font-semibold text-[#111827] mb-3">Price per guest</h3>
+                            <input id="priceRangeMobile" type="range" min="0" max="10000" step="100" value="10000"
                                    class="js-price-range w-full h-2 bg-[#F5F5F4] rounded-full appearance-none cursor-pointer accent-[#E6C77F]" />
+
                             <div class="flex justify-between mt-2 text-xs text-[#4B5563]">
-                                <span>0 ₫</span>
-                                <span class="js-price-label">2,000,000 ₫</span>
+                                <span>$0</span>
+                                <span class="js-price-label">$10,000</span>
                             </div>
-                            <p class="mt-1 text-[11px] text-[#6B7280] italic">
-                                *1 table ≈ 10 guests (estimated)
-                            </p>
                         </div>
 
                         <!-- Event types (mobile) -->
