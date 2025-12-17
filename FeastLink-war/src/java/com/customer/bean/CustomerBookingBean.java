@@ -57,7 +57,9 @@ import com.mypack.vnpay.VnPayService;
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.mypack.entity.Payments;
+import com.mypack.entity.RestaurantCapacitySettings;
 import com.mypack.sessionbean.PaymentsFacadeLocal;
+import com.mypack.sessionbean.RestaurantCapacitySettingsFacadeLocal;
 
 @Named("customerBookingBean")
 @RequestScoped
@@ -102,7 +104,11 @@ public class CustomerBookingBean implements Serializable {
     @EJB
     private UserVouchersFacadeLocal userVouchersFacade;
 
+    @EJB
+    private RestaurantCapacitySettingsFacadeLocal capacitySettingsFacade;
 
+    private int guestMin;
+    private int guestMax;
 
     private List<EventTypes> allEventTypes;
 
@@ -212,7 +218,6 @@ public class CustomerBookingBean implements Serializable {
             restaurant = restaurantsFacade.find(restaurantId);
         }
 
-
         // keep booking page quiet, and try to recover restaurantId from session across postbacks.
         ExternalContext ec = ctx.getExternalContext();
         Map<String, Object> session = ec.getSessionMap();
@@ -243,6 +248,7 @@ public class CustomerBookingBean implements Serializable {
 
         restaurantName = safe(restaurant.getName());
         restaurantAddress = safe(restaurant.getAddress());
+        loadGuestBounds();
 
         // combo/package
         String comboParam = params.get("comboId");
@@ -308,6 +314,7 @@ public class CustomerBookingBean implements Serializable {
         if (guestCount <= 0) {
             guestCount = 200;
         }
+        clampGuestCount();
 
         // location type default
         if (locationType == null || locationType.isBlank()) {
@@ -543,6 +550,15 @@ public class CustomerBookingBean implements Serializable {
             }
             if (guestCount <= 0) {
                 guestCount = 200;
+            }
+            loadGuestBounds();
+
+            if (guestCount < guestMin || guestCount > guestMax) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                                "Invalid guests",
+                                "Guest count must be between " + guestMin + " and " + guestMax + "."));
+                return null;
             }
 
             if (!notBlank(locationType)) {
@@ -1200,6 +1216,41 @@ public class CustomerBookingBean implements Serializable {
         return null;
     }
 
+    private void loadGuestBounds() {
+        // MIN từ Restaurants.MinGuestCount
+        Integer minDb = (restaurant != null) ? restaurant.getMinGuestCount() : null;
+        guestMin = (minDb != null && minDb > 0) ? minDb : 1;
+
+        // MAX từ RestaurantCapacitySettings.MaxGuestsPerSlot
+        Integer maxDb = null;
+        try {
+            if (capacitySettingsFacade != null && restaurant != null) {
+                RestaurantCapacitySettings s = capacitySettingsFacade.findByRestaurant(restaurant);
+                if (s != null) {
+                    maxDb = s.getMaxGuestsPerSlot();
+                }
+            }
+        } catch (Exception ignore) {
+        }
+
+        // fallback nếu chưa có settings
+        guestMax = (maxDb != null && maxDb > 0) ? maxDb : (guestMin * 3);
+
+        // đảm bảo max >= min
+        if (guestMax < guestMin) {
+            guestMax = guestMin;
+        }
+    }
+
+    private void clampGuestCount() {
+        if (guestCount < guestMin) {
+            guestCount = guestMin;
+        }
+        if (guestCount > guestMax) {
+            guestCount = guestMax;
+        }
+    }
+
     // ===== Helpers =====
     private boolean notBlank(String s) {
         return s != null && !s.trim().isEmpty();
@@ -1285,6 +1336,7 @@ public class CustomerBookingBean implements Serializable {
 
     public void setGuestCount(int guestCount) {
         this.guestCount = guestCount;
+        clampGuestCount(); // ép về [guestMin..guestMax]
     }
 
     public String getLocationType() {
@@ -1507,6 +1559,14 @@ public class CustomerBookingBean implements Serializable {
 
     public List<String> getEndTimeOptions() {
         return endTimeOptions;
+    }
+
+    public int getGuestMin() {
+        return guestMin;
+    }
+
+    public int getGuestMax() {
+        return guestMax;
     }
 
 }
