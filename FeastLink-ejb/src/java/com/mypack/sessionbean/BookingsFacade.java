@@ -13,6 +13,10 @@ import jakarta.persistence.TypedQuery;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.mypack.entity.Restaurants;
+import java.util.ArrayList;
+import java.util.Date;
+
 /**
  *
  * @author Laptop
@@ -123,6 +127,39 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
         ).setParameter("rid", restaurantId)
                 .setParameter("cid", customerId)
                 .getResultList();
+    }
+
+    @Override
+    public List<Object[]> sumUsageByRestaurantAndDateRange(Restaurants restaurant, Date start, Date end, List<String> excludedBookingStatuses) {
+
+        StringBuilder jpql = new StringBuilder();
+        jpql.append("SELECT b.eventDate, SUM(b.guestCount), COUNT(b) ")
+                .append("FROM Bookings b ")
+                .append("WHERE b.restaurantId = :r ")
+                .append("AND b.eventDate BETWEEN :start AND :end ");
+
+        if (excludedBookingStatuses != null && !excludedBookingStatuses.isEmpty()) {
+            jpql.append("AND UPPER(b.bookingStatus) NOT IN :ex ");
+        }
+
+        jpql.append("GROUP BY b.eventDate");
+
+        TypedQuery<Object[]> q = em.createQuery(jpql.toString(), Object[].class);
+        q.setParameter("r", restaurant);
+        q.setParameter("start", start);
+        q.setParameter("end", end);
+
+        if (excludedBookingStatuses != null && !excludedBookingStatuses.isEmpty()) {
+            List<String> exUpper = new ArrayList<>();
+            for (String s : excludedBookingStatuses) {
+                if (s != null && !s.trim().isEmpty()) {
+                    exUpper.add(s.trim().toUpperCase());
+                }
+            }
+            q.setParameter("ex", exUpper);
+        }
+
+        return q.getResultList();
     }
 
 }

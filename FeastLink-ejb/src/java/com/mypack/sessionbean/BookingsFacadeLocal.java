@@ -5,7 +5,9 @@
 package com.mypack.sessionbean;
 
 import com.mypack.entity.Bookings;
+import com.mypack.entity.Restaurants;
 import jakarta.ejb.Local;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -44,5 +46,6 @@ public interface BookingsFacadeLocal {
     
     List<Bookings> findCompletedBookingsForReview(Long restaurantId, Long customerId);
 
+    List<Object[]> sumUsageByRestaurantAndDateRange(Restaurants restaurant, Date start, Date end, List<String> excludedBookingStatuses);
     
 }
