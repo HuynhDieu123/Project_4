@@ -431,34 +431,28 @@ const BookingUI = (function () {
     }
 
     function updateCapacity() {
-        const totalGuests = Math.max(1, parseInt(state.guestCount || '1', 10));
+        const mm = getGuestMinMax();
+
+        // đảm bảo state luôn nằm trong min/max
+        // Lấy số đang gõ để hiển thị
+        let displayGuests = parseInt(state.guestCount || '0', 10);
+        if (isNaN(displayGuests) || displayGuests <= 0)
+            displayGuests = mm.min;
+
+// Clamp cứng để submit (hidden)
+        const totalGuests = clampGuest(displayGuests);
+
+
         const tableCount = calcTablesFromGuests(totalGuests);
 
         const capacityEl = document.getElementById('capacity-status');
         const guestLabel = document.getElementById('guest-count-label');
-        if (!capacityEl || !guestLabel)
-            return;
-
-        let color = '#22C55E';
-        let message = 'Within capacity';
-
-        // rule theo guests
-        if (totalGuests >= 150 && totalGuests <= 250) {
-            color = '#22C55E';
-            message = 'Ideal for 150–250 guests';
-        } else if (totalGuests > 250 && totalGuests <= 400) {
-            color = '#FACC15';
-            message = 'Near maximum capacity';
-        } else if (totalGuests > 400) {
-            color = '#EF4444';
-            message = 'This venue supports ~100–500 guests';
+        if (capacityEl) {
+            capacityEl.style.color = '#22C55E';
+            capacityEl.textContent = 'Allowed: ' + mm.min + '–' + mm.max + ' guests';
         }
-
-        capacityEl.style.color = color;
-        if (capacityEl.lastChild)
-            capacityEl.lastChild.textContent = message;
-
-        guestLabel.classList.add('hidden');
+        if (guestLabel)
+            guestLabel.classList.add('hidden');
 
         const summaryLabel = document.getElementById('summary-table-guest');
         const packageLabel = document.getElementById('summary-package-label');
@@ -473,87 +467,101 @@ const BookingUI = (function () {
     }
 
 
+
     function updateSummary() {
 
-    const totalGuests = Math.max(1, parseInt(state.guestCount || '1', 10));
+        const totalGuests = Math.max(1, parseInt(state.guestCount || '1', 10));
 
-    const packageSubtotal = (state.pricePerGuest || 0) * totalGuests;
-    const menuSubtotal = (state.menuPricePerPerson || 0) * totalGuests;
+        const packageSubtotal = (state.pricePerGuest || 0) * totalGuests;
+        const menuSubtotal = (state.menuPricePerPerson || 0) * totalGuests;
 
-    const subtotal = packageSubtotal + menuSubtotal;
+        const subtotal = packageSubtotal + menuSubtotal;
 
-    // ✅ BỎ TAX (không tính, không cộng)
-    const tax = 0;
+        // ✅ BỎ TAX (không tính, không cộng)
+        const tax = 0;
 
-    const totalBeforeDiscount = subtotal + state.serviceCharge; // không cộng tax
+        const totalBeforeDiscount = subtotal + state.serviceCharge; // không cộng tax
 
-    // discount là số tiền trừ trực tiếp vào tổng
-    let discount = Math.round(state.discount || 0);
-    if (discount < 0) discount = 0;
-    if (discount > totalBeforeDiscount) discount = totalBeforeDiscount;
+        // discount là số tiền trừ trực tiếp vào tổng
+        let discount = Math.round(state.discount || 0);
+        if (discount < 0)
+            discount = 0;
+        if (discount > totalBeforeDiscount)
+            discount = totalBeforeDiscount;
 
-    const totalWithCharges = Math.max(totalBeforeDiscount - discount, 0);
-    const depositAmount = Math.round(totalWithCharges * (state.depositPercentage / 100));
-    const remainingAmount = totalWithCharges - depositAmount;
+        const totalWithCharges = Math.max(totalBeforeDiscount - discount, 0);
+        const depositAmount = Math.round(totalWithCharges * (state.depositPercentage / 100));
+        const remainingAmount = totalWithCharges - depositAmount;
 
-    state.tax = 0;
-    state.totalBeforeDiscount = totalBeforeDiscount;
-    state.totalAmount = totalWithCharges;
-    state.depositAmount = depositAmount;
-    state.remainingAmount = remainingAmount;
+        state.tax = 0;
+        state.totalBeforeDiscount = totalBeforeDiscount;
+        state.totalAmount = totalWithCharges;
+        state.depositAmount = depositAmount;
+        state.remainingAmount = remainingAmount;
 
-    // hidden fields
-    const totalField = document.getElementById('hf-total-amount');
-    if (totalField) totalField.value = totalWithCharges;
+        // hidden fields
+        const totalField = document.getElementById('hf-total-amount');
+        if (totalField)
+            totalField.value = totalWithCharges;
 
-    const depositField = document.getElementById('hf-deposit-amount');
-    if (depositField) depositField.value = depositAmount;
+        const depositField = document.getElementById('hf-deposit-amount');
+        if (depositField)
+            depositField.value = depositAmount;
 
-    const remainingField = document.getElementById('hf-remaining-amount');
-    if (remainingField) remainingField.value = remainingAmount;
+        const remainingField = document.getElementById('hf-remaining-amount');
+        if (remainingField)
+            remainingField.value = remainingAmount;
 
-    // ✅ voucher hidden fields cho server xử lý
-    syncVoucherHidden();
+        // ✅ voucher hidden fields cho server xử lý
+        syncVoucherHidden();
 
-    // DOM
-    const pkgTotalEl = document.getElementById('summary-package-total');
-    if (pkgTotalEl) pkgTotalEl.textContent = '$' + formatNumber(packageSubtotal);
+        // DOM
+        const pkgTotalEl = document.getElementById('summary-package-total');
+        if (pkgTotalEl)
+            pkgTotalEl.textContent = '$' + formatNumber(packageSubtotal);
 
-    const menuEl = document.getElementById('summary-menu-total');
-    if (menuEl) menuEl.textContent = '$' + formatNumber(menuSubtotal);
+        const menuEl = document.getElementById('summary-menu-total');
+        if (menuEl)
+            menuEl.textContent = '$' + formatNumber(menuSubtotal);
 
-    const serviceEl = document.getElementById('summary-service-charge');
-    if (serviceEl) serviceEl.textContent = '$' + formatNumber(state.serviceCharge);
+        const serviceEl = document.getElementById('summary-service-charge');
+        if (serviceEl)
+            serviceEl.textContent = '$' + formatNumber(state.serviceCharge);
 
-    // ✅ Ẩn dòng tax (nếu có)
-    const taxRow = document.getElementById('summary-tax-row');
-    if (taxRow) taxRow.classList.add('hidden');
+        // ✅ Ẩn dòng tax (nếu có)
+        const taxRow = document.getElementById('summary-tax-row');
+        if (taxRow)
+            taxRow.classList.add('hidden');
 
-    // (nếu bro không có taxRow, vẫn set về 0 cho chắc)
-    const taxEl = document.getElementById('summary-tax');
-    if (taxEl) taxEl.textContent = '$0';
+        // (nếu bro không có taxRow, vẫn set về 0 cho chắc)
+        const taxEl = document.getElementById('summary-tax');
+        if (taxEl)
+            taxEl.textContent = '$0';
 
-    const discountRow = document.getElementById('summary-discount-row');
-    const discountEl = document.getElementById('summary-discount');
-    if (discountRow && discountEl) {
-        if (discount > 0) {
-            discountRow.classList.remove('hidden');
-            discountEl.textContent = '-$' + formatNumber(discount);
-        } else {
-            discountRow.classList.add('hidden');
+        const discountRow = document.getElementById('summary-discount-row');
+        const discountEl = document.getElementById('summary-discount');
+        if (discountRow && discountEl) {
+            if (discount > 0) {
+                discountRow.classList.remove('hidden');
+                discountEl.textContent = '-$' + formatNumber(discount);
+            } else {
+                discountRow.classList.add('hidden');
+            }
         }
+
+        const totalEl = document.getElementById('summary-total-amount');
+        const depositEl = document.getElementById('summary-deposit');
+        const remainingEl = document.getElementById('summary-remaining');
+        if (totalEl)
+            totalEl.textContent = '$' + formatNumber(totalWithCharges);
+        if (depositEl)
+            depositEl.textContent = '$' + formatNumber(depositAmount);
+        if (remainingEl)
+            remainingEl.textContent = '$' + formatNumber(remainingAmount);
+
+        // ✅ luôn đồng bộ hidden payment sau khi tính tiền xong
+        syncPaymentHidden();
     }
-
-    const totalEl = document.getElementById('summary-total-amount');
-    const depositEl = document.getElementById('summary-deposit');
-    const remainingEl = document.getElementById('summary-remaining');
-    if (totalEl) totalEl.textContent = '$' + formatNumber(totalWithCharges);
-    if (depositEl) depositEl.textContent = '$' + formatNumber(depositAmount);
-    if (remainingEl) remainingEl.textContent = '$' + formatNumber(remainingAmount);
-
-    // ✅ luôn đồng bộ hidden payment sau khi tính tiền xong
-    syncPaymentHidden();
-}
 
     function setServiceLevel(level) {
         const key = (level || '').toLowerCase();
@@ -915,17 +923,17 @@ const BookingUI = (function () {
             }
 
             if (summarySlotEl) {
-    // ưu tiên lấy từ selection hiện tại trong step 1 (nếu có)
-    const start = document.getElementById('hf-start-time')?.value;
-    const end = document.getElementById('hf-end-time')?.value;
-    const slotName = document.getElementById('hf-time-slot-name')?.value;
+                // ưu tiên lấy từ selection hiện tại trong step 1 (nếu có)
+                const start = document.getElementById('hf-start-time')?.value;
+                const end = document.getElementById('hf-end-time')?.value;
+                const slotName = document.getElementById('hf-time-slot-name')?.value;
 
-    if (slotName && start && end) {
-        summarySlotEl.textContent = slotName + ' (' + start + '–' + end + ')';
-    } else if (slotParam) {
-        summarySlotEl.textContent = slotParam; // fallback từ URL
-    }
-}
+                if (slotName && start && end) {
+                    summarySlotEl.textContent = slotName + ' (' + start + '–' + end + ')';
+                } else if (slotParam) {
+                    summarySlotEl.textContent = slotParam; // fallback từ URL
+                }
+            }
 
         }
 
@@ -934,40 +942,82 @@ const BookingUI = (function () {
         const plusBtn = document.getElementById('btn-plus-guest');
         const guestInput = document.getElementById('guest-count-input');
 
+        function setGuestButtonsDisabled(v) {
+            const mm = getGuestMinMax();
+            if (minusBtn)
+                minusBtn.disabled = (v <= mm.min);
+            if (plusBtn)
+                plusBtn.disabled = (v >= mm.max);
+        }
+
+// Clamp cứng (dùng cho click +/- và blur)
+        function syncGuestUIHard(rawVal) {
+            const v = clampGuest(rawVal);
+
+            guestInput.value = String(v);
+            state.guestCount = v;
+
+            setGuestButtonsDisabled(v);
+            updateCapacity();
+            updateSummary();
+        }
+
+// Clamp mềm khi đang gõ: CHỈ chặn vượt MAX, không ép về MIN
+        function syncGuestUISoft() {
+            const mm = getGuestMinMax();
+            const raw = guestInput.value;
+
+            // cho phép user xóa trắng để gõ lại
+            if (raw === '' || raw == null) {
+                // đừng ép min ngay lúc gõ
+                setGuestButtonsDisabled(mm.min);
+                return;
+            }
+
+            let v = parseInt(raw, 10);
+            if (isNaN(v))
+                return;
+
+            // đang gõ thì chỉ giới hạn trần max
+            if (v > mm.max) {
+                v = mm.max;
+                guestInput.value = String(v);
+            }
+
+            state.guestCount = v;
+
+            setGuestButtonsDisabled(v);
+            updateCapacity();
+            updateSummary();
+        }
+
         if (minusBtn && plusBtn && guestInput) {
-            // sync state từ input lúc load
-            state.guestCount = parseInt(guestInput.value || '1', 10) || 1;
+            guestInput.addEventListener('keydown', function (e) {
+                if (['e', 'E', '+', '-', '.'].includes(e.key))
+                    e.preventDefault();
+            });
+
+            // init
+            syncGuestUIHard(guestInput.value);
 
             minusBtn.addEventListener('click', function () {
-                let val = parseInt(guestInput.value || '1', 10);
-                if (val > 1)
-                    val--;
-                guestInput.value = String(val);
-                state.guestCount = val;
-                updateCapacity();
-                updateSummary();
+                syncGuestUIHard((parseInt(guestInput.value || '0', 10) || 0) - 1);
             });
 
             plusBtn.addEventListener('click', function () {
-                let val = parseInt(guestInput.value || '1', 10);
-                val++;
-                guestInput.value = String(val);
-                state.guestCount = val;
-                updateCapacity();
-                updateSummary();
+                syncGuestUIHard((parseInt(guestInput.value || '0', 10) || 0) + 1);
             });
 
+            // gõ tự do trong khoảng, chỉ chặn vượt max
             guestInput.addEventListener('input', function () {
-                let val = parseInt(guestInput.value || '1', 10);
-                if (isNaN(val) || val < 1)
-                    val = 1;
-                guestInput.value = String(val);
-                state.guestCount = val;
-                updateCapacity();
-                updateSummary();
+                syncGuestUISoft();
+            });
+
+            // rời ô mới clamp cứng về min/max
+            guestInput.addEventListener('blur', function () {
+                syncGuestUIHard(guestInput.value);
             });
         }
-
 
         // service level buttons
         document.querySelectorAll('.service-level-btn').forEach(btn => {
@@ -980,10 +1030,11 @@ const BookingUI = (function () {
         // location buttons
         document.querySelectorAll('.location-btn').forEach(btn => {
             btn.addEventListener('click', function () {
-                const type = this.getAttribute('data-location');
+                const type = (this.getAttribute('data-location') || '').toLowerCase();
                 setLocationType(type);
             });
         });
+
 
 
 
@@ -1177,22 +1228,25 @@ const BookingUI = (function () {
 })();
 
 function getGuestMinMax() {
-  const input = document.getElementById('guest-count-input');
-  const min = parseInt(input?.getAttribute('min') || '1', 10);
-  const max = parseInt(input?.getAttribute('max') || '999999', 10);
-  return {
-    min: (isNaN(min) || min < 1) ? 1 : min,
-    max: (isNaN(max) || max < 1) ? 999999 : max
-  };
+    const input = document.getElementById('guest-count-input');
+    const min = parseInt(input?.getAttribute('min') || '1', 10);
+    const max = parseInt(input?.getAttribute('max') || '999999', 10);
+    return {
+        min: (isNaN(min) || min < 1) ? 1 : min,
+        max: (isNaN(max) || max < 1) ? 999999 : max
+    };
 }
 
 function clampGuest(val) {
-  const mm = getGuestMinMax();
-  let v = parseInt(val || '0', 10);
-  if (isNaN(v)) v = mm.min;
-  if (v < mm.min) v = mm.min;
-  if (v > mm.max) v = mm.max;
-  return v;
+    const mm = getGuestMinMax();
+    let v = parseInt(val || '0', 10);
+    if (isNaN(v))
+        v = mm.min;
+    if (v < mm.min)
+        v = mm.min;
+    if (v > mm.max)
+        v = mm.max;
+    return v;
 }
 
 

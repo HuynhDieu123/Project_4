@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
+import com.mypack.entity.RestaurantCapacitySettings;
+import com.mypack.sessionbean.RestaurantCapacitySettingsFacadeLocal;
 
 /**
  * Bean dùng cho trang Customer/restaurants.xhtml Đọc dữ liệu nhà hàng từ DB và
@@ -99,9 +101,6 @@ public class CustomerRestaurantsBean implements Serializable {
             card.setCancelDays(nvlInt(r.getCancelFullRefundDays(), 0));
             card.setDepositPercent(nvlDecimal(r.getDefaultDepositPercent(), 0d));
 
-            // Sức chứa: dùng MinGuestCount, Max gấp 3 lần (demo)
-            int minGuests = (r.getMinGuestCount() != null) ? r.getMinGuestCount() : 0;
-
 // ✅ lấy max từ RestaurantCapacitySettings
             Integer maxFromSetting = null;
             try {
@@ -112,18 +111,30 @@ public class CustomerRestaurantsBean implements Serializable {
             } catch (Exception ignore) {
             }
 
-// fallback nếu chưa có setting
-            int maxGuests = (maxFromSetting != null && maxFromSetting > 0)
-                    ? maxFromSetting
-                    : ((minGuests > 0) ? (minGuests * 3) : 200);
+            int minGuests = nvlInt(r.getMinGuestCount(), 0);
+            int capacityMin = (minGuests > 0) ? minGuests : 30;
 
-// đảm bảo max không nhỏ hơn min
-            if (maxGuests < minGuests) {
-                maxGuests = minGuests;
+            int capacityMax = 0;
+            try {
+                // ✅ Lấy settings theo nhà hàng
+                RestaurantCapacitySettings st = capacitySettingsFacade.findByRestaurant(r);
+                if (st != null && st.getMaxGuestsPerSlot() != null && st.getMaxGuestsPerSlot() > 0) {
+                    capacityMax = st.getMaxGuestsPerSlot();
+                }
+            } catch (Exception ignore) {
             }
 
-            card.setCapacityMin(minGuests);
-            card.setCapacityMax(maxGuests);
+// fallback nếu nhà hàng chưa có settings
+            if (capacityMax <= 0) {
+                capacityMax = capacityMin * 3; // hoặc capacityMin nếu bro muốn “min=min”
+            }
+
+            if (capacityMax < capacityMin) {
+                capacityMax = capacityMin;
+            }
+
+            card.setCapacityMin(capacityMin);
+            card.setCapacityMax(capacityMax);
 
             // Ảnh: lấy từ RestaurantImages (ưu tiên IsPrimary)
             String imageUrl = null;

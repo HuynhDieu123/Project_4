@@ -445,15 +445,17 @@
                                                 </button>
 
                                                 <div class="flex-1 text-center">
-                                                    <input type="number" id="guest-count-input" min="1" value="200"
+                                                    <input type="number" id="guest-count-input"  min="#{customerBookingBean.guestMin}"
+                                                           max="#{customerBookingBean.guestMax}"
+                                                           value="#{customerBookingBean.guestCount}"
+                                                           inputmode="numeric"
                                                            class="w-full text-3xl font-bold text-[#111827] text-center bg-transparent border-0
                                                            focus:outline-none focus:ring-0"/>
 
-                                                    <div id="capacity-status"
-                                                         class="text-sm font-medium text-[#22C55E] flex items-center justify-center gap-1">
-                                                        <i data-lucide="users" class="w-4 h-4"></i>
-                                                        Ideal for 150–250 guests
+                                                    <div id="capacity-status" class="text-xs text-gray-400">
+                                                        Allowed: #{customerBookingBean.guestMin}–#{customerBookingBean.guestMax} guests
                                                     </div>
+
 
                                                     <div class="text-xs text-[#4B5563] mt-1" id="guest-count-label">
                                                         (~20 tables at 10 guests/table)

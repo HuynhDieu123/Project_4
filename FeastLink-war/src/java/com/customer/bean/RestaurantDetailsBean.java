@@ -110,10 +110,22 @@ public class RestaurantDetailsBean implements Serializable {
         } catch (Exception ignored) {
         }
 
-        // ==== Capacity (use minGuest * 3 as max demo) ====
+        // ==== Capacity (MinGuestCount + RestaurantCapacitySettings.MaxGuestsPerSlot) ====
         Integer minGuests = restaurant.getMinGuestCount();
         capacityMin = (minGuests != null && minGuests > 0) ? minGuests : 30;
-        capacityMax = capacityMin * 3;
+
+// gọi hàm lấy settings từ DB
+        loadCapacitySettingsFor(restaurant);
+
+// max lấy từ settings (maxGuestsPerSlot đã được set trong loadCapacitySettingsFor)
+        capacityMax = (maxGuestsPerSlot != null && maxGuestsPerSlot > 0)
+                ? maxGuestsPerSlot
+                : capacityMin; // fallback nếu chưa có settings
+
+// đảm bảo max >= min
+        if (capacityMax < capacityMin) {
+            capacityMax = capacityMin;
+        }
 
         // =================== IMAGES (IsPrimary + SortOrder) ===================
         heroImageUrl = null;
