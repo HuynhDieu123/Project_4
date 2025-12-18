@@ -1,4 +1,4 @@
-<ui:composition 
+<ui:composition
     xmlns="http://www.w3.org/1999/xhtml"
     xmlns:h="jakarta.faces.html"
     xmlns:ui="jakarta.faces.facelets"
@@ -7,12 +7,22 @@
 
     <ui:define name="title">Dashboard Overview</ui:define>
 
+    <!-- Chart.js -->
+    <ui:define name="head">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </ui:define>
+
     <ui:define name="content">
 
-        <div class="space-y-8">
+        <div class="relative space-y-8">
+
+            <!-- luxury glow -->
+            <div class="pointer-events-none absolute -inset-x-10 -top-10 h-56
+                        bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.18),transparent_60%)]
+                        blur-2xl"></div>
 
             <!-- HEADER INTRO -->
-            <div class="flex items-start justify-between gap-4">
+            <div class="relative flex items-start justify-between gap-4">
                 <div>
                     <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">
                         FeastLink overview
@@ -30,8 +40,8 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         Updated just now
                     </div>
-                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 uppercase tracking-[0.18em]">
-                        <span class="material-symbols-outlined text-[15px]"
+                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50 to-white text-slate-600 uppercase tracking-[0.18em]">
+                        <span class="material-symbols-outlined text-[15px] text-amber-700"
                               style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
                             calendar_month
                         </span>
@@ -41,7 +51,7 @@
             </div>
 
             <!-- ==== TOP METRICS WRAPPER ==== -->
-            <section class="rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/70 p-6">
+            <section class="rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/70 p-6 relative">
                 <div class="flex items-center justify-between mb-5 gap-3">
                     <div>
                         <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">
@@ -56,11 +66,11 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-5">
 
                     <!-- Customers -->
-                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-sky-100/70 blur-2xl group-hover:bg-sky-200/80"></div>
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-amber-100/70 blur-2xl group-hover:bg-amber-200/80"></div>
                         <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50">
-                                <span class="material-symbols-outlined text-sky-500 text-[22px]"
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100/70">
+                                <span class="material-symbols-outlined text-amber-700 text-[22px]"
                                       style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
                                     group
                                 </span>
@@ -80,12 +90,12 @@
                     </div>
 
                     <!-- Restaurants -->
-                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-violet-100/70 blur-2xl group-hover:bg-violet-200/80"></div>
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-slate-200/70 blur-2xl group-hover:bg-slate-300/70"></div>
                         <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50">
-                                <span class="material-symbols-outlined text-violet-500 text-[22px]"
-                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24%;">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white border border-slate-200">
+                                <span class="material-symbols-outlined text-slate-700 text-[22px]"
+                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
                                     storefront
                                 </span>
                             </div>
@@ -107,8 +117,8 @@
                     <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50/70 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
                         <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-emerald-100/70 blur-2xl group-hover:bg-emerald-200/80"></div>
                         <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50">
-                                <span class="material-symbols-outlined text-emerald-500 text-[22px]"
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-100/70">
+                                <span class="material-symbols-outlined text-emerald-600 text-[22px]"
                                       style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
                                     event_list
                                 </span>
@@ -128,11 +138,11 @@
                     </div>
 
                     <!-- Monthly revenue -->
-                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50/70 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-emerald-100/70 blur-2xl group-hover:bg-emerald-200/80"></div>
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/70 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-amber-100/70 blur-2xl group-hover:bg-amber-200/80"></div>
                         <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50">
-                                <span class="material-symbols-outlined text-emerald-500 text-[22px]"
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100/70">
+                                <span class="material-symbols-outlined text-amber-700 text-[22px]"
                                       style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
                                     payments
                                 </span>
@@ -141,7 +151,7 @@
                                 <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
                                     Monthly revenue
                                 </p>
-                                <p class="mt-1 text-[22px] font-bold text-emerald-600 leading-none whitespace-nowrap">
+                                <p class="mt-1 text-[22px] font-bold text-slate-900 leading-none whitespace-nowrap">
                                     #{dashboardBean.formattedMonthlyRevenue}
                                 </p>
                                 <p class="mt-1 text-[11px] text-slate-400">
@@ -155,7 +165,7 @@
                     <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
                         <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-rose-100/70 blur-2xl group-hover:bg-rose-200/80"></div>
                         <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 border border-rose-100/70">
                                 <span class="material-symbols-outlined text-rose-500 text-[22px]"
                                       style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
                                     cancel
@@ -165,7 +175,7 @@
                                 <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
                                     Cancellation rate
                                 </p>
-                                <p class="mt-1 text-[24px] font-bold text-rose-500 leading-none">
+                                <p class="mt-1 text-[24px] font-bold text-rose-600 leading-none">
                                     #{dashboardBean.cancelRate}%
                                 </p>
                                 <p class="mt-1 text-[11px] text-slate-400">
@@ -179,8 +189,8 @@
                     <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
                         <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-amber-100/70 blur-2xl group-hover:bg-amber-200/80"></div>
                         <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50">
-                                <span class="material-symbols-outlined text-amber-500 text-[22px]"
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100/70">
+                                <span class="material-symbols-outlined text-amber-700 text-[22px]"
                                       style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
                                     pending_actions
                                 </span>
@@ -189,7 +199,7 @@
                                 <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
                                     Pending approvals
                                 </p>
-                                <p class="mt-1 text-[24px] font-bold text-amber-500 leading-none">
+                                <p class="mt-1 text-[24px] font-bold text-amber-700 leading-none">
                                     #{dashboardBean.pendingApprovals}
                                 </p>
                                 <p class="mt-1 text-[11px] text-slate-400">
@@ -201,6 +211,191 @@
 
                 </div>
             </section>
+
+            <!-- ==== CHARTS (STATISTICS) ==== -->
+            <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+                <!-- Revenue trend -->
+                <div class="xl:col-span-2 rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/70 p-6">
+                    <div class="flex items-start justify-between gap-3 mb-4">
+                        <div>
+                            <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Revenue</p>
+                            <h3 class="mt-1 text-lg font-semibold text-slate-900">Monthly revenue trend</h3>
+                            <p class="mt-1 text-xs text-slate-500">Confirmed bookings revenue by month.</p>
+                        </div>
+                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border border-amber-200/60 bg-amber-50 text-[11px] text-slate-600">
+                            <span class="material-symbols-outlined text-[16px] text-amber-700">finance</span>
+                            This year
+                        </span>
+                    </div>
+
+                    <div class="h-[280px]">
+                        <canvas id="revChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Right column: Status + Cancel rate -->
+                <div class="space-y-6">
+
+                    <!-- Booking status -->
+                    <div class="rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/70 p-6">
+                        <div class="mb-4">
+                            <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Bookings</p>
+                            <h3 class="mt-1 text-lg font-semibold text-slate-900">Status distribution</h3>
+                            <p class="mt-1 text-xs text-slate-500">Overall booking status breakdown.</p>
+                        </div>
+
+                        <div class="h-[220px]">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+                            <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+                                <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Confirmed</p>
+                                <p class="mt-1 text-lg font-bold text-slate-900">#{dashboardBean.confirmedCount}</p>
+                            </div>
+                            <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+                                <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Pending</p>
+                                <p class="mt-1 text-lg font-bold text-slate-900">#{dashboardBean.pendingCount}</p>
+                            </div>
+                            <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+                                <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Cancelled</p>
+                                <p class="mt-1 text-lg font-bold text-slate-900">#{dashboardBean.cancelledCount}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cancellation rate chart -->
+                    <div class="rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/70 p-6">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                                <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Risk</p>
+                                <h3 class="mt-1 text-lg font-semibold text-slate-900">Cancellation rate trend</h3>
+                                <p class="mt-1 text-xs text-slate-500">Cancellation rate (%) by month.</p>
+                            </div>
+
+                            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border border-rose-200/60 bg-rose-50 text-[11px] text-rose-700 whitespace-nowrap">
+                                <span class="material-symbols-outlined text-[16px]">cancel</span>
+                                #{dashboardBean.cancelRate}%
+                            </span>
+                        </div>
+
+                        <div class="h-[220px]">
+                            <canvas id="cancelChart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- JSON DATA for charts -->
+            <script type="application/json" id="revData">
+                <h:outputText value="#{dashboardBean.revenueByMonthJson}" escape="false"/>
+            </script>
+            <script type="application/json" id="statusData">
+                <h:outputText value="#{dashboardBean.bookingsByStatusJson}" escape="false"/>
+            </script>
+            <script type="application/json" id="cancelData">
+                <h:outputText value="#{dashboardBean.cancelRateByMonthJson}" escape="false"/>
+            </script>
+
+            <!-- Chart init -->
+            <script>
+                //<![CDATA[
+                window.addEventListener('load', function () {
+                    function safeJson(id, fallback) {
+                        try {
+                            const el = document.getElementById(id);
+                            const txt = (el && el.textContent) ? el.textContent.trim() : '';
+                            if (!txt) return fallback;
+                            return JSON.parse(txt);
+                        } catch (e) {
+                            return fallback;
+                        }
+                    }
+
+                    const rev = safeJson('revData', {labels:[], values:[]});
+                    const stt = safeJson('statusData', {labels:[], values:[]});
+                    const cnl = safeJson('cancelData', {labels:[], values:[]}); // values: [0..100]
+
+                    // Revenue line chart
+                    const revCtx = document.getElementById('revChart');
+                    if (revCtx) {
+                        new Chart(revCtx, {
+                            type: 'line',
+                            data: {
+                                labels: rev.labels || [],
+                                datasets: [{
+                                    label: 'Revenue',
+                                    data: rev.values || [],
+                                    tension: 0.35,
+                                    borderWidth: 2,
+                                    pointRadius: 2,
+                                    fill: true
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                interaction: { mode: 'index', intersect: false },
+                                scales: {
+                                    x: { grid: { display: false } },
+                                    y: { ticks: { callback: (v) => { try { return Number(v).toLocaleString(); } catch(e){ return v; } } } }
+                                }
+                            }
+                        });
+                    }
+
+                    // Status doughnut chart
+                    const sttCtx = document.getElementById('statusChart');
+                    if (sttCtx) {
+                        new Chart(sttCtx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: stt.labels || [],
+                                datasets: [{ data: stt.values || [], borderWidth: 1 }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { position: 'bottom' } },
+                                cutout: '65%'
+                            }
+                        });
+                    }
+
+                    // Cancellation rate chart (bar)
+                    const cnlCtx = document.getElementById('cancelChart');
+                    if (cnlCtx) {
+                        new Chart(cnlCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: cnl.labels || [],
+                                datasets: [{
+                                    label: 'Cancel rate (%)',
+                                    data: cnl.values || [],
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    x: { grid: { display: false } },
+                                    y: {
+                                        beginAtZero: true,
+                                        suggestedMax: 100,
+                                        ticks: { callback: (v) => v + '%' }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+                //]]>
+            </script>
 
             <!-- ==== RECENT BOOKINGS ==== -->
             <section class="bg-white/95 rounded-3xl p-8 shadow-xl border border-slate-100 backdrop-blur">
@@ -214,8 +409,7 @@
                         </p>
                     </div>
 
-                    <span
-                        class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 text-[11px] font-medium tracking-[0.18em] uppercase text-slate-500 bg-slate-50">
+                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 text-[11px] font-medium tracking-[0.18em] uppercase text-slate-500 bg-slate-50">
                         <span class="material-symbols-outlined text-[15px]"
                               style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
                             monitoring
