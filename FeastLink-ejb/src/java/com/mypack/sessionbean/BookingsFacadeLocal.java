@@ -1,17 +1,10 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
- */
 package com.mypack.sessionbean;
 
 import com.mypack.entity.Bookings;
 import jakarta.ejb.Local;
+import java.util.Date;
 import java.util.List;
 
-/**
- *
- * @author Laptop
- */
 @Local
 public interface BookingsFacadeLocal {
 
@@ -26,23 +19,26 @@ public interface BookingsFacadeLocal {
     List<Bookings> findAll();
 
     List<Bookings> findRange(int[] range);
-    
+
     long countAllBookings();
-    
+
     double calculateMonthlyRevenue();
-    
+
     double getCancelRate();
-    
+
     long countPendingApprovals();
-    public double calculateCancelRate();
-    
+
+    double calculateCancelRate();
+
     List<Bookings> findRecentBookings();
 
     int count();
-    
+
     long countByEventType(Integer eventTypeId);
-    
+
     List<Bookings> findCompletedBookingsForReview(Long restaurantId, Long customerId);
 
-    
+    // ✅ NEW: gom booking theo ngày để vẽ chấm trên calendar
+    // rows: [eventDate(Date), totalGuests(Number), bookingCount(Long)]
+    List<Object[]> aggregateForCalendar(Long restaurantId, Date fromInclusive, Date toExclusive);
 }

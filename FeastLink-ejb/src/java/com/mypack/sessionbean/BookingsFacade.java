@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mypack.sessionbean;
 
 import com.mypack.entity.Bookings;
@@ -9,14 +5,10 @@ import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
-import java.time.LocalDate;
+import jakarta.persistence.TemporalType;
+import java.util.Date;
 import java.util.List;
 
-/**
- *
- * @author Laptop
- */
 @Stateless
 public class BookingsFacade extends AbstractFacade<Bookings> implements BookingsFacadeLocal {
 
@@ -32,47 +24,37 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
         super(Bookings.class);
     }
 
-    // Tổng booking
     @Override
     public long countAllBookings() {
         return em.createQuery("SELECT COUNT(b) FROM Bookings b", Long.class)
                 .getSingleResult();
     }
 
-    // Doanh thu tháng hiện tại
     @Override
     public double calculateMonthlyRevenue() {
-        String sql = "SELECT SUM(b.totalAmount) FROM Bookings b"; // JPQL hoặc native tùy bạn
-
-        Query q = em.createQuery(sql);  // hoặc createNativeQuery
+        String sql = "SELECT SUM(b.totalAmount) FROM Bookings b";
+        Query q = em.createQuery(sql);
         Object raw = q.getSingleResult();
-
         if (raw == null) {
             return 0d;
         }
-
-        Number num = (Number) raw;      // BigDecimal cũng là Number
-        return num.doubleValue();       // chuyển về double
+        Number num = (Number) raw;
+        return num.doubleValue();
     }
 
-    // Tỷ lệ hủy
     @Override
     public double calculateCancelRate() {
-
         long cancelled = em.createQuery(
                 "SELECT COUNT(b) FROM Bookings b WHERE b.bookingStatus = 'CANCELLED'",
                 Long.class).getSingleResult();
 
         long total = countAllBookings();
-
         if (total == 0) {
             return 0;
         }
-
         return ((double) cancelled / total) * 100;
     }
 
-    // Chờ duyệt
     @Override
     public long countPendingApprovals() {
         return em.createQuery(
@@ -80,7 +62,6 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
                 Long.class).getSingleResult();
     }
 
-    // Booking gần nhất (3 cái)
     @Override
     public List<Bookings> findRecentBookings() {
         return em.createQuery(
@@ -91,7 +72,7 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
 
     @Override
     public double getCancelRate() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -107,8 +88,8 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
         return (count != null) ? count : 0L;
     }
 
+    @Override
     public List<Bookings> findCompletedBookingsForReview(Long restaurantId, Long customerId) {
-        // Chỉ lấy booking COMPLETED và chưa có review (isDeleted=false) cho booking đó
         return em.createQuery(
                 "SELECT b FROM Bookings b "
                 + "WHERE b.restaurantId.restaurantId = :rid "
@@ -125,4 +106,24 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
                 .getResultList();
     }
 
+    // ✅ NEW: gom theo ngày
+    @Override
+    public List<Object[]> aggregateForCalendar(Long restaurantId, Date fromInclusive, Date toExclusive) {
+
+        // ✅ TRIM để tránh lỗi dữ liệu có khoảng trắng
+        // ✅ bạn muốn tính PENDING luôn thì để như dưới
+        String jpql
+                = "SELECT b.eventDate, SUM(b.guestCount), COUNT(b) "
+                + "FROM Bookings b "
+                + "WHERE b.restaurantId.restaurantId = :rid "
+                + "AND b.eventDate >= :fromD AND b.eventDate < :toD "
+                + "AND TRIM(UPPER(b.bookingStatus)) IN ('PENDING','CONFIRMED','COMPLETED') "
+                + "GROUP BY b.eventDate";
+
+        return em.createQuery(jpql, Object[].class)
+                .setParameter("rid", restaurantId)
+                .setParameter("fromD", fromInclusive, TemporalType.DATE)
+                .setParameter("toD", toExclusive, TemporalType.DATE)
+                .getResultList();
+    }
 }

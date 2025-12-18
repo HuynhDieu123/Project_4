@@ -88,20 +88,20 @@
                                 </span>
                                 <span class="inline-flex items-center gap-1">
                                     <span class="w-2 h-2 rounded-full bg-champagne-gold"></span>
-                                    Gần đầy
+                                    Almost Full
                                 </span>
                                 <span class="inline-flex items-center gap-1">
                                     <span class="w-2 h-2 rounded-full bg-error-red"></span>
-                                    Đã đầy
+                                    Full
                                 </span>
                                 <span class="inline-flex items-center gap-1">
                                     <span class="w-2 h-2 rounded-full bg-gray-400"></span>
-                                    Bị chặn
+                                    Blocked
                                 </span>
                                 <!-- NEW: MinDaysInAdvance -->
                                 <span class="inline-flex items-center gap-1">
                                     <span class="w-2 h-2 rounded-full bg-error-red"></span>
-                                    Chưa đủ ngày đặt trước
+                                    Not enough days to reserve.
                                 </span>
                             </div>
                         </div>
@@ -201,7 +201,7 @@
                     <h:form id="limitsForm" styleClass="space-y-3">
                         <div>
                             <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                Số khách tối đa mỗi ngày
+                                Maximum number of guests per day
                             </label>
                             <h:inputText value="#{capacityAvailabilityBean.defaultMaxGuestsPerDay}"
                                          styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
@@ -209,7 +209,7 @@
 
                         <div>
                             <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                Số booking tối đa mỗi ngày
+                                Maximum number of bookings per day
                             </label>
                             <h:inputText value="#{capacityAvailabilityBean.defaultMaxBookingsPerDay}"
                                          styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
@@ -347,13 +347,13 @@
                         <!-- Status tự tính -->
                         <div class="rounded-xl bg-background-soft px-3 py-2 text-xs text-text-secondary-light">
                             <div>
-                                Auto status (dựa trên % sử dụng):
+                                Auto status (based on % usage):
                                 <span class="font-semibold text-text-main-light">
                                     #{capacityAvailabilityBean.selectedStatus}
                                 </span>
                             </div>
                             <div class="mt-1 text-[11px]">
-                                Quy tắc: 0% = Available, ≥50% = Gần đầy, 100% = Đã đầy.
+                                Rule: 0% = Available, ≥50% = Almost Full, 100% = Full.
                             </div>
                         </div>
 
