@@ -6,96 +6,156 @@
 <h:head>
     <title>FeastLink Admin</title>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
     <!-- Tailwind + Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&amp;family=Poppins:wght@500;600&amp;display=swap"
           rel="stylesheet"/>
 
-    <!-- Material Symbols (icon cho dashboard, v.v.) -->
+    <!-- Material Symbols -->
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400..700,0..1,-50..200" />
 
+    <!-- Optional: page-specific head (if needed) -->
+    <ui:insert name="head"/>
+
     <style>
-        :root {
-            --primary-dark: #020617;
-            --primary: #0B1120;
+        :root{
+            --sidebar-w: 280px;
+            --header-h: 92px;
 
-            --secondary: #d4af37;
-            --secondary-soft: #e6c77f;
+            --primary-dark:#020617;
+            --primary:#0B1120;
 
-            --bg-soft: #f9fafb;
-            --border: #e5e7eb;
+            --gold:#d4af37;
+            --gold-soft:#e6c77f;
+
+            --bg-soft:#f6f7fb;
         }
 
-        body {
-            font-family: "Inter", sans-serif;
-            background: var(--bg-soft);
+        html, body { height:100%; }
+        body{
+            font-family:"Inter",sans-serif;
+            background:
+                radial-gradient(1200px 600px at 20% -10%, rgba(212,175,55,0.18), transparent 55%),
+                radial-gradient(900px 520px at 100% 0%, rgba(15,23,42,0.10), transparent 55%),
+                var(--bg-soft);
+            overflow-x:hidden;
         }
 
-        /* Material icon */
-        .material-symbols-outlined {
-            font-family: 'Material Symbols Outlined';
-            font-weight: normal;
-            font-style: normal;
-            font-size: 22px;          /* size icon mặc định */
-            display: inline-block;
-            line-height: 1;
-            letter-spacing: normal;
-            text-transform: none;
-            white-space: nowrap;
-            word-wrap: normal;
-            direction: ltr;
-            -webkit-font-feature-settings: 'liga';
-            -webkit-font-smoothing: antialiased;
+        .material-symbols-outlined{
+            font-family:'Material Symbols Outlined';
+            font-weight:normal;
+            font-style:normal;
+            font-size:20px;
+            display:inline-block;
+            line-height:1;
+            white-space:nowrap;
+            -webkit-font-smoothing:antialiased;
+            font-variation-settings:'FILL' 0,'wght' 520,'GRAD' 0,'opsz' 24;
         }
 
-        /* Sidebar */
-        .sidebar {
-            background: #1c2130;
-            width: 280px;
+        /* ===================== SIDEBAR (FIX: SCROLL) ===================== */
+        .sidebar{
+            width: var(--sidebar-w);
             height: 100vh;
-            color: white;
             position: fixed;
-            left: 0;
-            top: 0;
-            padding: 26px;
-            box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+            left: 0; top: 0;
+
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+
+            padding: 22px;
+            color: #fff;
+
+            background: linear-gradient(180deg, rgba(28,33,48,0.98), rgba(11,17,32,0.98));
+            border-right: 1px solid rgba(212,175,55,0.12);
+            box-shadow: 10px 0 40px rgba(0,0,0,0.25);
         }
 
-        .sidebar-item:hover {
+        .sidebar-brand{
+            flex: 0 0 auto;
+            padding-bottom: 18px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid rgba(212,175,55,0.22);
+        }
+
+        /* ✅ Nav cuộn được -> không bị tràn xuống dưới */
+        .sidebar-nav{
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+
+            padding-right: 6px;   /* để scrollbar không đè chữ */
+            margin-right: -6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar{ width: 8px; }
+        .sidebar-nav::-webkit-scrollbar-thumb{
+            background: rgba(212,175,55,0.28);
+            border-radius: 999px;
+        }
+        .sidebar-nav::-webkit-scrollbar-track{
+            background: rgba(255,255,255,0.06);
+            border-radius: 999px;
+        }
+
+        .sidebar-item{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            padding: 10px 12px;
+            border-radius: 14px;
+
+            color: rgba(255,255,255,0.82);
+            transition: all .22s ease;
+        }
+
+        .sidebar-item:hover{
             background: rgba(255,255,255,0.06);
             transform: translateX(4px);
-            color: var(--secondary);
+            color: var(--gold);
         }
 
-        /* HEADER FIX FULL WIDTH */
-        .header {
+        .sidebar-item.active{
+            background: linear-gradient(90deg, rgba(212,175,55,0.18), rgba(255,255,255,0.04));
+            border: 1px solid rgba(212,175,55,0.18);
+            color: var(--gold);
+        }
+
+        /* ===================== HEADER ===================== */
+        .header{
             position: fixed;
             top: 0;
-            left: 280px;
-            width: calc(100% - 280px);
+            left: var(--sidebar-w);
+            width: calc(100% - var(--sidebar-w));
 
-            background: linear-gradient(90deg,
-                rgba(212,175,55,0.12),
-                rgba(2,6,23,1) 60%);
-
-            border-bottom: 1px solid rgba(212,175,55,0.2);
-            padding: 20px 40px;
+            height: var(--header-h);
+            padding: 18px 34px;
 
             display: flex;
             justify-content: space-between;
             align-items: center;
 
-            height: 95px;
-            z-index: 10;
+            background: linear-gradient(90deg,
+                rgba(212,175,55,0.16),
+                rgba(2,6,23,0.95) 58%);
+
+            border-bottom: 1px solid rgba(212,175,55,0.18);
+            backdrop-filter: blur(10px);
+            z-index: 50;
         }
 
-        /* MAIN CONTENT */
-        .content-wrapper {
-            margin-left: 280px;
-            margin-top: 110px;
-            padding: 20px 40px;
+        /* ===================== MAIN CONTENT ===================== */
+        .content-wrapper{
+            margin-left: var(--sidebar-w);
+            margin-top: calc(var(--header-h) + 18px);
+            padding: 20px 34px;
+
+            min-width: 0; /* ✅ chống table làm vỡ layout */
         }
     </style>
 </h:head>
@@ -106,55 +166,117 @@
     <aside class="sidebar">
 
         <!-- Logo -->
-        <div class="flex flex-col items-center mb-6 pb-6 border-b border-[rgba(212,175,55,0.25)]">
-
+        <div class="sidebar-brand flex flex-col items-center">
             <h:graphicImage value="#{resource['images/FeastLink_Logo.png']}"
-                            styleClass="w-40 h-40 object-contain drop-shadow-xl" />
+                            styleClass="w-36 h-36 object-contain drop-shadow-xl" />
 
-            <h1 class="text-[24px] font-semibold text-[var(--secondary)] mt-4 tracking-wide">
+            <h1 class="text-[22px] font-semibold text-[var(--gold)] mt-3 tracking-wide">
                 FeastLink
             </h1>
-
             <p class="text-gray-400 text-xs -mt-1 tracking-wide">Admin Console</p>
         </div>
 
-        <!-- MENU -->
-        <nav class="space-y-1.5 text-[15px]">
+        <!-- MENU (SCROLLABLE) -->
+        <nav class="sidebar-nav space-y-1 text-[14px]">
 
-            <a href="#{request.contextPath}/faces/Admin/dashboard.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📊 Dashboard</a>
-            <a href="#{request.contextPath}/faces/Admin/users.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">👥 Users</a>
-            <a href="#{request.contextPath}/faces/Admin/restaurants.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">🏨 Restaurants</a>
-            <a href="#{request.contextPath}/faces/Admin/approvals.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📝 Approvals</a>
-            <a href="#{request.contextPath}/faces/Admin/cuisines.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📚 Cuisines</a>
-            <a href="#{request.contextPath}/faces/Admin/complaints.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">⚠ Complaints</a>
-            <a href="#{request.contextPath}/faces/Admin/settings.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">⚙ Settings</a>
-            <a href="#{request.contextPath}/faces/Admin/analytics.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📈 Analytics</a>
-               <a href="#{request.contextPath}/faces/Admin/admin-points.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📈 Point</a>
-             <a href="#{request.contextPath}/faces/Admin/admin-vouchers.xhtml" class="sidebar-item block py-2.5 px-4 rounded-lg">📈 Voucher</a>
-           
+            <a href="#{request.contextPath}/faces/Admin/dashboard.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('dashboard.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/users.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('users.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">group</span>
+                Users
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/restaurants.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('restaurants.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">storefront</span>
+                Restaurants
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/approvals.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('approvals.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">task</span>
+                Approvals
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/cuisines.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('cuisines.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">menu_book</span>
+                Cuisines
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/complaints.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('complaints.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">report</span>
+                Complaints
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/service_type.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('service_type.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">tune</span>
+                Service type
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/analytics.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('analytics.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">monitoring</span>
+                Analytics
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/admin-points.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('admin-points.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">paid</span>
+                Point
+            </a>
+
+            <a href="#{request.contextPath}/faces/Admin/admin-vouchers.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('admin-vouchers.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">confirmation_number</span>
+                Voucher
+            </a>
 
         </nav>
 
     </aside>
 
     <!-- HEADER -->
-    <header class="header text-white">
+<header class="header text-white">
+    <h2 class="text-xl font-semibold tracking-wide">
+        <ui:insert name="title">Page Title</ui:insert>
+    </h2>
 
-        <h2 class="text-xl font-semibold tracking-wide">
-            <ui:insert name="title">Page Title</ui:insert>
-        </h2>
+    <div class="flex items-center gap-3">
 
-        <div class="flex items-center gap-3 bg-[rgba(255,255,255,0.08)] px-4 py-2 rounded-xl">
+        <!-- Admin info -->
+        <div class="flex items-center gap-3 bg-[rgba(255,255,255,0.08)] px-4 py-2 rounded-2xl border border-[rgba(212,175,55,0.18)]">
             <img src="https://i.pravatar.cc/40"
-                 class="w-10 h-10 rounded-full border border-[var(--secondary)]" />
+                 class="w-10 h-10 rounded-full border border-[var(--gold)]" />
 
-            <div>
+            <div class="leading-tight">
                 <p class="font-medium">Admin</p>
                 <p class="text-xs text-gray-300">FeastLink Admin</p>
             </div>
         </div>
 
-    </header>
+        <!-- ✅ Logout (form riêng, an toàn) -->
+        <h:form styleClass="m-0">
+            <h:commandLink action="#{loginBean.logout}"
+                           immediate="true"
+                           styleClass="inline-flex items-center gap-2 px-4 py-2 rounded-2xl
+                                      bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.14)]
+                                      border border-[rgba(212,175,55,0.22)] text-[var(--gold)]
+                                      transition">
+                <span class="material-symbols-outlined">logout</span>
+                <span class="hidden md:inline font-medium">Logout</span>
+            </h:commandLink>
+        </h:form>
+
+    </div>
+</header>
 
     <!-- PAGE CONTENT -->
     <main class="content-wrapper">
@@ -162,5 +284,4 @@
     </main>
 
 </h:body>
-
 </html>
