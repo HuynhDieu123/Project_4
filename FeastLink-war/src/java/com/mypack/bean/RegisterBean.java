@@ -61,7 +61,20 @@ public class RegisterBean implements Serializable {
             return null;
         }
 
-        // 2. Phone = 10 số
+        // 2. Email đúng định dạng
+        String trimmedEmail = email != null ? email.trim() : "";
+        // Regex email "đủ dùng" cho đăng ký (không quá phức tạp)
+        String emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        if (trimmedEmail.isEmpty() || !trimmedEmail.matches(emailPattern)) {
+            ctx.addMessage("registerForm:email", new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Invalid email",
+                    "Please enter a valid email address (e.g., name@example.com)."
+            ));
+            return null;
+        }
+
+        // 3. Phone = 10 số
         String trimmedPhone = phone != null ? phone.trim() : "";
         if (!trimmedPhone.matches("\\d{10}")) {
             ctx.addMessage("registerForm:phone", new FacesMessage(
@@ -72,7 +85,7 @@ public class RegisterBean implements Serializable {
             return null;
         }
 
-        // 3. Password mạnh: >=7, hoa + thường + số + ký tự đặc biệt
+        // 4. Password mạnh: >=7, hoa + thường + số + ký tự đặc biệt
         String passwordPattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{7,}$";
         if (password == null || !password.matches(passwordPattern)) {
             ctx.addMessage("registerForm:password", new FacesMessage(
@@ -83,7 +96,7 @@ public class RegisterBean implements Serializable {
             return null;
         }
 
-        // 4. Confirm password
+        // 5. Confirm password
         if (confirmPassword == null || !password.equals(confirmPassword)) {
             ctx.addMessage("registerForm:confirmPassword", new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
@@ -93,12 +106,12 @@ public class RegisterBean implements Serializable {
             return null;
         }
 
-        // 5. Check email trùng (tránh lỗi UNIQUE KEY)
+        // 6. Check email trùng (tránh lỗi UNIQUE KEY)
         List<Users> allUsers = usersFacade.findAll();
         for (Users u : allUsers) {
             if (u.getEmail() != null &&
-                email != null &&
-                email.equalsIgnoreCase(u.getEmail())) {
+                trimmedEmail != null &&
+                trimmedEmail.equalsIgnoreCase(u.getEmail().trim())) {
 
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
@@ -109,15 +122,15 @@ public class RegisterBean implements Serializable {
             }
         }
 
-        // 6. Tạo user mới
+        // 7. Tạo user mới
         try {
             // Hash password bằng BCrypt trước khi lưu
             String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
             Users user = new Users();
-            user.setFullName(fullName);
-            user.setEmail(email);
-            user.setPhone(phone);
+            user.setFullName(trimmedName);
+            user.setEmail(trimmedEmail);
+            user.setPhone(trimmedPhone);
             user.setPassword(hashedPassword);  // <-- dùng hashed password
             user.setRole("CUSTOMER");
             user.setStatus("ACTIVE");
