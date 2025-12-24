@@ -127,33 +127,27 @@ public class CustomerRestaurantsBean implements Serializable {
             card.setCancelDays(nvlInt(r.getCancelFullRefundDays(), 0));
             card.setDepositPercent(nvlDecimal(r.getDefaultDepositPercent(), 0d));
 
-// ✅ lấy max từ RestaurantCapacitySettings
-            Integer maxFromSetting = null;
+// ===== Capacity settings (chỉ gọi 1 lần) =====
+            RestaurantCapacitySettings st = null;
             try {
-                RestaurantCapacitySettings s = capacitySettingsFacade.findByRestaurant(r);
-                if (s != null) {
-                    maxFromSetting = s.getMaxGuestsPerSlot(); // cột MaxGuestsPerSlot
-                }
+                st = capacitySettingsFacade.findByRestaurant(r);
             } catch (Exception ignore) {
             }
+
+            Integer maxGuestsPerSlot = (st != null) ? st.getMaxGuestsPerSlot() : null;
+            Integer maxBookingsPerDay = (st != null) ? st.getMaxBookingsPerDay() : null;
+            Integer slotDurationMin = (st != null) ? st.getDefaultSlotDurationMin() : null;
+
+// sẽ dùng cho JS tính FULL theo ngày/giờ
+            card.setMaxBookingsPerDay(maxBookingsPerDay);
+            card.setSlotDurationMin(slotDurationMin);
 
             int minGuests = nvlInt(r.getMinGuestCount(), 0);
             int capacityMin = (minGuests > 0) ? minGuests : 30;
 
-            int capacityMax = 0;
-            try {
-                // ✅ Lấy settings theo nhà hàng
-                RestaurantCapacitySettings st = capacitySettingsFacade.findByRestaurant(r);
-                if (st != null && st.getMaxGuestsPerSlot() != null && st.getMaxGuestsPerSlot() > 0) {
-                    capacityMax = st.getMaxGuestsPerSlot();
-                }
-            } catch (Exception ignore) {
-            }
-
-// fallback nếu nhà hàng chưa có settings
-            if (capacityMax <= 0) {
-                capacityMax = capacityMin * 3; // hoặc capacityMin nếu bro muốn “min=min”
-            }
+            int capacityMax = (maxGuestsPerSlot != null && maxGuestsPerSlot > 0)
+                    ? maxGuestsPerSlot
+                    : capacityMin * 3; // fallback nếu chưa có settings
 
             if (capacityMax < capacityMin) {
                 capacityMax = capacityMin;
@@ -192,8 +186,10 @@ public class CustomerRestaurantsBean implements Serializable {
             }
             card.setImage(imageUrl);
 
-            // Giá / bàn từ combo: lấy combo có PriceTotal nhỏ nhất
+            // Giá / bàn từ combo: lấy combo có PriceTotal nhỏ nhất + đếm combos
             double pricePerTable = 0d;
+            int combosCount = 0;
+
             try {
                 Collection<MenuCombos> combos = r.getMenuCombosCollection();
                 if (combos != null) {
@@ -201,9 +197,12 @@ public class CustomerRestaurantsBean implements Serializable {
                         if (combo == null) {
                             continue;
                         }
+
+                        combosCount++;
+
                         BigDecimal total = combo.getPriceTotal();
                         if (total != null) {
-                            double p = total.doubleValue(); // giá 1 bàn (combo cho 1 bàn)
+                            double p = total.doubleValue();
                             if (pricePerTable == 0d || p < pricePerTable) {
                                 pricePerTable = p;
                             }
@@ -212,6 +211,15 @@ public class CustomerRestaurantsBean implements Serializable {
                 }
             } catch (Exception ignore) {
             }
+
+            card.setCombosCount(combosCount);
+            card.setHasCombos(combosCount > 0);
+
+            if (pricePerTable <= 0d) {
+                pricePerTable = 75d; // demo default USD
+            }
+            card.setPricePerGuest(pricePerTable);
+
             if (pricePerTable <= 0d) {
                 pricePerTable = 75d; // demo default USD
             }
@@ -284,6 +292,81 @@ public class CustomerRestaurantsBean implements Serializable {
                 types.add("Corporate");
             }
             card.setEventTypes(new ArrayList<>(types));
+
+            // ===== Build bookings lite for availability by datetime =====
+            List<BookingLite> blist = new ArrayList<>();
+
+            try {
+                Collection<Bookings> bookings = r.getBookingsCollection();
+                if (bookings != null) {
+                    for (Bookings b : bookings) {
+                        if (b == null) {
+                            continue;
+                        }
+
+                        String bs = null;
+                        try {
+                            bs = b.getBookingStatus();
+                        } catch (Exception ignore) {
+                        }
+
+                        // chỉ tính booking còn chiếm chỗ (loại CANCELLED/REJECTED)
+                        if (bs == null) {
+                            continue;
+                        }
+                        String s = bs.trim().toUpperCase();
+                        if ("CANCELLED".equals(s) || "REJECTED".equals(s)) {
+                            continue;
+                        }
+
+                        BookingLite x = new BookingLite();
+
+                        // EventDate -> yyyy-MM-dd
+                        String dateStr = "";
+                        try {
+                            Object d = b.getEventDate();
+                            if (d != null) {
+                                dateStr = d.toString();
+                            }
+                        } catch (Exception ignore) {
+                        }
+                        x.setDate(dateStr);
+
+                        // Start/End -> HH:mm
+                        String stt = null;
+                        String ett = null;
+
+                        try {
+                            Object t1 = b.getStartTime();
+                            if (t1 != null) {
+                                String v = t1.toString();       // thường HH:mm:ss
+                                stt = v.length() >= 5 ? v.substring(0, 5) : v;
+                            }
+                        } catch (Exception ignore) {
+                        }
+
+                        try {
+                            Object t2 = b.getEndTime();
+                            if (t2 != null) {
+                                String v = t2.toString();
+                                ett = v.length() >= 5 ? v.substring(0, 5) : v;
+                            }
+                        } catch (Exception ignore) {
+                        }
+
+                        x.setStart(stt);
+                        x.setEnd(ett);
+
+                        x.setGuests(nvlInt(b.getGuestCount(), 0));
+                        x.setStatus(bs);
+
+                        blist.add(x);
+                    }
+                }
+            } catch (Exception ignore) {
+            }
+
+            card.setBookings(blist);
 
             // Availability demo
             String availability = "available";
@@ -422,6 +505,40 @@ public class CustomerRestaurantsBean implements Serializable {
             sb.append("\"depositPercent\":")
                     .append(String.format(Locale.US, "%.0f", c.getDepositPercent()))
                     .append(",");
+            // combos
+            sb.append("\"hasCombos\":").append(c.isHasCombos()).append(",");
+            sb.append("\"combosCount\":").append(c.getCombosCount()).append(",");
+
+// settings
+            if (c.getMaxBookingsPerDay() == null) {
+                sb.append("\"maxBookingsPerDay\":null,");
+            } else {
+                sb.append("\"maxBookingsPerDay\":").append(c.getMaxBookingsPerDay()).append(",");
+            }
+
+            if (c.getSlotDurationMin() == null) {
+                sb.append("\"slotDurationMin\":null,");
+            } else {
+                sb.append("\"slotDurationMin\":").append(c.getSlotDurationMin()).append(",");
+            }
+
+// bookings lite
+            sb.append("\"bookings\":[");
+            List<BookingLite> bl = c.getBookings();
+            for (int k = 0; k < bl.size(); k++) {
+                BookingLite x = bl.get(k);
+                if (k > 0) {
+                    sb.append(",");
+                }
+                sb.append("{");
+                appendJsonField(sb, "date", x.getDate(), true);
+                appendJsonField(sb, "start", x.getStart(), true);
+                appendJsonField(sb, "end", x.getEnd(), true);
+                sb.append("\"guests\":").append(x.getGuests()).append(",");
+                appendJsonField(sb, "status", x.getStatus(), false);
+                sb.append("}");
+            }
+            sb.append("],");
 
             appendJsonField(sb, "availability", c.getAvailability(), false);
 
@@ -465,6 +582,55 @@ public class CustomerRestaurantsBean implements Serializable {
                 .toList();
     }
 
+    public static class BookingLite implements Serializable {
+
+        private String date;   // yyyy-MM-dd
+        private String start;  // HH:mm
+        private String end;    // HH:mm
+        private int guests;
+        private String status;
+
+        public String getDate() {
+            return date;
+        }
+
+        public void setDate(String date) {
+            this.date = date;
+        }
+
+        public String getStart() {
+            return start;
+        }
+
+        public void setStart(String start) {
+            this.start = start;
+        }
+
+        public String getEnd() {
+            return end;
+        }
+
+        public void setEnd(String end) {
+            this.end = end;
+        }
+
+        public int getGuests() {
+            return guests;
+        }
+
+        public void setGuests(int guests) {
+            this.guests = guests;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+    }
+
     /**
      * Model cho 1 card nhà hàng.
      */
@@ -489,6 +655,17 @@ public class CustomerRestaurantsBean implements Serializable {
         private int cancelDays;
         private double depositPercent;
         private String availability;
+
+        // combos
+        private boolean hasCombos;
+        private int combosCount;
+
+// capacity settings for FULL calculation
+        private Integer maxBookingsPerDay;
+        private Integer slotDurationMin;
+
+// bookings lite for date/time availability
+        private List<BookingLite> bookings = new ArrayList<>();
 
         public Long getId() {
             return id;
@@ -632,6 +809,46 @@ public class CustomerRestaurantsBean implements Serializable {
 
         public void setAvailability(String availability) {
             this.availability = availability;
+        }
+
+        public boolean isHasCombos() {
+            return hasCombos;
+        }
+
+        public void setHasCombos(boolean hasCombos) {
+            this.hasCombos = hasCombos;
+        }
+
+        public int getCombosCount() {
+            return combosCount;
+        }
+
+        public void setCombosCount(int combosCount) {
+            this.combosCount = combosCount;
+        }
+
+        public Integer getMaxBookingsPerDay() {
+            return maxBookingsPerDay;
+        }
+
+        public void setMaxBookingsPerDay(Integer maxBookingsPerDay) {
+            this.maxBookingsPerDay = maxBookingsPerDay;
+        }
+
+        public Integer getSlotDurationMin() {
+            return slotDurationMin;
+        }
+
+        public void setSlotDurationMin(Integer slotDurationMin) {
+            this.slotDurationMin = slotDurationMin;
+        }
+
+        public List<BookingLite> getBookings() {
+            return bookings;
+        }
+
+        public void setBookings(List<BookingLite> bookings) {
+            this.bookings = (bookings != null) ? bookings : new ArrayList<>();
         }
 
     }

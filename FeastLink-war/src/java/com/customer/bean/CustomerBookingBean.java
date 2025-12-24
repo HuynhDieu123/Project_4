@@ -250,25 +250,48 @@ public class CustomerBookingBean implements Serializable {
         restaurantAddress = safe(restaurant.getAddress());
         loadGuestBounds();
 
-        // combo/package
-        String comboParam = params.get("comboId");
-        if (comboParam == null || comboParam.isBlank()) {
-            comboParam = params.get("packageId");
-        }
-        if (comboParam != null && !comboParam.isBlank()) {
+        // =======================
+// combo/package (SAVE/RESTORE SESSION)
+// =======================
+        String skCombo = sessionKey("comboId");
+        String skMenu = sessionKey("menuItems");
+
+        String comboParam = firstNotBlank(params.get("comboId"), params.get("packageId"));
+        if (notBlank(comboParam)) {
             try {
                 selectedComboId = Long.parseLong(comboParam.trim());
+                session.put(skCombo, selectedComboId); // ✅ SAVE
             } catch (NumberFormatException ignored) {
+            }
+        } else {
+            // ✅ RESTORE nếu URL không có comboId
+            if (selectedComboId == null) {
+                selectedComboId = toLong(session.get(skCombo));
             }
         }
 
-        // menu items
+// =======================
+// menu items (SAVE/RESTORE SESSION)
+// =======================
         String menuItemsParam = params.get("menuItems");
-        if (menuItemsParam != null && !menuItemsParam.trim().isEmpty()) {
-            selectedMenuItemIds = menuItemsParam;
-            selectedMenuItems = new ArrayList<>();
 
-            String[] parts = menuItemsParam.split(",");
+        if (notBlank(menuItemsParam)) {
+            selectedMenuItemIds = menuItemsParam.trim();
+            session.put(skMenu, selectedMenuItemIds); // ✅ SAVE
+        } else {
+            // ✅ RESTORE nếu URL không có menuItems
+            if (!notBlank(selectedMenuItemIds)) {
+                Object saved = session.get(skMenu);
+                if (saved != null) {
+                    selectedMenuItemIds = String.valueOf(saved);
+                }
+            }
+        }
+
+// rebuild selectedMenuItems từ selectedMenuItemIds (dù lấy từ param hay session)
+        selectedMenuItems = new ArrayList<>();
+        if (notBlank(selectedMenuItemIds)) {
+            String[] parts = selectedMenuItemIds.split(",");
             for (String part : parts) {
                 String trimmed = part.trim();
                 if (trimmed.isEmpty()) {
@@ -288,9 +311,6 @@ public class CustomerBookingBean implements Serializable {
                 } catch (NumberFormatException ignored) {
                 }
             }
-        } else {
-            selectedMenuItemIds = null;
-            selectedMenuItems = new ArrayList<>();
         }
 
         // date (FIX: eventDate first)
@@ -463,6 +483,29 @@ public class CustomerBookingBean implements Serializable {
         return fallback;
     }
 
+    private String sessionKey(String suffix) {
+        return "booking_" + suffix + "_" + (restaurantId != null ? restaurantId : "0");
+    }
+
+    private Long toLong(Object o) {
+        if (o == null) {
+            return null;
+        }
+        if (o instanceof Long) {
+            return (Long) o;
+        }
+        if (o instanceof Integer) {
+            return ((Integer) o).longValue();
+        }
+        if (o instanceof String) {
+            try {
+                return Long.parseLong(((String) o).trim());
+            } catch (Exception ignore) {
+            }
+        }
+        return null;
+    }
+
     public String confirmBooking() {
         FacesContext ctx = FacesContext.getCurrentInstance();
 
@@ -499,6 +542,17 @@ public class CustomerBookingBean implements Serializable {
                     selectedMenuItemIds = mHidden;
                 } else if (notBlank(mQuery)) {
                     selectedMenuItemIds = mQuery;
+                }
+            }
+
+            ExternalContext ec = ctx.getExternalContext();
+            Map<String, Object> session = ec.getSessionMap();
+            if (restaurantId != null) {
+                if (selectedComboId != null) {
+                    session.put(sessionKey("comboId"), selectedComboId);
+                }
+                if (notBlank(selectedMenuItemIds)) {
+                    session.put(sessionKey("menuItems"), selectedMenuItemIds);
                 }
             }
 
@@ -796,6 +850,338 @@ public class CustomerBookingBean implements Serializable {
 
             ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, "Booking request sent", "Your booking has been created successfully."));
             return "/Customer/index?faces-redirect=true";
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            FacesContext ctx2 = FacesContext.getCurrentInstance();
+            if (ctx2 != null) {
+                ctx2.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Could not create booking: " + ex.getMessage()));
+            }
+            return null;
+        }
+    }
+
+    public String saveQuotation() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+
+        Users currentUser = (Users) ctx.getExternalContext().getSessionMap().get("currentUser");
+        if (currentUser == null) {
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_ERROR,
+                    "Please sign in",
+                    "You need to log in before making a booking."
+            ));
+            return "login";
+        }
+
+        try {
+            Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
+
+            if (selectedComboId == null) {
+                String cHidden = params.get("hf-combo-id");
+                String cQuery1 = params.get("comboId");
+                String cQuery2 = params.get("packageId");
+                String rawCombo = notBlank(cHidden) ? cHidden : (notBlank(cQuery1) ? cQuery1 : cQuery2);
+                if (notBlank(rawCombo)) {
+                    try {
+                        selectedComboId = Long.valueOf(rawCombo.trim());
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+
+            if (!notBlank(selectedMenuItemIds)) {
+                String mHidden = params.get("hf-menu-items");
+                String mQuery = params.get("menuItems");
+                if (notBlank(mHidden)) {
+                    selectedMenuItemIds = mHidden;
+                } else if (notBlank(mQuery)) {
+                    selectedMenuItemIds = mQuery;
+                }
+            }
+
+            ExternalContext ec = ctx.getExternalContext();
+            Map<String, Object> session = ec.getSessionMap();
+            if (restaurantId != null) {
+                if (selectedComboId != null) {
+                    session.put(sessionKey("comboId"), selectedComboId);
+                }
+                if (notBlank(selectedMenuItemIds)) {
+                    session.put(sessionKey("menuItems"), selectedMenuItemIds);
+                }
+            }
+
+            if (restaurantId == null) {
+                String rHidden = params.get("hf-restaurant-id");
+                String rQuery = params.get("restaurantId");
+                String raw = (notBlank(rHidden)) ? rHidden : rQuery;
+                if (notBlank(raw)) {
+                    try {
+                        restaurantId = Long.parseLong(raw);
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+
+            // FIX: read eventDate first (then date)
+            if (!notBlank(eventDateStr)) {
+                String dHidden = params.get("hf-event-date");
+                String dQuery = firstNotBlank(params.get("eventDate"), params.get("date"));
+                if (notBlank(dHidden)) {
+                    eventDateStr = dHidden;
+                } else if (notBlank(dQuery)) {
+                    eventDateStr = dQuery;
+                }
+            }
+
+            // read start/end time
+            if (!notBlank(startTimeStr)) {
+                startTimeStr = firstNotBlank(params.get("hfStartTime"), params.get("hf-start-time"));
+                if (!notBlank(startTimeStr)) {
+                    startTimeStr = params.get("startTime");
+                }
+            }
+            if (!notBlank(endTimeStr)) {
+                endTimeStr = firstNotBlank(params.get("hfEndTime"), params.get("hf-end-time"));
+                if (!notBlank(endTimeStr)) {
+                    endTimeStr = params.get("endTime");
+                }
+            }
+
+            if (guestCount <= 0) {
+                String gHidden = params.get("hf-guest-count");
+                if (notBlank(gHidden)) {
+                    try {
+                        guestCount = Integer.parseInt(gHidden);
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+            if (guestCount <= 0) {
+                guestCount = 200;
+            }
+            loadGuestBounds();
+
+            if (guestCount < guestMin || guestCount > guestMax) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                                "Invalid guests",
+                                "Guest count must be between " + guestMin + " and " + guestMax + "."));
+                return null;
+            }
+
+            if (!notBlank(locationType)) {
+                String locHidden = params.get("hf-location-type");
+                if (notBlank(locHidden)) {
+                    locationType = locHidden;
+                } else {
+                    locationType = "AT_RESTAURANT";
+                }
+            }
+
+            if (!notBlank(outsideAddress)) {
+                String addrHidden = params.get("hf-outside-address");
+                if (notBlank(addrHidden)) {
+                    outsideAddress = addrHidden;
+                }
+            }
+
+            if (totalAmount == null) {
+                totalAmount = parseBigDecimalSafe(params.get("hf-total-amount"));
+            }
+            if (!notBlank(eventTypeKey)) {
+                eventTypeKey = params.get("hf-event-type");
+            }
+            if (!notBlank(serviceLevel)) {
+                serviceLevel = params.get("hf-service-level");
+            }
+            if (depositAmount == null) {
+                depositAmount = parseBigDecimalSafe(params.get("hf-deposit-amount"));
+            }
+            if (remainingAmount == null) {
+                remainingAmount = parseBigDecimalSafe(params.get("hf-remaining-amount"));
+            }
+
+            // payment
+            String pmHidden = params.get("hf-payment-method");
+            if (notBlank(pmHidden)) {
+                paymentMethod = pmHidden.trim();
+            }
+            String ptHidden = params.get("hf-payment-type");
+            if (notBlank(ptHidden)) {
+                paymentType = ptHidden.trim();
+            }
+            if (payAmount == null) {
+                payAmount = parseBigDecimalSafe(params.get("hf-pay-amount"));
+            }
+
+            if (!notBlank(paymentMethod)) {
+                paymentMethod = "VNPAY";
+            }
+            if (!notBlank(paymentType)) {
+                paymentType = "DEPOSIT";
+            }
+
+            if (payAmount == null) {
+                payAmount = ("FULL".equalsIgnoreCase(paymentType) && totalAmount != null)
+                        ? totalAmount
+                        : (depositAmount != null ? depositAmount : totalAmount);
+            }
+            if (payAmount == null) {
+                payAmount = BigDecimal.ZERO;
+            }
+
+            // ===== Voucher (server-side) =====
+            if (totalBeforeDiscount == null) {
+                totalBeforeDiscount = parseBigDecimalSafe(params.get("hf-total-before-discount"));
+            }
+            if (!notBlank(voucherCode)) {
+                String vcHidden = params.get("hf-voucher-code");
+                if (notBlank(vcHidden)) {
+                    voucherCode = vcHidden;
+                }
+            }
+            if (notBlank(voucherCode)) {
+                applyVoucherOnServerSilent(currentUser, params);
+            }
+
+            // contact fields
+            if (!notBlank(contactFullName)) {
+                String cName = firstNotBlank(params.get("contact-fullname"), params.get("contactFullName"));
+                if (notBlank(cName)) {
+                    contactFullName = cName.trim();
+                }
+            }
+            if (!notBlank(contactEmail)) {
+                String cEmail = firstNotBlank(params.get("contact-email"), params.get("contactEmail"));
+                if (notBlank(cEmail)) {
+                    contactEmail = cEmail.trim();
+                }
+            }
+            if (!notBlank(contactPhone)) {
+                String cPhone = firstNotBlank(params.get("contact-phone"), params.get("contactPhone"));
+                if (notBlank(cPhone)) {
+                    contactPhone = cPhone.trim();
+                }
+            }
+
+            if (restaurant == null && restaurantId != null) {
+                restaurant = restaurantsFacade.find(restaurantId);
+            }
+            if (restaurant == null) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Please choose restaurant again."));
+                return null;
+            }
+
+            // Event date
+            LocalDate eventLocalDate;
+            if (notBlank(eventDateStr)) {
+                try {
+                    eventLocalDate = LocalDate.parse(eventDateStr);
+                } catch (Exception ex) {
+                    eventLocalDate = LocalDate.now().plusDays(7);
+                }
+            } else {
+                eventLocalDate = LocalDate.now().plusDays(7);
+            }
+
+            Date eventDate = java.sql.Date.valueOf(eventLocalDate);
+
+            // ===== NEW: parse + validate start/end time within open/close =====
+            LocalTime startLt = parseHHmm(startTimeStr);
+            LocalTime endLt = parseHHmm(endTimeStr);
+
+            if (startLt == null || endLt == null || !endLt.isAfter(startLt)) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                        "Invalid time", "Please select a valid start/end time."));
+                return null;
+            }
+
+            long minutes = Duration.between(startLt, endLt).toMinutes();
+            if (minutes < MIN_DURATION_MINUTES) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                        "Too short", "Minimum duration is " + MIN_DURATION_MINUTES + " minutes."));
+                return null;
+            }
+
+            LocalTime openLt = extractLocalTime(restaurant.getOpenTime(), LocalTime.of(8, 0));
+            LocalTime closeLt = extractLocalTime(restaurant.getCloseTime(), LocalTime.of(22, 0));
+            if (!closeLt.isAfter(openLt)) {
+                openLt = LocalTime.of(8, 0);
+                closeLt = LocalTime.of(22, 0);
+            }
+
+            if (startLt.isBefore(openLt) || endLt.isAfter(closeLt)) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                        "Outside opening hours",
+                        "Please choose a time within " + openLt.format(HHMM) + " - " + closeLt.format(HHMM)));
+                return null;
+            }
+
+            ZoneId zone = ZoneId.systemDefault();
+            LocalDateTime startLdt = LocalDateTime.of(eventLocalDate, startLt);
+            LocalDateTime endLdt = LocalDateTime.of(eventLocalDate, endLt);
+            Date startTime = Date.from(startLdt.atZone(zone).toInstant());
+            Date endTime = Date.from(endLdt.atZone(zone).toInstant());
+
+            EventTypes et = resolveEventType();
+            ServiceTypes st = resolveServiceType();
+
+            String specialRequests = params.get("special-requests");
+
+            Bookings booking = new Bookings();
+            booking.setBookingCode(generateBookingCode());
+            booking.setCustomerId(currentUser);
+            booking.setRestaurantId(restaurant);
+            booking.setEventDate(eventDate);
+            booking.setGuestCount(guestCount);
+            booking.setLocationType(locationType);
+
+            // SAVE selected times
+            booking.setStartTime(startTime);
+            booking.setEndTime(endTime);
+
+            if (notBlank(specialRequests)) {
+                booking.setNote(specialRequests.trim());
+            }
+            if (et != null) {
+                booking.setEventTypeId(et);
+            }
+            if (st != null) {
+                booking.setServiceTypeId(st);
+            }
+
+            booking.setOutsideAddress(notBlank(outsideAddress) ? outsideAddress : null);
+
+            if (totalAmount != null) {
+                booking.setTotalAmount(totalAmount);
+            }
+            if (depositAmount != null) {
+                booking.setDepositAmount(depositAmount);
+            }
+            if (remainingAmount != null) {
+                booking.setRemainingAmount(remainingAmount);
+            }
+
+            booking.setContactFullName(notBlank(contactFullName) ? contactFullName.trim() : null);
+            booking.setContactEmail(notBlank(contactEmail) ? contactEmail.trim() : null);
+            booking.setContactPhone(notBlank(contactPhone) ? contactPhone.trim() : null);
+
+            booking.setBookingStatus("DRAFT");
+            booking.setPaymentStatus("UNPAID");
+            booking.setCreatedAt(new Date());
+
+            bookingsFacade.create(booking);
+
+            saveSelectedCombo(booking);
+            saveSelectedMenuItems(booking);
+
+            ctx.addMessage(null, new FacesMessage(
+                    FacesMessage.SEVERITY_INFO,
+                    "Quotation saved",
+                    "Your quotation has been saved successfully."
+            ));
+            return "/Customer/my-bookings.xhtml?faces-redirect=true";
 
         } catch (Exception ex) {
             ex.printStackTrace();
