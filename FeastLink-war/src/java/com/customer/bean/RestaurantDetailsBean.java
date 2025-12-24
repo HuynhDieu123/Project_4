@@ -64,6 +64,17 @@ public class RestaurantDetailsBean implements Serializable {
     // Custom menu (á la carte): category + list of menu item cards
     private List<MenuSection> menuSections = new ArrayList<>();
 
+    // ComboId -> list items (for "View full menu details")
+    private Map<Long, List<ComboMenuItem>> comboMenuMap = new HashMap<>();
+
+    public List<ComboMenuItem> comboItemsFor(Long comboId) {
+        if (comboId == null) {
+            return Collections.emptyList();
+        }
+        List<ComboMenuItem> list = comboMenuMap.get(comboId);
+        return list != null ? list : Collections.emptyList();
+    }
+
     @PostConstruct
     public void init() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -243,7 +254,7 @@ public class RestaurantDetailsBean implements Serializable {
             badge = null;
         }
 
-        // ==== Price per guest from combos ====
+        // ==== Price per person from combos (Starting from) ====
         pricePerGuestFrom = 0d;
         combos = new ArrayList<>();
         try {
@@ -254,31 +265,46 @@ public class RestaurantDetailsBean implements Serializable {
                         continue;
                     }
 
-                    BigDecimal total = combo.getPriceTotal();
-                    Integer guests = combo.getMinGuests();
+                    // (khuyến nghị) bỏ combo bị xóa / không active nếu có field
+                    try {
+                        Boolean del = combo.getIsDeleted();
+                        if (del != null && del) {
+                            continue;
+                        }
+                    } catch (Exception ignored) {
+                    }
+                    try {
+                        String st = combo.getStatus();
+                        if (st != null && !st.trim().isEmpty() && !"ACTIVE".equalsIgnoreCase(st.trim())) {
+                            continue;
+                        }
+                    } catch (Exception ignored) {
+                    }
 
-                    double totalVal = (total != null) ? total.doubleValue() : 0d;
+                    BigDecimal pricePerPersonBD = combo.getPriceTotal(); // DB của bạn đang dùng như giá / person
+                    double pricePerPerson = (pricePerPersonBD != null) ? pricePerPersonBD.doubleValue() : 0d;
+
+                    Integer guests = combo.getMinGuests();
                     int minG = (guests != null && guests > 0) ? guests : 10;
 
-                    // price per guest for "Starting from"
-                    if (totalVal > 0 && minG > 0) {
-                        double perGuest = totalVal / minG;
-                        if (pricePerGuestFrom == 0d || perGuest < pricePerGuestFrom) {
-                            pricePerGuestFrom = perGuest;
+                    // ✅ Starting from: lấy giá / person rẻ nhất
+                    if (pricePerPerson > 0) {
+                        if (pricePerGuestFrom == 0d || pricePerPerson < pricePerGuestFrom) {
+                            pricePerGuestFrom = pricePerPerson;
                         }
                     }
 
-                    // build combo card list
+                    // build combo card list (giữ y như bạn)
                     ComboCard c = new ComboCard();
                     c.setComboId(combo.getComboId());
                     c.setName(safe(combo.getName()));
                     c.setDescription(safe(combo.getDescription()));
-                    c.setPriceTotal(totalVal);
+                    c.setPriceTotal(pricePerPerson); // giữ naming cũ, nhưng value là giá/person
                     c.setMinGuests(minG);
 
                     c.setIdealRange(minG + "–" + (minG * 2) + " guests");
 
-                    if (totalVal >= 800) {
+                    if (pricePerPerson >= 800) {
                         c.setVip(true);
                         c.setHighlightTag("VIP PACKAGE");
                     } else {
@@ -290,10 +316,6 @@ public class RestaurantDetailsBean implements Serializable {
                 }
             }
         } catch (Exception ignored) {
-        }
-
-        if (pricePerGuestFrom <= 0d) {
-            pricePerGuestFrom = 75d; // fallback demo
         }
 
         // ==== Event types (distinct) from bookings ====
@@ -321,6 +343,21 @@ public class RestaurantDetailsBean implements Serializable {
 
         // ==== Custom menu (MenuCategories + MenuItems) ====
         loadMenuSections();
+
+        // ✅ If no active packages, fallback to cheapest menu item
+        if (combos == null || combos.isEmpty() || pricePerGuestFrom <= 0d) {
+            Double minMenuPrice = computeMinMenuItemPriceFromSections();
+            if (minMenuPrice != null && minMenuPrice > 0d) {
+                pricePerGuestFrom = minMenuPrice;
+            }
+        }
+
+// Final fallback (if neither package nor menu exists)
+        if (pricePerGuestFrom <= 0d) {
+            pricePerGuestFrom = 75d;
+        }
+
+        loadComboMenuItems();
     }
 
     private void loadMenuSections() {
@@ -444,6 +481,238 @@ public class RestaurantDetailsBean implements Serializable {
             other.setName("Other");
             other.setDescription("Uncategorized / mismatched category items");
             menuSections.add(new MenuSection(other, otherItems));
+        }
+    }
+
+    private Double computeMinMenuItemPriceFromSections() {
+        if (menuSections == null || menuSections.isEmpty()) {
+            return null;
+        }
+
+        BigDecimal min = null;
+
+        for (MenuSection sec : menuSections) {
+            if (sec == null || sec.getItems() == null) {
+                continue;
+            }
+
+            for (MenuItems mi : sec.getItems()) {
+                if (mi == null) {
+                    continue;
+                }
+
+                // menuSections đã filter active/deleted rồi, nhưng check nhẹ cũng ok
+                if (isSkipMenuItem(mi)) {
+                    continue;
+                }
+
+                BigDecimal p = null;
+                try {
+                    p = mi.getPricePerPerson();   // field bạn đang dùng
+                } catch (Exception ignored) {
+                }
+
+                if (p == null || p.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+
+                if (min == null || p.compareTo(min) < 0) {
+                    min = p;
+                }
+            }
+        }
+
+        return (min != null) ? min.doubleValue() : null;
+    }
+
+    private void loadComboMenuItems() {
+        comboMenuMap = new HashMap<>();
+        if (restaurant == null) {
+            return;
+        }
+
+        try {
+            Collection<MenuCombos> comboEntities = restaurant.getMenuCombosCollection();
+            if (comboEntities == null) {
+                return;
+            }
+
+            for (MenuCombos combo : comboEntities) {
+                if (combo == null || combo.getComboId() == null) {
+                    continue;
+                }
+
+                Long comboId = combo.getComboId();
+                List<ComboMenuItem> items = new ArrayList<>();
+
+                // Try common names: getComboItemsCollection / getComboItems
+                Object comboItemsObj = invokeFirst(combo,
+                        "getComboItemsCollection",
+                        "getComboItems",
+                        "getComboItemsList"
+                );
+
+                if (comboItemsObj instanceof Collection) {
+                    for (Object ci : (Collection<?>) comboItemsObj) {
+                        if (ci == null) {
+                            continue;
+                        }
+
+                        Integer qty = asInt(invokeFirst(ci, "getQuantity", "getQty"), 1);
+
+                        // comboItem -> MenuItems (try common names)
+                        Object miObj = invokeFirst(ci,
+                                "getMenuItemId",
+                                "getMenuItems",
+                                "getMenuItem"
+                        );
+
+                        String name = "";
+                        String desc = "";
+                        BigDecimal price = null;
+                        boolean veg = false;
+                        String img = "";
+
+                        if (miObj != null) {
+                            name = safeStr(invokeFirst(miObj, "getName"));
+                            desc = safeStr(invokeFirst(miObj, "getDescription"));
+
+                            Object p = invokeFirst(miObj, "getPricePerPerson", "getPricePerGuest", "getPrice");
+                            if (p instanceof BigDecimal) {
+                                price = (BigDecimal) p;
+                            }
+
+                            Object v = invokeFirst(miObj, "getIsVegetarian", "isVegetarian", "getVegetarian");
+                            veg = asBool(v, false);
+
+                            img = safeStr(invokeFirst(miObj, "getImageUrl"));
+                        }
+
+                        if (name == null || name.trim().isEmpty()) {
+                            continue;
+                        }
+
+                        ComboMenuItem it = new ComboMenuItem();
+                        it.setName(name);
+                        it.setDescription(desc);
+                        it.setQuantity(qty != null ? qty : 1);
+                        it.setPricePerPerson(price);
+                        it.setVegetarian(veg);
+                        it.setImageUrl(img);
+
+                        items.add(it);
+                    }
+                }
+
+                comboMenuMap.put(comboId, items);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static Object invokeFirst(Object target, String... methodNames) {
+        if (target == null || methodNames == null) {
+            return null;
+        }
+        for (String m : methodNames) {
+            try {
+                java.lang.reflect.Method md = target.getClass().getMethod(m);
+                md.setAccessible(true);
+                return md.invoke(target);
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    private static String safeStr(Object o) {
+        return o == null ? "" : String.valueOf(o);
+    }
+
+    private static Integer asInt(Object o, int fallback) {
+        if (o == null) {
+            return fallback;
+        }
+        if (o instanceof Integer) {
+            return (Integer) o;
+        }
+        if (o instanceof Number) {
+            return ((Number) o).intValue();
+        }
+        try {
+            return Integer.valueOf(String.valueOf(o));
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private static boolean asBool(Object o, boolean fallback) {
+        if (o == null) {
+            return fallback;
+        }
+        if (o instanceof Boolean) {
+            return (Boolean) o;
+        }
+        String s = String.valueOf(o);
+        return "true".equalsIgnoreCase(s) || "1".equals(s);
+    }
+
+// ====== Inner class: item in a combo ======
+    public static class ComboMenuItem implements Serializable {
+
+        private String name;
+        private String description;
+        private int quantity;
+        private BigDecimal pricePerPerson;
+        private boolean vegetarian;
+        private String imageUrl;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public int getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(int quantity) {
+            this.quantity = quantity;
+        }
+
+        public BigDecimal getPricePerPerson() {
+            return pricePerPerson;
+        }
+
+        public void setPricePerPerson(BigDecimal pricePerPerson) {
+            this.pricePerPerson = pricePerPerson;
+        }
+
+        public boolean isVegetarian() {
+            return vegetarian;
+        }
+
+        public void setVegetarian(boolean vegetarian) {
+            this.vegetarian = vegetarian;
+        }
+
+        public String getImageUrl() {
+            return imageUrl;
+        }
+
+        public void setImageUrl(String imageUrl) {
+            this.imageUrl = imageUrl;
         }
     }
 

@@ -24,6 +24,61 @@ document.addEventListener('DOMContentLoaded', function () {
 // panel Selected dishes cho desktop
     let selectedDrawerVisible = false;          // ban đầu: ẩn
     let hasAutoOpenedSelectedDrawer = false;    // đã auto mở lần đầu chưa
+    function showToast(message, type = 'info', opts = {}) {
+        const stack = document.getElementById('feast-toast-stack');
+        if (!stack) {
+            // fallback nếu quên add div
+            alert(message);
+            return;
+        }
+
+        const titleMap = {
+            success: 'Success',
+            info: 'Info',
+            warn: 'Notice',
+            error: 'Error'
+        };
+
+        const iconMap = {
+            success: 'check-circle',
+            info: 'info',
+            warn: 'alert-triangle',
+            error: 'x-circle'
+        };
+
+        const toast = document.createElement('div');
+        toast.className = 'feast-toast';
+        toast.dataset.type = type;
+
+        toast.innerHTML = `
+    <div class="feast-toast__icon">
+      <i data-lucide="${iconMap[type] || 'info'}" class="w-4 h-4"></i>
+    </div>
+    <div class="min-w-0">
+      <div class="feast-toast__title">${opts.title || titleMap[type] || 'Info'}</div>
+      <p class="feast-toast__msg">${message}</p>
+    </div>
+    <button type="button" class="feast-toast__close" aria-label="Close">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+  `;
+
+        stack.appendChild(toast);
+        if (window.lucide)
+            window.lucide.createIcons();
+
+        const closeBtn = toast.querySelector('.feast-toast__close');
+        const remove = () => {
+            toast.style.animation = 'feastToastOut .18s ease-in forwards';
+            setTimeout(() => toast.remove(), 180);
+        };
+        if (closeBtn)
+            closeBtn.addEventListener('click', remove);
+
+        const duration = opts.duration ?? 3200;
+        if (duration > 0)
+            setTimeout(remove, duration);
+    }
 
 
     function updateMenuSummary() {
@@ -146,6 +201,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
+    function hasMenuOrPackageSelection() {
+        const hasPkg = !!selectedPackageId || !!selectedPackageName;
+        const hasMenu = selectedMenuItemIds && selectedMenuItemIds.size > 0;
+        return hasPkg || hasMenu;
+    }
+
+    function scrollToPackagesOrMenu() {
+        const pkg = document.getElementById('packages');
+        const menu = document.getElementById('menu');
+        (pkg || menu)?.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+
+    function scrollToAvailability() {
+        const el = document.getElementById('availability');
+        el?.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+
 
 
 
@@ -153,7 +225,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function handleBookingRedirect(qsParams) {
 
-
+        // ✅ NEW RULE: must choose a package OR choose at least 1 menu item
+        if (!hasMenuOrPackageSelection()) {
+            showToast('Please select a package or add at least one dish from the menu before continuing.', 'warn');
+            const menuEl = document.getElementById('menu');
+            if (menuEl)
+                menuEl.scrollIntoView({behavior: 'smooth', block: 'start'});
+            return;
+        }
         if (selectedPackageId) {
             qsParams.set('comboId', selectedPackageId);            // 👈 NEW
         }
@@ -183,9 +262,8 @@ document.addEventListener('DOMContentLoaded', function () {
             banner.scrollIntoView({behavior: 'smooth', block: 'center'});
         }
 
-        alert(
-                'Please sign in or create a FeastLink account to complete your booking and unlock your booking history and faster checkout.'
-                );
+        showToast('Please sign in or create a FeastLink account to complete your booking and unlock booking history and faster checkout.', 'info', {duration: 4500});
+
     }
 // ================== JSF CALENDAR (calendar-days-jsf) → select date + Book button ==================
     let selectedDateIso = null;
@@ -217,13 +295,17 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bookBtn) {
         bookBtn.addEventListener('click', () => {
             if (!selectedDateIso) {
-                alert('Please select a date first.');
+                showToast('Please select a date first.', 'warn', {title: 'Missing date'});
+                scrollToAvailability();
                 return;
             }
-            if (!selectedPackageName) {
-                alert('Please select a package before continuing.');
+            if (!hasMenuOrPackageSelection()) {
+                showToast('Please select a package or add at least one dish from the menu before continuing.', 'warn', {title: 'Missing selection'});
+                scrollToPackagesOrMenu();
                 return;
             }
+
+
 
             const qsParams = new URLSearchParams();
             if (restaurantId)
@@ -670,19 +752,23 @@ document.addEventListener('DOMContentLoaded', function () {
     if (proceedBtn) {
         proceedBtn.addEventListener('click', () => {
             if (!selectedDate) {
-                alert('Please select a date first.');
+                showToast('Please select a date first.', 'warn', {title: 'Missing date'});
+                scrollToAvailability();
                 return;
             }
 
-            if (!selectedPackageName) {
-                alert('Please select a package before continuing.');
+            if (!hasMenuOrPackageSelection()) {
+                showToast('Please select a package or add at least one dish from the menu before continuing.', 'warn', {title: 'Missing selection'});
+                scrollToPackagesOrMenu();
                 return;
             }
 
             if (!selectedSlotTime) {
-                alert('Please select a time slot before continuing.');
+                showToast('Please select a time slot before continuing.', 'warn', {title: 'Missing time slot'});
+                scrollToAvailability();
                 return;
             }
+
 
             const year = selectedDateYear;
             const month = selectedDateMonth + 1;
@@ -980,6 +1066,85 @@ document.addEventListener('DOMContentLoaded', function () {
         return title ? title.textContent.trim() : 'this package';
     }
 
+    function money(n) {
+        const x = Number(n || 0);
+        return x.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function closePackageMenuModal() {
+        const modal = document.getElementById('package-menu-modal');
+        if (!modal)
+            return;
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function openPackageMenuModal(card) {
+        const modal = document.getElementById('package-menu-modal');
+        const titleEl = document.getElementById('package-menu-title');
+        const subEl = document.getElementById('package-menu-subtitle');
+        const itemsEl = document.getElementById('package-menu-items');
+        if (!modal || !titleEl || !subEl || !itemsEl)
+            return;
+
+        const name = getPackageNameFromCard(card) || 'Package details';
+        const minGuests = card ? (card.getAttribute('data-min-guests') || '') : '';
+        const total = card ? (card.getAttribute('data-price-total') || '') : '';
+
+        titleEl.textContent = name;
+        subEl.textContent = `${minGuests ? `Minimum ${minGuests} guests • ` : ''}$${money(total)} total`;
+
+        itemsEl.innerHTML = '';
+
+        const src = card ? card.querySelector('[data-combo-menu-source="true"]') : null;
+        const rawItems = src ? Array.from(src.querySelectorAll('.combo-menu-item')) : [];
+
+        if (!rawItems.length) {
+            itemsEl.innerHTML = `<div class="text-sm text-[#6B7280]">No menu items found for this package.</div>`;
+        } else {
+            rawItems.forEach(el => {
+                const itemName = el.getAttribute('data-name') || '';
+                const itemDesc = el.getAttribute('data-desc') || '';
+                const qty = el.getAttribute('data-qty') || '1';
+                const veg = (el.getAttribute('data-veg') || '') === 'true';
+                const img = el.getAttribute('data-img') || '';
+                const price = el.getAttribute('data-price') || '';
+
+                const vegBadge = veg
+                        ? `<span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-[#ECFDF5] text-[#065F46]">Vegetarian</span>`
+                        : '';
+
+                itemsEl.insertAdjacentHTML('beforeend', `
+        <div class="flex gap-4 p-4 rounded-2xl border border-[#E5E7EB]">
+          <div class="w-16 h-16 rounded-xl bg-[#F3F4F6] overflow-hidden flex items-center justify-center shrink-0">
+            ${img ? `<img src="${img}" alt="" class="w-full h-full object-cover" onerror="this.style.display='none'">` : ''}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="font-semibold text-[#111827] truncate">${itemName}</div>
+                ${itemDesc ? `<div class="text-sm text-[#6B7280] mt-1">${itemDesc}</div>` : ''}
+              </div>
+              <div class="text-right shrink-0">
+                <div class="text-sm font-semibold text-[#111827]">x${qty}</div>
+                ${price ? `<div class="text-xs text-[#6B7280]">$${money(price)} / person</div>` : ''}
+              </div>
+            </div>
+            <div class="mt-2 flex items-center gap-2">${vegBadge}</div>
+          </div>
+        </div>
+      `);
+            });
+        }
+
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+
+        if (window.lucide)
+            window.lucide.createIcons();
+    }
+
+
     function resetAllPackageCards() {
         const cards = qsa('#packages .group');
         cards.forEach(card => {
@@ -1056,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     selectedPackageName = null;
                     selectedPackageId = null;
                     selectedPackagePricePerPerson = null;
-                    alert('Package selection has been cleared.');
+                    showToast('Package selection has been cleared.', 'info', {title: 'Selection cleared'});
                 } else {
                     // chọn mới
                     resetAllPackageCards();
@@ -1066,15 +1231,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     selectedPackagePricePerPerson = getPackagePricePerPersonFromCard(card);
                     console.log('[RD] selected pkg pricePerPerson=', selectedPackagePricePerPerson);
                     if (!selectedPackageId) {
-                        alert('⚠️ Package selected but missing data-combo-id on card. Please check restaurant-details.xhtml.');
+                        showToast('Package selected but missing combo id (data-combo-id). Please check restaurant-details.xhtml.', 'error', {title: 'Missing data', duration: 5000});
                     }
 
                     applySelectedState(card);
-                    alert(
-                            'Selected package: ' +
-                            selectedPackageName +
-                            '. You can now choose a date in the Availability section to continue your booking.'
-                            );
+                    showToast(
+                            `Selected package: ${selectedPackageName}. You can now choose a date in the Availability section to continue.`,
+                            'success',
+                            {title: 'Package selected', duration: 4200}
+                    );
+
                 }
             }
 
@@ -1086,28 +1252,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (compareSet.has(name)) {
                     compareSet.delete(name);
-                    alert('Removed from comparison list: ' + name);
+                    showToast(`Removed from comparison list: ${name}`, 'info', {title: 'Compare'});
                 } else {
                     compareSet.add(name);
-                    alert(
-                            'Added to comparison list: ' +
-                            name +
-                            '\nCurrently comparing: ' +
-                            Array.from(compareSet).join(', ')
-                            );
+                    showToast(`Added to comparison list: ${name}.`, 'info', {title: 'Compare', duration: 3500});
+
                 }
             }
 
-            // VIEW MENU DETAILS (demo)
+            // VIEW MENU DETAILS
             if (role === 'view-menu') {
                 const card = getCardFromButton(btn);
-                const name = getPackageNameFromCard(card);
-                alert(
-                        'Demo: A full menu details page or popup for "' +
-                        name +
-                        '" will open here in the final version.'
-                        );
+                openPackageMenuModal(card);
             }
+
         });
     }
 
@@ -1477,6 +1635,22 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     })();
+    const pkgModal = document.getElementById('package-menu-modal');
+    if (pkgModal) {
+        const backdrop = document.getElementById('package-menu-backdrop');
+        const close1 = document.getElementById('package-menu-close');
+        const close2 = document.getElementById('package-menu-close2');
+
+        [backdrop, close1, close2].forEach(el => {
+            if (el)
+                el.addEventListener('click', closePackageMenuModal);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape')
+                closePackageMenuModal();
+        });
+    }
 
 
 });

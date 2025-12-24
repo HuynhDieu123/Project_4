@@ -336,43 +336,28 @@
                                     </div>
                                 </div>
 
-
-                                <!-- Cuisine (visual only) -->
+                                <!-- Cuisine (from DB) -->
                                 <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
-                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Cuisine (visual only)</h3>
+                                    <h3 class="text-sm font-semibold text-[#111827] mb-3">Cuisine</h3>
+
                                     <div class="space-y-2 text-sm text-[#4B5563]">
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox"
-                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                                            <span>Vietnamese</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox"
-                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                                            <span>Asian Fusion</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox"
-                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                                            <span>Western</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox"
-                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                                            <span>Buffet</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox"
-                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                                            <span>Italian</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox"
-                                                   class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30" />
-                                            <span>Japanese</span>
-                                        </label>
+                                        <ui:repeat value="#{customerRestaurantsBean.cuisineOptions}" var="cu">
+                                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                                <input type="checkbox"
+                                                       class="w-4 h-4 rounded border-[#E5E7EB] text-[#D4AF37] focus:ring-[#D4AF37]/30 js-cuisine"
+                                                       data-cuisine="#{cu}" />
+                                                <span>#{cu}</span>
+                                            </label>
+                                        </ui:repeat>
+
+                                        <!-- Nếu DB chưa có cuisine nào thì show hint (tuỳ chọn) -->
+                                        <h:panelGroup rendered="#{empty customerRestaurantsBean.cuisineOptions}">
+                                            <div class="text-xs text-[#6B7280] italic">No cuisines available.</div>
+                                        </h:panelGroup>
                                     </div>
                                 </div>
+
+
 
                                 <!-- Capacity -->
                                 <div class="mb-6 pb-6 border-b border-[#E5E7EB]">
@@ -650,7 +635,7 @@
             window.FEASTLINK_RESTAURANTS = #{customerRestaurantsBean.restaurantsJson};
             //]]>
         </h:outputScript>
-        
+
         <!-- ===== FORM ẨN ĐỂ JSF LƯU YÊU THÍCH ===== -->
         <h:form id="favoriteForm">
             <!-- restaurantId sẽ được JS gán vào -->

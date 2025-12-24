@@ -1,18 +1,19 @@
 <ui:composition
-        xmlns="http://www.w3.org/1999/xhtml"
-        xmlns:h="jakarta.faces.html"
-        xmlns:ui="jakarta.faces.facelets">
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="jakarta.faces.html"
+    xmlns:ui="jakarta.faces.facelets">
 
     <style type="text/css">
         /* ====== Luxury FeastLink chat widget ====== */
         .fl-chat-widget {
             position: fixed;
             right: 24px;
-            bottom: 24px;
+            bottom: calc(96px + env(safe-area-inset-bottom));
             z-index: 9999;
             font-family: system-ui, -apple-system, BlinkMacSystemFont,
-                         "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
+
 
         .fl-chat-card {
             display: flex;
@@ -42,8 +43,8 @@
             inset: -4px;
             border-radius: 999px;
             background: radial-gradient(circle at 30% 0,
-                        rgba(234, 179, 8, 0.55),
-                        transparent 60%);
+                rgba(234, 179, 8, 0.55),
+                transparent 60%);
             opacity: 0.9;
             filter: blur(6px);
             z-index: 0;
@@ -149,7 +150,7 @@
         @media (max-width: 768px) {
             .fl-chat-widget {
                 right: 12px;
-                bottom: 12px;
+                bottom: calc(88px + env(safe-area-inset-bottom));
             }
             .fl-chat-card {
                 max-width: 280px;
@@ -170,7 +171,7 @@
                 <div class="fl-chat-avatar-wrap">
                     <div class="fl-chat-avatar-glow"></div>
                     <div class="fl-chat-avatar">
-                          <h:graphicImage value="#{resource['images/feastlink-logo.png']}"
+                        <h:graphicImage value="#{resource['images/feastlink-logo.png']}"
                                         styleClass="fl-chat-avatar-img" />
                     </div>
                 </div>
@@ -181,7 +182,7 @@
                         Chat Zalo with Manager
                     </div>
                     <div class="fl-chat-subtitle">
-                       Messages
+                        Messages
                     </div>
                     <div class="fl-chat-status">
                         <span class="fl-chat-status-dot"></span>
