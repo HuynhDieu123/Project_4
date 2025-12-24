@@ -26,6 +26,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import com.mypack.entity.RestaurantCapacitySettings;
 import com.mypack.sessionbean.RestaurantCapacitySettingsFacadeLocal;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Collections;
+import com.mypack.entity.MenuItems;
 
 /**
  * Bean dùng cho trang Customer/restaurants.xhtml Đọc dữ liệu nhà hàng từ DB và
@@ -42,6 +46,7 @@ public class CustomerRestaurantsBean implements Serializable {
     private List<String> cityOptions;
     private List<String> areaOptions;
     private List<String> eventTypeOptions;
+    private List<String> cuisineOptions;
 
     @EJB
     private EventTypesFacadeLocal eventTypesFacade;
@@ -95,6 +100,27 @@ public class CustomerRestaurantsBean implements Serializable {
             }
             card.setCity(cityName);
             card.setDistrict(areaName);
+
+            // cuisines for this restaurant (from DB via relationship)
+            Set<String> cs = new TreeSet<>();
+            try {
+                Collection<MenuItems> items = r.getMenuItemsCollection(); // nếu tên khác thì đổi getter
+                if (items != null) {
+                    for (MenuItems mi : items) {
+                        if (mi == null) {
+                            continue;
+                        }
+                        if (mi.getCuisineId() != null && mi.getCuisineId().getName() != null) {
+                            String cname = mi.getCuisineId().getName().trim();
+                            if (!cname.isEmpty()) {
+                                cs.add(cname);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignore) {
+            }
+            card.setCuisines(new ArrayList<>(cs));
 
             // Booking / cancel / deposit
             card.setAdvanceBookingDays(nvlInt(r.getMinDaysInAdvance(), 0));
@@ -162,7 +188,7 @@ public class CustomerRestaurantsBean implements Serializable {
             }
             if (imageUrl == null || imageUrl.isEmpty()) {
                 // fallback nếu chưa có ảnh
-                imageUrl = "/FeastLink-war/resources/images/restaurant-placeholder.jpg";
+                imageUrl = null;
             }
             card.setImage(imageUrl);
 
@@ -277,6 +303,7 @@ public class CustomerRestaurantsBean implements Serializable {
         Set<String> cities = new TreeSet<>();
         Set<String> areas = new TreeSet<>();
         Set<String> events = new TreeSet<>();
+        Set<String> cuisines = new TreeSet<>();
 
         if (restaurantCards != null) {
             for (RestaurantCard c : restaurantCards) {
@@ -297,12 +324,22 @@ public class CustomerRestaurantsBean implements Serializable {
                         }
                     }
                 }
+                if (c.getCuisines() != null) {
+                    for (String cu : c.getCuisines()) {
+                        if (cu != null && !cu.isBlank()) {
+                            cuisines.add(cu);
+                        }
+                    }
+                }
+
             }
         }
 
         cityOptions = new ArrayList<>(cities);
         areaOptions = new ArrayList<>(areas);
         eventTypeOptions = new ArrayList<>(events);
+        cuisineOptions = new ArrayList<>(cuisines);
+
     }
 
     private int nvlInt(Integer v, int dft) {
@@ -367,6 +404,16 @@ public class CustomerRestaurantsBean implements Serializable {
                     sb.append(",");
                 }
                 sb.append("\"").append(escapeJson(types.get(j))).append("\"");
+            }
+            sb.append("],");
+            // cuisines
+            sb.append("\"cuisines\":[");
+            List<String> cus = c.getCuisines();
+            for (int j = 0; j < cus.size(); j++) {
+                if (j > 0) {
+                    sb.append(",");
+                }
+                sb.append("\"").append(escapeJson(cus.get(j))).append("\"");
             }
             sb.append("],");
 
@@ -436,6 +483,8 @@ public class CustomerRestaurantsBean implements Serializable {
         private int capacityMax;
         private double pricePerGuest;
         private List<String> eventTypes = new ArrayList<>();
+        private List<String> cuisines = new ArrayList<>();
+
         private int advanceBookingDays;
         private int cancelDays;
         private double depositPercent;
@@ -545,6 +594,14 @@ public class CustomerRestaurantsBean implements Serializable {
             this.eventTypes = eventTypes;
         }
 
+        public List<String> getCuisines() {
+            return cuisines;
+        }
+
+        public void setCuisines(List<String> cuisines) {
+            this.cuisines = (cuisines != null) ? cuisines : new ArrayList<>();
+        }
+
         public int getAdvanceBookingDays() {
             return advanceBookingDays;
         }
@@ -589,6 +646,10 @@ public class CustomerRestaurantsBean implements Serializable {
 
     public List<String> getEventTypeOptions() {
         return eventTypeOptions;
+    }
+
+    public List<String> getCuisineOptions() {
+        return cuisineOptions != null ? cuisineOptions : Collections.emptyList();
     }
 
 }

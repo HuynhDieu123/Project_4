@@ -192,9 +192,117 @@
             .feast-star-btn:active {
                 transform: translateY(0) scale(0.98);
             }
+            .feast-toast-stack{
+                position: fixed;
+                top: 18px;
+                right: 18px;
+                z-index: 99999;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                width: min(420px, calc(100vw - 24px));
+                pointer-events: none;
+            }
 
+            .feast-toast{
+                pointer-events: auto;
+                display: flex;
+                gap: 12px;
+                align-items: flex-start;
+                padding: 12px 12px;
+                border-radius: 16px;
+                background: linear-gradient(180deg, rgba(11,17,32,.98), rgba(2,6,23,.98));
+                color: #fff;
+                border: 1px solid rgba(212,175,55,.25);
+                box-shadow: 0 18px 40px rgba(2,6,23,.35);
+                backdrop-filter: blur(10px);
+                transform: translateY(-6px);
+                opacity: 0;
+                animation: feastToastIn .22s ease-out forwards;
+            }
 
+            .feast-toast[data-type="success"]{
+                border-color: rgba(34,197,94,.35);
+            }
+            .feast-toast[data-type="info"]{
+                border-color: rgba(250,204,107,.35);
+            }
+            .feast-toast[data-type="warn"]{
+                border-color: rgba(234,179,8,.35);
+            }
+            .feast-toast[data-type="error"]{
+                border-color: rgba(239,68,68,.35);
+            }
 
+            .feast-toast__icon{
+                width: 34px;
+                height: 34px;
+                border-radius: 12px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(255,255,255,.06);
+                border: 1px solid rgba(255,255,255,.10);
+                margin-top: 1px;
+                flex: 0 0 auto;
+            }
+
+            .feast-toast__title{
+                font-weight: 800;
+                font-size: 13px;
+                letter-spacing: .2px;
+                margin: 0 0 2px;
+            }
+
+            .feast-toast__msg{
+                font-size: 12px;
+                color: rgba(255,255,255,.82);
+                line-height: 1.35;
+                margin: 0;
+            }
+
+            .feast-toast__close{
+                margin-left: auto;
+                width: 30px;
+                height: 30px;
+                border-radius: 12px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background: transparent;
+                border: 1px solid rgba(255,255,255,.12);
+                color: rgba(255,255,255,.85);
+                cursor: pointer;
+                transition: .18s;
+            }
+            .feast-toast__close:hover{
+                background: rgba(255,255,255,.08);
+                border-color: rgba(212,175,55,.35);
+                color: #fff;
+            }
+
+            @keyframes feastToastIn{
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @keyframes feastToastOut{
+                to {
+                    opacity: 0;
+                    transform: translateY(-6px);
+                }
+            }
+
+            @media (max-width: 640px){
+                .feast-toast-stack{
+                    left: 12px;
+                    right: 12px;
+                    top: auto;
+                    bottom: 14px;
+                    width: auto;
+                }
+            }
 
         </style>
     </h:head>
@@ -716,6 +824,21 @@
                                             <p class="text-sm text-[#4B5563] mb-4">
                                                 <h:outputText value="#{c.description}"/>
                                             </p>
+
+                                            <!-- Hidden: full menu items for this package (JS will read) -->
+                                            <div class="hidden" data-combo-menu-source="true">
+                                                <ui:repeat value="#{restaurantDetailsBean.comboItemsFor(c.comboId)}" var="it">
+                                                    <div class="combo-menu-item"
+                                                         data-name="#{it.name}"
+                                                         data-desc="#{it.description}"
+                                                         data-qty="#{it.quantity}"
+                                                         data-veg="#{it.vegetarian}"
+                                                         data-img="#{it.imageUrl}"
+                                                         data-price="#{it.pricePerPerson}">
+                                                    </div>
+                                                </ui:repeat>
+                                            </div>
+
 
                                             <!-- tag Signature / Most popular demo -->
                                             <div class="flex flex-wrap gap-2 mb-6">
@@ -1578,8 +1701,7 @@
                                                 </span>
                                                 <span class="text-[#4B5563] text-sm font-medium">/ person</span>
                                             </div>
-                                            <p class="text-xs text-[#4B5563]">Average price per person  (varies by package)</p>
-
+                                            <p class="text-xs text-[#4B5563]">Lowest package price per person (varies by package)</p>
                                         </div>
                                     </div>
 
@@ -2052,6 +2174,35 @@
             }
 //]]>
         </script>
+        <!-- Package menu details modal -->
+        <div id="package-menu-modal" class="hidden fixed inset-0 z-[9999]">
+            <div id="package-menu-backdrop" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+            <div class="relative mx-auto my-8 w-[min(900px,92vw)] bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div class="p-5 border-b flex items-start justify-between gap-4">
+                    <div>
+                        <h3 id="package-menu-title" class="text-lg font-bold text-[#111827]">Package details</h3>
+                        <p id="package-menu-subtitle" class="text-sm text-[#6B7280]"></p>
+                    </div>
+
+                    <button type="button" id="package-menu-close"
+                            class="p-2 rounded-xl hover:bg-gray-100">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div class="p-5 max-h-[70vh] overflow-auto">
+                    <div id="package-menu-items" class="space-y-3"></div>
+                </div>
+
+                <div class="p-5 border-t flex justify-end gap-3">
+                    <button type="button" id="package-menu-close2"
+                            class="px-4 py-2 rounded-xl border border-[#E5E7EB] hover:border-[#D4AF37]">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
 
 
         <ui:include src="/layout/footer.xhtml"/>
@@ -2064,5 +2215,8 @@
             window.FEASTLINK.isLoggedIn = #{not empty sessionScope.currentUser};
         </script>
         <script type="text/javascript" src="#{request.contextPath}/js/restaurant_details.js"></script>
+        <!-- Toast notifications -->
+        <div id="feast-toast-stack" class="feast-toast-stack"></div>
+
     </h:body>
 </html>

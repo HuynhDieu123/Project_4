@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
         sortBy: 'recommended',
         quickTags: new Set(),
         eventTypes: new Set(),
+        cuisines: new Set(),
         capacity: '',
         rating: 0,
         priceMax: 10000,
@@ -54,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const priceRangeInputs = document.querySelectorAll('.js-price-range');
     const priceLabels = document.querySelectorAll('.js-price-label');
     const eventTypeButtons = document.querySelectorAll('.js-event-type');
+    const cuisineCheckboxes = document.querySelectorAll('.js-cuisine');
     const capacityButtons = document.querySelectorAll('.js-capacity');
     const ratingButtons = document.querySelectorAll('.js-rating');
     const statusButtons = document.querySelectorAll('.js-status');
@@ -159,6 +161,21 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!ok)
                 return false;
         }
+
+        if (state.cuisines.size > 0) {
+            const list = Array.isArray(r.cuisines) ? r.cuisines : [];
+            let ok = false;
+
+            for (const cu of state.cuisines) {
+                if (list.includes(cu)) {
+                    ok = true;
+                    break;
+                }
+            }
+            if (!ok)
+                return false;
+        }
+
 
         if (state.capacity) {
             const min = r.capacityMin;
@@ -336,10 +353,12 @@ document.addEventListener('DOMContentLoaded', function () {
         View details
       </a>
 
-      <button type="button" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#F97316] text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-2xl hover:shadow-[#EAB308]/40 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden" data-action="book">
-        <span class="relative z-10">Book now</span>
-        <div class="absolute inset-0 bg-gradient-to-r from-[#EAB308] to-[#F97316] opacity-0 transition-opacity duration-300"></div>
-      </button>
+      <a href="restaurant-details.xhtml?restaurantId=${r.id}#packages"
+   class="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#F97316] to-[#EA580C] hover:from-[#EA580C] hover:to-[#F97316] text-white text-sm font-semibold rounded-xl shadow-lg hover:shadow-2xl hover:shadow-[#EAB308]/40 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden inline-flex items-center justify-center">
+  <span class="relative z-10">Book now</span>
+  <div class="absolute inset-0 bg-gradient-to-r from-[#EAB308] to-[#F97316] opacity-0 transition-opacity duration-300"></div>
+</a>
+
     </div>
   </div>
 </article>`;
@@ -489,6 +508,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    cuisineCheckboxes.forEach((cb) => {
+        const cu = cb.dataset.cuisine || '';
+        cb.addEventListener('change', () => {
+            if (!cu)
+                return;
+
+            if (cb.checked) {
+                state.cuisines.add(cu);
+            } else {
+                state.cuisines.delete(cu);
+            }
+            state.page = 1;
+            render();
+        });
+    });
+
+
     capacityButtons.forEach((btn) => {
         const cap = btn.dataset.capacity;
         btn.addEventListener('click', () => {
@@ -609,6 +645,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function resetFilters() {
         state.quickTags = new Set();
         state.eventTypes = new Set();
+        state.cuisines = new Set();
         state.capacity = '';
         state.rating = 0;
         state.priceMax = 10000;
@@ -632,6 +669,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         priceRangeInputs.forEach((input) => (input.value = '10000'));
         priceLabels.forEach((lab) => (lab.textContent = formatCurrency(10000)));
+        cuisineCheckboxes.forEach((cb) => (cb.checked = false));
 
         citySelect.value = '';
         areaSelect.value = '';
@@ -700,15 +738,15 @@ document.addEventListener('DOMContentLoaded', function () {
             hiddenInput.value = restaurantId;
             submitBtn.click();  // gọi action #{restaurantFavoritesBean.addFavoriteById}
 
-        } else if (action === 'book') {
-            const card = btn.closest('article[data-restaurant-id]');
-            const restaurantId = card ? card.dataset.restaurantId : null;
-
-            if (restaurantId) {
-                window.location.href = 'booking.xhtml?restaurantId=' + encodeURIComponent(restaurantId);
-            } else {
-                window.location.href = 'booking.xhtml';
-            }
+//        } else if (action === 'book') {
+//            const card = btn.closest('article[data-restaurant-id]');
+//            const restaurantId = card ? card.dataset.restaurantId : null;
+//
+//            if (restaurantId) {
+//                window.location.href = 'booking.xhtml?restaurantId=' + encodeURIComponent(restaurantId);
+//            } else {
+//                window.location.href = 'booking.xhtml';
+//            
         }
     });
 

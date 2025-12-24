@@ -98,9 +98,9 @@
 
                 <!-- =========== Filter Toolbar =========== -->
                 <section class="mt-8 bg-white/80 backdrop-blur-xl border border-[#E5E7EB] rounded-3xl p-4 sm:p-6 shadow-lg">
-                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                         <!-- Tabs -->
-                        <div class="flex gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+                        <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide sm:flex-wrap sm:overflow-visible sm:pb-0">
                             <button type="button"
                                     data-role="status-tab"
                                     data-filter-value="all"
@@ -494,16 +494,21 @@
                                                 </h:panelGroup>
 
 
-                                                <!-- Cancel booking: gọi action bean -->
+                                                <!-- Cancel booking: open modal + require reason -->
                                                 <h:panelGroup rendered="#{customerMyBookingsBean.canCancel(b)}">
                                                     <h:commandLink
-                                                        action="#{customerMyBookingsBean.cancelBooking(b.bookingId)}"
-                                                        styleClass="btn-cancel-booking px-6 py-3 bg-white hover:bg-[#FEF2F2] text-[#EF4444] border-2 border-[#EF4444] font-semibold rounded-xl transition-all duration-300 flex items-center gap-2"
-                                                        onclick="return confirm('Are you sure you want to cancel this booking? This may affect your deposit.');">
+                                                        actionListener="#{customerMyBookingsBean.prepareCancel(b.bookingId)}"
+                                                        styleClass="btn-cancel-booking px-6 py-3 bg-white hover:bg-[#FEF2F2] text-[#EF4444] border-2 border-[#EF4444] font-semibold rounded-xl transition-all duration-300 flex items-center gap-2">
+
+                                                        <f:ajax execute="@this"
+                                                                render=":myBookingsForm:cancelModal :myBookingsForm:msgs"
+                                                                onevent="feastlinkCustomerPrepareCancelEvent"/>
+
                                                         <i data-lucide="x-circle" class="w-4 h-4"></i>
                                                         <span>Cancel</span>
                                                     </h:commandLink>
                                                 </h:panelGroup>
+
 
                                                 <!-- View details: sang trang booking-details -->
                                                 <h:link outcome="/Customer/booking-details"
@@ -571,141 +576,68 @@
                                 </div>
                             </div>
                         </h:panelGroup>
-                        <!-- EDIT MODAL -->
-                        <h:panelGroup id="editModal">
-                            <h:inputHidden id="editSaveOk" value="#{customerMyBookingsBean.editSaveSuccess}"/>
+                        <!-- CANCEL MODAL -->
+                        <h:panelGroup id="cancelModal">
+                            <!-- flag để JS biết cancel ok chưa -->
+                            <h:inputHidden id="cancelOk" value="#{customerMyBookingsBean.cancelSuccess}"/>
 
-                            <div id="customerEditModal" class="fixed inset-0 z-50 hidden">
-                                <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeCustomerEditModal()"></div>
+                            <!-- bookingId để confirmCancel biết đang cancel booking nào -->
+                            <h:inputHidden id="cancelBookingId" value="#{customerMyBookingsBean.cancelBookingId}"/>
 
-                                <div class="relative mx-auto mt-10 sm:mt-16 w-[92%] max-w-2xl rounded-3xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
+                            <div id="customerCancelModal" class="fixed inset-0 z-50 hidden">
+                                <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeCustomerCancelModal()"></div>
+
+                                <div class="relative mx-auto mt-10 sm:mt-16 w-[92%] max-w-xl rounded-3xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
                                     <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                                         <div>
-                                            <p class="text-[11px] uppercase tracking-widest text-gray-500">Edit booking</p>
+                                            <p class="text-[11px] uppercase tracking-widest text-gray-500">Cancel booking</p>
                                             <p class="text-lg font-semibold text-[#0B1120]">
-                                                #{customerMyBookingsBean.editBookingId}
+                                                Provide a cancellation reason
                                             </p>
                                         </div>
                                         <button type="button"
                                                 class="w-10 h-10 rounded-2xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-700"
-                                                onclick="closeCustomerEditModal()">✕</button>
+                                                onclick="closeCustomerCancelModal()">✕</button>
                                     </div>
 
-                                    <div class="px-6 py-6 space-y-5">
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-600 mb-2">Event date</label>
-                                                <h:inputText value="#{customerMyBookingsBean.editStartTime}"
-                                                             required="true"
-                                                             pass:type="time"
-                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
-                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
-                                                    <f:convertDateTime  type="time" pattern="HH:mm"/>
-                                                </h:inputText>
-                                            </div>
-
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-600 mb-2">Guests</label>
-                                                <h:inputText value="#{customerMyBookingsBean.editGuestCount}"
-                                                             required="true"
-                                                             pass:type="number" pass:min="1"
-                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
-                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
-                                                    <f:validateLongRange minimum="1" />
-                                                </h:inputText>
-                                            </div>
-                                        </div>
-
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-600 mb-2">Start time</label>
-                                                <h:inputText value="#{customerMyBookingsBean.editStartTime}"
-                                                             pass:type="time"
-                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
-                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
-                                                    <f:convertDateTime pattern="HH:mm"/>
-                                                </h:inputText>
-                                            </div>
-
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-600 mb-2">End time</label>
-                                                <h:inputText value="#{customerMyBookingsBean.editEndTime}"
-                                                             pass:type="time"
-                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
-                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
-                                                    <f:convertDateTime pattern="HH:mm"/>
-                                                </h:inputText>
-                                            </div>
-                                        </div>
-
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-600 mb-2">Location</label>
-                                                <h:selectOneMenu value="#{customerMyBookingsBean.editLocationType}"
-                                                                 styleClass="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700
-                                                                 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]">
-                                                    <f:selectItem itemLabel="At restaurant" itemValue="AT_RESTAURANT"/>
-                                                    <f:selectItem itemLabel="Outside" itemValue="OUTSIDE"/>
-                                                    <f:ajax render="editModal"/>
-                                                </h:selectOneMenu>
-                                            </div>
-
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-600 mb-2">Outside address</label>
-                                                <h:inputText value="#{customerMyBookingsBean.editOutsideAddress}"
-                                                             disabled="#{not customerMyBookingsBean.editOutside}"
-                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
-                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37] disabled:opacity-50"/>
-                                            </div>
-                                        </div>
-
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-600 mb-2">Contact name</label>
-                                                <h:inputText value="#{customerMyBookingsBean.editContactFullName}"
-                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
-                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"/>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-600 mb-2">Contact phone</label>
-                                                <h:inputText value="#{customerMyBookingsBean.editContactPhone}"
-                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
-                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"/>
-                                            </div>
-                                        </div>
+                                    <div class="px-6 py-6 space-y-3">
+                                        <p class="text-sm text-gray-600">
+                                            Please tell us why you want to cancel. This reason will be saved with your booking.
+                                        </p>
 
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-600 mb-2">Contact email</label>
-                                            <h:inputText value="#{customerMyBookingsBean.editContactEmail}"
-                                                         styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
-                                                         focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"/>
-                                        </div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-2">Cancellation reason</label>
 
-                                        <div>
-                                            <label class="block text-xs font-medium text-gray-600 mb-2">Note</label>
-                                            <h:inputTextarea value="#{customerMyBookingsBean.editNote}"
-                                                             rows="3"
+                                            <h:inputTextarea id="cancelReason"
+                                                             value="#{customerMyBookingsBean.cancelReason}"
+                                                             rows="4"
+                                                             required="true"
+                                                             requiredMessage="Please enter a cancellation reason."
                                                              styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
-                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"/>
+                                                             focus:outline-none focus:ring-2 focus:ring-[#EF4444]"/>
+
+                                            <!-- để lỗi required hiện ngay dưới ô -->
+                                            <h:message for="cancelReason" styleClass="block mt-2 text-xs text-red-600"/>
                                         </div>
                                     </div>
 
                                     <div class="px-6 py-5 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50">
                                         <button type="button"
                                                 class="px-4 py-2.5 rounded-2xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                                onclick="closeCustomerEditModal()">Cancel</button>
+                                                onclick="closeCustomerCancelModal()">Back</button>
 
-                                        <h:commandButton value="Save changes"
-                                                         styleClass="px-5 py-2.5 rounded-2xl bg-[#0B1120] text-white text-sm font-semibold hover:bg-[#020617] transition-all shadow-sm"
-                                                         action="#{customerMyBookingsBean.saveEdit}">
-                                            <f:ajax execute="editModal" render=":myBookingsForm:editModal :myBookingsForm:msgs"
-                                                    onevent="feastlinkCustomerSaveEditEvent"/>
-
+                                        <h:commandButton value="Confirm Cancel"
+                                                         action="#{customerMyBookingsBean.confirmCancel}"
+                                                         styleClass="px-5 py-2.5 rounded-2xl bg-[#EF4444] text-white text-sm font-semibold hover:bg-[#DC2626] transition-all shadow-sm">
+                                            <f:ajax execute=":myBookingsForm:cancelBookingId :myBookingsForm:cancelReason"
+                                                    render=":myBookingsForm:cancelModal :myBookingsForm:msgs"
+                                                    onevent="feastlinkCustomerConfirmCancelEvent"/>
                                         </h:commandButton>
                                     </div>
                                 </div>
                             </div>
                         </h:panelGroup>
+
 
                     </h:form>
                 </h:panelGroup>
@@ -927,6 +859,47 @@
                     window.location.reload();
                 } else {
                     openCustomerEditModal();
+                    if (window.lucide)
+                        window.lucide.createIcons();
+                }
+            }
+            function openCustomerCancelModal() {
+                var m = document.getElementById('customerCancelModal');
+                if (m)
+                    m.classList.remove('hidden');
+            }
+            function closeCustomerCancelModal() {
+                var m = document.getElementById('customerCancelModal');
+                if (m)
+                    m.classList.add('hidden');
+            }
+
+            function feastlinkCustomerPrepareCancelEvent(data) {
+                if (data.status !== 'success')
+                    return;
+
+                // chỉ mở modal khi prepareCancel set được bookingId
+                var idEl = document.getElementById('myBookingsForm:cancelBookingId');
+                if (!idEl || !idEl.value)
+                    return;
+
+                openCustomerCancelModal();
+                if (window.lucide)
+                    window.lucide.createIcons();
+            }
+
+            function feastlinkCustomerConfirmCancelEvent(data) {
+                if (data.status !== 'success')
+                    return;
+
+                var okEl = document.getElementById('myBookingsForm:cancelOk');
+                var ok = okEl && (okEl.value === 'true' || okEl.value === 'True');
+
+                if (ok) {
+                    window.location.reload();
+                } else {
+                    // validate fail -> giữ modal để user nhập lại
+                    openCustomerCancelModal();
                     if (window.lucide)
                         window.lucide.createIcons();
                 }

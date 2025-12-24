@@ -58,6 +58,9 @@ public class CustomerMyBookingsBean implements Serializable {
     private String editContactEmail;
     private String editContactPhone;
     private boolean editSaveSuccess;
+    private Long cancelBookingId;
+    private String cancelReason;
+    private boolean cancelSuccess;
 
     // ========= PAGINATION =========
     // Số booking mỗi trang (bro muốn 5, 6, 10 tùy chỉnh)
@@ -73,6 +76,7 @@ public class CustomerMyBookingsBean implements Serializable {
             = new SimpleDateFormat("EEEE, dd MMMM yyyy", displayLocale);
     private final SimpleDateFormat timeFmt
             = new SimpleDateFormat("HH:mm", displayLocale);
+    private static final long serialVersionUID = 1L;
 
     @PostConstruct
     public void init() {
@@ -364,22 +368,32 @@ public class CustomerMyBookingsBean implements Serializable {
         if (b == null) {
             return false;
         }
+
         String status = safe(b.getBookingStatus()).toUpperCase();
         if (!("PENDING".equals(status) || "CONFIRMED".equals(status))) {
             return false;
         }
+
+        // Không cho cancel nếu đã PAID full (deposit paid vẫn OK)
+        String pay = safe(b.getPaymentStatus()).toUpperCase();
+        if ("PAID".equals(pay) || "FULL_PAID".equals(pay) || "PAID_IN_FULL".equals(pay)) {
+            return false;
+        }
+
         return canCancelByDate(b);
     }
 
     private boolean canCancelByDate(Bookings b) {
         Date date = b.getEventDate();
         if (date == null) {
-            return true;  // demo: nếu thiếu ngày thì cho hủy
+            return true;
         }
+
         LocalDate event = toLocalDate(date);
         LocalDate today = LocalDate.now();
-        // phải còn ít nhất 3 ngày
-        return today.isBefore(event.minusDays(3));
+
+        // allow cancel when today <= event - 3 days
+        return !today.isAfter(event.minusDays(3));
     }
 
     public boolean isRemainingPositive(Bookings b) {
@@ -395,7 +409,9 @@ public class CustomerMyBookingsBean implements Serializable {
         }
         String status = safe(b.getBookingStatus()).toUpperCase();
         String payment = safe(b.getPaymentStatus()).toUpperCase();
-        return "CONFIRMED".equals(status) && !"PAID".equals(payment);
+        return "CONFIRMED".equals(status)
+                && !("PAID".equals(payment) || "FULL_PAID".equals(payment) || "PAID_IN_FULL".equals(payment));
+
     }
 
     public String statusMessage(Bookings b) {
@@ -772,63 +788,152 @@ public class CustomerMyBookingsBean implements Serializable {
         return "/Customer/booking-details";
     }
 
-    // ========== ACTION: CANCEL BOOKING ==========
-    public String cancelBooking(Long bookingId) {
-        FacesContext ctx = FacesContext.getCurrentInstance();
+//    // ========== ACTION: CANCEL BOOKING ==========
+//    public String cancelBooking(Long bookingId) {
+//        FacesContext ctx = FacesContext.getCurrentInstance();
+//
+//        if (bookingId == null) {
+//            addMessage(FacesMessage.SEVERITY_ERROR,
+//                    "Error", "Missing booking id.");
+//            return null;
+//        }
+//
+//        Bookings booking = bookingsFacade.find(bookingId);
+//        if (booking == null) {
+//            addMessage(FacesMessage.SEVERITY_ERROR,
+//                    "Error", "Booking not found.");
+//            return null;
+//        }
+//
+//        // Check quyền: chỉ được hủy booking của chính mình
+//        Object userObj = ctx.getExternalContext()
+//                .getSessionMap().get("currentUser");
+//        if (!(userObj instanceof Users)) {
+//            addMessage(FacesMessage.SEVERITY_ERROR,
+//                    "Error", "You need to log in again.");
+//            return "/login";
+//        }
+//
+//        Users currentUser = (Users) userObj;
+//        if (booking.getCustomerId() == null
+//                || !booking.getCustomerId().getUserId()
+//                        .equals(currentUser.getUserId())) {
+//            addMessage(FacesMessage.SEVERITY_ERROR,
+//                    "Error", "You cannot cancel this booking.");
+//            return null;
+//        }
+//
+//        // Check rule hủy
+//        if (!canCancel(booking)) {
+//            addMessage(FacesMessage.SEVERITY_WARN,
+//                    "Cannot cancel",
+//                    "This booking can no longer be cancelled online.");
+//            return null;
+//        }
+//
+//        // Cập nhật trạng thái
+//        booking.setBookingStatus("CANCELLED");
+//        booking.setCancelReason("Cancelled by customer via My Bookings page.");
+//        booking.setCancelTime(new Date());
+//        booking.setUpdatedAt(new Date());
+//
+//        bookingsFacade.edit(booking);
+//        
+//
+//        addMessage(FacesMessage.SEVERITY_INFO,
+//                "Booking cancelled",
+//                "Your booking has been cancelled. Refund policy will follow the venue's rules.");
+//
+//        // load lại trang danh sách
+//        return "/Customer/my-bookings";
+//    }
+
+    public void prepareCancel(Long bookingId) {
+        cancelSuccess = false;
+        cancelBookingId = bookingId;
+        cancelReason = "";
 
         if (bookingId == null) {
-            addMessage(FacesMessage.SEVERITY_ERROR,
-                    "Error", "Missing booking id.");
-            return null;
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Missing booking id.");
+            return;
+        }
+
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        Object userObj = ctx.getExternalContext().getSessionMap().get("currentUser");
+        if (!(userObj instanceof Users)) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Please login again.");
+            return;
         }
 
         Bookings booking = bookingsFacade.find(bookingId);
         if (booking == null) {
-            addMessage(FacesMessage.SEVERITY_ERROR,
-                    "Error", "Booking not found.");
-            return null;
-        }
-
-        // Check quyền: chỉ được hủy booking của chính mình
-        Object userObj = ctx.getExternalContext()
-                .getSessionMap().get("currentUser");
-        if (!(userObj instanceof Users)) {
-            addMessage(FacesMessage.SEVERITY_ERROR,
-                    "Error", "You need to log in again.");
-            return "/login";
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Booking not found.");
+            return;
         }
 
         Users currentUser = (Users) userObj;
         if (booking.getCustomerId() == null
-                || !booking.getCustomerId().getUserId()
-                        .equals(currentUser.getUserId())) {
-            addMessage(FacesMessage.SEVERITY_ERROR,
-                    "Error", "You cannot cancel this booking.");
-            return null;
+                || !booking.getCustomerId().getUserId().equals(currentUser.getUserId())) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "You cannot cancel this booking.");
+            cancelBookingId = null;
+            return;
         }
 
-        // Check rule hủy
         if (!canCancel(booking)) {
-            addMessage(FacesMessage.SEVERITY_WARN,
-                    "Cannot cancel",
-                    "This booking can no longer be cancelled online.");
-            return null;
+            addMessage(FacesMessage.SEVERITY_WARN, "Cannot cancel", "This booking can no longer be cancelled online.");
+            cancelBookingId = null;
+        }
+    }
+
+    public void confirmCancel() {
+        cancelSuccess = false;
+
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        Object userObj = ctx.getExternalContext().getSessionMap().get("currentUser");
+        if (!(userObj instanceof Users)) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Please login again.");
+            return;
+        }
+        Users currentUser = (Users) userObj;
+
+        if (cancelBookingId == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "No booking selected.");
+            return;
         }
 
-        // Cập nhật trạng thái
+        String reason = (cancelReason != null) ? cancelReason.trim() : "";
+        if (reason.isEmpty()) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Please enter a cancellation reason.");
+            return;
+        }
+
+        Bookings booking = bookingsFacade.find(cancelBookingId);
+        if (booking == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Booking not found.");
+            return;
+        }
+
+        if (booking.getCustomerId() == null
+                || !booking.getCustomerId().getUserId().equals(currentUser.getUserId())) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "You cannot cancel this booking.");
+            return;
+        }
+
+        if (!canCancel(booking)) {
+            addMessage(FacesMessage.SEVERITY_WARN, "Cannot cancel", "This booking can no longer be cancelled online.");
+            return;
+        }
+
         booking.setBookingStatus("CANCELLED");
-        booking.setCancelReason("Cancelled by customer via My Bookings page.");
+        booking.setCancelReason(reason); // <-- dùng reason nhập
         booking.setCancelTime(new Date());
         booking.setUpdatedAt(new Date());
-
         bookingsFacade.edit(booking);
+cancelSuccess = true; 
+        addMessage(FacesMessage.SEVERITY_INFO, "Booking cancelled", "Your booking has been cancelled.");
+        cancelBookingId = null;
+        cancelReason = "";
 
-        addMessage(FacesMessage.SEVERITY_INFO,
-                "Booking cancelled",
-                "Your booking has been cancelled. Refund policy will follow the venue's rules.");
-
-        // load lại trang danh sách
-        return "/Customer/my-bookings";
     }
 
     // Dùng cho sort: trả về millis của ngày tạo booking (hoặc eventDate nếu createdAt = null)
@@ -1042,6 +1147,26 @@ public class CustomerMyBookingsBean implements Serializable {
 
     public void setEditSaveSuccess(boolean editSaveSuccess) {
         this.editSaveSuccess = editSaveSuccess;
+    }
+
+    public Long getCancelBookingId() {
+        return cancelBookingId;
+    }
+
+    public void setCancelBookingId(Long cancelBookingId) {
+        this.cancelBookingId = cancelBookingId;
+    }
+
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
+    public boolean isCancelSuccess() {
+        return cancelSuccess;
     }
 
 }
