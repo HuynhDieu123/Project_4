@@ -94,7 +94,7 @@ public class RestaurantDetailsBean implements Serializable {
         }
 
         if (id != null) {
-            restaurant = restaurantsFacade.find(id);
+            restaurant = restaurantsFacade.findFresh(id);
         }
 
         // fallback if id is invalid: pick first restaurant

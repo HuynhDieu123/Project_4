@@ -303,6 +303,183 @@
                     width: auto;
                 }
             }
+            /* ===== FeastLink Confirm Modal (Luxury) ===== */
+            @keyframes feastConfirmFadeIn {
+                from {
+                    opacity: 0;
+                }
+                to   {
+                    opacity: 1;
+                }
+            }
+            @keyframes feastConfirmPop {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px) scale(.98);
+                }
+                to   {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+
+            .feast-confirm-overlay{
+                position: fixed;
+                inset: 0;
+                z-index: 100000; /* cao hơn toast */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+            }
+
+            .feast-confirm-backdrop{
+                position: absolute;
+                inset: 0;
+                background: rgba(2, 6, 23, .72);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                animation: feastConfirmFadeIn .14s ease-out forwards;
+            }
+
+            .feast-confirm-dialog{
+                position: relative;
+                width: min(560px, 92vw);
+                border-radius: 18px;
+                border: 1px solid rgba(212, 175, 55, .45);
+                background:
+                    radial-gradient(circle at 0% 0%, rgba(248,250,252,.08), transparent 55%),
+                    radial-gradient(circle at 120% 0%, rgba(212,175,55,.28), transparent 60%),
+                    linear-gradient(135deg, #020617, #0B1120);
+                box-shadow: 0 26px 70px rgba(2,6,23,.85);
+                color: #F9FAFB;
+                overflow: hidden;
+                animation: feastConfirmPop .16s ease-out forwards;
+            }
+
+            .feast-confirm-head{
+                display:flex;
+                gap: 12px;
+                padding: 16px 18px 10px;
+                align-items: flex-start;
+            }
+
+            .feast-confirm-icon{
+                width: 38px;
+                height: 38px;
+                border-radius: 12px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                background: rgba(239,68,68,.14);
+                border: 1px solid rgba(239,68,68,.32);
+                flex: 0 0 auto;
+            }
+
+            .feast-confirm-title{
+                font-weight: 700;
+                font-size: 14px;
+                letter-spacing: .02em;
+            }
+
+            .feast-confirm-msg{
+                margin-top: 4px;
+                font-size: 13px;
+                color: rgba(229,231,235,.92);
+                line-height: 1.45;
+            }
+
+            .feast-confirm-x{
+                margin-left: auto;
+                width: 36px;
+                height: 36px;
+                border-radius: 12px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                border: 1px solid rgba(229,231,235,.14);
+                background: rgba(255,255,255,.06);
+                color: #E5E7EB;
+                cursor: pointer;
+                transition: transform .12s ease, background .12s ease, border-color .12s ease;
+            }
+            .feast-confirm-x:hover{
+                transform: translateY(-1px);
+                background: rgba(255,255,255,.10);
+                border-color: rgba(212,175,55,.35);
+            }
+
+            .feast-confirm-actions{
+                display:flex;
+                justify-content:flex-end;
+                gap: 10px;
+                padding: 14px 18px 18px;
+                border-top: 1px solid rgba(229,231,235,.08);
+            }
+
+            .feast-btn{
+                border: none;
+                cursor:pointer;
+                border-radius: 999px;
+                padding: 10px 14px;
+                font-size: 12px;
+                font-weight: 700;
+                letter-spacing: .02em;
+                display:inline-flex;
+                align-items:center;
+                gap: 8px;
+                transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+            }
+
+            .feast-btn-ghost{
+                background: rgba(255,255,255,.06);
+                color: #E5E7EB;
+                border: 1px solid rgba(229,231,235,.14);
+            }
+            .feast-btn-ghost:hover{
+                transform: translateY(-1px);
+                border-color: rgba(212,175,55,.35);
+            }
+
+            .feast-btn-danger{
+                background: linear-gradient(135deg, #EF4444, #F97316);
+                color: #111827;
+                box-shadow: 0 14px 34px rgba(239,68,68,.28);
+            }
+            .feast-btn-danger:hover{
+                transform: translateY(-1px);
+                filter: brightness(1.03);
+            }
+
+            /* ===== Review form validation UI ===== */
+            .fl-form-alert{
+                margin: 0 0 16px;
+                padding: 12px 14px;
+                border-radius: 16px;
+                border: 1px solid rgba(239, 68, 68, 0.28);
+                background: linear-gradient(135deg, rgba(239, 68, 68, 0.10), rgba(212, 175, 55, 0.06));
+                color: #b91c1c;
+                font-size: 13px;
+            }
+
+            .fl-form-alert ul{
+                margin: 0;
+                padding-left: 18px;
+            }
+
+            .fl-form-alert li{
+                list-style: disc;
+                margin: 2px 0;
+            }
+
+            .fl-field-error{
+                display: block;
+                margin-top: 6px;
+                margin-bottom: 14px;
+                font-size: 12px;
+                color: #dc2626;
+            }
+
 
         </style>
     </h:head>
@@ -409,17 +586,21 @@
 
                     <div class="hidden md:flex items-center gap-3">
                         <button
-                            class="flex items-center gap-2 px-4 py-2 border border-[#E5E7EB] rounded-xl text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
+                            id="btn-share"
+                            class="flex items-center gap-2 ... transition-all"
                             type="button">
                             <i data-lucide="share-2" class="w-4 h-4"></i>
                             <span class="text-sm font-medium">Share</span>
                         </button>
-                        <button
-                            class="flex items-center gap-2 px-4 py-2 border border-[#E5E7EB] rounded-xl text-[#4B5563] hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
-                            type="button">
-                            <i data-lucide="heart" class="w-4 h-4"></i>
-                            <span class="text-sm font-medium">Save</span>
-                        </button>
+
+                        <!--                        <button
+                                                    id="btn-save"
+                                                    class="flex items-center gap-2 ... transition-all"
+                                                    type="button">
+                                                     removed heart icon 
+                                                    <span class="text-sm font-medium">Save</span>
+                                                </button>-->
+
                         <div class="flex items-center gap-1.5 px-3 py-2 bg-[#F9FAFB] rounded-lg">
                             <i data-lucide="check" class="w-4 h-4 text-[#D4AF37]"></i>
                             <span class="text-xs text-[#4B5563]">Verified Partner</span>
@@ -1153,11 +1334,19 @@
                             </div>
 
                             <h:form id="reviewsForm">
-                                <h:messages id="reviewMsgs" globalOnly="true"
-                                            styleClass="mb-4 text-sm text-red-600"/>
+                                <h:messages id="reviewMsgs" globalOnly="true" styleClass="hidden" />
 
-                                <!-- messages -->
-                                <h:messages styleClass="mb-4 text-sm" />
+                                <!-- Global messages: chỉ hiện ở top khi KHÔNG mở form -->
+                                <h:panelGroup layout="block" rendered="#{not restaurantReviewBean.showModal}">
+                                    <h:messages id="reviewMsgsTop"
+                                                globalOnly="true"
+                                                layout="list"
+                                                styleClass="mb-4 text-sm text-red-600"/>
+                                </h:panelGroup>
+
+                                <!-- XÓA h:messages tổng (in mọi message ra đầu trang) để tránh “Invalid rating” bay lên đây -->
+                                <!-- <h:messages styleClass="mb-4 text-sm" /> -->
+
 
                                 <!-- Summary card -->
                                 <h:panelGroup id="reviewsSummary" layout="block"
@@ -1314,6 +1503,11 @@
                                                         <f:ajax render="reviewFormWrap"/>
                                                     </h:commandButton>
                                                 </div>
+                                                <!-- Messages nằm NGAY trong form để user thấy liền -->
+                                                <h:messages id="reviewMsgsInForm"
+                                                            globalOnly="true"
+                                                            layout="list"
+                                                            styleClass="fl-form-alert"/>
 
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                     <div>
@@ -1321,10 +1515,14 @@
                                                             <label class="block text-sm font-semibold text-[#111827] mb-2">
                                                                 Choose your completed booking
                                                             </label>
-                                                            <h:selectOneMenu value="#{restaurantReviewBean.formBookingId}"
-                                                                             styleClass="w-full px-4 py-3 border border-[#E5E7EB] rounded-2xl text-sm focus:outline-none focus:border-[#D4AF37] mb-5">
+                                                            <h:selectOneMenu id="bookingSel"
+                                                                             value="#{restaurantReviewBean.formBookingId}"
+                                                                             styleClass="w-full px-4 py-3 border border-[#E5E7EB] rounded-2xl text-sm focus:outline-none focus:border-[#D4AF37] mb-2">
                                                                 <f:selectItems value="#{restaurantReviewBean.eligibleBookingItems}"/>
                                                             </h:selectOneMenu>
+
+                                                            <h:message for="bookingSel" styleClass="fl-field-error"/>
+
                                                         </ui:fragment>
 
                                                         <label class="block text-sm font-semibold text-[#111827] mb-2">Rating</label>
@@ -1351,15 +1549,19 @@
                                                         </div>
 
                                                         <!-- message for rating -->
-                                                        <h:message for="ratingVal" styleClass="block text-xs text-red-600 mb-4"/>
+                                                        <h:message for="ratingVal" styleClass="fl-field-error"/>
+
 
 
 
 
                                                         <label class="block text-sm font-semibold text-[#111827] mb-2">Comment</label>
-                                                        <h:inputTextarea value="#{restaurantReviewBean.formComment}"
+                                                        <h:inputTextarea id="comment"
+                                                                         value="#{restaurantReviewBean.formComment}"
                                                                          rows="6"
                                                                          styleClass="w-full px-4 py-3 border border-[#E5E7EB] rounded-2xl text-sm focus:outline-none focus:border-[#D4AF37] resize-none"/>
+
+                                                        <h:message for="comment" styleClass="fl-field-error"/>
 
                                                         <div class="mt-6 flex items-center justify-end gap-3">
                                                             <h:commandButton value="Cancel"
@@ -1368,12 +1570,13 @@
                                                                 <f:ajax render="reviewFormWrap"/>
                                                             </h:commandButton>
 
-                                                            <h:commandButton value="Submit"
+                                                            <h:commandButton id="submitReviewBtn"
+                                                                             value="Submit"
                                                                              action="#{restaurantReviewBean.submit}"
                                                                              styleClass="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] text-white font-semibold shadow-lg hover:shadow-xl transition-all">
                                                                 <f:ajax execute="@form"
                                                                         render=":reviewsForm:reviewsSummary :reviewsForm:reviewsList :reviewsForm:loadMoreWrap :reviewsForm:reviewFormWrap :reviewsForm:reviewMsgs"
-                                                                        onevent="function(d){ if(d.status==='success'){ scrollToReviewsList(); } }"/>
+                                                                        onevent="function(d){ if(d.status==='success'){ if(window.scrollToReviewsList){window.scrollToReviewsList();} } }"/>
 
                                                             </h:commandButton>
 
@@ -1460,11 +1663,11 @@
 
                                                                 <!-- DELETE -->
                                                                 <h:commandLink action="#{restaurantReviewBean.deleteReview(rev.reviewId)}"
-                                                                               onclick="return confirm('Delete this review?');"
-                                                                               styleClass="text-xs px-3 py-1 rounded-lg border border-[#FCA5A5] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-all">
+                                                                               styleClass="text-xs px-3 py-1 rounded-lg border border-[#FCA5A5] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-all js-delete-review">
                                                                     Delete
                                                                     <f:ajax render=":reviewsForm:reviewsSummary :reviewsForm:reviewsList :reviewsForm:loadMoreWrap :reviewsForm:reviewMsgs"/>
                                                                 </h:commandLink>
+
 
                                                             </div>
                                                         </ui:fragment>
@@ -2217,6 +2420,38 @@
         <script type="text/javascript" src="#{request.contextPath}/js/restaurant_details.js"></script>
         <!-- Toast notifications -->
         <div id="feast-toast-stack" class="feast-toast-stack"></div>
+        <!-- Confirm modal (used for delete review, etc.) -->
+        <div id="feast-confirm-overlay" class="feast-confirm-overlay hidden" aria-hidden="true">
+            <div class="feast-confirm-backdrop" data-action="cancel"></div>
+
+            <div class="feast-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="feast-confirm-title">
+                <div class="feast-confirm-head">
+                    <div class="feast-confirm-icon">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </div>
+
+                    <div class="min-w-0">
+                        <div id="feast-confirm-title" class="feast-confirm-title">Confirm</div>
+                        <div id="feast-confirm-message" class="feast-confirm-msg">Are you sure?</div>
+                    </div>
+
+                    <button type="button" class="feast-confirm-x" data-action="cancel" aria-label="Close">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+
+                </div>
+
+                <div class="feast-confirm-actions">
+                    <button type="button" class="feast-btn feast-btn-ghost" data-action="cancel">
+                        Cancel
+                    </button>
+                    <button type="button" class="feast-btn feast-btn-danger" data-action="ok">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+
 
     </h:body>
 </html>

@@ -80,6 +80,111 @@ document.addEventListener('DOMContentLoaded', function () {
             setTimeout(remove, duration);
     }
 
+    // ================== CONFIRM MODAL (Luxury) ==================
+    function feastConfirm(opts = {}) {
+        const overlay = document.getElementById('feast-confirm-overlay');
+        if (!overlay) {
+            // fallback nếu thiếu modal
+            return Promise.resolve(window.confirm(opts.message || 'Are you sure?'));
+        }
+
+        const titleEl = overlay.querySelector('#feast-confirm-title');
+        const msgEl = overlay.querySelector('#feast-confirm-message');
+        const okBtn = overlay.querySelector('[data-action="ok"]');
+        const cancelBtns = overlay.querySelectorAll('[data-action="cancel"]');
+
+        if (titleEl)
+            titleEl.textContent = opts.title || 'Confirm';
+        if (msgEl)
+            msgEl.textContent = opts.message || 'Are you sure?';
+        if (okBtn)
+            okBtn.textContent = opts.okText || 'OK';
+
+        // open
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.documentElement.style.overflow = 'hidden';
+
+        if (window.lucide)
+            window.lucide.createIcons();
+
+        return new Promise(resolve => {
+            let done = false;
+
+            const close = (result) => {
+                if (done)
+                    return;
+                done = true;
+
+                overlay.classList.add('hidden');
+                overlay.setAttribute('aria-hidden', 'true');
+                document.documentElement.style.overflow = '';
+
+                document.removeEventListener('keydown', onKeyDown, true);
+                cancelBtns.forEach(b => b.removeEventListener('click', onCancel));
+                if (okBtn)
+                    okBtn.removeEventListener('click', onOk);
+
+                resolve(result);
+            };
+
+            const onCancel = (e) => {
+                e.preventDefault();
+                close(false);
+            };
+            const onOk = (e) => {
+                e.preventDefault();
+                close(true);
+            };
+
+            const onKeyDown = (e) => {
+                if (e.key === 'Escape')
+                    close(false);
+                if (e.key === 'Enter')
+                    close(true);
+            };
+
+            cancelBtns.forEach(b => b.addEventListener('click', onCancel));
+            if (okBtn)
+                okBtn.addEventListener('click', onOk);
+            document.addEventListener('keydown', onKeyDown, true);
+        });
+    }
+
+    // ================== DELETE REVIEW (replace browser confirm) ==================
+    // Event delegation: vẫn chạy sau JSF ajax re-render
+    document.addEventListener('click', function (e) {
+        const el = e.target.closest('.js-delete-review');
+        if (!el)
+            return;
+
+        // Nếu click lần 2 sau khi user OK -> cho JSF chạy bình thường
+        if (el.dataset.confirmed === '1') {
+            el.dataset.confirmed = '';
+            return;
+        }
+
+        // chặn submit ngay
+        e.preventDefault();
+        e.stopPropagation();
+
+        feastConfirm({
+            title: 'Delete review',
+            message: 'Delete this review? This action cannot be undone.',
+            okText: 'Delete'
+        }).then(ok => {
+            if (!ok)
+                return;
+
+            // đánh dấu để click lần 2 không bị chặn
+            el.dataset.confirmed = '1';
+
+            // trigger lại click để JSF action + f:ajax chạy
+            setTimeout(() => el.click(), 0);
+        });
+    }, true);
+
+
 
     function updateMenuSummary() {
         const count = selectedMenuItemIds.size;
@@ -1575,6 +1680,49 @@ document.addEventListener('DOMContentLoaded', function () {
         if (el)
             el.scrollIntoView({behavior: 'smooth', block: 'start'});
     };
+
+    window.scrollToReviewsList = function () {
+        // ưu tiên scroll tới section reviews
+        const section = document.getElementById('reviews');
+        if (section) {
+            section.scrollIntoView({behavior: 'smooth', block: 'start'});
+            return;
+        }
+    };
+    (function () {
+        function setBtnBusy(btn, busy) {
+            if (!btn)
+                return;
+            btn.disabled = !!busy;
+            btn.classList.toggle('opacity-60', !!busy);
+            btn.classList.toggle('pointer-events-none', !!busy);
+        }
+
+        if (window.jsf && jsf.ajax) {
+            jsf.ajax.addOnEvent(function (data) {
+                const src = data.source;
+                const sid = src && src.id ? src.id : '';
+
+                // chỉ bắt đúng nút submit review
+                if (!sid.endsWith(':submitReviewBtn'))
+                    return;
+
+                if (data.status === 'begin')
+                    setBtnBusy(src, true);
+                if (data.status === 'success' || data.status === 'complete')
+                    setBtnBusy(src, false);
+            });
+
+            // nếu server lỗi ajax -> mở nút lại
+            if (jsf.ajax.addOnError) {
+                jsf.ajax.addOnError(function () {
+                    const btn = document.querySelector("[id$=':submitReviewBtn']");
+                    setBtnBusy(btn, false);
+                });
+            }
+        }
+    })();
+
 
     (function () {
         function findHiddenRating() {
