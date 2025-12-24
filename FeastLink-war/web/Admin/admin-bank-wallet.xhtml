@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+
+<h:head>
+    <title>Admin Bank Wallet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b1120; color:#e5e7eb; }
+        .wrap { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+        .card { background: rgba(2,6,23,.85); border: 1px solid rgba(212,175,55,.25); border-radius: 16px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .row { display:flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+        .label { color:#cbd5e1; font-size: 13px; }
+        .value { color:#f8fafc; font-weight: 700; }
+        .btn { background: linear-gradient(135deg,#d4af37,#e6c77f); color:#0b1120; border:0; padding:10px 14px; border-radius: 12px; cursor:pointer; font-weight: 800; }
+        .btn2 { background: transparent; color:#e5e7eb; border:1px solid rgba(148,163,184,.35); padding:10px 14px; border-radius: 12px; cursor:pointer; }
+        .inp { width: 100%; padding: 10px 12px; border-radius: 12px; border:1px solid rgba(148,163,184,.25); background: rgba(15,23,42,.55); color:#e5e7eb; box-sizing: border-box; }
+        .tbl { width:100%; border-collapse: collapse; }
+        .tbl th, .tbl td { padding: 10px 10px; border-bottom: 1px solid rgba(148,163,184,.18); vertical-align: top; }
+        .tbl th { text-align:left; color:#cbd5e1; font-size: 13px; font-weight: 800; }
+        .tag { display:inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; border:1px solid rgba(212,175,55,.35); color:#e6c77f;}
+        .danger { color:#fecaca; }
+        .ok { color:#bbf7d0; }
+        .muted { color:#94a3b8; }
+        .section-title { display:flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 0 0 10px 0; }
+        .section-title h3 { margin:0; }
+        .hint { font-size: 12px; color:#94a3b8; }
+        .msg { margin: 10px 0; }
+    </style>
+</h:head>
+
+<h:body>
+<div class="wrap">
+    <div class="row" style="margin:0 0 14px 0; align-items:center;">
+        <h2 style="margin:0;">Admin Bank Wallet</h2>
+        <h:button value="← Back to Dashboard" styleClass="btn2" outcome="/Admin/dashboard.xhtml"/>
+    </div>
+
+    <h:form>
+        <div class="msg">
+            <h:messages globalOnly="true" showSummary="true" showDetail="true"
+                        errorClass="danger" infoClass="ok"/>
+        </div>
+
+        <div class="row" style="margin-bottom: 12px;">
+            <div class="label">AdminUserId (fixed): <span class="value">#{adminBankWalletBean.adminUserId}</span></div>
+            <div style="display:flex; gap:10px;">
+                <h:commandButton value="Sync Fee from PAID Bookings" styleClass="btn2"
+                                 action="#{adminBankWalletBean.syncPaidBookingFees}"/>
+                <h:commandButton value="Refresh" styleClass="btn2"
+                                 action="#{adminBankWalletBean.refresh}"/>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="section-title">
+                    <h3>Wallet</h3>
+                    <span class="hint">Fee rate: #{adminBankWalletBean.feeRate} (2%)</span>
+                </div>
+
+                <ui:fragment rendered="#{not empty adminBankWalletBean.adminWallet}">
+                    <div class="row">
+                        <div>
+                            <div class="label">WalletId</div>
+                            <div class="value">#{adminBankWalletBean.adminWallet.walletId}</div>
+                        </div>
+                        <div>
+                            <div class="label">Status</div>
+                            <div class="value"><span class="tag">#{adminBankWalletBean.adminWallet.status}</span></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:10px;">
+                        <div class="label">Current Balance</div>
+                        <div class="value" style="font-size: 26px;">
+                            <h:outputText value="#{adminBankWalletBean.adminWallet.balance}">
+                                <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="2"/>
+                            </h:outputText>
+                        </div>
+                        <div class="hint">Last sync processed: #{adminBankWalletBean.lastFeeProcessed} booking(s)</div>
+                    </div>
+                </ui:fragment>
+
+                <ui:fragment rendered="#{empty adminBankWalletBean.adminWallet}">
+                    <div class="danger">Wallet not found.</div>
+                </ui:fragment>
+            </div>
+
+            <div class="card">
+                <div class="section-title">
+                    <h3>Virtual Account</h3>
+                    <span class="hint">Used for internal transfers</span>
+                </div>
+
+                <ui:fragment rendered="#{not empty adminBankWalletBean.adminAccount}">
+                    <div class="row">
+                        <div>
+                            <div class="label">Account Number</div>
+                            <div class="value" style="font-size:18px;">#{adminBankWalletBean.adminAccount.accountNumber}</div>
+                        </div>
+                        <div>
+                            <div class="label">Status</div>
+                            <div class="value"><span class="tag">#{adminBankWalletBean.adminAccount.status}</span></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:10px;">
+                        <div class="label">Display Name</div>
+                        <div class="value">#{adminBankWalletBean.adminAccount.displayName}</div>
+                    </div>
+                </ui:fragment>
+
+                <ui:fragment rendered="#{empty adminBankWalletBean.adminAccount}">
+                    <div class="danger">Virtual account not found.</div>
+                </ui:fragment>
+            </div>
+        </div>
+
+        <!-- ✅ Booking Fee History -->
+        <div class="card" style="margin-top:16px;">
+            <div class="section-title">
+                <h3>Booking Fee History (2% from PAID bookings)</h3>
+                <span class="hint muted">TransferCode: FEE-BKG-{BookingId}</span>
+            </div>
+
+            <h:dataTable value="#{adminBankWalletBean.bookingFeeHistory}" var="f" styleClass="tbl"
+                         rendered="#{not empty adminBankWalletBean.bookingFeeHistory}">
+                <h:column>
+                    <f:facet name="header">Time</f:facet>
+                    <h:outputText value="#{f.createdAt}">
+                        <f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss" timeZone="Asia/Ho_Chi_Minh"/>
+                    </h:outputText>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Booking</f:facet>
+                    <div class="value">#{f.bookingCode}</div>
+                    <div class="hint">ID: #{f.bookingId}</div>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Restaurant</f:facet>
+                    #{f.restaurantName}
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">TotalAmount</f:facet>
+                    <h:outputText value="#{f.totalAmount}">
+                        <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="2"/>
+                    </h:outputText>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">FeeAmount</f:facet>
+                    <span class="ok">
+                        <h:outputText value="#{f.feeAmount}">
+                            <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="2"/>
+                        </h:outputText>
+                    </span>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">TransferCode</f:facet>
+                    <span class="tag">#{f.transferCode}</span>
+                </h:column>
+            </h:dataTable>
+
+            <ui:fragment rendered="#{empty adminBankWalletBean.bookingFeeHistory}">
+                <div class="hint">No fee history yet. (Need PAID bookings)</div>
+            </ui:fragment>
+
+            <div class="hint" style="margin-top:10px;">
+                Fee sync is idempotent: it locks + checks TransferCode before adding money.
+            </div>
+        </div>
+
+        <!-- Transfer -->
+        <div class="card" style="margin-top:16px;">
+            <div class="section-title">
+                <h3>Transfer (Admin → Other AccountNumber)</h3>
+                <span class="hint">Wallets + BankTransfers + WalletTransactions</span>
+            </div>
+
+            <div class="grid">
+                <div>
+                    <div class="label">Receiver Account Number</div>
+                    <h:inputText id="toAcc" styleClass="inp" value="#{adminBankWalletBean.toAccountNumber}" />
+                    <h:message for="toAcc" styleClass="danger"/>
+                </div>
+
+                <div>
+                    <div class="label">Amount</div>
+                    <h:inputText id="amt" styleClass="inp" value="#{adminBankWalletBean.transferAmount}">
+                        <f:convertNumber maxFractionDigits="2"/>
+                    </h:inputText>
+                    <h:message for="amt" styleClass="danger"/>
+                </div>
+            </div>
+
+            <div style="margin-top:10px;">
+                <div class="label">Message (optional)</div>
+                <h:inputTextarea id="msg" styleClass="inp" rows="2" value="#{adminBankWalletBean.transferMessage}"/>
+            </div>
+
+            <div style="margin-top:12px;">
+                <h:commandButton value="Send Transfer" styleClass="btn" action="#{adminBankWalletBean.doTransfer}"/>
+            </div>
+        </div>
+
+        <!-- Recent txns -->
+        <div class="card" style="margin-top:16px;">
+            <div class="section-title">
+                <h3>Recent Wallet Transactions</h3>
+                <span class="hint">Admin wallet movements</span>
+            </div>
+
+            <h:dataTable value="#{adminBankWalletBean.recentTxns}" var="t" styleClass="tbl"
+                         rendered="#{not empty adminBankWalletBean.recentTxns}">
+                <h:column>
+                    <f:facet name="header">Time</f:facet>
+                    <h:outputText value="#{t.createdAt}">
+                        <f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss" timeZone="Asia/Ho_Chi_Minh"/>
+                    </h:outputText>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Direction</f:facet>
+                    <span class="#{t.direction eq 'CREDIT' ? 'ok' : 'danger'}">#{t.direction}</span>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Amount</f:facet>
+                    <h:outputText value="#{t.amount}">
+                        <f:convertNumber type="currency" currencySymbol="₫" maxFractionDigits="2"/>
+                    </h:outputText>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">TransferCode</f:facet>
+                    #{t.transferCode}
+                </h:column>
+            </h:dataTable>
+
+            <ui:fragment rendered="#{empty adminBankWalletBean.recentTxns}">
+                <div class="hint">No transactions.</div>
+            </ui:fragment>
+        </div>
+
+    </h:form>
+</div>
+</h:body>
+</html>
