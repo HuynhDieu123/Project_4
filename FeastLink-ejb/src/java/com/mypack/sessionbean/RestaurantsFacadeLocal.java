@@ -22,6 +22,8 @@ public interface RestaurantsFacadeLocal {
     void remove(Restaurants restaurants);
 
     Restaurants find(Object id);
+    
+    Restaurants findFresh(Long id);
 
     List<Restaurants> findAll();
 

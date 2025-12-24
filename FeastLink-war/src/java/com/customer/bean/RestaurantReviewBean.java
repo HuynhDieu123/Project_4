@@ -274,11 +274,17 @@ public class RestaurantReviewBean implements Serializable {
         }
 
         if (formRating == null || formRating < 1 || formRating > 5) {
-            addMsg(FacesMessage.SEVERITY_ERROR, "Invalid rating", "Rating must be 1..5.");
+            addFieldMsg(CID_RATING, FacesMessage.SEVERITY_ERROR,
+                    "Please choose a rating",
+                    "Tap a star from 1 to 5.");
             return;
         }
+
         if (formComment == null || formComment.trim().isEmpty()) {
-            addMsg(FacesMessage.SEVERITY_ERROR, "Missing comment", "Please write your comment.");
+            addFieldMsg(CID_COMMENT, FacesMessage.SEVERITY_ERROR,
+                    "Comment is required",
+                    "Please write a short comment.");
+            FacesContext.getCurrentInstance().validationFailed();
             return;
         }
 
@@ -287,6 +293,11 @@ public class RestaurantReviewBean implements Serializable {
         } else {
             createReview();
         }
+    }
+
+    // Backward compatible: giữ tên cũ addMsg để khỏi sửa hàng loạt chỗ gọi
+    private void addMsg(FacesMessage.Severity sev, String sum, String detail) {
+        addGlobalMsg(sev, sum, detail);
     }
 
     private void createReview() {
@@ -299,7 +310,9 @@ public class RestaurantReviewBean implements Serializable {
         try {
             bookingId = Long.valueOf(formBookingId);
         } catch (Exception e) {
-            addMsg(FacesMessage.SEVERITY_ERROR, "Invalid booking", "Please choose a booking.");
+            addFieldMsg(CID_BOOKING, FacesMessage.SEVERITY_ERROR,
+                    "Please choose a booking",
+                    "Select your completed booking to submit this review.");
             return;
         }
 
@@ -441,8 +454,24 @@ public class RestaurantReviewBean implements Serializable {
         return s == null ? "" : s;
     }
 
-    private void addMsg(FacesMessage.Severity sev, String sum, String detail) {
-        FacesContext.getCurrentInstance().addMessage(null, new FacesMessage(sev, sum, detail));
+    private static final String CID_RATING = "reviewsForm:ratingVal";
+    private static final String CID_COMMENT = "reviewsForm:comment";
+    private static final String CID_BOOKING = "reviewsForm:bookingSel";
+
+    private void addGlobalMsg(FacesMessage.Severity sev, String sum, String detail) {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx != null) {
+            ctx.addMessage(null, new FacesMessage(sev, sum, detail));
+        }
+    }
+
+    private void addFieldMsg(String clientId, FacesMessage.Severity sev, String sum, String detail) {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx != null) {
+            ctx.addMessage(clientId, new FacesMessage(sev, sum, detail));
+            // giúp JSF hiểu là validation fail trong AJAX -> giữ message đúng chỗ
+            ctx.validationFailed();
+        }
     }
 
     // ===================== GETTERS =====================

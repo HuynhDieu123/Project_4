@@ -550,6 +550,7 @@
                                     <!-- Previous -->
                                     <h:panelGroup rendered="#{customerMyBookingsBean.currentPage gt 1}">
                                         <h:commandLink action="#{customerMyBookingsBean.previousPage}"
+                                                       immediate="true"
                                                        styleClass="px-3 py-1.5 rounded-full border border-[#E5E7EB] text-xs font-medium text-[#4B5563] bg-white hover:border-[#D4AF37] hover:text-[#0B1120] transition-all">
                                             ‹ Prev
                                         </h:commandLink>
@@ -558,6 +559,7 @@
                                     <!-- Số trang -->
                                     <ui:repeat value="#{customerMyBookingsBean.pageNumbers}" var="p">
                                         <h:commandLink action="#{customerMyBookingsBean.changePage}"
+                                                       immediate="true"
                                                        styleClass="#{customerMyBookingsBean.currentPage eq p
                                                                      ? 'px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] text-[#111827] shadow-sm'
                                                                      : 'px-3 py-1.5 rounded-full text-xs font-medium border border-[#E5E7EB] text-[#4B5563] bg-white hover:border-[#D4AF37] hover:text-[#111827] transition-all'}">
@@ -568,7 +570,7 @@
 
                                     <!-- Next -->
                                     <h:panelGroup rendered="#{customerMyBookingsBean.currentPage lt customerMyBookingsBean.totalPages}">
-                                        <h:commandLink action="#{customerMyBookingsBean.nextPage}"
+                                        <h:commandLink action="#{customerMyBookingsBean.nextPage}"  immediate="true"
                                                        styleClass="px-3 py-1.5 rounded-full border border-[#E5E7EB] text-xs font-medium text-[#4B5563] bg-white hover:border-[#D4AF37] hover:text-[#0B1120] transition-all">
                                             Next ›
                                         </h:commandLink>
