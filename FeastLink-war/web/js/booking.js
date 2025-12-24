@@ -30,29 +30,38 @@ const BookingUI = (function () {
 
 
 
-    // Cấu hình giá cho từng service level (theo phí service)
+    // Service fee = % of subtotal (package + menu), level càng VIP % càng cao
     const SERVICE_LEVEL_CONFIGS = {
-        standard: {
-            label: 'Standard',
-            feeMultiplier: 0.8   // ~80% base service fee
-        },
-        premium: {
-            label: 'Premium',
-            feeMultiplier: 1.0   // = base
-        },
-        vip: {
-            label: 'VIP',
-            feeMultiplier: 1.25  // cao hơn 25%
-        },
-        exclusive: {
-            label: 'Exclusive',
-            feeMultiplier: 1.5   // cao nhất
-        }
+        standard: {label: 'Standard', rate: 0.03, min: 800, max: 12000}, // 3%
+        premium: {label: 'Premium', rate: 0.05, min: 1200, max: 18000}, // 5%
+        vip: {label: 'VIP', rate: 0.08, min: 2000, max: 26000}, // 8%
+        exclusive: {label: 'Exclusive', rate: 0.12, min: 3000, max: 36000}   // 12%
     };
 
-    // Hiển thị giá service fee cho từng service level trên UI
+    function calcSubtotal() {
+        const totalGuests = Math.max(1, parseInt(state.guestCount || '1', 10));
+        const packageSubtotal = (state.pricePerGuest || 0) * totalGuests;
+        const menuSubtotal = (state.menuPricePerPerson || 0) * totalGuests;
+        return packageSubtotal + menuSubtotal;
+    }
+
+    function calcServiceFeeByLevel(levelKey) {
+        const key = (levelKey || '').toLowerCase();
+        const cfg = SERVICE_LEVEL_CONFIGS[key] || SERVICE_LEVEL_CONFIGS.standard;
+
+        const subtotal = calcSubtotal();
+        let fee = Math.round(subtotal * (cfg.rate || 0));
+
+        if (typeof cfg.min === 'number')
+            fee = Math.max(fee, cfg.min);
+        if (typeof cfg.max === 'number')
+            fee = Math.min(fee, cfg.max);
+
+        return fee;
+    }
+
     function updateServiceLevelPriceLabels() {
-        const base = state.baseServiceCharge || state.serviceCharge || 0;
+        const subtotal = calcSubtotal();
 
         Object.keys(SERVICE_LEVEL_CONFIGS).forEach(key => {
             const cfg = SERVICE_LEVEL_CONFIGS[key];
@@ -60,10 +69,19 @@ const BookingUI = (function () {
             if (!el)
                 return;
 
-            const price = Math.round(base * cfg.feeMultiplier);
-            el.textContent = '$' + formatNumber(price) + ' service fee';
+            const fee = calcServiceFeeByLevel(key);
+            const pct = Math.round((cfg.rate || 0) * 100);
+
+            // hiển thị: "5% (~$3,000) service fee"
+            el.textContent = pct + '% (~$' + formatNumber(fee) + ') service fee';
+
+            // nếu subtotal = 0 (chưa chọn package/menu), vẫn show % cho đẹp
+            if (!subtotal || subtotal <= 0) {
+                el.textContent = pct + '% service fee';
+            }
         });
     }
+
 
     // Đọc list món (js-menu-dish-price) và tính giá custom menu / 1 bàn
     function initMenuPriceFromDom() {
@@ -477,10 +495,14 @@ const BookingUI = (function () {
 
         const subtotal = packageSubtotal + menuSubtotal;
 
-        // ✅ BỎ TAX (không tính, không cộng)
+// ✅ luôn tính lại serviceCharge theo % của subtotal mỗi lần updateSummary chạy
+        state.serviceCharge = calcServiceFeeByLevel(state.serviceLevel);
+
+// ✅ BỎ TAX (không tính, không cộng)
         const tax = 0;
 
         const totalBeforeDiscount = subtotal + state.serviceCharge; // không cộng tax
+
 
         // discount là số tiền trừ trực tiếp vào tổng
         let discount = Math.round(state.discount || 0);
@@ -561,6 +583,8 @@ const BookingUI = (function () {
 
         // ✅ luôn đồng bộ hidden payment sau khi tính tiền xong
         syncPaymentHidden();
+        // ✅ refresh label 4 nút service level theo guest/package/menu mới
+        updateServiceLevelPriceLabels();
     }
 
     function setServiceLevel(level) {
@@ -594,12 +618,12 @@ const BookingUI = (function () {
         if (summary)
             summary.textContent = cfg.label;
 
-        // Tính lại serviceCharge theo level
-        const base = state.baseServiceCharge || state.serviceCharge || 0;
-        state.serviceCharge = Math.round(base * cfg.feeMultiplier);
+        // Tính lại serviceCharge theo % subtotal (package + menu)
+        state.serviceCharge = calcServiceFeeByLevel(key);
 
-        // Re-calc bảng tiền
+// Re-calc bảng tiền
         updateSummary();
+
     }
 
     function setLocationType(type) {
@@ -662,21 +686,33 @@ const BookingUI = (function () {
             const val = btn.getAttribute('data-type');
             const radioOuter = btn.querySelector('.radio-outer');
             const radioInner = btn.querySelector('.radio-inner');
+
             if (val === type) {
                 btn.className =
                         'pay-type w-full p-6 rounded-xl border-2 transition-all duration-200 text-left border-[#D4AF37] bg-[#D4AF37]/5';
-                if (radioOuter)
+
+                if (radioOuter) {
                     radioOuter.classList.add('border-[#D4AF37]');
-                if (radioInner)
+                    radioOuter.classList.remove('border-[#E5E7EB]');
+                }
+                if (radioInner) {
                     radioInner.classList.add('bg-[#D4AF37]');
+                    radioInner.classList.remove('bg-transparent');
+                }
             } else {
                 btn.className =
                         'pay-type w-full p-6 rounded-xl border-2 transition-all duration-200 text-left border-[#E5E7EB] hover:border-[#D4AF37]';
-                if (radioOuter)
+
+                if (radioOuter) {
                     radioOuter.classList.remove('border-[#D4AF37]');
-                if (radioInner)
+                    radioOuter.classList.add('border-[#E5E7EB]');
+                }
+                if (radioInner) {
                     radioInner.classList.remove('bg-[#D4AF37]');
+                    radioInner.classList.add('bg-transparent');
+                }
             }
+
         });
 
         // nếu trả full thì depositPercentage = 100, còn lại 30
@@ -763,6 +799,34 @@ const BookingUI = (function () {
         }
     }
 
+    function validateEventTypeSelection() {
+        const sel = document.getElementById('event-type');
+        const note = document.getElementById('event-type-error');
+        const btnNext = document.getElementById('btn-step1-next');
+
+        const v = sel ? (sel.value || '').toString().trim() : '';
+        const ok = v !== '';
+
+        // chỉ show/hide note, không tô đỏ viền
+        if (note) {
+            if (ok)
+                note.classList.add('hidden');
+            else
+                note.classList.remove('hidden');
+        }
+
+        // khóa/mở nút continue
+        if (btnNext) {
+            btnNext.disabled = !ok;
+            btnNext.classList.toggle('opacity-60', !ok);
+            btnNext.classList.toggle('cursor-not-allowed', !ok);
+        }
+
+        return ok;
+    }
+
+
+
     // ====== CONTACT VALIDATION ======
     function validateContact() {
         const fullNameEl = document.getElementById('contact-fullname');
@@ -834,6 +898,15 @@ const BookingUI = (function () {
         // nếu mọi thứ ok: cho submit form để JSF lưu booking
         return true;
     }
+    // ====== HANDLE SAVE QUOTATION BUTTON ======
+    function handleSaveQuotationClick() {
+        // Save quotation: không bắt validate contact
+        // chỉ sync hidden để server đọc đúng
+        syncPaymentHidden();
+        syncVoucherHidden();
+        return true; // cho phép JSF submit
+    }
+
 
     function setupFullMenuToggle() {
         const btn = document.getElementById('view-full-menu-btn');
@@ -1051,16 +1124,18 @@ const BookingUI = (function () {
                 if (summary)
                     summary.textContent = label;
 
-                // đẩy tên loại tiệc (label) xuống hidden để server đọc
                 const hidden = document.getElementById('hf-event-type');
-                if (hidden) {
-                    hidden.value = label; // ví dụ: "Wedding", "Birthday Party"
-                }
+                if (hidden)
+                    hidden.value = label;
+
+                validateEventTypeSelection(); // ✅ thêm dòng này
             });
+
 
             const event = new Event('change');
             eventTypeSelect.dispatchEvent(event);
         }
+
 
 
         // policies checkbox
@@ -1096,9 +1171,17 @@ const BookingUI = (function () {
 
         if (s1Next) {
             s1Next.addEventListener('click', function () {
+                if (!validateEventTypeSelection()) {
+                    const sel = document.getElementById('event-type');
+                    if (sel)
+                        sel.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    return;
+                }
                 goToStep(2);
+
             });
         }
+
 
         if (s2Next) {
             s2Next.addEventListener('click', function () {
@@ -1178,31 +1261,95 @@ const BookingUI = (function () {
         }
 
 
-        // Change date & time: quay lại restaurant-details để chọn lại
+        // Change date & time: quay lại restaurant-details + GIỮ combo/menu đã chọn
         const changeDatetimeBtn = document.getElementById('btn-change-datetime');
         if (changeDatetimeBtn) {
             changeDatetimeBtn.addEventListener('click', function () {
                 let targetUrl = 'restaurant-details.xhtml';
                 const qs = new URLSearchParams();
 
-                if (restaurantId) {
-                    qs.set('restaurantId', restaurantId);
-                } else {
-                    const hiddenRestaurantId =
-                            document.getElementById('hf-restaurant-id');
-                    if (hiddenRestaurantId && hiddenRestaurantId.value) {
-                        qs.set('restaurantId', hiddenRestaurantId.value);
-                    }
+                // restaurantId
+                const rid = restaurantId || document.getElementById('hf-restaurant-id')?.value;
+                if (rid)
+                    qs.set('restaurantId', rid);
+
+                // ✅ giữ comboId
+                const comboId = document.getElementById('hf-combo-id')?.value || comboIdParam;
+                if (comboId)
+                    qs.set('comboId', comboId);
+
+                // ✅ giữ menuItems (chuỗi "1,2,3")
+                const menuItems = document.getElementById('hf-menu-items')?.value;
+                if (menuItems)
+                    qs.set('menuItems', menuItems);
+
+                // ✅ giữ giá package per person (để booking page tính tiền lại đúng ngay)
+                if (state.pricePerGuest && Number(state.pricePerGuest) > 0) {
+                    qs.set('pkgPricePerPerson', String(state.pricePerGuest));
                 }
+
+                // ✅ giữ guests (optional)
+                if (state.guestCount && Number(state.guestCount) > 0) {
+                    qs.set('guests', String(state.guestCount));
+                }
+
+                // (optional) giữ date/slot hiện tại để details highlight
+                if (dateParam)
+                    qs.set('date', dateParam);
+                if (slotParam)
+                    qs.set('slot', slotParam);
+
+                if ([...qs.keys()].length > 0) {
+                    targetUrl += '?' + qs.toString();
+                }
+                targetUrl += '#availability';
+                try {
+                    const rid = restaurantId || document.getElementById('hf-restaurant-id')?.value;
+                    const comboId = document.getElementById('hf-combo-id')?.value || comboIdParam;
+                    const menuItems = document.getElementById('hf-menu-items')?.value;
+
+                    if (rid) {
+                        localStorage.setItem(`feastlink_booking_comboId_${rid}`, comboId || '');
+                        localStorage.setItem(`feastlink_booking_menuItems_${rid}`, menuItems || '');
+                    }
+                } catch (e) {
+                }
+
+                window.location.href = targetUrl;
+            });
+        }
+
+        // Back to restaurant details (giữ restaurantId + combo/menu nếu có)
+        const backDetailsBtn = document.getElementById('btn-back-details');
+        if (backDetailsBtn) {
+            backDetailsBtn.addEventListener('click', function () {
+                let targetUrl = 'restaurant-details.xhtml';
+                const qs = new URLSearchParams();
+
+                // restaurantId
+                const rid = restaurantId || document.getElementById('hf-restaurant-id')?.value;
+                if (rid)
+                    qs.set('restaurantId', rid);
+
+                // giữ comboId (nếu có)
+                const comboId = document.getElementById('hf-combo-id')?.value || comboIdParam;
+                if (comboId)
+                    qs.set('comboId', comboId);
+
+                // giữ menuItems (nếu có)
+                const menuItems = document.getElementById('hf-menu-items')?.value;
+                if (menuItems)
+                    qs.set('menuItems', menuItems);
 
                 if ([...qs.keys()].length > 0) {
                     targetUrl += '?' + qs.toString();
                 }
 
-                targetUrl += '#availability';
-                window.location.href = targetUrl;
+                window.location.href = targetUrl; // muốn kéo xuống availability thì + '#availability'
             });
         }
+
+
 
         // đọc giá custom menu từ DOM
         initMenuPriceFromDom();
@@ -1210,10 +1357,11 @@ const BookingUI = (function () {
         // initial render
         updateCapacity();
         updateSummary();
-        validateContact();
-        setLocationType('restaurant');
         updateServiceLevelPriceLabels();
         setServiceLevel('premium');
+        validateContact();
+        setLocationType('restaurant');
+
         setPaymentMethod('card');
         setPaymentType('deposit');
         setupFullMenuToggle();
@@ -1223,7 +1371,8 @@ const BookingUI = (function () {
     return {
         init: init,
         goToStep: goToStep,
-        handleConfirmClick: handleConfirmClick
+        handleConfirmClick: handleConfirmClick,
+        handleSaveQuotationClick: handleSaveQuotationClick
     };
 })();
 
@@ -1252,5 +1401,14 @@ function clampGuest(val) {
 
 document.addEventListener('DOMContentLoaded', function () {
     BookingUI.init();
+
+    window.handleConfirmClick = function () {
+        return BookingUI.handleConfirmClick();
+    };
+
+    window.handleSaveQuotationClick = function () {
+        return BookingUI.handleSaveQuotationClick();
+    };
+
 });
 //]]>

@@ -399,9 +399,7 @@
                                         </button>
                                     </div>
                                     <p class="mt-2 text-[11px] text-[#6B7280]">
-                                        <span class="font-semibold text-[#D4AF37]">Limited slots</span> means this venue is still accepting
-                                        bookings, but only a few tables or time slots are left. Peak dates and popular time ranges may sell out
-                                        soon, so we recommend booking early.
+                                        <span class="font-semibold text-[#D4AF37]">Limited slots</span> means this venue is still accepting bookings, but only a few guest slots or time slots remain for your selected date/time. Popular hours may sell out soon, so we recommend booking early.
                                     </p>
                                 </div>
 
@@ -646,14 +644,6 @@
                              style="display:none"
                              action="#{restaurantFavoritesBean.addFavoriteById}" />
         </h:form>
-        <!-- ===== HẾT FORM ẨN ===== -->
-
-        <!-- Đẩy data từ bean ra JS (JSON) -->
-        <h:outputScript>
-            //<![CDATA[
-            window.FEASTLINK_RESTAURANTS = #{customerRestaurantsBean.restaurantsJson};
-            //]]>
-        </h:outputScript>
 
         <!-- JS render card + filter -->
         <script type="text/javascript" src="#{request.contextPath}/js/restaurants.js"></script>

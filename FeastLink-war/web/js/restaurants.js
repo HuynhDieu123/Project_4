@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
         status: '',
         keyword: '',
         page: 1,
+        datetime: '',
         perPage: 6
     };
 
@@ -68,6 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const keywordInput = document.getElementById('keywordInput');
     const budgetInput = document.getElementById('budgetInput');
     const resetSearchBtn = document.getElementById('resetSearchButton');
+    const datetimeInput = document.getElementById('datetimeInput');
 
     const clearDesktopBtn = document.getElementById('clearFiltersDesktop');
     const clearMobileBtn = document.getElementById('clearFiltersMobile');
@@ -110,10 +112,122 @@ document.addEventListener('DOMContentLoaded', function () {
             case 'Big capacity 300+':
                 return r.capacityMax >= 300;
             case 'Has combos':
-                return true;
+                return (r.hasCombos === true) || Number(r.combosCount || 0) > 0;
+
             default:
                 return true;
         }
+    }
+    function pad2(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    function parseDTLocal(value) {
+        // value dạng: "YYYY-MM-DDTHH:mm"
+        if (!value || typeof value !== 'string')
+            return null;
+        const parts = value.split('T');
+        if (parts.length !== 2)
+            return null;
+        const dateKey = parts[0];
+        const t = parts[1];
+        const tm = t.split(':');
+        if (tm.length < 2)
+            return null;
+        const hh = Number(tm[0]);
+        const mm = Number(tm[1]);
+        if (Number.isNaN(hh) || Number.isNaN(mm))
+            return null;
+        return {dateKey, minute: hh * 60 + mm};
+    }
+
+    function parseTimeToMinutes(t) {
+        if (!t || typeof t !== 'string')
+            return null;
+        const m = t.match(/^(\d{1,2}):(\d{2})/);
+        if (!m)
+            return null;
+        return Number(m[1]) * 60 + Number(m[2]);
+    }
+
+    function isActiveBookingStatus(status) {
+        if (!status)
+            return false;
+        const s = String(status).trim().toUpperCase();
+        return s !== 'CANCELLED' && s !== 'REJECTED';
+    }
+
+    function computeAvailability(r) {
+        // chưa chọn datetime => dùng availability sẵn (demo)
+        if (!state.datetime)
+            return r.availability || 'available';
+
+        const dt = parseDTLocal(state.datetime);
+        if (!dt)
+            return r.availability || 'available';
+
+        // check advance days
+        const now = new Date();
+        const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const selParts = dt.dateKey.split('-').map(Number);
+        const sel0 = new Date(selParts[0], selParts[1] - 1, selParts[2]);
+        const diffDays = Math.floor((sel0 - today0) / 86400000);
+        const minAdvance = Number(r.advanceBookingDays || 0);
+        if (diffDays < minAdvance)
+            return 'full';
+
+        const cap = Number(r.capacityMax || 0);
+        const slotDuration = Number(r.slotDurationMin || 180);
+        const maxBookingsPerDay = (r.maxBookingsPerDay == null) ? null : Number(r.maxBookingsPerDay);
+
+        const bookings = Array.isArray(r.bookings) ? r.bookings : [];
+        const dayBookings = bookings.filter(b =>
+            b && b.date === dt.dateKey && isActiveBookingStatus(b.status)
+        );
+
+        // full theo số booking/ngày
+        if (maxBookingsPerDay && dayBookings.length >= maxBookingsPerDay)
+            return 'full';
+
+        // tính guest chiếm theo overlap time
+        let usedGuests = 0;
+
+        for (const b of dayBookings) {
+            const g = Number(b.guests || 0);
+            let startM = parseTimeToMinutes(b.start);
+            let endM = parseTimeToMinutes(b.end);
+
+            if (startM != null && endM == null)
+                endM = startM + slotDuration;
+            if (startM == null && endM != null)
+                startM = Math.max(0, endM - slotDuration);
+
+            // thiếu cả start/end => coi như chiếm cả ngày
+            if (startM == null && endM == null) {
+                usedGuests += g;
+                continue;
+            }
+
+            if (dt.minute >= startM && dt.minute < endM) {
+                usedGuests += g;
+            }
+        }
+
+        const remaining = cap - usedGuests;
+
+        // nếu user nhập guests => check remaining
+        if (state.guests) {
+            const req = Number(state.guests);
+            if (!Number.isNaN(req) && req > remaining)
+                return 'full';
+        }
+
+        const limitedByGuests = cap > 0 && remaining <= Math.max(10, cap * 0.2);
+        const limitedByBookings = maxBookingsPerDay && dayBookings.length >= Math.ceil(maxBookingsPerDay * 0.8);
+
+        if (limitedByGuests || limitedByBookings)
+            return 'limited';
+        return 'available';
     }
 
     function matchesFilters(r) {
@@ -193,8 +307,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (state.rating > 0 && r.rating < state.rating)
             return false;
 
-        if (state.status && r.availability !== state.status)
+        const dynStatus = computeAvailability(r);
+
+        if (state.status && dynStatus !== state.status)
             return false;
+
+// Nếu đã chọn DateTime mà user không chọn status, mặc định loại FULL ra
+        if (state.datetime && !state.status && dynStatus === 'full')
+            return false;
+
 
         if (r.pricePerGuest > state.priceMax)
             return false;
@@ -244,16 +365,19 @@ document.addEventListener('DOMContentLoaded', function () {
         let availabilityLabel = '';
         let availabilityClass = '';
 
-        if (r.availability === 'available') {
+        const dyn = computeAvailability(r);
+
+        if (dyn === 'available') {
             availabilityLabel = 'Available';
             availabilityClass = 'bg-[#22C55E] text-white';
-        } else if (r.availability === 'limited') {
+        } else if (dyn === 'limited') {
             availabilityLabel = 'Limited slots';
             availabilityClass = 'bg-[#EAB308] text-[#0B1120]';
         } else {
             availabilityLabel = 'Fully booked';
             availabilityClass = 'bg-[#EF4444] text-white';
         }
+
 
         const badgeHtml = r.badge
                 ? `<span class="inline-block px-3 py-1 bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] text-[#0B1120] text-xs font-bold rounded-full shadow-lg">${r.badge}</span>`
@@ -315,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="w-px h-4 bg-[#E5E7EB]"></div>
       <div class="flex items-center gap-1.5">
         <i data-lucide="dollar-sign" class="w-4 h-4 text-[#E6C77F]"></i>
-        <span>From ${formatCurrency(r.pricePerGuest)} /table</span>
+        <span>From ${formatCurrency(r.pricePerGuest)} /guest</span>
       </div>
     </div>
 
@@ -588,6 +712,15 @@ document.addEventListener('DOMContentLoaded', function () {
         state.page = 1;
         render();
     });
+    if (datetimeInput) {
+        datetimeInput.addEventListener('change', () => {
+            state.datetime = datetimeInput.value || '';
+            state.page = 1;
+            render();
+        });
+    }
+
+
     if (guestsInput) {
         guestsInput.addEventListener('input', () => {
             state.guests = guestsInput.value;
@@ -626,6 +759,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 priceLabels.forEach((lab) => (lab.textContent = formatCurrency(parsed)));
             }
         }
+
+        if (datetimeInput)
+            state.datetime = datetimeInput.value || '';
+
         state.page = 1;
         render();
     });
@@ -655,11 +792,15 @@ document.addEventListener('DOMContentLoaded', function () {
         state.guests = '';
         state.status = '';
         state.keyword = '';
+        state.datetime = '';
         state.page = 1;
 
         if (keywordInput) {
             keywordInput.value = '';
         }
+
+        if (datetimeInput)
+            datetimeInput.value = '';
 
         quickFilterButtons.forEach((btn) => btn.classList.remove('filter-pill-selected'));
         eventTypeButtons.forEach((btn) => btn.classList.remove('filter-pill-selected'));
