@@ -128,13 +128,13 @@ public class RestaurantBankWalletBean implements Serializable {
     public void init() {
         currentUser = resolveLoggedInUser();
         if (currentUser == null) {
-            addMsg(FacesMessage.SEVERITY_ERROR, "Chưa đăng nhập", "Bạn cần đăng nhập tài khoản Manager để xem ví.");
+            addMsg(FacesMessage.SEVERITY_ERROR, "Not logged in", "You need to log in to your Manager account to view your wallet.");
             return;
         }
 
         restaurant = resolveRestaurantFromUser(currentUser);
         if (restaurant == null || restaurant.getRestaurantId() == null) {
-            addMsg(FacesMessage.SEVERITY_ERROR, "Không tìm thấy nhà hàng", "Tài khoản này chưa gán làm Manager cho nhà hàng nào.");
+            addMsg(FacesMessage.SEVERITY_ERROR, "No restaurant found.", "This account has not yet been assigned as a manager for any restaurant.");
             return;
         }
 
@@ -290,7 +290,7 @@ public class RestaurantBankWalletBean implements Serializable {
         if (fc == null) return;
 
         if (currentUser == null || currentUser.getUserId() == null) {
-            addMsg(FacesMessage.SEVERITY_ERROR, "No user", "Bạn cần đăng nhập.");
+            addMsg(FacesMessage.SEVERITY_ERROR, "No user", "You need to log in.");
             return;
         }
 

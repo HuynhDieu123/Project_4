@@ -76,8 +76,8 @@
         <div>
             <div class="title">Restaurant Bank Wallet</div>
             <div class="sub">
-                Wallet nhận tiền từ booking <span class="badge ok">PAID</span> + <span class="badge ok">COMPLETED</span>,
-                tự sync vào <b>Wallets.CurrentBalance (NET = 98%)</b> và trừ <span class="badge warn">2%</span>.
+               Wallet for receiving payments from bookings <span class="badge ok">PAID</span> + <span class="badge ok">COMPLETED</span>,
+               automatically sync <b>Wallets.CurrentBalance (NET = 98%)</b> and minus <span class="badge warn">2%</span>.
             </div>
         </div>
 
@@ -126,28 +126,28 @@
 
             <div class="col-4">
                 <div class="stat">
-                    <div class="label2">Available balance (Wallets.CurrentBalance) — dùng để chuyển khoản (NET)</div>
+                    <div class="label2">Available balance (Wallets.CurrentBalance) — for transfers (NET)</div>
                     <div class="value2">
                         <h:outputText value="#{restaurantBankWalletBean.wallet != null ? restaurantBankWalletBean.wallet.balance : 0}">
-                            <f:convertNumber type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                            <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
                         </h:outputText>
                     </div>
 
                     <div class="muted" style="margin-top:6px;">
                         Net income (98%):
                         <h:outputText value="#{restaurantBankWalletBean.netTotal}">
-                            <f:convertNumber type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                            <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
                         </h:outputText>
                     </div>
 
                     <div class="muted" style="margin-top:6px;">
                         Gross:
                         <h:outputText value="#{restaurantBankWalletBean.grossTotal}">
-                            <f:convertNumber type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                            <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
                         </h:outputText>
                         <span class="muted"> · Fee(2%): </span>
                         <h:outputText value="#{restaurantBankWalletBean.feeTotal}">
-                            <f:convertNumber type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                            <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
                         </h:outputText>
                     </div>
                 </div>
@@ -200,7 +200,7 @@
         </div>
 
         <h:panelGroup rendered="#{empty restaurantBankWalletBean.rows}">
-            <div class="muted">Chưa có booking nào thỏa điều kiện (PAID + COMPLETED).</div>
+            <div class="muted">No bookings have met the conditions (PAID + COMPLETED).</div>
         </h:panelGroup>
 
         <h:panelGroup rendered="#{not empty restaurantBankWalletBean.rows}">
