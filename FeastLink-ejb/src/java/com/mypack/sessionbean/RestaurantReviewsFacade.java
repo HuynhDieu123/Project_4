@@ -99,4 +99,314 @@ public class RestaurantReviewsFacade extends AbstractFacade<RestaurantReviews> i
                 .getResultList();
     }
 
+    @Override
+    public long countPendingByRestaurant(Long restaurantId) {
+        if (restaurantId == null) {
+            return 0;
+        }
+        Long n = em.createQuery(
+                "SELECT COUNT(rr) FROM RestaurantReviews rr "
+                + "WHERE rr.restaurantId.restaurantId = :rid "
+                + "AND rr.isDeleted = false AND rr.isApproved = false",
+                Long.class
+        ).setParameter("rid", restaurantId).getSingleResult();
+        return (n == null) ? 0 : n;
+    }
+
+    @Override
+    public long countForRestaurant(Long restaurantId, Boolean approved, Integer rating, String keyword) {
+        if (restaurantId == null) {
+            return 0;
+        }
+
+        StringBuilder jpql = new StringBuilder();
+        jpql.append("SELECT COUNT(rr) FROM RestaurantReviews rr ")
+                .append("LEFT JOIN rr.customerId c ")
+                .append("LEFT JOIN rr.bookingId b ")
+                .append("WHERE rr.restaurantId.restaurantId = :rid ")
+                .append("AND rr.isDeleted = false ");
+
+        if (approved != null) {
+            jpql.append("AND rr.isApproved = :approved ");
+        }
+        if (rating != null && rating >= 1 && rating <= 5) {
+            jpql.append("AND rr.rating = :rating ");
+        }
+
+        boolean hasKw = keyword != null && !keyword.trim().isEmpty();
+        if (hasKw) {
+            jpql.append("AND (LOWER(rr.comment) LIKE :kw ")
+                    .append("OR LOWER(c.fullName) LIKE :kw ")
+                    .append("OR LOWER(c.email) LIKE :kw ")
+                    .append("OR LOWER(b.bookingCode) LIKE :kw) ");
+        }
+
+        TypedQuery<Long> q = em.createQuery(jpql.toString(), Long.class);
+        q.setParameter("rid", restaurantId);
+
+        if (approved != null) {
+            q.setParameter("approved", approved);
+        }
+        if (rating != null && rating >= 1 && rating <= 5) {
+            q.setParameter("rating", rating);
+        }
+        if (hasKw) {
+            q.setParameter("kw", "%" + keyword.trim().toLowerCase() + "%");
+        }
+
+        Long n = q.getSingleResult();
+        return (n == null) ? 0 : n;
+    }
+
+    @Override
+    public List<RestaurantReviews> findForRestaurant(Long restaurantId, Boolean approved, Integer rating, String keyword,
+            int offset, int limit, String sortKey) {
+        if (restaurantId == null) {
+            return List.of();
+        }
+
+        String orderBy = "rr.createdAt DESC";
+        if ("oldest".equalsIgnoreCase(sortKey)) {
+            orderBy = "rr.createdAt ASC";
+        } else if ("highest".equalsIgnoreCase(sortKey)) {
+            orderBy = "rr.rating DESC, rr.createdAt DESC";
+        } else if ("lowest".equalsIgnoreCase(sortKey)) {
+            orderBy = "rr.rating ASC, rr.createdAt DESC";
+        }
+
+        StringBuilder jpql = new StringBuilder();
+        jpql.append("SELECT rr FROM RestaurantReviews rr ")
+                .append("JOIN FETCH rr.customerId c ")
+                .append("JOIN FETCH rr.bookingId b ")
+                .append("WHERE rr.restaurantId.restaurantId = :rid ")
+                .append("AND rr.isDeleted = false ");
+
+        if (approved != null) {
+            jpql.append("AND rr.isApproved = :approved ");
+        }
+        if (rating != null && rating >= 1 && rating <= 5) {
+            jpql.append("AND rr.rating = :rating ");
+        }
+
+        boolean hasKw = keyword != null && !keyword.trim().isEmpty();
+        if (hasKw) {
+            jpql.append("AND (LOWER(rr.comment) LIKE :kw ")
+                    .append("OR LOWER(c.fullName) LIKE :kw ")
+                    .append("OR LOWER(c.email) LIKE :kw ")
+                    .append("OR LOWER(b.bookingCode) LIKE :kw) ");
+        }
+
+        jpql.append("ORDER BY ").append(orderBy);
+
+        TypedQuery<RestaurantReviews> q = em.createQuery(jpql.toString(), RestaurantReviews.class);
+        q.setParameter("rid", restaurantId);
+
+        if (approved != null) {
+            q.setParameter("approved", approved);
+        }
+        if (rating != null && rating >= 1 && rating <= 5) {
+            q.setParameter("rating", rating);
+        }
+        if (hasKw) {
+            q.setParameter("kw", "%" + keyword.trim().toLowerCase() + "%");
+        }
+
+        q.setFirstResult(Math.max(0, offset));
+        q.setMaxResults(Math.max(1, limit));
+        return q.getResultList();
+    }
+
+    @Override
+    public long countForRestaurant(Long restaurantId, Boolean approved, Integer rating, String keyword,
+            java.util.Date dateFrom, java.util.Date dateTo) {
+        if (restaurantId == null) {
+            return 0;
+        }
+
+        StringBuilder jpql = new StringBuilder();
+        jpql.append("SELECT COUNT(rr) FROM RestaurantReviews rr ")
+                .append("LEFT JOIN rr.customerId c ")
+                .append("LEFT JOIN rr.bookingId b ")
+                .append("WHERE rr.restaurantId.restaurantId = :rid ")
+                .append("AND rr.isDeleted = false ");
+
+        if (approved != null) {
+            jpql.append("AND rr.isApproved = :approved ");
+        }
+        if (rating != null && rating >= 1 && rating <= 5) {
+            jpql.append("AND rr.rating = :rating ");
+        }
+
+        if (dateFrom != null) {
+            jpql.append("AND rr.createdAt >= :fromDt ");
+        }
+        if (dateTo != null) {
+            jpql.append("AND rr.createdAt <= :toDt ");
+        }
+
+        boolean hasKw = keyword != null && !keyword.trim().isEmpty();
+        if (hasKw) {
+            jpql.append("AND (LOWER(rr.comment) LIKE :kw ")
+                    .append("OR LOWER(c.fullName) LIKE :kw ")
+                    .append("OR LOWER(c.email) LIKE :kw ")
+                    .append("OR LOWER(b.bookingCode) LIKE :kw) ");
+        }
+
+        var q = em.createQuery(jpql.toString(), Long.class);
+        q.setParameter("rid", restaurantId);
+
+        if (approved != null) {
+            q.setParameter("approved", approved);
+        }
+        if (rating != null && rating >= 1 && rating <= 5) {
+            q.setParameter("rating", rating);
+        }
+        if (dateFrom != null) {
+            q.setParameter("fromDt", dateFrom);
+        }
+        if (dateTo != null) {
+            q.setParameter("toDt", dateTo);
+        }
+        if (hasKw) {
+            q.setParameter("kw", "%" + keyword.trim().toLowerCase() + "%");
+        }
+
+        Long n = q.getSingleResult();
+        return (n == null) ? 0 : n;
+    }
+
+    @Override
+    public List<RestaurantReviews> findForRestaurant(Long restaurantId, Boolean approved, Integer rating, String keyword,
+            java.util.Date dateFrom, java.util.Date dateTo,
+            int offset, int limit, String sortKey) {
+        if (restaurantId == null) {
+            return java.util.List.of();
+        }
+
+        String orderBy = "rr.createdAt DESC";
+        if ("oldest".equalsIgnoreCase(sortKey)) {
+            orderBy = "rr.createdAt ASC";
+        } else if ("highest".equalsIgnoreCase(sortKey)) {
+            orderBy = "rr.rating DESC, rr.createdAt DESC";
+        } else if ("lowest".equalsIgnoreCase(sortKey)) {
+            orderBy = "rr.rating ASC, rr.createdAt DESC";
+        }
+
+        StringBuilder jpql = new StringBuilder();
+        jpql.append("SELECT rr FROM RestaurantReviews rr ")
+                .append("JOIN FETCH rr.customerId c ")
+                .append("JOIN FETCH rr.bookingId b ")
+                .append("WHERE rr.restaurantId.restaurantId = :rid ")
+                .append("AND rr.isDeleted = false ");
+
+        if (approved != null) {
+            jpql.append("AND rr.isApproved = :approved ");
+        }
+        if (rating != null && rating >= 1 && rating <= 5) {
+            jpql.append("AND rr.rating = :rating ");
+        }
+
+        if (dateFrom != null) {
+            jpql.append("AND rr.createdAt >= :fromDt ");
+        }
+        if (dateTo != null) {
+            jpql.append("AND rr.createdAt <= :toDt ");
+        }
+
+        boolean hasKw = keyword != null && !keyword.trim().isEmpty();
+        if (hasKw) {
+            jpql.append("AND (LOWER(rr.comment) LIKE :kw ")
+                    .append("OR LOWER(c.fullName) LIKE :kw ")
+                    .append("OR LOWER(c.email) LIKE :kw ")
+                    .append("OR LOWER(b.bookingCode) LIKE :kw) ");
+        }
+
+        jpql.append("ORDER BY ").append(orderBy);
+
+        var q = em.createQuery(jpql.toString(), RestaurantReviews.class);
+        q.setParameter("rid", restaurantId);
+
+        if (approved != null) {
+            q.setParameter("approved", approved);
+        }
+        if (rating != null && rating >= 1 && rating <= 5) {
+            q.setParameter("rating", rating);
+        }
+        if (dateFrom != null) {
+            q.setParameter("fromDt", dateFrom);
+        }
+        if (dateTo != null) {
+            q.setParameter("toDt", dateTo);
+        }
+        if (hasKw) {
+            q.setParameter("kw", "%" + keyword.trim().toLowerCase() + "%");
+        }
+
+        q.setFirstResult(Math.max(0, offset));
+        q.setMaxResults(Math.max(1, limit));
+        return q.getResultList();
+    }
+
+    @Override
+    public Double avgRatingForRestaurant(Long restaurantId, java.util.Date dateFrom, java.util.Date dateTo) {
+        if (restaurantId == null) {
+            return 0.0;
+        }
+
+        StringBuilder jpql = new StringBuilder();
+        jpql.append("SELECT AVG(rr.rating) FROM RestaurantReviews rr ")
+                .append("WHERE rr.restaurantId.restaurantId = :rid ")
+                .append("AND rr.isDeleted = false ");
+
+        if (dateFrom != null) {
+            jpql.append("AND rr.createdAt >= :fromDt ");
+        }
+        if (dateTo != null) {
+            jpql.append("AND rr.createdAt <= :toDt ");
+        }
+
+        var q = em.createQuery(jpql.toString(), Double.class);
+        q.setParameter("rid", restaurantId);
+        if (dateFrom != null) {
+            q.setParameter("fromDt", dateFrom);
+        }
+        if (dateTo != null) {
+            q.setParameter("toDt", dateTo);
+        }
+
+        return q.getSingleResult();
+    }
+
+    @Override
+    public List<Object[]> ratingBreakdownForRestaurant(Long restaurantId, java.util.Date dateFrom, java.util.Date dateTo) {
+        if (restaurantId == null) {
+            return java.util.List.of();
+        }
+
+        StringBuilder jpql = new StringBuilder();
+        jpql.append("SELECT rr.rating, COUNT(rr) FROM RestaurantReviews rr ")
+                .append("WHERE rr.restaurantId.restaurantId = :rid ")
+                .append("AND rr.isDeleted = false ");
+
+        if (dateFrom != null) {
+            jpql.append("AND rr.createdAt >= :fromDt ");
+        }
+        if (dateTo != null) {
+            jpql.append("AND rr.createdAt <= :toDt ");
+        }
+
+        jpql.append("GROUP BY rr.rating ORDER BY rr.rating DESC");
+
+        var q = em.createQuery(jpql.toString(), Object[].class);
+        q.setParameter("rid", restaurantId);
+        if (dateFrom != null) {
+            q.setParameter("fromDt", dateFrom);
+        }
+        if (dateTo != null) {
+            q.setParameter("toDt", dateTo);
+        }
+
+        return q.getResultList();
+    }
+
 }
