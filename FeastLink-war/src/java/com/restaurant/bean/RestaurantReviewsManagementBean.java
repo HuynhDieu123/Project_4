@@ -55,9 +55,11 @@ public class RestaurantReviewsManagementBean implements Serializable {
     // ===== Pagination =====
     private List<RestaurantReviews> reviews = new ArrayList<>();
     private int pageSize = 10;
-    private int offset = 0;
+
+    private int currentPage = 1;
+    private int totalPages = 1;
+
     private long totalCount = 0;
-    private boolean hasMore = false;
 
     private final List<Integer> starList = Arrays.asList(1, 2, 3, 4, 5);
     private final List<Integer> ratingDesc = Arrays.asList(5, 4, 3, 2, 1);
@@ -141,8 +143,14 @@ public class RestaurantReviewsManagementBean implements Serializable {
         // total reviews in date range (ignore keyword/rating for stats)
         totalReviews = reviewsFacade.countForRestaurant(rid, null, null, null, fromDt, toDt);
 
-        Double avg = reviewsFacade.avgRatingForRestaurant(rid, fromDt, toDt);
-        avgRating = (avg == null) ? 0 : avg;
+        long weightedSum
+                = (long) count1 * 1
+                + (long) count2 * 2
+                + (long) count3 * 3
+                + (long) count4 * 4
+                + (long) count5 * 5;
+
+        avgRating = (totalReviews > 0) ? (weightedSum * 1.0 / totalReviews) : 0.0;
 
         count5 = count4 = count3 = count2 = count1 = 0;
         List<Object[]> rows = reviewsFacade.ratingBreakdownForRestaurant(rid, fromDt, toDt);
@@ -188,17 +196,25 @@ public class RestaurantReviewsManagementBean implements Serializable {
         }
 
         if (reset) {
-            offset = 0;
-            reviews = new ArrayList<>();
+            currentPage = 1;
         }
 
         Date[] range = normalizeRange(dateFrom, dateTo);
         Date fromDt = range[0];
         Date toDt = range[1];
-
         Long rid = currentRestaurant.getRestaurantId();
 
         totalCount = reviewsFacade.countForRestaurant(rid, null, ratingFilter, keyword, fromDt, toDt);
+
+        totalPages = (int) Math.ceil(totalCount / (double) pageSize);
+        if (totalPages <= 0) {
+            totalPages = 1;
+        }
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+
+        int offset = (currentPage - 1) * pageSize;
 
         List<RestaurantReviews> page = reviewsFacade.findForRestaurant(
                 rid, null, ratingFilter, keyword,
@@ -206,11 +222,7 @@ public class RestaurantReviewsManagementBean implements Serializable {
                 offset, pageSize, sortKey
         );
 
-        if (page != null && !page.isEmpty()) {
-            reviews.addAll(page);
-            offset += page.size();
-        }
-        hasMore = reviews.size() < totalCount;
+        reviews = (page == null) ? new ArrayList<>() : page;
     }
 
     // =========================
@@ -258,6 +270,59 @@ public class RestaurantReviewsManagementBean implements Serializable {
         dateFrom = from.toString();
         dateTo = today.toString();
         applyFilter();
+    }
+
+    public void nextPage() {
+        if (currentPage < totalPages) {
+            currentPage++;
+            loadReviews(false);
+        }
+    }
+
+    public void prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            loadReviews(false);
+        }
+    }
+
+    public void goPage() {
+        // currentPage đã được set từ UI (f:setPropertyActionListener)
+        loadReviews(false);
+    }
+
+    public List<Integer> getPageNumbers() {
+        int window = 5; // hiển thị tối đa 5 nút trang
+        int half = window / 2;
+
+        int start = Math.max(1, currentPage - half);
+        int end = Math.min(totalPages, start + window - 1);
+
+        // chỉnh lại start nếu end chạm trần
+        start = Math.max(1, end - window + 1);
+
+        List<Integer> nums = new ArrayList<>();
+        for (int i = start; i <= end; i++) {
+            nums.add(i);
+        }
+        return nums;
+    }
+
+// getters/setters
+    public int getCurrentPage() {
+        return currentPage;
+    }
+
+    public void setCurrentPage(int currentPage) {
+        this.currentPage = currentPage;
+    }
+
+    public int getTotalPages() {
+        return totalPages;
+    }
+
+    public long getTotalCount() {
+        return totalCount;
     }
 
     // =========================
@@ -441,13 +506,6 @@ public class RestaurantReviewsManagementBean implements Serializable {
         return reviews;
     }
 
-    public boolean isHasMore() {
-        return hasMore;
-    }
-
-    public long getTotalCount() {
-        return totalCount;
-    }
 
     public int getPageSize() {
         return pageSize;
