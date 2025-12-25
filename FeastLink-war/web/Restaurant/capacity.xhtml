@@ -146,15 +146,13 @@
                                         <ui:fragment rendered="#{!day.tooSoon}">
                                             <h:commandLink
                                                 action="#{capacityAvailabilityBean.selectDay(day.dateIso)}"
-                                                styleClass="
-                                                group flex flex-col items-center justify-center
+                                                styleClass="group flex flex-col items-center justify-center
                                                 w-10 h-10 rounded-xl cursor-pointer no-underline transition
-                                                #{day.inCurrentMonth
-                                                  ? 'text-text-main-light bg-white border border-border-light shadow-[0_3px_8px_rgba(15,23,42,0.03)]'
-                                                  : 'text-gray-400 border-transparent bg-transparent'}
                                                 #{day.selected
-                                                  ? 'bg-[#0B1120] text-white border-[#0B1120] shadow-[0_8px_20px_rgba(15,23,42,0.4)] ring-2 ring-[#F97316]/70 ring-offset-2 ring-offset-white'
-                                                  : 'hover:bg-[#FFF7E6] hover:border-[#FCD34D]'}">
+                                                  ? 'bg-[#0B1120] text-white border border-[#0B1120] shadow-[0_8px_20px_rgba(15,23,42,0.4)] ring-2 ring-[#F97316]/70 ring-offset-2 ring-offset-white'
+                                                  : (day.inCurrentMonth
+                                                  ? 'text-text-main-light bg-white border border-border-light shadow-[0_3px_8px_rgba(15,23,42,0.03)] hover:bg-[#FFF7E6] hover:border-[#FCD34D]'
+                                                  : 'text-gray-400 border-transparent bg-transparent hover:bg-[#FFF7E6] hover:border-[#FCD34D]')}">
 
                                                 <!-- Số ngày -->
                                                 <span class="text-[11px] font-medium">
@@ -169,6 +167,7 @@
                                                 <f:ajax render=":calendarForm :dayStatusForm"/>
                                             </h:commandLink>
                                         </ui:fragment>
+
 
                                     </div>
                                 </ui:repeat>
@@ -268,9 +267,20 @@
                                          styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
                         </div>
 
-                        <h:commandButton value="Block dates"
-                                         action="#{capacityAvailabilityBean.blockDates}"
-                                         styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-[#0B1120] text-white text-sm font-semibold shadow-subtle hover:opacity-95" />
+                        <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <h:commandButton value="Block dates"
+                                             action="#{capacityAvailabilityBean.blockDates}"
+                                             styleClass="w-full px-4 py-2 rounded-lg bg-[#0B1120] text-white text-sm font-semibold shadow-subtle hover:opacity-95">
+                                <f:ajax execute="@form" render=":calendarForm :dayStatusForm"/>
+                            </h:commandButton>
+
+                            <h:commandButton value="Unblock dates"
+                                             action="#{capacityAvailabilityBean.unblockDates}"
+                                             styleClass="w-full px-4 py-2 rounded-lg bg-gray-200 text-text-main-light text-sm font-semibold shadow-subtle hover:bg-gray-300">
+                                <f:ajax execute="@form" render=":calendarForm :dayStatusForm"/>
+                            </h:commandButton>
+                        </div>
+
                     </h:form>
                 </div>
 

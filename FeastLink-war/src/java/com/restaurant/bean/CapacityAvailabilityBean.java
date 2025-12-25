@@ -536,6 +536,69 @@ public class CapacityAvailabilityBean implements Serializable {
         }
     }
 
+    public void unblockDates() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+
+        try {
+            if (currentRestaurant == null) {
+                return;
+            }
+            if (blockStartDate == null || blockStartDate.isBlank()
+                    || blockEndDate == null || blockEndDate.isBlank()) {
+                return;
+            }
+
+            LocalDate start = LocalDate.parse(blockStartDate);
+            LocalDate end = LocalDate.parse(blockEndDate);
+
+            // if user selects reversed range
+            if (end.isBefore(start)) {
+                LocalDate tmp = start;
+                start = end;
+                end = tmp;
+            }
+
+            LocalDate d = start;
+            while (!d.isAfter(end)) {
+
+                // Only remove the row that represents BLOCKED (ALLDAY, max=0,0)
+                RestaurantDayCapacity row = findCapacityRow(d, "ALLDAY");
+                if (row != null) {
+                    Integer mg = row.getMaxGuests();
+                    Integer mb = row.getMaxBookings();
+                    boolean isBlockedRow = (mg != null && mb != null && mg == 0 && mb == 0);
+
+                    if (isBlockedRow) {
+                        dayCapacityFacade.remove(row); // ✅ remove from DB
+                    }
+                }
+
+                d = d.plusDays(1);
+            }
+
+            // Reload everything (manual + booking overlay)
+            loadCalendarFromDb();
+
+            // Refresh right panel if selected date is inside that range
+            if (selectedDate != null && !selectedDate.isBefore(start) && !selectedDate.isAfter(end)) {
+                loadSelectedDayData();
+                buildCalendar();
+            }
+
+            ctx.addMessage("blockForm",
+                    new FacesMessage(FacesMessage.SEVERITY_INFO,
+                            "Unblocked dates successfully.", null));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (ctx != null) {
+                ctx.addMessage("blockForm",
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                                "Unblock failed.", e.getMessage()));
+            }
+        }
+    }
+
     // ===== UTIL =====
     private LocalDate toLocalDate(Date date) {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();

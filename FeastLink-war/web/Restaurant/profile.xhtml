@@ -88,7 +88,7 @@
                                 Restaurant Name
                             </label>
 
-                            <div class="w-full border border-border-light rounded-lg px-3 py-2 text-sm 
+                            <div class="w-full border border-border-light rounded-lg px-3 py-2 text-sm
                                  bg-gray-100 text-text-main-light cursor-not-allowed">
                                 #{restaurantProfileBean.name}
                             </div>
@@ -130,7 +130,7 @@
                             Restaurant Avatar (dùng chung với Avatar trong Users)
                         </p>
 
-                        <!-- Nút chọn file: dùng luôn h:inputFile, style thành nút -->
+                        <!-- Nút chọn file -->
                         <h:inputFile id="avatarFile"
                                      value="#{restaurantProfileBean.avatarPart}"
                                      styleClass="px-4 py-2 rounded-lg bg-cta-orange text-white text-xs font-semibold hover:opacity-90 cursor-pointer">
@@ -163,7 +163,7 @@
                     </button>
                 </div>
 
-                <!-- Grid 2 cột như figma -->
+                <!-- Grid 2 cột -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <!-- Phone -->
                     <div>
@@ -183,7 +183,7 @@
                                      styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60"/>
                     </div>
 
-                    <!-- Address (full width) -->
+                    <!-- Address -->
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-text-main-light mb-1">
                             Address
@@ -274,19 +274,16 @@
                 </div>
 
                 <div class="space-y-4">
-                    <!-- Monday - Friday -->
                     <div class="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1fr] md:items-center gap-3">
                         <p class="text-sm text-text-secondary-light">
                             Monday – Friday
                         </p>
 
-                        <!-- Giờ mở cửa -->
                         <h:inputText value="#{restaurantProfileBean.openTimeText}"
                                      styleClass="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
                             <f:passThroughAttribute name="type" value="time"/>
                         </h:inputText>
 
-                        <!-- Giờ đóng cửa -->
                         <h:inputText value="#{restaurantProfileBean.closeTimeText}"
                                      styleClass="border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
                             <f:passThroughAttribute name="type" value="time"/>
@@ -312,13 +309,18 @@
                     </button>
                 </div>
 
+                <!-- ✅ CHỖ NÀY ĐÃ THÊM 3 FIELD -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-text-main-light mb-1">
                             Minimum Guests
                         </label>
                         <h:inputText value="#{restaurantProfileBean.minGuests}"
-                                     styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60"/>
+                                     styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:passThroughAttribute name="type" value="number"/>
+                            <f:passThroughAttribute name="min" value="0"/>
+                            <f:passThroughAttribute name="step" value="1"/>
+                        </h:inputText>
                     </div>
 
                     <div>
@@ -326,7 +328,49 @@
                             Minimum Days Before Event
                         </label>
                         <h:inputText value="#{restaurantProfileBean.minDaysBeforeBooking}"
-                                     styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60"/>
+                                     styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:passThroughAttribute name="type" value="number"/>
+                            <f:passThroughAttribute name="min" value="0"/>
+                            <f:passThroughAttribute name="step" value="1"/>
+                        </h:inputText>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-main-light mb-1">
+                            Cancel Full Refund Days
+                        </label>
+                        <h:inputText value="#{restaurantProfileBean.cancelFullRefundDays}"
+                                     styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:passThroughAttribute name="type" value="number"/>
+                            <f:passThroughAttribute name="min" value="0"/>
+                            <f:passThroughAttribute name="step" value="1"/>
+                        </h:inputText>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-main-light mb-1">
+                            Cancel Partial Refund Days
+                        </label>
+                        <h:inputText value="#{restaurantProfileBean.cancelPartialRefundDays}"
+                                     styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:passThroughAttribute name="type" value="number"/>
+                            <f:passThroughAttribute name="min" value="0"/>
+                            <f:passThroughAttribute name="step" value="1"/>
+                        </h:inputText>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-main-light mb-1">
+                            Default Deposit Percent (%)
+                        </label>
+                        <h:inputText value="#{restaurantProfileBean.defaultDepositPercent}"
+                                     styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:convertNumber maxFractionDigits="2"/>
+                            <f:passThroughAttribute name="type" value="number"/>
+                            <f:passThroughAttribute name="min" value="0"/>
+                            <f:passThroughAttribute name="max" value="100"/>
+                            <f:passThroughAttribute name="step" value="0.01"/>
+                        </h:inputText>
                     </div>
                 </div>
             </section>

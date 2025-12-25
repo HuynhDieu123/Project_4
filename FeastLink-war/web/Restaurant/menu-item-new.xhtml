@@ -26,7 +26,13 @@
     <!-- MAIN CONTENT -->
     <ui:define name="content">
 
-        <h:form id="newItemForm" styleClass="max-w-4xl">
+        <!-- IMPORTANT: enctype for upload -->
+        <h:form id="newItemForm" styleClass="max-w-4xl" enctype="multipart/form-data">
+
+            <!-- Global messages -->
+            <h:messages globalOnly="true"
+                        styleClass="mb-4 rounded-xl border border-border-light bg-white px-4 py-3 text-sm text-text-main-light shadow-subtle"
+                        layout="list" />
 
             <div class="bg-card-light rounded-2xl shadow-subtle p-8 space-y-6">
 
@@ -55,7 +61,7 @@
                                      required="true"
                                      requiredMessage="Name is required."
                                      styleClass="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
-                        <h:message for="name" styleClass="text-xs text-error-red mt-1" />
+                        <h:message for="name" styleClass="text-xs text-error-red mt-1 block" />
                     </div>
 
                     <!-- Price per person -->
@@ -70,7 +76,7 @@
                                      styleClass="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
                             <f:convertNumber maxFractionDigits="2" />
                         </h:inputText>
-                        <h:message for="price" styleClass="text-xs text-error-red mt-1" />
+                        <h:message for="price" styleClass="text-xs text-error-red mt-1 block" />
                     </div>
                 </div>
 
@@ -85,9 +91,8 @@
                                      styleClass="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
                 </div>
 
-                <!-- Cuisine -->
+                <!-- Cuisine + Category -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Cuisine -->
                     <div>
                         <label for="cuisine" class="block text-sm font-medium text-text-main-light">
                             Cuisine
@@ -105,7 +110,6 @@
                         </h:selectOneMenu>
                     </div>
 
-                    <!-- Category -->
                     <div>
                         <label for="category" class="block text-sm font-medium text-text-main-light">
                             Category
@@ -126,7 +130,6 @@
 
                 <!-- Vegetarian + Status -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Vegetarian -->
                     <div class="flex items-center gap-3 mt-2">
                         <h:selectBooleanCheckbox id="veg"
                                                  value="#{menuItemFormBean.newItem.isVegetarian}"
@@ -136,7 +139,6 @@
                         </label>
                     </div>
 
-                    <!-- Status -->
                     <div>
                         <label for="status" class="block text-sm font-medium text-text-main-light">
                             Status
@@ -150,10 +152,64 @@
                     </div>
                 </div>
 
-                <!-- Image URL (tạm thời) -->
+                <!-- ✅ IMAGE UPLOAD + PREVIEW -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="itemImage" class="block text-sm font-medium text-text-main-light">
+                            Menu item image (upload)
+                        </label>
+
+                        <h:inputFile id="itemImage"
+                                     value="#{menuItemFormBean.imageFile}"
+                                     styleClass="mt-1 block w-full rounded-lg border border-border-light bg-white px-3 py-2 text-sm text-text-main-light focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                            <f:passThroughAttribute name="accept" value="image/*" />
+                            <f:passThroughAttribute name="onchange" value="previewMenuItemImage(this)" />
+                        </h:inputFile>
+
+                        <p class="mt-1 text-[11px] text-text-secondary-light">
+                            Allowed: PNG/JPG/WebP. Max 5MB. If you upload, the Image URL below will be overwritten.
+                        </p>
+
+                        <h:message for="itemImage" styleClass="text-xs text-error-red mt-1 block" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-text-main-light">
+                            Preview
+                        </label>
+
+                        <div class="mt-1 rounded-xl border border-border-light bg-white p-3">
+                            <!-- Client-side preview (when choosing a file) -->
+                            <img id="menuImgPreview"
+                                 class="hidden w-full max-h-56 object-cover rounded-lg border border-border-light"
+                                 alt="preview" />
+
+                            <!-- Current image from DB (edit mode) -->
+                            <div id="menuCurrentImageBox"
+                                 class="#{empty menuItemFormBean.currentImageUrl ? '' : ''}">
+                                <ui:fragment rendered="#{not empty menuItemFormBean.currentImageUrl}">
+                                    <img src="#{menuItemFormBean.currentImageUrl}"
+                                         class="w-full max-h-56 object-cover rounded-lg border border-border-light"
+                                         alt="current" />
+                                    <p class="mt-2 text-[11px] text-text-secondary-light">
+                                        Current image
+                                    </p>
+                                </ui:fragment>
+
+                                <ui:fragment rendered="#{empty menuItemFormBean.currentImageUrl}">
+                                    <div class="text-xs text-text-secondary-light">
+                                        No image yet.
+                                    </div>
+                                </ui:fragment>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image URL (optional / auto after upload) -->
                 <div>
                     <label for="imageUrl" class="block text-sm font-medium text-text-main-light">
-                        Image URL (temporary)
+                        Image URL (optional)
                     </label>
                     <h:inputText id="imageUrl"
                                  value="#{menuItemFormBean.newItem.imageUrl}"
@@ -162,10 +218,10 @@
 
                 <!-- Buttons -->
                 <div class="flex justify-end gap-3 pt-4">
-                    <h:commandLink action="#{menuItemFormBean.cancel}"
-                                   styleClass="px-4 py-2 rounded-lg border border-border-light text-sm text-text-secondary-light hover:bg-background-soft">
+                    <h:link outcome="/Restaurant/menu-packages"
+                            styleClass="px-4 py-2 rounded-lg border border-border-light text-sm text-text-secondary-light hover:bg-background-soft">
                         Cancel
-                    </h:commandLink>
+                    </h:link>
 
                     <h:commandButton value="#{menuItemFormBean.editMode ? 'Save Changes' : 'Save Item'}"
                                      action="#{menuItemFormBean.save}"
@@ -173,6 +229,32 @@
                 </div>
 
             </div>
+
+            <script>
+                function previewMenuItemImage(input) {
+                    const file = (input &amp;&amp; input.files) ? input.files[0] : null;
+
+                    const preview = document.getElementById("menuImgPreview");
+                    const currentBox = document.getElementById("menuCurrentImageBox");
+                    if (!preview) return;
+
+                    if (!file) {
+                        preview.src = "";
+                        preview.classList.add("hidden");
+                        if (currentBox) currentBox.classList.remove("hidden");
+                        return;
+                    }
+
+                    const url = URL.createObjectURL(file);
+                    preview.src = url;
+                    preview.classList.remove("hidden");
+                    if (currentBox) currentBox.classList.add("hidden");
+
+                    preview.onload = function () {
+                        URL.revokeObjectURL(url);
+                    };
+                }
+            </script>
 
         </h:form>
 
