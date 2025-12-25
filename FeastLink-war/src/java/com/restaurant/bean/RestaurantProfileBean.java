@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -84,6 +85,11 @@ public class RestaurantProfileBean implements Serializable {
     private Integer minGuests;
     private Integer minDaysBeforeBooking;
     private String cancelPolicy;
+
+    // ===== NEW: Refund / Deposit policy (Restaurants table) =====
+    private Integer cancelFullRefundDays;       // CancelFullRefundDays
+    private Integer cancelPartialRefundDays;    // CancelPartialRefundDays
+    private BigDecimal defaultDepositPercent;   // DefaultDepositPercent
 
     // ===== SERVICE AREAS =====
     private List<Cities> allCities;
@@ -176,6 +182,19 @@ public class RestaurantProfileBean implements Serializable {
                     ? restaurant.getMinDaysInAdvance()
                     : 7;
 
+            // ===== load refund/deposit policy from DB =====
+            cancelFullRefundDays = (restaurant.getCancelFullRefundDays() != null)
+                    ? restaurant.getCancelFullRefundDays()
+                    : 7;
+
+            cancelPartialRefundDays = (restaurant.getCancelPartialRefundDays() != null)
+                    ? restaurant.getCancelPartialRefundDays()
+                    : 3;
+
+            defaultDepositPercent = (restaurant.getDefaultDepositPercent() != null)
+                    ? restaurant.getDefaultDepositPercent()
+                    : new BigDecimal("30.00");
+
             // city / area hiện tại
             Areas currentArea = restaurant.getAreaId();
             if (currentArea != null) {
@@ -193,6 +212,12 @@ public class RestaurantProfileBean implements Serializable {
             closeTimeText = "22:00";
             minGuests = 20;
             minDaysBeforeBooking = 7;
+
+            // default policy values
+            cancelFullRefundDays = 7;
+            cancelPartialRefundDays = 3;
+            defaultDepositPercent = new BigDecimal("30.00");
+
             cancelPolicy = "Full refund if cancelled 14 days before the event. "
                     + "50% refund between 7–13 days. No refund within 7 days.";
         }
@@ -266,15 +291,10 @@ public class RestaurantProfileBean implements Serializable {
     }
 
     // ==========================================================
-    // CLOUDINARY UPLOAD AVATAR (GIỐNG ProfileBean)
+    // CLOUDINARY UPLOAD AVATAR
     // ==========================================================
-    /**
-     * Upload avatar (manager) lên Cloudinary → trả về secure_url.
-     * Nếu lỗi đã add FacesMessage và trả null.
-     */
     private String uploadAvatarToCloudinary(FacesContext ctx, Part filePart, Long userId) {
         try {
-            // ==== 1. TẠM THỜI TẮT CHECK SSL (cho môi trường dev) ====
             TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
                     @Override
@@ -292,7 +312,6 @@ public class RestaurantProfileBean implements Serializable {
 
             HostnameVerifier allHostsValid = (hostname, session) -> true;
             HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-            // ==== HẾT PHẦN TẮT SSL CHECK ====
 
             ServletContext servletContext =
                     (ServletContext) ctx.getExternalContext().getContext();
@@ -310,7 +329,6 @@ public class RestaurantProfileBean implements Serializable {
                 return null;
             }
 
-            // Folder chung cho avatar Users
             String folder   = "feastlink/avatars";
             long timestamp  = System.currentTimeMillis() / 1000L;
             String publicId = "avatar_user_" + userId + "_" + timestamp;
@@ -336,7 +354,6 @@ public class RestaurantProfileBean implements Serializable {
             try (OutputStream out = conn.getOutputStream();
                  OutputStreamWriter osw = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
 
-                // helper: field text
                 java.util.function.BiConsumer<String, String> writeField = (name, value) -> {
                     try {
                         osw.write("--" + boundary + CRLF);
@@ -447,7 +464,6 @@ public class RestaurantProfileBean implements Serializable {
         }
     }
 
-    // SHA-1 hex
     private String sha1Hex(String input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-1");
         byte[] bytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
@@ -505,6 +521,37 @@ public class RestaurantProfileBean implements Serializable {
         restaurant.setMinGuestCount(minGuests);
         restaurant.setMinDaysInAdvance(minDaysBeforeBooking);
 
+        // ===== validate refund/deposit =====
+        if (cancelFullRefundDays != null && cancelFullRefundDays < 0) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                    "CancelFullRefundDays phải >= 0", null));
+            return null;
+        }
+        if (cancelPartialRefundDays != null && cancelPartialRefundDays < 0) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                    "CancelPartialRefundDays phải >= 0", null));
+            return null;
+        }
+        if (cancelFullRefundDays != null && cancelPartialRefundDays != null
+                && cancelPartialRefundDays > cancelFullRefundDays) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                    "CancelPartialRefundDays không được lớn hơn CancelFullRefundDays", null));
+            return null;
+        }
+        if (defaultDepositPercent != null) {
+            if (defaultDepositPercent.compareTo(BigDecimal.ZERO) < 0
+                    || defaultDepositPercent.compareTo(new BigDecimal("100")) > 0) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                        "DefaultDepositPercent phải nằm trong khoảng 0 - 100", null));
+                return null;
+            }
+        }
+
+        // ===== set refund/deposit into Restaurants entity =====
+        restaurant.setCancelFullRefundDays(cancelFullRefundDays);
+        restaurant.setCancelPartialRefundDays(cancelPartialRefundDays);
+        restaurant.setDefaultDepositPercent(defaultDepositPercent);
+
         // lưu Area
         if (selectedAreaId != null) {
             Areas area = areasFacade.find(selectedAreaId);
@@ -517,7 +564,6 @@ public class RestaurantProfileBean implements Serializable {
         if (avatarPart != null && avatarPart.getSize() > 0) {
             String secureUrl = uploadAvatarToCloudinary(ctx, avatarPart, currentUser.getUserId());
             if (secureUrl == null) {
-                // đã có message lỗi, không lưu tiếp
                 return null;
             }
             avatarUrl = secureUrl;
@@ -554,7 +600,7 @@ public class RestaurantProfileBean implements Serializable {
             ));
         }
 
-        return null; // ở lại trang hiện tại
+        return null;
     }
 
     // ==========================================================
@@ -598,6 +644,22 @@ public class RestaurantProfileBean implements Serializable {
     public String getCloseTimeText() { return closeTimeText; }
     public void setCloseTimeText(String closeTimeText) { this.closeTimeText = closeTimeText; }
 
+    // ===== NEW getters/setters =====
+    public Integer getCancelFullRefundDays() { return cancelFullRefundDays; }
+    public void setCancelFullRefundDays(Integer cancelFullRefundDays) {
+        this.cancelFullRefundDays = cancelFullRefundDays;
+    }
+
+    public Integer getCancelPartialRefundDays() { return cancelPartialRefundDays; }
+    public void setCancelPartialRefundDays(Integer cancelPartialRefundDays) {
+        this.cancelPartialRefundDays = cancelPartialRefundDays;
+    }
+
+    public BigDecimal getDefaultDepositPercent() { return defaultDepositPercent; }
+    public void setDefaultDepositPercent(BigDecimal defaultDepositPercent) {
+        this.defaultDepositPercent = defaultDepositPercent;
+    }
+
     public List<Cities> getAllCities() {
         if (allCities == null) {
             allCities = citiesFacade.findAll();
@@ -619,7 +681,6 @@ public class RestaurantProfileBean implements Serializable {
     public Part getAvatarPart() { return avatarPart; }
     public void setAvatarPart(Part avatarPart) { this.avatarPart = avatarPart; }
 
-    // dùng trong xhtml: img src="#{restaurantProfileBean.avatarSrc}"
     public String getAvatarSrc() {
         if (avatarUrl == null || avatarUrl.trim().isEmpty()) {
             return null;

@@ -137,24 +137,38 @@
                                  style="cursor: pointer;"
                                  onclick="window.location = '#{request.contextPath}/faces/Restaurant/menu-item-detail.xhtml?itemId=#{item.menuItemId}'">
 
-                            <!-- Phần visual trên cùng -->
-                            <div class="relative h-40 bg-gradient-to-br from-[#FFF7E6] via-[#FFEFD5] to-[#FFD7A3] flex items-center justify-center">
+                            <!-- ✅ Phần visual trên cùng (ĐÃ SỬA: HIỆN ẢNH) -->
+                            <div class="relative h-40 overflow-hidden bg-gradient-to-br from-[#FFF7E6] via-[#FFEFD5] to-[#FFD7A3]">
+
+                                <!-- HAS IMAGE -->
+                                <ui:fragment rendered="#{not empty item.imageUrl}">
+                                    <img src="#{item.imageUrl}"
+                                         alt="#{item.name}"
+                                         class="absolute inset-0 w-full h-full object-cover"
+                                         loading="lazy" />
+                                    <!-- overlay giúp chữ/badge nổi hơn -->
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent"></div>
+                                </ui:fragment>
+
+                                <!-- NO IMAGE (fallback icon) -->
+                                <ui:fragment rendered="#{empty item.imageUrl}">
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-4xl text-champagne-gold/80">
+                                            dinner_dining
+                                        </span>
+                                    </div>
+                                </ui:fragment>
 
                                 <!-- Badge cuisine -->
-                                <div class="absolute top-3 left-3 inline-flex items-center px-3 py-1 rounded-full bg-white/90 shadow-subtle">
+                                <div class="absolute top-3 left-3 z-10 inline-flex items-center px-3 py-1 rounded-full bg-white/90 shadow-subtle">
                                     <span class="w-2 h-2 rounded-full bg-champagne-gold mr-2"></span>
                                     <span class="text-[11px] font-medium text-text-main-light">
                                         #{item.cuisineId != null ? item.cuisineId.name : 'General'}
                                     </span>
                                 </div>
 
-                                <!-- Icon ở giữa -->
-                                <span class="material-symbols-outlined text-4xl text-champagne-gold/80">
-                                    dinner_dining
-                                </span>
-
                                 <!-- Price pill -->
-                                <div class="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-[#0B1120] text-[11px] font-semibold text-white shadow-subtle flex items-center gap-1">
+                                <div class="absolute bottom-3 right-3 z-10 px-3 py-1 rounded-full bg-[#0B1120] text-[11px] font-semibold text-white shadow-subtle flex items-center gap-1">
                                     <span class="text-[10px] text-white/70">From</span>
                                     <span>
                                         <h:outputText value="#{item.pricePerPerson}">
@@ -296,7 +310,6 @@
                     </ui:repeat>
                 </div>
             </h:panelGroup>
-
 
             <!-- ===================================================== -->
             <!-- ============  TAB 3: MENU CATEGORIES  ================ -->
