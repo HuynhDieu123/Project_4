@@ -32,8 +32,13 @@ import java.util.Date;
 import com.mypack.entity.Restaurants;
 import java.util.LinkedHashMap;
 import java.util.HashMap;
-
+import java.time.temporal.ChronoUnit;
 import jakarta.faces.view.ViewScoped;
+import com.mypack.entity.RestaurantCapacitySettings;
+import com.mypack.sessionbean.RestaurantCapacitySettingsFacadeLocal;
+import java.time.format.DateTimeFormatter;
+import com.mypack.sessionbean.BookingCombosFacadeLocal;
+import com.mypack.sessionbean.BookingMenuItemsFacadeLocal;
 
 @Named("customerMyBookingsBean")
 @ViewScoped
@@ -41,6 +46,15 @@ public class CustomerMyBookingsBean implements Serializable {
 
     @EJB
     private BookingsFacadeLocal bookingsFacade;
+
+    @EJB
+    private BookingCombosFacadeLocal bookingCombosFacade;
+
+    @EJB
+    private BookingMenuItemsFacadeLocal bookingMenuItemsFacade;
+
+    @EJB
+    private RestaurantCapacitySettingsFacadeLocal capacitySettingsFacade;
 
     private List<Bookings> myBookings = new ArrayList<>();
     private List<Restaurants> bookedRestaurants = new ArrayList<>();
@@ -61,6 +75,13 @@ public class CustomerMyBookingsBean implements Serializable {
     private Long cancelBookingId;
     private String cancelReason;
     private boolean cancelSuccess;
+    private Bookings cancelBooking; // booking đang mở modal cancel
+    private String editMinDate;        // yyyy-MM-dd cho input type="date"
+    private Integer editGuestMin;      // min guests theo nhà hàng
+    private Integer editGuestMax;      // max guests theo capacity settings
+    private Long deleteBookingId;
+    private boolean deleteSuccess;
+    private Bookings deleteBooking; // booking đang mở modal delete
 
     // ========= PAGINATION =========
     // Số booking mỗi trang (bro muốn 5, 6, 10 tùy chỉnh)
@@ -229,6 +250,82 @@ public class CustomerMyBookingsBean implements Serializable {
                 .toLocalDate();
     }
 
+    private int getMinDaysInAdvance(Bookings b) {
+        Restaurants r = (b != null) ? b.getRestaurantId() : null;
+        Integer v = (r != null) ? r.getMinDaysInAdvance() : null; // <-- Restaurants có getter này (profile bean cũng dùng)
+        return (v != null && v >= 0) ? v : 0;
+    }
+
+    private int resolveGuestMin(Restaurants r) {
+        Integer minDb = (r != null) ? r.getMinGuestCount() : null;
+        return (minDb != null && minDb > 0) ? minDb : 1;
+    }
+
+    private int resolveGuestMax(Restaurants r, int guestMin) {
+        Integer maxDb = null;
+        try {
+            if (capacitySettingsFacade != null && r != null) {
+                RestaurantCapacitySettings s = capacitySettingsFacade.findByRestaurant(r);
+                if (s != null) {
+                    maxDb = s.getMaxGuestsPerSlot();
+                }
+            }
+        } catch (Exception ignore) {
+        }
+
+        int guestMax = (maxDb != null && maxDb > 0) ? maxDb : (guestMin * 3);
+        if (guestMax < guestMin) {
+            guestMax = guestMin;
+        }
+        return guestMax;
+    }
+
+    private int getCancelFullRefundDays(Bookings b) {
+        Restaurants r = (b != null) ? b.getRestaurantId() : null;
+        Integer v = (r != null) ? r.getCancelFullRefundDays() : null;
+        if (v == null || v < 0) {
+            return 7; // default giống profile
+        }
+        return v;
+    }
+
+    private int getCancelPartialRefundDays(Bookings b) {
+        Restaurants r = (b != null) ? b.getRestaurantId() : null;
+        Integer v = (r != null) ? r.getCancelPartialRefundDays() : null;
+        if (v == null || v < 0) {
+            v = 3; // default giống profile
+        }
+        int full = getCancelFullRefundDays(b);
+        if (v > full) {
+            v = full; // clamp cho hợp lệ
+        }
+        return v;
+    }
+
+    public String getCancelPolicyHint() {
+        if (cancelBooking == null) {
+            return "";
+        }
+        int full = getCancelFullRefundDays(cancelBooking);
+        int partial = getCancelPartialRefundDays(cancelBooking);
+
+        if (partial == full) {
+            return "Cancellation is allowed up to " + partial + " days before the event.";
+        }
+        return "Full refund if cancelled at least " + full
+                + " days before the event. Partial refund if cancelled at least "
+                + partial + " days before the event.";
+    }
+
+    public long daysUntilEvent(Bookings b) {
+        if (b == null || b.getEventDate() == null) {
+            return 0;
+        }
+        LocalDate event = toLocalDate(b.getEventDate());
+        LocalDate today = LocalDate.now();
+        return ChronoUnit.DAYS.between(today, event);
+    }
+
     public String formatDateShort(Date date) {
         return (date != null) ? shortDateFmt.format(date) : "";
     }
@@ -392,8 +489,8 @@ public class CustomerMyBookingsBean implements Serializable {
         LocalDate event = toLocalDate(date);
         LocalDate today = LocalDate.now();
 
-        // allow cancel when today <= event - 3 days
-        return !today.isAfter(event.minusDays(3));
+        int minDays = getCancelPartialRefundDays(b); // ✅ lấy từ policy nhà hàng
+        return !today.isAfter(event.minusDays(minDays));
     }
 
     public boolean isRemainingPositive(Bookings b) {
@@ -421,8 +518,10 @@ public class CustomerMyBookingsBean implements Serializable {
         String status = safe(b.getBookingStatus()).toUpperCase();
 
         if ("CONFIRMED".equals(status)) {
-            return "Free cancellation up to 3 days before the event.";
+            int days = getCancelPartialRefundDays(b);
+            return "Cancellation is allowed up to " + days + " days before the event.";
         }
+
         if ("PENDING".equals(status)) {
             return "We'll confirm your request within 24–48 hours.";
         }
@@ -509,6 +608,28 @@ public class CustomerMyBookingsBean implements Serializable {
         return sb.toString();
     }
 
+    public boolean canDeleteQuotation(Bookings b) {
+        if (b == null) {
+            return false;
+        }
+
+        String st = safe(b.getBookingStatus()).trim().toUpperCase();
+        String pay = safe(b.getPaymentStatus()).trim().toUpperCase();
+
+        // quotation lưu từ "Save this quotation" => DRAFT + UNPAID
+        if (!"DRAFT".equals(st)) {
+            return false;
+        }
+
+        // Không cho xóa nếu đã có trạng thái paid (chặn chắc)
+        if ("PAID".equals(pay) || "FULL_PAID".equals(pay) || "PAID_IN_FULL".equals(pay)) {
+            return false;
+        }
+
+        return true;
+    }
+
+
     /* ================= EDIT (CUSTOMER) ================= */
     public boolean canEditBooking(Bookings b) {
         if (b == null) {
@@ -567,6 +688,59 @@ public class CustomerMyBookingsBean implements Serializable {
         editContactFullName = b.getContactFullName();
         editContactEmail = b.getContactEmail();
         editContactPhone = b.getContactPhone();
+        // ===== Compute constraints for UI =====
+        int daysAdvance = getMinDaysInAdvance(b);
+        LocalDate minAllowed = LocalDate.now().plusDays(daysAdvance);
+        editMinDate = minAllowed.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+        Restaurants r = b.getRestaurantId();
+        int gMin = resolveGuestMin(r);
+        int gMax = resolveGuestMax(r, gMin);
+        editGuestMin = gMin;
+        editGuestMax = gMax;
+
+    }
+
+    public void prepareDeleteQuotation(Long bookingId) {
+        deleteSuccess = false;
+        deleteBookingId = bookingId;
+        deleteBooking = null;
+
+        if (bookingId == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Missing booking id.");
+            return;
+        }
+
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        Object userObj = ctx.getExternalContext().getSessionMap().get("currentUser");
+        if (!(userObj instanceof Users)) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Please login again.");
+            deleteBookingId = null;
+            return;
+        }
+        Users currentUser = (Users) userObj;
+
+        Bookings b = bookingsFacade.find(bookingId);
+        if (b == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Booking not found.");
+            deleteBookingId = null;
+            return;
+        }
+
+        // ownership check
+        if (b.getCustomerId() == null || !b.getCustomerId().getUserId().equals(currentUser.getUserId())) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "You cannot delete this booking.");
+            deleteBookingId = null;
+            return;
+        }
+
+        if (!canDeleteQuotation(b)) {
+            addMessage(FacesMessage.SEVERITY_WARN, "Not allowed", "Only draft quotations (unpaid) can be deleted.");
+            deleteBookingId = null;
+            return;
+        }
+
+        deleteBooking = b; // giữ để show info trong modal
     }
 
     /**
@@ -610,10 +784,43 @@ public class CustomerMyBookingsBean implements Serializable {
             addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Event date is required.");
             return;
         }
-        if (editGuestCount == null || editGuestCount < 1) {
-            addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Guest count must be at least 1.");
+
+        // ===== validate event date: not in past + respect MinDaysInAdvance =====
+        LocalDate showDate = toLocalDate(editEventDate);
+        LocalDate today = LocalDate.now();
+
+        if (showDate != null && showDate.isBefore(today)) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Event date cannot be in the past.");
             return;
         }
+
+        int daysAdvance = getMinDaysInAdvance(b);
+        LocalDate minAllowed = today.plusDays(daysAdvance);
+        if (showDate != null && showDate.isBefore(minAllowed)) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Validation",
+                    "This venue requires booking at least " + daysAdvance + " days in advance.");
+            return;
+        }
+
+        Restaurants r = b.getRestaurantId();
+        int gMin = resolveGuestMin(r);
+        int gMax = resolveGuestMax(r, gMin);
+
+        if (editGuestCount == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Guest count is required.");
+            return;
+        }
+        if (editGuestCount < gMin) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Validation",
+                    "Guest count must be at least " + gMin + ".");
+            return;
+        }
+        if (editGuestCount > gMax) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Validation",
+                    "Guest count cannot exceed " + gMax + ".");
+            return;
+        }
+
         if (editStartTime != null && editEndTime != null && !editEndTime.after(editStartTime)) {
             addMessage(FacesMessage.SEVERITY_ERROR, "Validation", "End time must be after start time.");
             return;
@@ -847,7 +1054,6 @@ public class CustomerMyBookingsBean implements Serializable {
 //        // load lại trang danh sách
 //        return "/Customer/my-bookings";
 //    }
-
     public void prepareCancel(Long bookingId) {
         cancelSuccess = false;
         cancelBookingId = bookingId;
@@ -866,7 +1072,9 @@ public class CustomerMyBookingsBean implements Serializable {
         }
 
         Bookings booking = bookingsFacade.find(bookingId);
+        this.cancelBooking = booking;
         if (booking == null) {
+            this.cancelBooking = null;
             addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Booking not found.");
             return;
         }
@@ -874,14 +1082,17 @@ public class CustomerMyBookingsBean implements Serializable {
         Users currentUser = (Users) userObj;
         if (booking.getCustomerId() == null
                 || !booking.getCustomerId().getUserId().equals(currentUser.getUserId())) {
+            this.cancelBooking = null;
             addMessage(FacesMessage.SEVERITY_ERROR, "Error", "You cannot cancel this booking.");
             cancelBookingId = null;
             return;
         }
 
         if (!canCancel(booking)) {
+            this.cancelBooking = null;
             addMessage(FacesMessage.SEVERITY_WARN, "Cannot cancel", "This booking can no longer be cancelled online.");
             cancelBookingId = null;
+            return;
         }
     }
 
@@ -929,7 +1140,8 @@ public class CustomerMyBookingsBean implements Serializable {
         booking.setCancelTime(new Date());
         booking.setUpdatedAt(new Date());
         bookingsFacade.edit(booking);
-cancelSuccess = true; 
+        this.cancelBooking = null;  // ✅ reset booking đang cancel
+        cancelSuccess = true;
         addMessage(FacesMessage.SEVERITY_INFO, "Booking cancelled", "Your booking has been cancelled.");
         cancelBookingId = null;
         cancelReason = "";
@@ -954,6 +1166,77 @@ cancelSuccess = true;
 
         Date event = b.getEventDate();
         return (event != null) ? event.getTime() : 0L;
+    }
+
+    public void confirmDeleteQuotation() {
+        deleteSuccess = false;
+
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        Object userObj = ctx.getExternalContext().getSessionMap().get("currentUser");
+        if (!(userObj instanceof Users)) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Please login again.");
+            return;
+        }
+        Users currentUser = (Users) userObj;
+
+        if (deleteBookingId == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "No booking selected.");
+            return;
+        }
+
+        Bookings b = bookingsFacade.find(deleteBookingId);
+        if (b == null) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Booking not found.");
+            return;
+        }
+
+        if (b.getCustomerId() == null || !b.getCustomerId().getUserId().equals(currentUser.getUserId())) {
+            addMessage(FacesMessage.SEVERITY_ERROR, "Error", "You cannot delete this booking.");
+            return;
+        }
+
+        if (!canDeleteQuotation(b)) {
+            addMessage(FacesMessage.SEVERITY_WARN, "Not allowed", "Only draft quotations (unpaid) can be deleted.");
+            return;
+        }
+
+        try {
+            // 1) delete children first (avoid FK conflicts)
+            if (b.getBookingMenuItemsCollection() != null) {
+                for (BookingMenuItems mi : new ArrayList<>(b.getBookingMenuItemsCollection())) {
+                    if (mi != null) {
+                        bookingMenuItemsFacade.remove(mi);
+                    }
+                }
+            }
+
+            if (b.getBookingCombosCollection() != null) {
+                for (BookingCombos bc : new ArrayList<>(b.getBookingCombosCollection())) {
+                    if (bc != null) {
+                        bookingCombosFacade.remove(bc);
+                    }
+                }
+            }
+
+            // 2) delete booking
+            bookingsFacade.remove(b);
+
+            // 3) update local list to avoid stale UI (optional, JS reload cũng ok)
+            if (myBookings != null) {
+                myBookings.removeIf(x -> x != null && x.getBookingId() != null && x.getBookingId().equals(deleteBookingId));
+            }
+
+            deleteSuccess = true;
+            addMessage(FacesMessage.SEVERITY_INFO, "Deleted", "Quotation deleted successfully.");
+
+            deleteBookingId = null;
+            deleteBooking = null;
+
+        } catch (Exception ex) {
+            deleteSuccess = false;
+            addMessage(FacesMessage.SEVERITY_ERROR, "Delete failed",
+                    "Cannot delete this quotation right now. Please try again.");
+        }
     }
 
     private void addMessage(FacesMessage.Severity severity,
@@ -1167,6 +1450,42 @@ cancelSuccess = true;
 
     public boolean isCancelSuccess() {
         return cancelSuccess;
+    }
+
+    public String getEditMinDate() {
+        return editMinDate;
+    }
+
+    public Integer getEditGuestMin() {
+        return editGuestMin;
+    }
+
+    public Integer getEditGuestMax() {
+        return editGuestMax;
+    }
+
+    public Long getDeleteBookingId() {
+        return deleteBookingId;
+    }
+
+    public void setDeleteBookingId(Long deleteBookingId) {
+        this.deleteBookingId = deleteBookingId;
+    }
+
+    public boolean isDeleteSuccess() {
+        return deleteSuccess;
+    }
+
+    public void setDeleteSuccess(boolean deleteSuccess) {
+        this.deleteSuccess = deleteSuccess;
+    }
+
+    public Bookings getDeleteBooking() {
+        return deleteBooking;
+    }
+
+    public void setDeleteBooking(Bookings deleteBooking) {
+        this.deleteBooking = deleteBooking;
     }
 
 }

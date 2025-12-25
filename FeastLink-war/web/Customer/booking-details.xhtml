@@ -434,27 +434,38 @@
                                 <h3 class="text-sm font-semibold text-[#0B1120] uppercase tracking-wide mb-2">
                                     Cancellation details
                                 </h3>
+
                                 <div class="bg-[#FEF2F2] border border-[#FECACA] rounded-2xl p-4 min-h-[96px]">
-                                    <h:panelGroup rendered="#{customerBookingDetailsBean.hasCancelInfo()}">
+                                    <!-- ✅ render theo status CANCELLED -->
+                                    <h:panelGroup rendered="#{customerBookingDetailsBean.cancelled}">
                                         <p class="text-[#7F1D1D] text-sm mb-2">
                                             <strong>Reason:</strong>
-                                            <h:outputText value="#{customerBookingDetailsBean.booking.cancelReason}" />
+                                            <h:outputText value="#{customerBookingDetailsBean.cancelReasonDisplay}" />
                                         </p>
-                                        <h:panelGroup rendered="#{not empty customerBookingDetailsBean.booking.cancelTime}">
+
+                                        <h:panelGroup rendered="#{customerBookingDetailsBean.hasCancelTime}">
                                             <p class="text-[#7F1D1D] text-sm">
                                                 <strong>Cancelled on:</strong>
-                                                <h:outputText
-                                                    value="#{customerBookingDetailsBean.formatDateTime(customerBookingDetailsBean.booking.cancelTime)}" />
+                                                <h:outputText value="#{customerBookingDetailsBean.formatDateTime(customerBookingDetailsBean.booking.cancelTime)}" />
+                                            </p>
+                                        </h:panelGroup>
+
+                                        <h:panelGroup rendered="#{not customerBookingDetailsBean.hasCancelTime}">
+                                            <p class="text-[#7F1D1D]/80 text-sm italic">
+                                                Cancel time is not available.
                                             </p>
                                         </h:panelGroup>
                                     </h:panelGroup>
-                                    <h:panelGroup rendered="#{not customerBookingDetailsBean.hasCancelInfo()}">
+
+                                    <!-- Không cancelled -->
+                                    <h:panelGroup rendered="#{not customerBookingDetailsBean.cancelled}">
                                         <p class="text-[#9CA3AF] text-sm italic">
                                             This booking has not been cancelled.
                                         </p>
                                     </h:panelGroup>
                                 </div>
                             </section>
+
 
 
                         </div>

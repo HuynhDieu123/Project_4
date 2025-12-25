@@ -225,6 +225,28 @@ public class CustomerBookingDetailsBean implements Serializable {
         return booking != null && booking.getCancelReason() != null
                 && !booking.getCancelReason().trim().isEmpty();
     }
+    
+    public boolean isCancelled() {
+    return booking != null
+            && booking.getBookingStatus() != null
+            && "CANCELLED".equalsIgnoreCase(booking.getBookingStatus());
+}
+
+public String getCancelReasonDisplay() {
+    if (!isCancelled()) return "";
+
+    String r = safe(booking.getCancelReason());
+    if (r.isEmpty()) {
+        // fallback nếu DB đang lưu ở rejectReason
+        try { r = safe(booking.getRejectReason()); } catch (Exception ignore) {}
+    }
+    return r.isEmpty() ? "No reason was provided." : r;
+}
+
+public boolean isHasCancelTime() {
+    return booking != null && booking.getCancelTime() != null;
+}
+
 
     // ========= CONTACT INFO =========
     private Users getCustomer() {

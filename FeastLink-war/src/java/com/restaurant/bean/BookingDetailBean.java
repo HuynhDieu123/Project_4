@@ -258,5 +258,28 @@ public class BookingDetailBean implements Serializable {
     public boolean isHasOtherCharges() {
         return getOtherCharges().compareTo(BigDecimal.ZERO) > 0;
     }
+private String safe(String s) {
+    return s == null ? "" : s.trim();
+}
+
+public boolean isCancelled() {
+    return booking != null
+            && booking.getBookingStatus() != null
+            && "CANCELLED".equalsIgnoreCase(booking.getBookingStatus());
+}
+
+public String getCancelReasonDisplay() {
+    if (!isCancelled()) return "";
+
+    String r = safe(booking.getCancelReason());
+    if (r.isEmpty()) {
+        try { r = safe(booking.getRejectReason()); } catch (Exception ignore) {}
+    }
+    return r.isEmpty() ? "No reason was provided." : r;
+}
+
+public boolean isHasCancelTime() {
+    return booking != null && booking.getCancelTime() != null;
+}
 
 }
