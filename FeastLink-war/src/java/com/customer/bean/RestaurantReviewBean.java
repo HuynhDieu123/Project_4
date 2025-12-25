@@ -104,9 +104,6 @@ public class RestaurantReviewBean implements Serializable {
     private void loadStatsApproved() {
         approvedReviewCount = restaurantReviewsFacade.countApprovedByRestaurant(restaurantId);
 
-        Double avg = restaurantReviewsFacade.avgApprovedRating(restaurantId);
-        avgRating = (avg == null) ? 0 : avg;
-
         // reset counts
         count5 = count4 = count3 = count2 = count1 = 0;
 
@@ -139,6 +136,25 @@ public class RestaurantReviewBean implements Serializable {
                 }
 
             }
+
+            // ===== compute avg from breakdown (avoid integer avg from DB) =====
+            long totalFromBreakdown = (long) count1 + count2 + count3 + count4 + count5;
+
+            long weightedSum
+                    = 1L * count1
+                    + 2L * count2
+                    + 3L * count3
+                    + 4L * count4
+                    + 5L * count5;
+
+// Nếu breakdown có dữ liệu thì ưu tiên dùng breakdown để khớp UI
+            if (totalFromBreakdown > 0) {
+                approvedReviewCount = totalFromBreakdown; // optional: giúp "Based on X reviews" khớp breakdown luôn
+                avgRating = weightedSum * 1.0 / totalFromBreakdown; // QUAN TRỌNG: *1.0 để ra double
+            } else {
+                avgRating = 0.0;
+            }
+
         }
 
         pct5 = percent(count5, approvedReviewCount);

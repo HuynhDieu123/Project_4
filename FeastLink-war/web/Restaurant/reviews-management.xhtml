@@ -185,7 +185,7 @@
                             <div>
                                 <div class="lux-badge">
                                     <span class="lux-dot"></span>
-                                   <span>Customer Reviews Overview</span>
+                                    <span>Customer Reviews Overview</span>
                                 </div>
                                 <h2 class="text-xl md:text-2xl font-extrabold mt-3 text-white">
                                     Customer Satisfaction Overview
@@ -419,14 +419,43 @@
                 </ui:repeat>
             </div>
 
-            <!-- LOAD MORE -->
-            <ui:fragment rendered="#{restaurantReviewsManagementBean.hasMore}">
-                <div class="mt-6 flex justify-center">
-                    <h:commandButton value="Load more"
-                                     action="#{restaurantReviewsManagementBean.loadMore}"
-                                     styleClass="btn-navy rounded-full px-8 py-2 text-sm font-semibold transition"/>
+            <!-- PAGINATION -->
+            <ui:fragment rendered="#{restaurantReviewsManagementBean.totalPages gt 1}">
+                <div class="mt-6 flex items-center justify-between gap-4">
+                    <div class="text-xs text-text-secondary-light">
+                        Page #{restaurantReviewsManagementBean.currentPage}
+                        of #{restaurantReviewsManagementBean.totalPages}
+                        • Total: #{restaurantReviewsManagementBean.totalCount}
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <h:commandLink value="Prev"
+                                       action="#{restaurantReviewsManagementBean.prevPage}"
+                                       styleClass="btn-ghost rounded-full px-4 py-2 text-sm font-semibold transition #{restaurantReviewsManagementBean.currentPage eq 1 ? 'opacity-50 pointer-events-none' : ''}">
+                            <f:ajax render="@form"/>
+                        </h:commandLink>
+
+                        <ui:repeat value="#{restaurantReviewsManagementBean.pageNumbers}" var="p">
+                            <h:commandLink action="#{restaurantReviewsManagementBean.goPage}"
+                                           styleClass="rounded-full px-4 py-2 text-sm font-semibold border transition
+                                           #{p eq restaurantReviewsManagementBean.currentPage
+                                             ? 'bg-[var(--navy)] text-white border-[var(--navy)]'
+                                             : 'bg-white text-[var(--navy)] border-border-light hover:bg-[rgba(2,6,23,.06)]'}">
+                                <f:setPropertyActionListener target="#{restaurantReviewsManagementBean.currentPage}" value="#{p}"/>
+                                <f:ajax render="@form"/>
+                                <h:outputText value="#{p}"/>
+                            </h:commandLink>
+                        </ui:repeat>
+
+                        <h:commandLink value="Next"
+                                       action="#{restaurantReviewsManagementBean.nextPage}"
+                                       styleClass="btn-ghost rounded-full px-4 py-2 text-sm font-semibold transition #{restaurantReviewsManagementBean.currentPage eq restaurantReviewsManagementBean.totalPages ? 'opacity-50 pointer-events-none' : ''}">
+                            <f:ajax render="@form"/>
+                        </h:commandLink>
+                    </div>
                 </div>
             </ui:fragment>
+
 
         </h:form>
 
