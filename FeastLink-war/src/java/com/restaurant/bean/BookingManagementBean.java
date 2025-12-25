@@ -23,6 +23,12 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.math.RoundingMode;
+import com.mypack.entity.RestaurantCapacitySettings;
+import com.mypack.sessionbean.RestaurantCapacitySettingsFacadeLocal;
+import com.mypack.entity.Restaurants;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 @Named("bookingManagementBean")
 @ViewScoped
@@ -34,6 +40,9 @@ public class BookingManagementBean implements Serializable {
     // dùng để tìm nhà hàng của manager
     @EJB
     private RestaurantManagersFacadeLocal restaurantManagersFacade;
+
+    @EJB
+    private RestaurantCapacitySettingsFacadeLocal capacitySettingsFacade;
 
     // id nhà hàng hiện tại (của manager đang login)
     private Integer currentRestaurantId;
@@ -73,6 +82,9 @@ public class BookingManagementBean implements Serializable {
     private String editContactEmail;
     private String editContactPhone;
     private boolean editSaveSuccess;
+    private String editMinDate;     // yyyy-MM-dd
+    private Integer editGuestMin;
+    private Integer editGuestMax;
 
     @PostConstruct
     public void init() {
@@ -167,10 +179,56 @@ public class BookingManagementBean implements Serializable {
                     return !bidStr.equals(ridStr);
                 });
             }
+            bookings.removeIf(b -> b != null
+                    && b.getBookingStatus() != null
+                    && "DRAFT".equalsIgnoreCase(b.getBookingStatus()));
 
         } catch (Exception ex) {
             bookings = new ArrayList<>();
         }
+    }
+
+    private int getMinDaysInAdvance(Bookings b) {
+        Restaurants r = (b != null) ? b.getRestaurantId() : null;
+        Integer v = (r != null) ? r.getMinDaysInAdvance() : null;
+        return (v != null && v >= 0) ? v : 0;
+    }
+
+    private int resolveGuestMin(Restaurants r) {
+        Integer minDb = (r != null) ? r.getMinGuestCount() : null;
+        return (minDb != null && minDb > 0) ? minDb : 1;
+    }
+
+    private int resolveGuestMax(Restaurants r, int guestMin) {
+        // Nếu manager bean đã có capacitySettingsFacade giống profile thì dùng luôn
+        Integer maxDb = null;
+        try {
+            if (capacitySettingsFacade != null && r != null) {
+                RestaurantCapacitySettings s = capacitySettingsFacade.findByRestaurant(r);
+                if (s != null) {
+                    maxDb = s.getMaxGuestsPerSlot();
+                }
+            }
+        } catch (Exception ignore) {
+        }
+
+        int guestMax = (maxDb != null && maxDb > 0) ? maxDb : (guestMin * 3);
+        if (guestMax < guestMin) {
+            guestMax = guestMin;
+        }
+        return guestMax;
+    }
+
+    private LocalDate toLocalDate(Date date) {
+        if (date == null) {
+            return null;
+        }
+
+        if (date instanceof java.sql.Date) {
+            return ((java.sql.Date) date).toLocalDate();
+        }
+
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     // helper: kiểm tra booking thuộc nhà hàng hiện tại
@@ -511,6 +569,20 @@ public class BookingManagementBean implements Serializable {
             this.editContactPhone = fresh.getContactPhone();
             this.editSaveSuccess = false;
 
+            // ===== constraints for edit UI (manager) =====
+            Restaurants r = fresh.getRestaurantId();
+
+// 1) min date = today + minDaysInAdvance
+            int daysAdvance = getMinDaysInAdvance(fresh);
+            LocalDate minAllowed = LocalDate.now().plusDays(daysAdvance);
+            editMinDate = minAllowed.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+// 2) guest range
+            int gMin = resolveGuestMin(r);
+            int gMax = resolveGuestMax(r, gMin);
+            editGuestMin = gMin;
+            editGuestMax = gMax;
+
         } catch (Exception ex) {
             FacesContext.getCurrentInstance().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR, "Load failed", ex.getMessage()));
@@ -550,9 +622,47 @@ public class BookingManagementBean implements Serializable {
                         new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Event date is required."));
                 return;
             }
-            if (editGuestCount == null || editGuestCount < 1) {
+            LocalDate eventDay = toLocalDate(editEventDate);
+            LocalDate today = LocalDate.now();
+
+// chặn quá khứ
+            if (eventDay != null && eventDay.isBefore(today)) {
                 FacesContext.getCurrentInstance().addMessage(null,
-                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation", "Guest count must be at least 1."));
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation",
+                                "Event date cannot be in the past."));
+                return;
+            }
+
+// chặn theo minDaysInAdvance của nhà hàng
+            int daysAdvance = getMinDaysInAdvance(b);
+            LocalDate minAllowed = today.plusDays(daysAdvance);
+            if (eventDay != null && eventDay.isBefore(minAllowed)) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation",
+                                "This venue requires booking at least " + daysAdvance + " days in advance."));
+                return;
+            }
+
+            Restaurants r = b.getRestaurantId();
+            int gMin = resolveGuestMin(r);
+            int gMax = resolveGuestMax(r, gMin);
+
+            if (editGuestCount == null) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation",
+                                "Guest count is required."));
+                return;
+            }
+            if (editGuestCount < gMin) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation",
+                                "Guest count must be at least " + gMin + "."));
+                return;
+            }
+            if (editGuestCount > gMax) {
+                FacesContext.getCurrentInstance().addMessage(null,
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Validation",
+                                "Guest count cannot exceed " + gMax + "."));
                 return;
             }
 
@@ -1123,6 +1233,30 @@ public class BookingManagementBean implements Serializable {
 
     public void setEditSaveSuccess(boolean editSaveSuccess) {
         this.editSaveSuccess = editSaveSuccess;
+    }
+
+    public String getEditMinDate() {
+        return editMinDate;
+    }
+
+    public void setEditMinDate(String editMinDate) {
+        this.editMinDate = editMinDate;
+    }
+
+    public Integer getEditGuestMin() {
+        return editGuestMin;
+    }
+
+    public void setEditGuestMin(Integer editGuestMin) {
+        this.editGuestMin = editGuestMin;
+    }
+
+    public Integer getEditGuestMax() {
+        return editGuestMax;
+    }
+
+    public void setEditGuestMax(Integer editGuestMax) {
+        this.editGuestMax = editGuestMax;
     }
 
 }

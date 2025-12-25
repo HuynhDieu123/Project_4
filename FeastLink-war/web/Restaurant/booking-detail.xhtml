@@ -435,16 +435,27 @@
                                 </p>
                             </section>
 
-                            <h:panelGroup rendered="#{not empty bookingDetailBean.booking.cancelReason}">
-                                <section class="bg-white rounded-2xl border border-error-red/30 p-4 md:p-5">
-                                    <p class="text-xs font-semibold text-error-red uppercase tracking-wide mb-1">
-                                        Cancel reason
-                                    </p>
-                                    <p class="text-sm text-error-red">
-                                        #{bookingDetailBean.booking.cancelReason}
-                                    </p>
-                                </section>
+                            <h:panelGroup rendered="#{bookingDetailBean.booking.bookingStatus eq 'CANCELLED'}">
+                                <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5">
+                                    <div class="text-sm font-extrabold text-red-700 tracking-wide uppercase">
+                                        Cancellation Details
+                                    </div>
+
+                                    <div class="mt-2 text-sm text-red-700">
+                                        <span class="font-semibold">Reason:</span>
+                                        <h:outputText value="#{empty bookingDetailBean.booking.cancelReason ? 'No reason was provided.' : bookingDetailBean.booking.cancelReason}"/>
+                                    </div>
+
+                                    <div class="mt-2 text-sm text-red-700">
+                                        <span class="font-semibold">Cancelled on:</span>
+                                        <h:outputText value="#{bookingDetailBean.booking.cancelTime}">
+                                            <f:convertDateTime pattern="dd MMM yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
+                                        </h:outputText>
+                                    </div>
+                                </div>
                             </h:panelGroup>
+
+
                         </div>
 
                         <!-- Back link -->
