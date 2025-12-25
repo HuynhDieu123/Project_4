@@ -28,7 +28,8 @@ public class ServiceTypesFacade extends AbstractFacade<ServiceTypes> implements 
     public ServiceTypesFacade() {
         super(ServiceTypes.class);
     }
-        @Override
+
+    @Override
     public List<ServiceTypes> findAll() {
         return em.createQuery("SELECT s FROM ServiceTypes s", ServiceTypes.class).getResultList();
     }
@@ -36,7 +37,7 @@ public class ServiceTypesFacade extends AbstractFacade<ServiceTypes> implements 
     @Override
     public List<ServiceTypes> findAllOrderByName() {
         return em.createQuery("SELECT s FROM ServiceTypes s ORDER BY s.name", ServiceTypes.class)
-                 .getResultList();
+                .getResultList();
     }
 
     @Override
@@ -45,7 +46,7 @@ public class ServiceTypesFacade extends AbstractFacade<ServiceTypes> implements 
                 "SELECT s FROM ServiceTypes s WHERE LOWER(s.name) LIKE :kw ORDER BY s.name",
                 ServiceTypes.class
         ).setParameter("kw", "%" + keyword.toLowerCase() + "%")
-         .getResultList();
+                .getResultList();
     }
 
     @Override
@@ -53,7 +54,7 @@ public class ServiceTypesFacade extends AbstractFacade<ServiceTypes> implements 
         Long c = em.createQuery(
                 "SELECT COUNT(s) FROM ServiceTypes s WHERE LOWER(s.name) = :n", Long.class
         ).setParameter("n", name.toLowerCase())
-         .getSingleResult();
+                .getSingleResult();
         return c != null && c > 0;
     }
 
@@ -63,8 +64,26 @@ public class ServiceTypesFacade extends AbstractFacade<ServiceTypes> implements 
                 "SELECT COUNT(s) FROM ServiceTypes s WHERE LOWER(s.name) = :n AND s.serviceTypeId <> :id",
                 Long.class
         ).setParameter("n", name.toLowerCase())
-         .setParameter("id", excludeId)
-         .getSingleResult();
+                .setParameter("id", excludeId)
+                .getSingleResult();
         return c != null && c > 0;
     }
+
+    @Override
+    public ServiceTypes findByNameIgnoreCase(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+
+        List<ServiceTypes> list = em.createQuery(
+                "SELECT s FROM ServiceTypes s WHERE LOWER(TRIM(s.name)) = :n",
+                ServiceTypes.class
+        )
+                .setParameter("n", name.trim().toLowerCase())
+                .setMaxResults(1)
+                .getResultList();
+
+        return list.isEmpty() ? null : list.get(0);
+    }
+
 }

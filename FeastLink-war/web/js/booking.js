@@ -594,11 +594,20 @@ const BookingUI = (function () {
         // lưu lại dưới dạng lowercase để sau này dễ map xuống DB nếu cần
         state.serviceLevel = key;
 
-        // đẩy service level xuống hidden để server đọc
-        const serviceHidden = document.getElementById('hf-service-level');
+        // đẩy service level xuống hidden để server đọc (an toàn với JSF prefix)
+        const serviceHidden = ensureHiddenInput('hf-service-level', 'hf-service-level');
         if (serviceHidden) {
-            serviceHidden.value = key; // standard / premium / vip / exclusive
+            serviceHidden.value = cfg.label; // Standard / Premium / VIP / Exclusive
         }
+
+// nếu JSF có field dạng "formId:hf-service-level" thì cập nhật luôn
+        const form = document.querySelector('form');
+        if (form) {
+            const pref = form.querySelector("[id$=':hf-service-level']");
+            if (pref)
+                pref.value = cfg.label;
+        }
+
 
         // Toggle UI cho các button
         const buttons = document.querySelectorAll('.service-level-btn');
