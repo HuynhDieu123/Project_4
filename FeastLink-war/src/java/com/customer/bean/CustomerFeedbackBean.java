@@ -199,6 +199,31 @@ public class CustomerFeedbackBean implements Serializable {
             lastCreatedFeedback = null;
         }
     }
+    // ----------------------------------------------------
+// ✅ SYNC RESTAURANT -> BOOKING (CHỈ THÊM PHẦN NÀY)
+// ----------------------------------------------------
+public void onRestaurantChange() {
+    // đổi nhà hàng thì reset booking đã chọn
+    selectedBookingId = null;
+}
+
+public List<Bookings> getBookingsForSelectedRestaurant() {
+    if (selectedRestaurantId == null) return new ArrayList<>();
+    if (userBookings == null || userBookings.isEmpty()) return new ArrayList<>();
+
+    List<Bookings> filtered = new ArrayList<>();
+    for (Bookings b : userBookings) {
+        if (b == null) continue;
+        if (b.getRestaurantId() == null) continue;
+        if (b.getRestaurantId().getRestaurantId() == null) continue;
+
+        if (b.getRestaurantId().getRestaurantId().equals(selectedRestaurantId)) {
+            filtered.add(b);
+        }
+    }
+    return filtered;
+}
+
 
     /**
      * Lấy toàn bộ lịch sử feedback của user hiện tại (để hiển thị ở dưới).
