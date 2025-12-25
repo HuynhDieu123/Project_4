@@ -19,10 +19,7 @@ public class CuisineBean implements Serializable {
     @EJB
     private CuisinesFacadeLocal cuisinesFacade;
 
-    // Danh sách để hiển thị
     private List<Cuisines> cuisines = new ArrayList<>();
-
-    // Ô search
     private String keyword;
 
     // Form đang nhập (thêm / sửa)
@@ -37,7 +34,7 @@ public class CuisineBean implements Serializable {
         if (keyword == null || keyword.trim().isEmpty()) {
             cuisines = cuisinesFacade.findAll();
         } else {
-            cuisines = cuisinesFacade.searchByName(keyword);
+            cuisines = cuisinesFacade.searchByName(keyword.trim());
         }
     }
 
@@ -54,51 +51,95 @@ public class CuisineBean implements Serializable {
         currentCuisine = new Cuisines();
     }
 
+    // copy để không bị “dính” list khi sửa
     public void prepareEdit(Cuisines c) {
-        // clone đơn giản: gán trực tiếp entity (nếu không dùng dialog)
-        currentCuisine = c;
+        Cuisines x = new Cuisines();
+        x.setCuisineId(c.getCuisineId());
+        x.setName(c.getName());
+        currentCuisine = x;
     }
 
     public void save() {
         try {
+            // normalize name: trim + gộp khoảng trắng
+            String rawName = currentCuisine.getName();
+            String name = normalizeName(rawName);
+
+            if (name == null || name.isEmpty()) {
+                addFieldError("editForm:name", "Cuisine name is required.");
+                return;
+            }
+
+            currentCuisine.setName(name);
+
+            Integer excludeId = currentCuisine.getCuisineId(); // null nếu create
+            boolean duplicated = cuisinesFacade.existsByName(name, excludeId);
+
+            if (duplicated) {
+                addFieldError("editForm:name", "Cuisine name already exists. Please choose another name.");
+                return; // giữ form value, không reset
+            }
+
             if (currentCuisine.getCuisineId() == null) {
                 cuisinesFacade.create(currentCuisine);
-                addMessage("Thêm loại ẩm thực thành công.");
+                addInfo("Thành công", "Thêm loại ẩm thực thành công.");
             } else {
                 cuisinesFacade.edit(currentCuisine);
-                addMessage("Cập nhật loại ẩm thực thành công.");
+                addInfo("Thành công", "Cập nhật loại ẩm thực thành công.");
             }
-            // reset form
+
+            // reset form + reload list
             currentCuisine = new Cuisines();
             loadCuisines();
+
         } catch (Exception e) {
             e.printStackTrace();
-            addError("Có lỗi xảy ra khi lưu loại ẩm thực.");
+            addError("Lỗi", "Có lỗi xảy ra khi lưu loại ẩm thực.");
         }
     }
 
     public void delete(Cuisines c) {
         try {
             cuisinesFacade.remove(c);
-            addMessage("Xóa loại ẩm thực thành công.");
+            addInfo("Thành công", "Xóa loại ẩm thực thành công.");
             loadCuisines();
+
+            // nếu đang edit đúng item vừa xóa thì reset form
+            if (currentCuisine != null && currentCuisine.getCuisineId() != null
+                    && currentCuisine.getCuisineId().equals(c.getCuisineId())) {
+                currentCuisine = new Cuisines();
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            addError("Không thể xóa loại ẩm thực (có thể đang được sử dụng).");
+            addError("Lỗi", "Không thể xóa loại ẩm thực (có thể đang được sử dụng).");
         }
     }
 
-    private void addMessage(String msg) {
-        FacesContext.getCurrentInstance()
-                .addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, "Thành công", msg));
+    // ================= helpers =================
+
+    private String normalizeName(String s) {
+        if (s == null) return null;
+        // trim + gộp nhiều khoảng trắng thành 1
+        return s.trim().replaceAll("\\s+", " ");
     }
 
-    private void addError(String msg) {
+    private void addInfo(String title, String msg) {
         FacesContext.getCurrentInstance()
-                .addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Lỗi", msg));
+                .addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, title, msg));
     }
 
-    // ===== GETTER / SETTER =====
+    private void addError(String title, String msg) {
+        FacesContext.getCurrentInstance()
+                .addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, title, msg));
+    }
+
+    private void addFieldError(String clientId, String msg) {
+        FacesContext.getCurrentInstance()
+                .addMessage(clientId, new FacesMessage(FacesMessage.SEVERITY_ERROR, msg, msg));
+    }
+
+    // ================= getter/setter =================
+
     public List<Cuisines> getCuisines() {
         return cuisines;
     }

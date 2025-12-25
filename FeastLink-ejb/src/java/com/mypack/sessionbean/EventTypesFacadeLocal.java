@@ -28,5 +28,13 @@ public interface EventTypesFacadeLocal {
     List<EventTypes> findRange(int[] range);
 
     int count();
-    
+       EventTypes createByName(String name);
+    EventTypes updateName(Integer id, String name);
+    void deleteById(Integer id);
+
+    boolean existsByName(String name);
+    boolean existsByName(String name, Integer excludeId);
+
+    List<EventTypes> search(String keyword);
+    EventTypes findByNameIgnoreCase(String name);
 }

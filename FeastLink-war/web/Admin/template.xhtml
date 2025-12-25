@@ -203,12 +203,16 @@
                 Approvals
             </a>
 
+            <a href="#{request.contextPath}/faces/Admin/admin-event-types.xhtml"
+               class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('admin-event-types.xhtml') ? 'active' : ''}">
+                <span class="material-symbols-outlined">menu_book</span>
+                Event type
+            </a>
             <a href="#{request.contextPath}/faces/Admin/cuisines.xhtml"
                class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('cuisines.xhtml') ? 'active' : ''}">
                 <span class="material-symbols-outlined">menu_book</span>
                 Cuisines
             </a>
-
             <a href="#{request.contextPath}/faces/Admin/complaints.xhtml"
                class="sidebar-item #{facesContext.viewRoot.viewId.endsWith('complaints.xhtml') ? 'active' : ''}">
                 <span class="material-symbols-outlined">report</span>
@@ -251,17 +255,6 @@
     </h2>
 
     <div class="flex items-center gap-3">
-
-        <!-- Admin info -->
-        <div class="flex items-center gap-3 bg-[rgba(255,255,255,0.08)] px-4 py-2 rounded-2xl border border-[rgba(212,175,55,0.18)]">
-            <img src="https://i.pravatar.cc/40"
-                 class="w-10 h-10 rounded-full border border-[var(--gold)]" />
-
-            <div class="leading-tight">
-                <p class="font-medium">Admin</p>
-                <p class="text-xs text-gray-300">FeastLink Admin</p>
-            </div>
-        </div>
 
         <!-- ✅ Logout (form riêng, an toàn) -->
         <h:form styleClass="m-0">

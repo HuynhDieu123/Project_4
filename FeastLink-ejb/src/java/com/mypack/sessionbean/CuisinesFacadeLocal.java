@@ -29,5 +29,5 @@ public interface CuisinesFacadeLocal {
     
     List<Cuisines> searchByName(String keyword);
     int count();
-    
+    boolean existsByName(String name, Integer excludeId);
 }
