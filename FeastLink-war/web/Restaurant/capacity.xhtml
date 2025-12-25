@@ -168,7 +168,6 @@
                                             </h:commandLink>
                                         </ui:fragment>
 
-
                                     </div>
                                 </ui:repeat>
                             </div>
@@ -178,202 +177,256 @@
                 </div>
             </section>
 
-            <!-- ================= RIGHT: SETTINGS CARDS ================= -->
-            <section class="space-y-6">
+            <!-- ================= RIGHT: SETTINGS (TABS) ================= -->
+            <section>
 
-                <!-- Default Limits card -->
-                <div class="bg-card-light border border-border-light rounded-2xl shadow-subtle p-5 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h2 class="text-sm font-semibold text-text-main-light">
-                                Default capacity limits
-                            </h2>
-                            <p class="text-[11px] text-text-secondary-light mt-0.5">
-                                These limits are used for all days unless you override them.
-                            </p>
-                        </div>
-                        <span class="material-symbols-outlined text-lg text-champagne-gold bg-background-soft rounded-full p-2">
-                            tune
-                        </span>
+                <div class="bg-card-light border border-border-light rounded-2xl shadow-subtle p-5">
+
+                    <!-- Tabs header -->
+                    <div class="flex items-center gap-2 p-1 rounded-xl bg-background-soft border border-border-light">
+                        <button id="capTabBtn-limits" type="button"
+                                onclick="setCapRightTab('limits')"
+                                class="flex-1 px-3 py-2 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all">
+                            Default limits
+                        </button>
+
+                        <button id="capTabBtn-block" type="button"
+                                onclick="setCapRightTab('block')"
+                                class="flex-1 px-3 py-2 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all">
+                            Block dates
+                        </button>
+
+                        <button id="capTabBtn-day" type="button"
+                                onclick="setCapRightTab('day')"
+                                class="flex-1 px-3 py-2 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all">
+                            Day status
+                        </button>
                     </div>
 
-                    <h:form id="limitsForm" styleClass="space-y-3">
-                        <div>
-                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                Maximum number of guests per day
-                            </label>
-                            <h:inputText value="#{capacityAvailabilityBean.defaultMaxGuestsPerDay}"
-                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                Maximum number of bookings per day
-                            </label>
-                            <h:inputText value="#{capacityAvailabilityBean.defaultMaxBookingsPerDay}"
-                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
-                        </div>
-
-                        <h:commandButton value="Save limits"
-                                         action="#{capacityAvailabilityBean.saveLimits}"
-                                         styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90" />
-                    </h:form>
-                </div>
-
-                <!-- Manual Block card -->
-                <div class="bg-card-light border border-border-light rounded-2xl shadow-subtle p-5 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h2 class="text-sm font-semibold text-text-main-light">
-                                Manual date blocking
-                            </h2>
-                            <p class="text-[11px] text-text-secondary-light mt-0.5">
-                                Block a range of dates for private events, maintenance, or holidays.
-                            </p>
-                        </div>
-                        <span class="material-symbols-outlined text-lg text-champagne-gold bg-background-soft rounded-full p-2">
-                            block
-                        </span>
-                    </div>
-
-                    <h:form id="blockForm" styleClass="space-y-3">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- ===== TAB 1: DEFAULT LIMITS ===== -->
+                    <div id="capTabPanel-limits" class="mt-5">
+                        <div class="flex items-center justify-between">
                             <div>
-                                <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                    Start date
-                                </label>
-                                <h:inputText value="#{capacityAvailabilityBean.blockStartDate}"
-                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
-                                    <f:passThroughAttribute name="type" value="date" />
-                                </h:inputText>
+                                <h2 class="text-sm font-semibold text-text-main-light">
+                                    Default capacity limits
+                                </h2>
+                                <p class="text-[11px] text-text-secondary-light mt-0.5">
+                                    These limits are used for all days unless you override them.
+                                </p>
                             </div>
-
-                            <div>
-                                <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                    End date
-                                </label>
-                                <h:inputText value="#{capacityAvailabilityBean.blockEndDate}"
-                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
-                                    <f:passThroughAttribute name="type" value="date" />
-                                </h:inputText>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                Hall / Saloon (optional)
-                            </label>
-                            <h:inputText value="#{capacityAvailabilityBean.blockHall}"
-                                         styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
-                        </div>
-
-                        <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <h:commandButton value="Block dates"
-                                             action="#{capacityAvailabilityBean.blockDates}"
-                                             styleClass="w-full px-4 py-2 rounded-lg bg-[#0B1120] text-white text-sm font-semibold shadow-subtle hover:opacity-95">
-                                <f:ajax execute="@form" render=":calendarForm :dayStatusForm"/>
-                            </h:commandButton>
-
-                            <h:commandButton value="Unblock dates"
-                                             action="#{capacityAvailabilityBean.unblockDates}"
-                                             styleClass="w-full px-4 py-2 rounded-lg bg-gray-200 text-text-main-light text-sm font-semibold shadow-subtle hover:bg-gray-300">
-                                <f:ajax execute="@form" render=":calendarForm :dayStatusForm"/>
-                            </h:commandButton>
-                        </div>
-
-                    </h:form>
-                </div>
-
-                <!-- Day Status card -->
-                <div class="bg-card-light border border-border-light rounded-2xl shadow-subtle p-5 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h2 class="text-sm font-semibold text-text-main-light">
-                                Selected day status
-                            </h2>
-                            <p class="text-[11px] text-text-secondary-light mt-0.5">
-                                Update the real-time capacity usage of the selected date.
-                            </p>
-                        </div>
-                        <span class="material-symbols-outlined text-lg text-champagne-gold bg-background-soft rounded-full p-2">
-                            insights
-                        </span>
-                    </div>
-
-                    <h:form id="dayStatusForm" styleClass="space-y-4">
-                        <p class="text-xs text-text-secondary-light">
-                            Selected date:
-                            <span class="font-medium text-text-main-light">
-                                #{capacityAvailabilityBean.selectedDateLabel}
+                            <span class="material-symbols-outlined text-lg text-champagne-gold bg-background-soft rounded-full p-2">
+                                tune
                             </span>
-                        </p>
-
-                        <!-- NEW: chọn buổi (slot) -->
-                        <div>
-                            <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                Time slot
-                            </label>
-                            <h:selectOneMenu value="#{capacityAvailabilityBean.selectedSlot}"
-                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
-                                <f:selectItem itemValue="ALLDAY"  itemLabel="All day" />
-                                <f:selectItem itemValue="LUNCH"   itemLabel="Lunch" />
-                                <f:selectItem itemValue="EVENING" itemLabel="Evening" />
-                                <f:ajax listener="#{capacityAvailabilityBean.onSlotChange}"
-                                        render=":dayStatusForm" />
-                            </h:selectOneMenu>
                         </div>
 
-                        <!-- Nhập số khách / booking hiện tại -->
-                        <div class="grid grid-cols-2 gap-3">
+                        <h:form id="limitsForm" styleClass="mt-4 space-y-3">
                             <div>
                                 <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                    Current guest count
+                                    Maximum number of guests per day
                                 </label>
-                                <h:inputText id="guestCount"
-                                             value="#{capacityAvailabilityBean.inputGuestCount}"
-                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
-                                    <f:passThroughAttribute name="type" value="number" />
-                                    <f:passThroughAttribute name="min" value="0" />
-                                </h:inputText>
-                                <h:message for="guestCount"
-                                           styleClass="text-xs text-error-red mt-1 block" />
+                                <h:inputText value="#{capacityAvailabilityBean.defaultMaxGuestsPerDay}"
+                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
                             </div>
 
                             <div>
                                 <label class="block text-xs font-medium text-text-secondary-light mb-1">
-                                    Current booking count
+                                    Maximum number of bookings per day
                                 </label>
-                                <h:inputText id="bookingCount"
-                                             value="#{capacityAvailabilityBean.inputBookingCount}"
-                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
-                                    <f:passThroughAttribute name="type" value="number" />
-                                    <f:passThroughAttribute name="min" value="0" />
-                                </h:inputText>
-                                <h:message for="bookingCount"
-                                           styleClass="text-xs text-error-red mt-1 block" />
+                                <h:inputText value="#{capacityAvailabilityBean.defaultMaxBookingsPerDay}"
+                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
                             </div>
+
+                            <h:commandButton value="Save limits"
+                                             action="#{capacityAvailabilityBean.saveLimits}"
+                                             styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90" />
+                        </h:form>
+                    </div>
+
+                    <!-- ===== TAB 2: MANUAL BLOCK ===== -->
+                    <div id="capTabPanel-block" class="mt-5 hidden">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-sm font-semibold text-text-main-light">
+                                    Manual date blocking
+                                </h2>
+                                <p class="text-[11px] text-text-secondary-light mt-0.5">
+                                    Block a range of dates for private events, maintenance, or holidays.
+                                </p>
+                            </div>
+                            <span class="material-symbols-outlined text-lg text-champagne-gold bg-background-soft rounded-full p-2">
+                                block
+                            </span>
                         </div>
 
-                        <!-- Status tự tính -->
-                        <div class="rounded-xl bg-background-soft px-3 py-2 text-xs text-text-secondary-light">
+                        <h:form id="blockForm" styleClass="mt-4 space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                        Start date
+                                    </label>
+                                    <h:inputText value="#{capacityAvailabilityBean.blockStartDate}"
+                                                 styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                        <f:passThroughAttribute name="type" value="date" />
+                                    </h:inputText>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                        End date
+                                    </label>
+                                    <h:inputText value="#{capacityAvailabilityBean.blockEndDate}"
+                                                 styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                        <f:passThroughAttribute name="type" value="date" />
+                                    </h:inputText>
+                                </div>
+                            </div>
+
                             <div>
-                                Auto status (based on % usage):
-                                <span class="font-semibold text-text-main-light">
-                                    #{capacityAvailabilityBean.selectedStatus}
+                                <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                    Hall / Saloon (optional)
+                                </label>
+                                <h:inputText value="#{capacityAvailabilityBean.blockHall}"
+                                             styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60" />
+                            </div>
+
+                            <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <h:commandButton value="Block dates"
+                                                 action="#{capacityAvailabilityBean.blockDates}"
+                                                 styleClass="w-full px-4 py-2 rounded-lg bg-[#0B1120] text-white text-sm font-semibold shadow-subtle hover:opacity-95">
+                                    <f:ajax execute="@form" render=":calendarForm :dayStatusForm"/>
+                                </h:commandButton>
+
+                                <h:commandButton value="Unblock dates"
+                                                 action="#{capacityAvailabilityBean.unblockDates}"
+                                                 styleClass="w-full px-4 py-2 rounded-lg bg-gray-200 text-text-main-light text-sm font-semibold shadow-subtle hover:bg-gray-300">
+                                    <f:ajax execute="@form" render=":calendarForm :dayStatusForm"/>
+                                </h:commandButton>
+                            </div>
+
+                        </h:form>
+                    </div>
+
+                    <!-- ===== TAB 3: DAY STATUS ===== -->
+                    <div id="capTabPanel-day" class="mt-5 hidden">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-sm font-semibold text-text-main-light">
+                                    Selected day status
+                                </h2>
+                                <p class="text-[11px] text-text-secondary-light mt-0.5">
+                                    Update the real-time capacity usage of the selected date.
+                                </p>
+                            </div>
+                            <span class="material-symbols-outlined text-lg text-champagne-gold bg-background-soft rounded-full p-2">
+                                insights
+                            </span>
+                        </div>
+
+                        <h:form id="dayStatusForm" styleClass="mt-4 space-y-4">
+                            <p class="text-xs text-text-secondary-light">
+                                Selected date:
+                                <span class="font-medium text-text-main-light">
+                                    #{capacityAvailabilityBean.selectedDateLabel}
                                 </span>
-                            </div>
-                            <div class="mt-1 text-[11px]">
-                                Rule: 0% = Available, ≥50% = Almost Full, 100% = Full.
-                            </div>
-                        </div>
+                            </p>
 
-                        <h:commandButton value="Save day capacity"
-                                         action="#{capacityAvailabilityBean.applyStatusToSelectedDay}"
-                                         styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
-                            <f:ajax execute="@form" render=":calendarForm :dayStatusForm" />
-                        </h:commandButton>
-                    </h:form>
+                            <!-- NEW: chọn buổi (slot) -->
+                            <div>
+                                <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                    Time slot
+                                </label>
+                                <h:selectOneMenu value="#{capacityAvailabilityBean.selectedSlot}"
+                                                 styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                    <f:selectItem itemValue="ALLDAY"  itemLabel="All day" />
+                                    <f:selectItem itemValue="LUNCH"   itemLabel="Lunch" />
+                                    <f:selectItem itemValue="EVENING" itemLabel="Evening" />
+                                    <f:ajax listener="#{capacityAvailabilityBean.onSlotChange}"
+                                            render=":dayStatusForm" />
+                                </h:selectOneMenu>
+                            </div>
+
+                            <!-- Nhập số khách / booking hiện tại -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                        Current guest count
+                                    </label>
+                                    <h:inputText id="guestCount"
+                                                 value="#{capacityAvailabilityBean.inputGuestCount}"
+                                                 styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                        <f:passThroughAttribute name="type" value="number" />
+                                        <f:passThroughAttribute name="min" value="0" />
+                                    </h:inputText>
+                                    <h:message for="guestCount"
+                                               styleClass="text-xs text-error-red mt-1 block" />
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-medium text-text-secondary-light mb-1">
+                                        Current booking count
+                                    </label>
+                                    <h:inputText id="bookingCount"
+                                                 value="#{capacityAvailabilityBean.inputBookingCount}"
+                                                 styleClass="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-champagne-gold/60">
+                                        <f:passThroughAttribute name="type" value="number" />
+                                        <f:passThroughAttribute name="min" value="0" />
+                                    </h:inputText>
+                                    <h:message for="bookingCount"
+                                               styleClass="text-xs text-error-red mt-1 block" />
+                                </div>
+                            </div>
+
+                            <!-- Status tự tính -->
+                            <div class="rounded-xl bg-background-soft px-3 py-2 text-xs text-text-secondary-light">
+                                <div>
+                                    Auto status (based on % usage):
+                                    <span class="font-semibold text-text-main-light">
+                                        #{capacityAvailabilityBean.selectedStatus}
+                                    </span>
+                                </div>
+                                <div class="mt-1 text-[11px]">
+                                    Rule: 0% = Available, ≥50% = Almost Full, 100% = Full.
+                                </div>
+                            </div>
+
+                            <h:commandButton value="Save day capacity"
+                                             action="#{capacityAvailabilityBean.applyStatusToSelectedDay}"
+                                             styleClass="mt-2 w-full px-4 py-2 rounded-lg bg-cta-orange text-white text-sm font-semibold shadow-subtle hover:opacity-90">
+                                <f:ajax execute="@form" render=":calendarForm :dayStatusForm" />
+                            </h:commandButton>
+                        </h:form>
+                    </div>
+
                 </div>
+
+                <!-- Tabs script -->
+                <script>
+                    function setCapRightTab(active) {
+                        const tabs = ["limits", "block", "day"];
+
+                        tabs.forEach(t => {
+                            const panel = document.getElementById("capTabPanel-" + t);
+                            const btn = document.getElementById("capTabBtn-" + t);
+                            if (!panel || !btn) return;
+
+                            const isActive = (t === active);
+
+                            // show/hide
+                            panel.classList.toggle("hidden", !isActive);
+
+                            // styles
+                            btn.classList.toggle("bg-white", isActive);
+                            btn.classList.toggle("shadow-subtle", isActive);
+                            btn.classList.toggle("text-text-main-light", isActive);
+
+                            btn.classList.toggle("text-text-secondary-light", !isActive);
+                            btn.classList.toggle("hover:text-text-main-light", !isActive);
+                        });
+                    }
+
+                    // default
+                    setCapRightTab("limits");
+                </script>
 
             </section>
 
