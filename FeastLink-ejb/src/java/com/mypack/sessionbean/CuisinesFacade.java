@@ -42,4 +42,29 @@ public class CuisinesFacade extends AbstractFacade<Cuisines> implements Cuisines
         q.setParameter("kw", "%" + keyword.trim().toLowerCase() + "%");
         return q.getResultList();
     }
+    @Override
+public boolean existsByName(String name, Integer excludeId) {
+    if (name == null) return false;
+
+    String n = name.trim().toLowerCase();
+
+    String jpql = "SELECT COUNT(c) FROM Cuisines c " +
+                  "WHERE LOWER(TRIM(c.name)) = :n";
+
+    if (excludeId != null) {
+        jpql += " AND c.cuisineId <> :id";
+    }
+
+    var q = getEntityManager().createQuery(jpql, Long.class);
+    q.setParameter("n", n);
+
+    if (excludeId != null) {
+        q.setParameter("id", excludeId);
+    }
+
+    Long count = q.getSingleResult();
+    return count != null && count > 0;
+}
+
+
 }

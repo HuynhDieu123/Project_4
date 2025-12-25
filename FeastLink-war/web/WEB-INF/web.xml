@@ -38,6 +38,10 @@
         <param-name>vnpay.tmnCode</param-name>
         <param-value>U1O5RO7N</param-value>
     </context-param>
+<context-param>
+    <param-name>jakarta.faces.FACELETS_ENCODING</param-name>
+    <param-value>UTF-8</param-value>
+</context-param>
 
     <context-param>
         <param-name>vnpay.hashSecret</param-name>
