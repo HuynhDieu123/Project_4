@@ -28,7 +28,7 @@ public interface RestaurantReviewsFacadeLocal {
     List<RestaurantReviews> findRange(int[] range);
 
     int count();
-    
+
     List<RestaurantReviews> findApprovedByRestaurant(Long restaurantId, int offset, int limit, String sortKey);
 
     long countApprovedByRestaurant(Long restaurantId);
@@ -38,5 +38,24 @@ public interface RestaurantReviewsFacadeLocal {
     List<Object[]> ratingBreakdownApproved(Long restaurantId); // each row: [rating, count]
 
     List<RestaurantReviews> findByRestaurantAndCustomer(Long restaurantId, Long customerId); // include pending (approved=false)
-    
+
+    long countPendingByRestaurant(Long restaurantId);
+
+    long countForRestaurant(Long restaurantId, Boolean approved, Integer rating, String keyword);
+
+    List<RestaurantReviews> findForRestaurant(Long restaurantId, Boolean approved, Integer rating, String keyword,
+            int offset, int limit, String sortKey);
+
+    long countForRestaurant(Long restaurantId, Boolean approved, Integer rating, String keyword,
+            java.util.Date dateFrom, java.util.Date dateTo);
+
+    List<RestaurantReviews> findForRestaurant(Long restaurantId, Boolean approved, Integer rating, String keyword,
+            java.util.Date dateFrom, java.util.Date dateTo,
+            int offset, int limit, String sortKey);
+
+// Stats theo ngày
+    Double avgRatingForRestaurant(Long restaurantId, java.util.Date dateFrom, java.util.Date dateTo);
+
+    List<Object[]> ratingBreakdownForRestaurant(Long restaurantId, java.util.Date dateFrom, java.util.Date dateTo);
+
 }

@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="jakarta.faces.html"
+    xmlns:f="jakarta.faces.core"
+    xmlns:ui="jakarta.faces.facelets"
+    xmlns:p="http://xmlns.jakarta.ee/jsf/passthrough"
+    template="/Restaurant/layout-manager.xhtml">
+
+    <ui:define name="title">FeastLink - Reviews</ui:define>
+
+    <ui:define name="header">
+        <div class="flex flex-col">
+            <h1 class="text-2xl font-bold text-text-main-light">Reviews Management</h1>
+            <p class="text-sm text-text-secondary-light">
+                Luxury insights — track customer satisfaction with Navy &amp; Champagne Gold.
+            </p>
+        </div>
+    </ui:define>
+
+    <ui:define name="content">
+
+        <!-- Palette 1 – Navy & Champagne Gold -->
+        <style>
+            :root{
+                --navy:#0B1120;
+                --navy2:#020617;
+                --gold:#D4AF37;
+                --goldSoft:#E6C77F;
+                --bg:#F9FAFB;
+                --bgAlt:#F5F5F4;
+                --border:#E5E7EB;
+                --text:#111827;
+                --muted:#4B5563;
+                --cta:#F97316;
+            }
+
+            .lux-hero{
+                background:
+                    radial-gradient(circle at 0% 0%, rgba(248,250,252,.10), transparent 55%),
+                    radial-gradient(circle at 115% 0%, rgba(212,175,55,.28), transparent 60%),
+                    linear-gradient(135deg, #040717, var(--navy2));
+                border: 1px solid rgba(148,163,184,.35);
+                box-shadow: 0 26px 80px rgba(15,23,42,.45);
+                border-radius: 24px;
+            }
+            .lux-card{
+                border-radius: 18px;
+                border: 1px solid rgba(148,163,184,.18);
+                background: rgba(255,255,255,.92);
+                box-shadow: 0 12px 36px rgba(15,23,42,.06);
+            }
+            .lux-card-dark{
+                border-radius: 18px;
+                border: 1px solid rgba(212,175,55,.30);
+                background:
+                    radial-gradient(circle at 0% 0%, rgba(248,250,252,.06), transparent 55%),
+                    radial-gradient(circle at 90% 0%, rgba(212,175,55,.20), transparent 60%),
+                    rgba(2,6,23,.96);
+                box-shadow: 0 18px 50px rgba(15,23,42,.35);
+                color:#F9FAFB;
+            }
+            .lux-badge{
+                font-size: 11px;
+                padding: 4px 10px;
+                border-radius: 999px;
+                border: 1px solid rgba(250,250,250,.35);
+                background: rgba(15,23,42,.55);
+                color:#E5E7EB;
+                display:inline-flex;
+                align-items:center;
+                gap:6px;
+            }
+            .lux-dot{
+                width:6px;
+                height:6px;
+                border-radius:999px;
+                background:var(--gold);
+            }
+            .lux-kpi{
+                font-weight: 800;
+                letter-spacing: .02em;
+            }
+            .lux-sub{
+                color: rgba(229,231,235,.88);
+            }
+
+            .star-fill{
+                font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24;
+                color: var(--gold);
+            }
+            .star-empty{
+                font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+                color: rgba(156,163,175,.95);
+            }
+
+            .lux-input:focus{
+                outline: none;
+                border-color: rgba(212,175,55,.75) !important;
+                box-shadow: 0 0 0 3px rgba(212,175,55,.18) !important;
+            }
+
+            .btn-navy{
+                background: linear-gradient(135deg, #0B1120, #020617);
+                color:#F9FAFB;
+                border: 1px solid rgba(148,163,184,.18);
+            }
+            .btn-navy:hover{
+                opacity:.95;
+                transform: translateY(-1px);
+            }
+
+            .btn-cta{
+                background: linear-gradient(135deg, #ff7b1a, #ff9a1a);
+                color:#111827;
+                box-shadow: 0 12px 30px rgba(248,143,30,.30);
+            }
+            .btn-cta:hover{
+                transform: translateY(-1px);
+                box-shadow: 0 16px 36px rgba(248,143,30,.38);
+            }
+
+            .btn-ghost{
+                background:#fff;
+                border:1px solid var(--border);
+                color:var(--text);
+            }
+            .btn-ghost:hover{
+                background: var(--bgAlt);
+            }
+
+            .btn-chip{
+                background: rgba(255,255,255,.92);
+                border: 1px solid rgba(212,175,55,.35);
+                color: var(--text);
+            }
+            .btn-chip:hover{
+                background: #fff;
+                transform: translateY(-1px);
+            }
+
+            .lux-msg{
+                border-radius: 16px;
+                border: 1px solid rgba(212,175,55,.28);
+                background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(249,250,251,.96));
+                box-shadow: 0 10px 28px rgba(15,23,42,.06);
+            }
+
+            /* Search icon inside input */
+            .search-wrap{
+                position: relative;
+            }
+            .search-icon{
+                position:absolute;
+                left: 14px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 20px;
+                color: rgba(75,85,99,.85); /* muted */
+                pointer-events:none;
+            }
+            .search-input{
+                padding-left: 44px !important; /* chừa chỗ cho icon */
+            }
+
+        </style>
+
+        <h:form id="rvForm">
+
+            <!-- GLOBAL MESSAGES -->
+            <h:messages globalOnly="true"
+                        styleClass="lux-msg mb-5 px-4 py-3 text-sm"
+                        infoClass="text-green-700"
+                        warnClass="text-amber-700"
+                        errorClass="text-red-700"/>
+
+            <!-- HERO SUMMARY -->
+            <section class="lux-hero p-6 mb-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    <div class="lg:col-span-7">
+                        <div class="flex items-center justify-between gap-3 flex-wrap">
+                            <div>
+                                <div class="lux-badge">
+                                    <span class="lux-dot"></span>
+                                   <span>Customer Reviews Overview</span>
+                                </div>
+                                <h2 class="text-xl md:text-2xl font-extrabold mt-3 text-white">
+                                    Customer Satisfaction Overview
+                                </h2>
+                                <p class="text-sm lux-sub mt-1">
+                                    Real-time insights — customer reviews are published instantly.
+                                </p>
+                            </div>
+
+                            <div class="text-right">
+                                <div class="text-xs lux-sub">Average Rating</div>
+                                <div class="text-4xl lux-kpi text-white">
+                                    <h:outputText value="#{restaurantReviewsManagementBean.avgRating}">
+                                        <f:convertNumber minFractionDigits="1" maxFractionDigits="1"/>
+                                    </h:outputText>
+                                    <span class="text-base font-semibold lux-sub">/ 5</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex flex-wrap gap-3">
+                            <div class="lux-badge">
+                                <span class="lux-dot"></span>
+                                Total reviews:
+                                <span class="font-semibold text-white">#{restaurantReviewsManagementBean.totalReviews}</span>
+                            </div>
+
+                            <ui:fragment rendered="#{not empty restaurantReviewsManagementBean.dateFrom or not empty restaurantReviewsManagementBean.dateTo}">
+                                <div class="lux-badge">
+                                    <span class="lux-dot"></span>
+                                    Range:
+                                    <span class="font-semibold text-white">
+                                        <h:outputText value="#{empty restaurantReviewsManagementBean.dateFrom ? 'Any' : restaurantReviewsManagementBean.dateFrom}"/>
+                                        —
+                                        <h:outputText value="#{empty restaurantReviewsManagementBean.dateTo ? 'Any' : restaurantReviewsManagementBean.dateTo}"/>
+                                    </span>
+                                </div>
+                            </ui:fragment>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown -->
+                    <div class="lg:col-span-5 lux-card-dark p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-xs uppercase tracking-wider lux-sub font-semibold">Rating Breakdown</p>
+                            <span class="text-xs lux-sub">(By selected date range)</span>
+                        </div>
+
+                        <ui:repeat value="#{restaurantReviewsManagementBean.ratingDesc}" var="r">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="w-10 text-xs lux-sub">#{r}★</span>
+
+                                <div class="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
+                                    <div class="h-2"
+                                         style="background: linear-gradient(90deg, #D4AF37, #E6C77F);
+                                         width: #{r == 5 ? restaurantReviewsManagementBean.pct5 :
+                                                  r == 4 ? restaurantReviewsManagementBean.pct4 :
+                                                  r == 3 ? restaurantReviewsManagementBean.pct3 :
+                                                  r == 2 ? restaurantReviewsManagementBean.pct2 :
+                                                  restaurantReviewsManagementBean.pct1}%;"></div>
+                                </div>
+
+                                <span class="w-14 text-right text-xs lux-sub">
+                                    <h:outputText value="#{r == 5 ? restaurantReviewsManagementBean.count5 :
+                                                           r == 4 ? restaurantReviewsManagementBean.count4 :
+                                                           r == 3 ? restaurantReviewsManagementBean.count3 :
+                                                           r == 2 ? restaurantReviewsManagementBean.count2 :
+                                                           restaurantReviewsManagementBean.count1}"/>
+                                </span>
+                            </div>
+                        </ui:repeat>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FILTER BAR -->
+            <div class="lux-card p-5 mb-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+
+                    <!-- Row 1: From / To / Sort / Rating -->
+                    <div class="lg:col-span-3">
+                        <label class="block text-xs font-semibold text-text-secondary-light mb-1">From</label>
+                        <h:inputText value="#{restaurantReviewsManagementBean.dateFrom}"
+                                     styleClass="lux-input w-full rounded-xl border-border-light"
+                                     p:type="date">
+                            <f:ajax listener="#{restaurantReviewsManagementBean.applyFilter}" render="@form"/>
+                        </h:inputText>
+                    </div>
+
+                    <div class="lg:col-span-3">
+                        <label class="block text-xs font-semibold text-text-secondary-light mb-1">To</label>
+                        <h:inputText value="#{restaurantReviewsManagementBean.dateTo}"
+                                     styleClass="lux-input w-full rounded-xl border-border-light"
+                                     p:type="date">
+                            <f:ajax listener="#{restaurantReviewsManagementBean.applyFilter}" render="@form"/>
+                        </h:inputText>
+                    </div>
+
+                    <div class="lg:col-span-3">
+                        <label class="block text-xs font-semibold text-text-secondary-light mb-1">Sort</label>
+                        <h:selectOneMenu value="#{restaurantReviewsManagementBean.sortKey}"
+                                         styleClass="lux-input w-full rounded-xl border-border-light">
+                            <f:selectItem itemValue="recent" itemLabel="Most recent"/>
+                            <f:selectItem itemValue="oldest" itemLabel="Oldest"/>
+                            <f:selectItem itemValue="highest" itemLabel="Highest rating"/>
+                            <f:selectItem itemValue="lowest" itemLabel="Lowest rating"/>
+                            <f:ajax listener="#{restaurantReviewsManagementBean.applyFilter}" render="@form"/>
+                        </h:selectOneMenu>
+                    </div>
+
+                    <div class="lg:col-span-3">
+                        <label class="block text-xs font-semibold text-text-secondary-light mb-1">Rating</label>
+                        <h:selectOneMenu value="#{restaurantReviewsManagementBean.ratingFilter}"
+                                         styleClass="lux-input w-full rounded-xl border-border-light">
+                            <f:selectItem itemValue="#{null}" itemLabel="All"/>
+                            <f:selectItem itemValue="5" itemLabel="5★"/>
+                            <f:selectItem itemValue="4" itemLabel="4★"/>
+                            <f:selectItem itemValue="3" itemLabel="3★"/>
+                            <f:selectItem itemValue="2" itemLabel="2★"/>
+                            <f:selectItem itemValue="1" itemLabel="1★"/>
+                            <f:ajax listener="#{restaurantReviewsManagementBean.applyFilter}" render="@form"/>
+                        </h:selectOneMenu>
+                    </div>
+
+                    <!-- Row 2: Presets + Search + Actions -->
+                    <div class="lg:col-span-4 flex flex-wrap gap-2 items-center">
+                        <h:commandButton value="Today"
+                                         action="#{restaurantReviewsManagementBean.presetToday}"
+                                         styleClass="btn-chip rounded-full px-4 py-1.5 text-xs font-semibold transition"/>
+                        <h:commandButton value="Last 7 days"
+                                         action="#{restaurantReviewsManagementBean.presetLast7Days}"
+                                         styleClass="btn-chip rounded-full px-4 py-1.5 text-xs font-semibold transition"/>
+                        <h:commandButton value="This month"
+                                         action="#{restaurantReviewsManagementBean.presetThisMonth}"
+                                         styleClass="btn-chip rounded-full px-4 py-1.5 text-xs font-semibold transition"/>
+                    </div>
+
+                    <div class="lg:col-span-5">
+                        <label class="block text-xs font-semibold text-text-secondary-light mb-1">Search</label>
+                        <div class="search-wrap">
+                            <span class="material-symbols-outlined search-icon">search</span>
+                            <h:inputText value="#{restaurantReviewsManagementBean.keyword}"
+                                         styleClass="lux-input search-input w-full rounded-xl border-border-light"
+                                         p:placeholder="Customer name / email / booking code / comment..."/>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-3 flex gap-3 justify-end">
+                        <h:commandButton value="Apply"
+                                         action="#{restaurantReviewsManagementBean.applyFilter}"
+                                         styleClass="btn-cta rounded-full px-6 py-2 text-sm font-semibold transition"/>
+                        <h:commandButton value="Reset"
+                                         action="#{restaurantReviewsManagementBean.resetFilter}"
+                                         styleClass="btn-ghost rounded-full px-6 py-2 text-sm font-semibold transition"/>
+                    </div>
+
+                </div>
+            </div>
+
+
+
+            <!-- LIST -->
+            <div class="space-y-4">
+                <ui:fragment rendered="#{empty restaurantReviewsManagementBean.reviews}">
+                    <div class="lux-card p-10 text-center text-sm text-text-secondary-light">
+                        No reviews found for the selected filters.
+                    </div>
+                </ui:fragment>
+
+                <ui:repeat value="#{restaurantReviewsManagementBean.reviews}" var="rr">
+                    <article class="lux-card p-6">
+                        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 rounded-full flex items-center justify-center font-extrabold"
+                                     style="background: linear-gradient(135deg, rgba(212,175,55,.18), rgba(11,17,32,.06));
+                                     color: var(--navy); border:1px solid rgba(212,175,55,.28);">
+                                    #{restaurantReviewsManagementBean.initials(rr.customerId.fullName)}
+                                </div>
+
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <p class="font-semibold text-text-main-light">
+                                            <h:outputText value="#{rr.customerId.fullName}"/>
+                                        </p>
+
+                                        <span class="text-xs font-semibold px-2 py-1 rounded-full border"
+                                              style="background:#eef2ff; border-color: rgba(212,175,55,.30); color:#111827;">
+                                            Published
+                                        </span>
+                                    </div>
+
+                                    <p class="text-xs text-text-secondary-light mt-0.5">
+                                        <h:outputText value="#{rr.createdAt}">
+                                            <f:convertDateTime pattern="dd/MM/yyyy HH:mm"/>
+                                        </h:outputText>
+                                        • Booking:
+                                        <span class="font-semibold">
+                                            #{empty rr.bookingId.bookingCode ? rr.bookingId.bookingId : rr.bookingId.bookingCode}
+                                        </span>
+                                    </p>
+
+                                    <div class="flex items-center gap-1 mt-2">
+                                        <ui:repeat value="#{restaurantReviewsManagementBean.starList}" var="s">
+                                            <ui:fragment rendered="#{s le rr.rating}">
+                                                <span class="material-symbols-outlined star-fill">star</span>
+                                            </ui:fragment>
+                                            <ui:fragment rendered="#{s gt rr.rating}">
+                                                <span class="material-symbols-outlined star-empty">star</span>
+                                            </ui:fragment>
+                                        </ui:repeat>
+                                        <span class="text-xs text-text-secondary-light ml-2">#{rr.rating}/5</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-right text-xs text-text-secondary-light">
+                                Total found:
+                                <span class="font-semibold text-text-main-light">#{restaurantReviewsManagementBean.totalCount}</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 rounded-2xl px-4 py-3"
+                             style="background: linear-gradient(180deg, rgba(245,245,244,.75), rgba(249,250,251,.92));
+                             border:1px solid rgba(229,231,235,.9);">
+                            <p class="text-sm text-text-main-light whitespace-pre-line">
+                                <h:outputText value="#{rr.comment}"/>
+                            </p>
+                        </div>
+                    </article>
+                </ui:repeat>
+            </div>
+
+            <!-- LOAD MORE -->
+            <ui:fragment rendered="#{restaurantReviewsManagementBean.hasMore}">
+                <div class="mt-6 flex justify-center">
+                    <h:commandButton value="Load more"
+                                     action="#{restaurantReviewsManagementBean.loadMore}"
+                                     styleClass="btn-navy rounded-full px-8 py-2 text-sm font-semibold transition"/>
+                </div>
+            </ui:fragment>
+
+        </h:form>
+
+    </ui:define>
+</ui:composition>
