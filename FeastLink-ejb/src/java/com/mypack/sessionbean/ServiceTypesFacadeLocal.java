@@ -36,5 +36,8 @@ public interface ServiceTypesFacadeLocal {
     boolean existsByName(String name);
 
     boolean existsByNameExceptId(String name, Integer excludeId);
+    
+    ServiceTypes findByNameIgnoreCase(String name);
+
 
 }
