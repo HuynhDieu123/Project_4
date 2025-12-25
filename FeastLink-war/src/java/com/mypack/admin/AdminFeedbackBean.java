@@ -154,7 +154,7 @@ public class AdminFeedbackBean implements Serializable {
             if (selectedFeedback == null || selectedFeedback.getFeedbackId() == null) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
-                        "Chưa chọn feedback để cập nhật.",
+                        "Feedback has not been selected for updating yet.",
                         null));
                 return null;
             }
@@ -163,7 +163,7 @@ public class AdminFeedbackBean implements Serializable {
             if (fb == null) {
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
-                        "Feedback không tồn tại (có thể đã bị xóa).",
+                        "The feedback does not exist (it may have been deleted).",
                         null));
                 loadFeedbacks();
                 return null;
@@ -196,14 +196,14 @@ public class AdminFeedbackBean implements Serializable {
 
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_INFO,
-                    "Đã cập nhật feedback thành công.",
+                    "Feedback has been successfully updated.",
                     null));
 
         } catch (Exception e) {
             e.printStackTrace();
             ctx.addMessage(null, new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
-                    "Có lỗi xảy ra khi cập nhật feedback.",
+                    "An error occurred while updating feedback.",
                     null));
         }
 

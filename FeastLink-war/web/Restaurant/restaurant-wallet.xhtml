@@ -220,21 +220,21 @@
                 <h:column>
                     <f:facet name="header">Total</f:facet>
                     <h:outputText value="#{r.totalAmount}">
-                        <f:convertNumber type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                        <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
                     </h:outputText>
                 </h:column>
 
                 <h:column>
                     <f:facet name="header">Fee (2%)</f:facet>
                     <h:outputText value="#{r.feeAmount}">
-                        <f:convertNumber type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                        <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
                     </h:outputText>
                 </h:column>
 
                 <h:column>
                     <f:facet name="header">Net</f:facet>
                     <h:outputText value="#{r.netAmount}">
-                        <f:convertNumber type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                        <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
                     </h:outputText>
                 </h:column>
             </h:dataTable>
