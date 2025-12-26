@@ -3,6 +3,7 @@
     xmlns:h="jakarta.faces.html"
     xmlns:ui="jakarta.faces.facelets"
     xmlns:f="jakarta.faces.core"
+    xmlns:pt="jakarta.faces.passthrough"
     template="template.xhtml">
 
     <ui:define name="title">Dashboard Overview</ui:define>
@@ -14,295 +15,543 @@
 
     <ui:define name="content">
 
-        <div class="relative space-y-8">
+        <div class="relative max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 space-y-7">
 
-            <!-- luxury glow -->
-            <div class="pointer-events-none absolute -inset-x-10 -top-10 h-56
-                        bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.18),transparent_60%)]
-                        blur-2xl"></div>
+            <h:form id="dashForm" prependId="false">
 
-            <!-- HEADER INTRO -->
-            <div class="relative flex items-start justify-between gap-4">
-                <div>
-                    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">
-                        FeastLink overview
-                    </p>
-                    <h1 class="mt-1 text-2xl font-semibold text-slate-900">
-                        Today’s performance
-                    </h1>
-                    <p class="mt-1 text-xs text-slate-500">
-                        Key metrics across customers, restaurants and bookings.
-                    </p>
-                </div>
+                <!-- soft glow -->
+                <div class="pointer-events-none absolute -inset-x-10 -top-10 h-56
+                            bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.14),transparent_60%)]
+                            blur-2xl"></div>
 
-                <div class="hidden md:flex flex-col items-end gap-2 text-[11px]">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border border-slate-200 bg-white/80 shadow-sm text-slate-500">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Updated just now
-                    </div>
-                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50 to-white text-slate-600 uppercase tracking-[0.18em]">
-                        <span class="material-symbols-outlined text-[15px] text-amber-700"
-                              style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                            calendar_month
-                        </span>
-                        This month
-                    </span>
-                </div>
+                <!-- HERO (AJAX RERENDER) -->
+                <h:panelGroup id="heroPanel" layout="block">
+                    <section class="relative overflow-hidden rounded-3xl border border-slate-100 bg-white/85 backdrop-blur shadow-xl shadow-slate-200/60">
+                        <div class="p-6 md:p-7">
+                            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
+
+                                <div class="min-w-0">
+                                    <p class="text-[11px] font-semibold tracking-[0.20em] uppercase text-slate-400">
+                                        FeastLink overview
+                                    </p>
+
+                                    <!-- Title -->
+                                    <h1 class="mt-1 text-2xl md:text-3xl font-semibold text-slate-900 truncate">
+
+                                        <!-- MONTH -->
+                                        <ui:fragment rendered="#{dashboardBean.periodMode eq 'MONTH'}">
+                                            1 month:
+                                            #{dashboardBean.selectedMonth eq 1 ? 'January' :
+                                              dashboardBean.selectedMonth eq 2 ? 'February' :
+                                              dashboardBean.selectedMonth eq 3 ? 'March' :
+                                              dashboardBean.selectedMonth eq 4 ? 'April' :
+                                              dashboardBean.selectedMonth eq 5 ? 'May' :
+                                              dashboardBean.selectedMonth eq 6 ? 'June' :
+                                              dashboardBean.selectedMonth eq 7 ? 'July' :
+                                              dashboardBean.selectedMonth eq 8 ? 'August' :
+                                              dashboardBean.selectedMonth eq 9 ? 'September' :
+                                              dashboardBean.selectedMonth eq 10 ? 'October' :
+                                              dashboardBean.selectedMonth eq 11 ? 'November' :
+                                              'December'}
+                                            #{dashboardBean.selectedYear}
+                                        </ui:fragment>
+
+                                        <!-- DAY -->
+                                        <ui:fragment rendered="#{dashboardBean.periodMode eq 'DAY'}">
+                                            1 day:
+                                            <h:outputText value="#{dashboardBean.selectedDay}">
+                                                <f:convertDateTime pattern="yyyy-MM-dd"/>
+                                            </h:outputText>
+                                        </ui:fragment>
+
+                                        <!-- YEAR -->
+                                        <ui:fragment rendered="#{dashboardBean.periodMode eq 'YEAR'}">
+                                            Year: #{dashboardBean.selectedYear}
+                                        </ui:fragment>
+
+                                        <!-- RANGE -->
+                                        <ui:fragment rendered="#{dashboardBean.periodMode eq 'RANGE'}">
+                                            Range:
+                                            <h:outputText value="#{dashboardBean.rangeFrom}">
+                                                <f:convertDateTime pattern="yyyy-MM-dd"/>
+                                            </h:outputText>
+                                            →
+                                            <h:outputText value="#{dashboardBean.rangeTo}">
+                                                <f:convertDateTime pattern="yyyy-MM-dd"/>
+                                            </h:outputText>
+                                        </ui:fragment>
+
+                                    </h1>
+
+                                    <p class="mt-2 text-sm text-slate-500">
+                                        Track KPIs and charts for the selected time period.
+                                    </p>
+
+                                    <!-- quick badges -->
+                                    <div class="mt-4 flex flex-wrap gap-2">
+                                        <span class="inline-flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-100">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                            Live metrics
+                                        </span>
+
+                                        <span class="inline-flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-100">
+                                            Bookings: #{dashboardBean.totalBookings}
+                                        </span>
+
+                                        <span class="inline-flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-100">
+                                            Revenue: #{dashboardBean.formattedMonthlyRevenue}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- system badge -->
+                                <div class="flex md:justify-end">
+                                    <span class="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-xs font-semibold text-slate-700 border border-slate-100 shadow">
+                                        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                        System healthy
+                                    </span>
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+                </h:panelGroup>
+
+<!-- FILTER BAR (NOTE TOP + MONTH/MODE/YEAR ONE ROW) -->
+<section class="relative overflow-hidden rounded-3xl border border-slate-100 bg-white/90 shadow-xl shadow-slate-200/70">
+    <div class="p-5 md:p-6 space-y-5">
+
+        <!-- TOP ROW: NOTE (LEFT) + VIEWING (RIGHT) -->
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+            <div>
+                <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">
+                    Analytics filters
+                </p>
+                <p class="mt-1 text-sm text-slate-500">
+                    Choose a day, month, year, or a custom date range.
+                </p>
             </div>
 
-            <!-- ==== TOP METRICS WRAPPER ==== -->
-            <section class="rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/70 p-6 relative">
-                <div class="flex items-center justify-between mb-5 gap-3">
-                    <div>
-                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">
-                            Key metrics
-                        </p>
-                        <p class="text-xs text-slate-500 mt-1">
-                            Snapshot of user growth, restaurant partners and booking activity.
-                        </p>
-                    </div>
+            <div class="lg:text-right">
+                <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">
+                    Viewing
+                </p>
+
+                <div class="mt-2 inline-flex justify-center rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3
+                            text-sm font-semibold text-slate-900 min-w-[220px]">
+                    <h:panelGroup id="appliedLabel" layout="inline">
+
+                        <ui:fragment rendered="#{dashboardBean.periodMode eq 'MONTH'}">
+                            1 month:
+                            #{dashboardBean.selectedMonth eq 1 ? 'January' :
+                              dashboardBean.selectedMonth eq 2 ? 'February' :
+                              dashboardBean.selectedMonth eq 3 ? 'March' :
+                              dashboardBean.selectedMonth eq 4 ? 'April' :
+                              dashboardBean.selectedMonth eq 5 ? 'May' :
+                              dashboardBean.selectedMonth eq 6 ? 'June' :
+                              dashboardBean.selectedMonth eq 7 ? 'July' :
+                              dashboardBean.selectedMonth eq 8 ? 'August' :
+                              dashboardBean.selectedMonth eq 9 ? 'September' :
+                              dashboardBean.selectedMonth eq 10 ? 'October' :
+                              dashboardBean.selectedMonth eq 11 ? 'November' :
+                              'December'}
+                            #{dashboardBean.selectedYear}
+                        </ui:fragment>
+
+                        <ui:fragment rendered="#{dashboardBean.periodMode eq 'DAY'}">
+                            1 day:
+                            <h:outputText value="#{dashboardBean.selectedDay}">
+                                <f:convertDateTime pattern="yyyy-MM-dd"/>
+                            </h:outputText>
+                        </ui:fragment>
+
+                        <ui:fragment rendered="#{dashboardBean.periodMode eq 'YEAR'}">
+                            Year: #{dashboardBean.selectedYear}
+                        </ui:fragment>
+
+                        <ui:fragment rendered="#{dashboardBean.periodMode eq 'RANGE'}">
+                            Range:
+                            <h:outputText value="#{dashboardBean.rangeFrom}">
+                                <f:convertDateTime pattern="yyyy-MM-dd"/>
+                            </h:outputText>
+                            →
+                            <h:outputText value="#{dashboardBean.rangeTo}">
+                                <f:convertDateTime pattern="yyyy-MM-dd"/>
+                            </h:outputText>
+                        </ui:fragment>
+
+                    </h:panelGroup>
                 </div>
+            </div>
+        </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-5">
+        <!-- BOTTOM ROW: PRIMARY (MONTH/DATE/...) + MODE + YEAR + APPLY (ONE ROW) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
 
-                    <!-- Customers -->
-                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-amber-100/70 blur-2xl group-hover:bg-amber-200/80"></div>
-                        <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100/70">
-                                <span class="material-symbols-outlined text-amber-700 text-[22px]"
-                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                                    group
-                                </span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                                    Customers
-                                </p>
-                                <p class="mt-1 text-[24px] font-bold text-slate-900 leading-none">
-                                    #{dashboardBean.totalUsers}
-                                </p>
-                                <p class="mt-1 text-[11px] text-slate-400">
-                                    Active customer accounts on platform.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+            <!-- PRIMARY FIELD (MONTH / DATE / YEAR / RANGE) -->
+            <h:panelGroup id="primaryField"
+                          layout="block"
+                          styleClass="#{dashboardBean.periodMode eq 'RANGE' ? 'lg:col-span-6' : 'lg:col-span-4'}">
 
-                    <!-- Restaurants -->
-                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-slate-200/70 blur-2xl group-hover:bg-slate-300/70"></div>
-                        <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white border border-slate-200">
-                                <span class="material-symbols-outlined text-slate-700 text-[22px]"
-                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                                    storefront
-                                </span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                                    Restaurants
-                                </p>
-                                <p class="mt-1 text-[24px] font-bold text-slate-900 leading-none">
-                                    #{dashboardBean.totalRestaurants}
-                                </p>
-                                <p class="mt-1 text-[11px] text-slate-400">
-                                    Partner venues currently live on FeastLink.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                <!-- MONTH -->
+                <ui:fragment rendered="#{dashboardBean.periodMode eq 'MONTH'}">
+                    <div class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Month</div>
+                    <h:selectOneMenu value="#{dashboardBean.selectedMonth}"
+                                     styleClass="mt-2 w-full h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm
+                                                focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300">
+                        <f:selectItem itemValue="1"  itemLabel="January" />
+                        <f:selectItem itemValue="2"  itemLabel="February" />
+                        <f:selectItem itemValue="3"  itemLabel="March" />
+                        <f:selectItem itemValue="4"  itemLabel="April" />
+                        <f:selectItem itemValue="5"  itemLabel="May" />
+                        <f:selectItem itemValue="6"  itemLabel="June" />
+                        <f:selectItem itemValue="7"  itemLabel="July" />
+                        <f:selectItem itemValue="8"  itemLabel="August" />
+                        <f:selectItem itemValue="9"  itemLabel="September" />
+                        <f:selectItem itemValue="10" itemLabel="October" />
+                        <f:selectItem itemValue="11" itemLabel="November" />
+                        <f:selectItem itemValue="12" itemLabel="December" />
 
-                    <!-- Total bookings -->
-                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50/70 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-emerald-100/70 blur-2xl group-hover:bg-emerald-200/80"></div>
-                        <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-100/70">
-                                <span class="material-symbols-outlined text-emerald-600 text-[22px]"
-                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                                    event_list
-                                </span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                                    Total bookings
-                                </p>
-                                <p class="mt-1 text-[24px] font-bold text-slate-900 leading-none">
-                                    #{dashboardBean.totalBookings}
-                                </p>
-                                <p class="mt-1 text-[11px] text-slate-400">
-                                    All bookings recorded in the system.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                        <f:ajax event="change"
+                                listener="#{dashboardBean.applyFilter}"
+                                render="heroPanel dashPanel appliedLabel"
+                                onevent="dashAjaxEvent"/>
+                    </h:selectOneMenu>
+                </ui:fragment>
 
-                    <!-- Monthly revenue -->
-                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/70 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-amber-100/70 blur-2xl group-hover:bg-amber-200/80"></div>
-                        <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100/70">
-                                <span class="material-symbols-outlined text-amber-700 text-[22px]"
-                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                                    payments
-                                </span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                                    Monthly revenue
-                                </p>
-                                <p class="mt-1 text-[22px] font-bold text-slate-900 leading-none whitespace-nowrap">
-                                    #{dashboardBean.formattedMonthlyRevenue}
-                                </p>
-                                <p class="mt-1 text-[11px] text-slate-400">
-                                    Total confirmed booking revenue this month.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                <!-- DAY -->
+                <ui:fragment rendered="#{dashboardBean.periodMode eq 'DAY'}">
+                    <div class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Date</div>
+                    <h:inputText value="#{dashboardBean.selectedDay}" pt:type="date"
+                                 styleClass="mt-2 w-full h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm
+                                            focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300">
+                        <f:convertDateTime pattern="yyyy-MM-dd"/>
+                        <f:ajax event="change"
+                                listener="#{dashboardBean.applyFilter}"
+                                render="heroPanel dashPanel appliedLabel"
+                                onevent="dashAjaxEvent"/>
+                    </h:inputText>
+                </ui:fragment>
 
-                    <!-- Cancellation rate -->
-                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-rose-100/70 blur-2xl group-hover:bg-rose-200/80"></div>
-                        <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 border border-rose-100/70">
-                                <span class="material-symbols-outlined text-rose-500 text-[22px]"
-                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                                    cancel
-                                </span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                                    Cancellation rate
-                                </p>
-                                <p class="mt-1 text-[24px] font-bold text-rose-600 leading-none">
-                                    #{dashboardBean.cancelRate}%
-                                </p>
-                                <p class="mt-1 text-[11px] text-slate-400">
-                                    Percentage of cancelled bookings overall.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                <!-- YEAR (when mode=YEAR, year is the primary field) -->
+                <ui:fragment rendered="#{dashboardBean.periodMode eq 'YEAR'}">
+                    <div class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Year</div>
+                    <h:selectOneMenu value="#{dashboardBean.selectedYear}"
+                                     styleClass="mt-2 w-full h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm
+                                                focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300">
+                        <f:selectItems value="#{dashboardBean.yearOptions}"/>
+                        <f:ajax event="change"
+                                listener="#{dashboardBean.applyFilter}"
+                                render="heroPanel dashPanel appliedLabel"
+                                onevent="dashAjaxEvent"/>
+                    </h:selectOneMenu>
+                </ui:fragment>
 
-                    <!-- Pending approvals -->
-                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/80 via-white to-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                        <div class="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-amber-100/70 blur-2xl group-hover:bg-amber-200/80"></div>
-                        <div class="relative p-4 flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100/70">
-                                <span class="material-symbols-outlined text-amber-700 text-[22px]"
-                                      style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                                    pending_actions
-                                </span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                                    Pending approvals
-                                </p>
-                                <p class="mt-1 text-[24px] font-bold text-amber-700 leading-none">
-                                    #{dashboardBean.pendingApprovals}
-                                </p>
-                                <p class="mt-1 text-[11px] text-slate-400">
-                                    Restaurants waiting for admin review.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- ==== CHARTS (STATISTICS) ==== -->
-            <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-                <!-- Revenue trend -->
-                <div class="xl:col-span-2 rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/70 p-6">
-                    <div class="flex items-start justify-between gap-3 mb-4">
+                <!-- RANGE -->
+                <ui:fragment rendered="#{dashboardBean.periodMode eq 'RANGE'}">
+                    <div class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Range</div>
+                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Revenue</p>
-                            <h3 class="mt-1 text-lg font-semibold text-slate-900">Monthly revenue trend</h3>
-                            <p class="mt-1 text-xs text-slate-500">Confirmed bookings revenue by month.</p>
+                            <div class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">From</div>
+                            <h:inputText value="#{dashboardBean.rangeFrom}" pt:type="date"
+                                         styleClass="mt-2 w-full h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm
+                                                    focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300">
+                                <f:convertDateTime pattern="yyyy-MM-dd"/>
+                                <f:ajax event="change"
+                                        listener="#{dashboardBean.applyFilter}"
+                                        render="heroPanel dashPanel appliedLabel"
+                                        onevent="dashAjaxEvent"/>
+                            </h:inputText>
                         </div>
-                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border border-amber-200/60 bg-amber-50 text-[11px] text-slate-600">
-                            <span class="material-symbols-outlined text-[16px] text-amber-700">finance</span>
-                            This year
-                        </span>
-                    </div>
-
-                    <div class="h-[280px]">
-                        <canvas id="revChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Right column: Status + Cancel rate -->
-                <div class="space-y-6">
-
-                    <!-- Booking status -->
-                    <div class="rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/70 p-6">
-                        <div class="mb-4">
-                            <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Bookings</p>
-                            <h3 class="mt-1 text-lg font-semibold text-slate-900">Status distribution</h3>
-                            <p class="mt-1 text-xs text-slate-500">Overall booking status breakdown.</p>
-                        </div>
-
-                        <div class="h-[220px]">
-                            <canvas id="statusChart"></canvas>
-                        </div>
-
-                        <div class="mt-4 grid grid-cols-3 gap-3 text-center">
-                            <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
-                                <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Confirmed</p>
-                                <p class="mt-1 text-lg font-bold text-slate-900">#{dashboardBean.confirmedCount}</p>
-                            </div>
-                            <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
-                                <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Pending</p>
-                                <p class="mt-1 text-lg font-bold text-slate-900">#{dashboardBean.pendingCount}</p>
-                            </div>
-                            <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
-                                <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Cancelled</p>
-                                <p class="mt-1 text-lg font-bold text-slate-900">#{dashboardBean.cancelledCount}</p>
-                            </div>
+                        <div>
+                            <div class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">To</div>
+                            <h:inputText value="#{dashboardBean.rangeTo}" pt:type="date"
+                                         styleClass="mt-2 w-full h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm
+                                                    focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300">
+                                <f:convertDateTime pattern="yyyy-MM-dd"/>
+                                <f:ajax event="change"
+                                        listener="#{dashboardBean.applyFilter}"
+                                        render="heroPanel dashPanel appliedLabel"
+                                        onevent="dashAjaxEvent"/>
+                            </h:inputText>
                         </div>
                     </div>
+                </ui:fragment>
 
-                    <!-- Cancellation rate chart -->
-                    <div class="rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/70 p-6">
-                        <div class="flex items-start justify-between gap-3 mb-3">
+            </h:panelGroup>
+
+            <!-- MODE -->
+            <h:panelGroup id="modeField"
+                          layout="block"
+                          styleClass="#{dashboardBean.periodMode eq 'MONTH' ? 'lg:col-span-3' :
+                                       dashboardBean.periodMode eq 'RANGE' ? 'lg:col-span-3' : 'lg:col-span-4'}">
+                <div class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Mode</div>
+                <h:selectOneMenu value="#{dashboardBean.periodMode}"
+                                 styleClass="mt-2 w-full h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm
+                                            focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300">
+                    <f:selectItem itemValue="DAY" itemLabel="Single day"/>
+                    <f:selectItem itemValue="MONTH" itemLabel="Single month"/>
+                    <f:selectItem itemValue="YEAR" itemLabel="Single year"/>
+                    <f:selectItem itemValue="RANGE" itemLabel="Custom range"/>
+                    <f:ajax listener="#{dashboardBean.onModeChanged}"
+                            render="primaryField monthYearField modeField applyField heroPanel dashPanel appliedLabel"
+                            onevent="dashAjaxEvent"/>
+                </h:selectOneMenu>
+            </h:panelGroup>
+
+            <!-- YEAR (ONLY FOR MONTH MODE) -->
+            <h:panelGroup id="monthYearField"
+                          layout="block"
+                          styleClass="#{dashboardBean.periodMode eq 'MONTH' ? 'lg:col-span-2' : 'hidden'}">
+                <div class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Year</div>
+                <h:selectOneMenu value="#{dashboardBean.selectedYear}"
+                                 styleClass="mt-2 w-full h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm
+                                            focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300">
+                    <f:selectItems value="#{dashboardBean.yearOptions}"/>
+                    <f:ajax event="change"
+                            listener="#{dashboardBean.applyFilter}"
+                            render="heroPanel dashPanel appliedLabel"
+                            onevent="dashAjaxEvent"/>
+                </h:selectOneMenu>
+            </h:panelGroup>
+
+            <!-- APPLY -->
+            <h:panelGroup id="applyField"
+                          layout="block"
+                          styleClass="#{dashboardBean.periodMode eq 'MONTH' ? 'lg:col-span-3' :
+                                       dashboardBean.periodMode eq 'RANGE' ? 'lg:col-span-3' : 'lg:col-span-4'}">
+                <h:commandButton value="Apply"
+                                 action="#{dashboardBean.applyFilter}"
+                                 styleClass="h-12 w-full lg:w-auto lg:float-right min-w-[140px] whitespace-nowrap
+                                            rounded-2xl bg-slate-900 px-6 text-sm font-semibold text-white shadow hover:bg-black">
+                    <f:ajax render="heroPanel dashPanel appliedLabel" onevent="dashAjaxEvent"/>
+                </h:commandButton>
+            </h:panelGroup>
+
+        </div>
+    </div>
+</section>
+
+                <!-- Messages -->
+                <h:messages globalOnly="true"
+                            styleClass="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700"/>
+
+                <h:panelGroup id="dashPanel" layout="block" styleClass="space-y-7">
+
+                    <!-- KPI -->
+                    <section class="space-y-3">
+                        <div class="flex items-end justify-between gap-3">
                             <div>
-                                <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Risk</p>
-                                <h3 class="mt-1 text-lg font-semibold text-slate-900">Cancellation rate trend</h3>
-                                <p class="mt-1 text-xs text-slate-500">Cancellation rate (%) by month.</p>
+                                <p class="text-[11px] font-semibold tracking-[0.20em] uppercase text-slate-400">Key metrics</p>
+                                <p class="mt-1 text-sm text-slate-500">A quick snapshot for the selected period.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-5">
+
+                            <div class="rounded-3xl border border-slate-100 bg-white/90 shadow-xl shadow-slate-200/50 p-5 hover:shadow-lg hover:-translate-y-0.5 transition">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Customers</p>
+                                        <p class="mt-2 text-3xl font-bold text-slate-900 leading-none">#{dashboardBean.totalUsers}</p>
+                                        <p class="mt-2 text-xs text-slate-500">Active customer accounts.</p>
+                                    </div>
+                                    <span class="h-10 w-10 rounded-2xl bg-slate-900/5 border border-slate-100 flex items-center justify-center">
+                                        <span class="h-2.5 w-2.5 rounded-full bg-slate-900/60"></span>
+                                    </span>
+                                </div>
                             </div>
 
-                            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border border-rose-200/60 bg-rose-50 text-[11px] text-rose-700 whitespace-nowrap">
-                                <span class="material-symbols-outlined text-[16px]">cancel</span>
-                                #{dashboardBean.cancelRate}%
-                            </span>
+                            <div class="rounded-3xl border border-slate-100 bg-white/90 shadow-xl shadow-slate-200/50 p-5 hover:shadow-lg hover:-translate-y-0.5 transition">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Restaurants</p>
+                                        <p class="mt-2 text-3xl font-bold text-slate-900 leading-none">#{dashboardBean.totalRestaurants}</p>
+                                        <p class="mt-2 text-xs text-slate-500">Active partners operating.</p>
+                                    </div>
+                                    <span class="h-10 w-10 rounded-2xl bg-slate-900/5 border border-slate-100 flex items-center justify-center">
+                                        <span class="h-2.5 w-2.5 rounded-full bg-slate-900/60"></span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-3xl border border-slate-100 bg-white/90 shadow-xl shadow-slate-200/50 p-5 hover:shadow-lg hover:-translate-y-0.5 transition">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Bookings</p>
+                                        <p class="mt-2 text-3xl font-bold text-slate-900 leading-none">#{dashboardBean.totalBookings}</p>
+                                        <p class="mt-2 text-xs text-slate-500">Total bookings in period.</p>
+                                    </div>
+                                    <span class="h-10 w-10 rounded-2xl bg-slate-900/5 border border-slate-100 flex items-center justify-center">
+                                        <span class="h-2.5 w-2.5 rounded-full bg-slate-900/60"></span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-3xl border border-slate-100 bg-white/90 shadow-xl shadow-slate-200/50 p-5 hover:shadow-lg hover:-translate-y-0.5 transition">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Pending approvals</p>
+                                        <p class="mt-2 text-3xl font-bold text-amber-600 leading-none">#{dashboardBean.pendingApprovals}</p>
+                                        <p class="mt-2 text-xs text-slate-500">Waiting for approval.</p>
+                                    </div>
+                                    <span class="h-10 w-10 rounded-2xl bg-amber-500/10 border border-amber-100 flex items-center justify-center">
+                                        <span class="h-2.5 w-2.5 rounded-full bg-amber-600"></span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-3xl border border-slate-100 bg-white/90 shadow-xl shadow-slate-200/50 p-5 hover:shadow-lg hover:-translate-y-0.5 transition">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Revenue</p>
+                                        <p class="mt-2 text-2xl font-bold text-slate-900 leading-none whitespace-nowrap">
+                                            #{dashboardBean.formattedMonthlyRevenue}
+                                        </p>
+                                        <p class="mt-2 text-xs text-slate-500">Booking revenue in period.</p>
+                                    </div>
+                                    <span class="h-10 w-10 rounded-2xl bg-emerald-500/10 border border-emerald-100 flex items-center justify-center">
+                                        <span class="h-2.5 w-2.5 rounded-full bg-emerald-600"></span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-3xl border border-slate-100 bg-white/90 shadow-xl shadow-slate-200/50 p-5 hover:shadow-lg hover:-translate-y-0.5 transition">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Cancellation rate</p>
+                                        <p class="mt-2 text-3xl font-bold text-rose-600 leading-none">#{dashboardBean.cancelRate}%</p>
+                                        <p class="mt-2 text-xs text-slate-500">Cancelled bookings ratio.</p>
+                                    </div>
+                                    <span class="h-10 w-10 rounded-2xl bg-rose-500/10 border border-rose-100 flex items-center justify-center">
+                                        <span class="h-2.5 w-2.5 rounded-full bg-rose-600"></span>
+                                    </span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </section>
+
+                    <!-- CHARTS -->
+                    <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+                        <div class="xl:col-span-2 rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/50 p-6">
+                            <div class="flex items-start justify-between gap-3 mb-4">
+                                <div>
+                                    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Revenue</p>
+                                    <h3 class="mt-1 text-lg font-semibold text-slate-900">Trend</h3>
+                                    <p class="mt-1 text-sm text-slate-500">Revenue over time (auto-adjusts by mode).</p>
+                                </div>
+                            </div>
+
+                            <div class="h-[300px]">
+                                <canvas id="revChart"></canvas>
+                            </div>
                         </div>
 
-                        <div class="h-[220px]">
-                            <canvas id="cancelChart"></canvas>
+                        <div class="space-y-6">
+                            <div class="rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/50 p-6">
+                                <div class="mb-4">
+                                    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Bookings</p>
+                                    <h3 class="mt-1 text-lg font-semibold text-slate-900">Status distribution</h3>
+                                    <p class="mt-1 text-sm text-slate-500">Booking status breakdown in period.</p>
+                                </div>
+
+                                <div class="h-[220px]">
+                                    <canvas id="statusChart"></canvas>
+                                </div>
+
+                                <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+                                    <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+                                        <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Confirmed</p>
+                                        <p class="mt-1 text-lg font-bold text-slate-900">#{dashboardBean.confirmedCount}</p>
+                                    </div>
+                                    <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+                                        <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Pending</p>
+                                        <p class="mt-1 text-lg font-bold text-slate-900">#{dashboardBean.pendingCount}</p>
+                                    </div>
+                                    <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+                                        <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Cancelled</p>
+                                        <p class="mt-1 text-lg font-bold text-slate-900">#{dashboardBean.cancelledCount}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rounded-3xl bg-white/90 border border-slate-100 shadow-xl shadow-slate-200/50 p-6">
+                                <div class="mb-4">
+                                    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Cancellations</p>
+                                    <h3 class="mt-1 text-lg font-semibold text-slate-900">Cancel rate</h3>
+                                    <p class="mt-1 text-sm text-slate-500">Cancellation rate over time.</p>
+                                </div>
+
+                                <div class="h-[220px]">
+                                    <canvas id="cancelChart"></canvas>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                </div>
-            </section>
+                    </section>
 
-            <!-- JSON DATA for charts -->
-            <script type="application/json" id="revData">
-                <h:outputText value="#{dashboardBean.revenueByMonthJson}" escape="false"/>
-            </script>
-            <script type="application/json" id="statusData">
-                <h:outputText value="#{dashboardBean.bookingsByStatusJson}" escape="false"/>
-            </script>
-            <script type="application/json" id="cancelData">
-                <h:outputText value="#{dashboardBean.cancelRateByMonthJson}" escape="false"/>
-            </script>
+                    <!-- JSON DATA for charts -->
+                    <script type="application/json" id="revData">
+                        <h:outputText value="#{dashboardBean.revenueByMonthJson}" escape="false"/>
+                    </script>
+                    <script type="application/json" id="statusData">
+                        <h:outputText value="#{dashboardBean.bookingsByStatusJson}" escape="false"/>
+                    </script>
+                    <script type="application/json" id="cancelData">
+                        <h:outputText value="#{dashboardBean.cancelRateByMonthJson}" escape="false"/>
+                    </script>
 
-            <!-- Chart init -->
-            <script>
-                //<![CDATA[
-                window.addEventListener('load', function () {
+                    <!-- RECENT BOOKINGS -->
+                    <section class="bg-white/90 rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400">Recent</p>
+                                <h3 class="mt-1 text-lg font-semibold text-slate-900">Latest bookings</h3>
+                                <p class="mt-1 text-sm text-slate-500">Most recent booking activity (filtered).</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead>
+                                    <tr class="text-left text-[11px] uppercase tracking-[0.16em] text-slate-400 border-b border-slate-100">
+                                        <th class="py-3 pr-4">Code</th>
+                                        <th class="py-3 pr-4">Customer</th>
+                                        <th class="py-3 pr-4">Restaurant</th>
+                                        <th class="py-3 pr-4">Date</th>
+                                        <th class="py-3 pr-4">Guests</th>
+                                        <th class="py-3 pr-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <ui:repeat value="#{dashboardBean.recentBookings}" var="b">
+                                        <tr class="hover:bg-slate-50/70 transition">
+                                            <td class="py-3 pr-4 font-semibold text-slate-900">#{b.bookingCode}</td>
+                                            <td class="py-3 pr-4 text-slate-700">#{b.contactFullName}</td>
+                                            <td class="py-3 pr-4 text-slate-700">#{dashboardBean.restaurantName(b)}</td>
+                                            <td class="py-3 pr-4 text-slate-700">#{b.eventDate}</td>
+                                            <td class="py-3 pr-4 text-slate-700">#{b.guestCount}</td>
+                                            <td class="py-3 pr-4">
+                                                <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                                    #{b.bookingStatus}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </ui:repeat>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                </h:panelGroup>
+
+                <!-- Chart render (supports AJAX re-render) -->
+                <script>
+                    //<![CDATA[
+                    window._dashCharts = window._dashCharts || {};
+
                     function safeJson(id, fallback) {
                         try {
                             const el = document.getElementById(id);
@@ -314,163 +563,109 @@
                         }
                     }
 
-                    const rev = safeJson('revData', {labels:[], values:[]});
-                    const stt = safeJson('statusData', {labels:[], values:[]});
-                    const cnl = safeJson('cancelData', {labels:[], values:[]}); // values: [0..100]
-
-                    // Revenue line chart
-                    const revCtx = document.getElementById('revChart');
-                    if (revCtx) {
-                        new Chart(revCtx, {
-                            type: 'line',
-                            data: {
-                                labels: rev.labels || [],
-                                datasets: [{
-                                    label: 'Revenue',
-                                    data: rev.values || [],
-                                    tension: 0.35,
-                                    borderWidth: 2,
-                                    pointRadius: 2,
-                                    fill: true
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
-                                interaction: { mode: 'index', intersect: false },
-                                scales: {
-                                    x: { grid: { display: false } },
-                                    y: { ticks: { callback: (v) => { try { return Number(v).toLocaleString(); } catch(e){ return v; } } } }
-                                }
-                            }
-                        });
+                    function destroyDashCharts() {
+                        try {
+                            Object.values(window._dashCharts).forEach(c => {
+                                try { c.destroy(); } catch (e) {}
+                            });
+                        } catch (e) {}
+                        window._dashCharts = {};
                     }
 
-                    // Status doughnut chart
-                    const sttCtx = document.getElementById('statusChart');
-                    if (sttCtx) {
-                        new Chart(sttCtx, {
-                            type: 'doughnut',
-                            data: {
-                                labels: stt.labels || [],
-                                datasets: [{ data: stt.values || [], borderWidth: 1 }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { position: 'bottom' } },
-                                cutout: '65%'
-                            }
-                        });
-                    }
+                    function renderDashboardCharts() {
+                        if (typeof Chart === 'undefined') return;
 
-                    // Cancellation rate chart (bar)
-                    const cnlCtx = document.getElementById('cancelChart');
-                    if (cnlCtx) {
-                        new Chart(cnlCtx, {
-                            type: 'bar',
-                            data: {
-                                labels: cnl.labels || [],
-                                datasets: [{
-                                    label: 'Cancel rate (%)',
-                                    data: cnl.values || [],
-                                    borderWidth: 1
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
-                                scales: {
-                                    x: { grid: { display: false } },
-                                    y: {
-                                        beginAtZero: true,
-                                        suggestedMax: 100,
-                                        ticks: { callback: (v) => v + '%' }
+                        destroyDashCharts();
+
+                        const rev = safeJson('revData', {labels:[], values:[]});
+                        const stt = safeJson('statusData', {labels:[], values:[]});
+                        const cnl = safeJson('cancelData', {labels:[], values:[]});
+
+                        const revCtx = document.getElementById('revChart');
+                        if (revCtx) {
+                            window._dashCharts.rev = new Chart(revCtx, {
+                                type: 'line',
+                                data: {
+                                    labels: rev.labels || [],
+                                    datasets: [{
+                                        label: 'Revenue',
+                                        data: rev.values || [],
+                                        tension: 0.35,
+                                        borderWidth: 2,
+                                        pointRadius: 2,
+                                        fill: true
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: { legend: { display: false } },
+                                    interaction: { mode: 'index', intersect: false },
+                                    scales: {
+                                        x: { grid: { display: false } },
+                                        y: { beginAtZero: true }
                                     }
                                 }
-                            }
-                        });
+                            });
+                        }
+
+                        const sttCtx = document.getElementById('statusChart');
+                        if (sttCtx) {
+                            window._dashCharts.status = new Chart(sttCtx, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: stt.labels || [],
+                                    datasets: [{ data: stt.values || [], borderWidth: 1 }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: { legend: { position: 'bottom' } },
+                                    cutout: '65%'
+                                }
+                            });
+                        }
+
+                        const cnlCtx = document.getElementById('cancelChart');
+                        if (cnlCtx) {
+                            window._dashCharts.cancel = new Chart(cnlCtx, {
+                                type: 'bar',
+                                data: {
+                                    labels: cnl.labels || [],
+                                    datasets: [{
+                                        label: 'Cancel rate (%)',
+                                        data: cnl.values || [],
+                                        borderWidth: 1
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: { legend: { display: false } },
+                                    scales: {
+                                        x: { grid: { display: false } },
+                                        y: {
+                                            beginAtZero: true,
+                                            suggestedMax: 100,
+                                            ticks: { callback: (v) => v + '%' }
+                                        }
+                                    }
+                                }
+                            });
+                        }
                     }
-                });
-                //]]>
-            </script>
 
-            <!-- ==== RECENT BOOKINGS ==== -->
-            <section class="bg-white/95 rounded-3xl p-8 shadow-xl border border-slate-100 backdrop-blur">
-                <div class="flex items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-900">
-                            Latest bookings
-                        </h3>
-                        <p class="text-xs text-slate-500 mt-1">
-                            Monitor the most recent bookings to keep track of platform activity.
-                        </p>
-                    </div>
+                    window.addEventListener('load', renderDashboardCharts);
 
-                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 text-[11px] font-medium tracking-[0.18em] uppercase text-slate-500 bg-slate-50">
-                        <span class="material-symbols-outlined text-[15px]"
-                              style="font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;">
-                            monitoring
-                        </span>
-                        Monitoring
-                        <span class="text-[10px] font-normal text-slate-400">realtime overview</span>
-                    </span>
-                </div>
+                    function dashAjaxEvent(data) {
+                        if (data && data.status === 'success') {
+                            renderDashboardCharts();
+                        }
+                    }
+                    //]]>
+                </script>
 
-                <div class="overflow-x-auto">
-                    <table class="min-w-[720px] w-full text-left text-sm">
-                        <thead>
-                            <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase">
-                                <th class="pb-3 pr-4">Booking</th>
-                                <th class="pb-3 pr-4">Customer</th>
-                                <th class="pb-3 pr-4">Restaurant</th>
-                                <th class="pb-3 pr-4">Date</th>
-                                <th class="pb-3">Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody class="text-[14px] text-slate-700">
-                            <ui:repeat value="#{dashboardBean.recentBookings}" var="b">
-                                <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 pr-4 font-medium text-slate-900 whitespace-nowrap">
-                                        #{b.bookingCode}
-                                    </td>
-                                    <td class="py-3 pr-4 whitespace-nowrap">
-                                        #{b.customerId.fullName}
-                                    </td>
-                                    <td class="py-3 pr-4 whitespace-nowrap">
-                                        #{b.restaurantId.name}
-                                    </td>
-                                    <td class="py-3 pr-4 whitespace-nowrap text-slate-600">
-                                        <h:outputText value="#{b.eventDate}">
-                                            <f:convertDateTime pattern="EEE, dd MMM yyyy" />
-                                        </h:outputText>
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="
-                                              inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-medium
-                                              #{b.bookingStatus eq 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                                                b.bookingStatus eq 'PENDING'   ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                                                'bg-rose-50 text-rose-700 border border-rose-100'}">
-
-                                            <span class="w-1.5 h-1.5 rounded-full
-                                                  #{b.bookingStatus eq 'CONFIRMED' ? 'bg-emerald-500' :
-                                                    b.bookingStatus eq 'PENDING'   ? 'bg-amber-500' :
-                                                    'bg-rose-500'}">
-                                            </span>
-
-                                            #{b.bookingStatus}
-                                        </span>
-                                    </td>
-                                </tr>
-                            </ui:repeat>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
+            </h:form>
         </div>
 
     </ui:define>
