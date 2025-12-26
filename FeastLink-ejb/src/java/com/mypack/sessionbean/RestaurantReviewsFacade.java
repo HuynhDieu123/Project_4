@@ -102,32 +102,49 @@ public class RestaurantReviewsFacade extends AbstractFacade<RestaurantReviews> i
     }
     @Override
     public Map<Long, Object[]> statsByRestaurantIds(List<Long> restaurantIds, int badThreshold) {
-        Map<Long, Object[]> map = new HashMap<>();
-        if (restaurantIds == null || restaurantIds.isEmpty()) return map;
+    Map<Long, Object[]> map = new HashMap<>();
+    if (restaurantIds == null || restaurantIds.isEmpty()) return map;
 
-        List<Object[]> rows = em.createQuery(
-                "SELECT rr.restaurantId.restaurantId, " +
-                "       AVG(rr.rating), " +
-                "       COUNT(rr.reviewId), " +
-                "       SUM(CASE WHEN rr.rating <= :bad THEN 1 ELSE 0 END) " +
-                "FROM RestaurantReviews rr " +
-                "WHERE rr.isApproved = true AND rr.isDeleted = false " +
-                "  AND rr.restaurantId.restaurantId IN :ids " +
-                "GROUP BY rr.restaurantId.restaurantId", Object[].class)
-            .setParameter("bad", badThreshold)
-            .setParameter("ids", restaurantIds)
-            .getResultList();
+    // 1) AVG + TOTAL
+    List<Object[]> rows = em.createQuery(
+        "SELECT rr.restaurantId.restaurantId, AVG(rr.rating), COUNT(rr.reviewId) " +
+        "FROM RestaurantReviews rr " +
+        "WHERE rr.isDeleted = false AND rr.restaurantId.restaurantId IN :ids " +
+        "GROUP BY rr.restaurantId.restaurantId",
+        Object[].class
+    ).setParameter("ids", restaurantIds)
+     .getResultList();
 
-        for (Object[] r : rows) {
-            Long rid = (Long) r[0];
-            Object avg = r[1];
-            Object total = r[2];
-            Object bad = r[3];
-            map.put(rid, new Object[]{avg, total, bad});
-        }
-        return map;
+    for (Object[] r : rows) {
+        Long rid = ((Number) r[0]).longValue();
+        Double avg = (r[1] == null) ? 0.0 : ((Number) r[1]).doubleValue();  // ✅ số thực
+        Long total = (r[2] == null) ? 0L : ((Number) r[2]).longValue();
+        map.put(rid, new Object[]{avg, total, 0L});
     }
-        @Override
+
+    // 2) BAD COUNT
+    List<Object[]> badRows = em.createQuery(
+        "SELECT rr.restaurantId.restaurantId, COUNT(rr.reviewId) " +
+        "FROM RestaurantReviews rr " +
+        "WHERE rr.isDeleted = false AND rr.rating <= :bad AND rr.restaurantId.restaurantId IN :ids " +
+        "GROUP BY rr.restaurantId.restaurantId",
+        Object[].class
+    ).setParameter("bad", badThreshold)
+     .setParameter("ids", restaurantIds)
+     .getResultList();
+
+    for (Object[] r : badRows) {
+        Long rid = ((Number) r[0]).longValue();
+        Long bad = (r[1] == null) ? 0L : ((Number) r[1]).longValue();
+        Object[] cur = map.getOrDefault(rid, new Object[]{0.0, 0L, 0L});
+        cur[2] = bad;
+        map.put(rid, cur);
+    }
+
+    return map;
+}
+
+         @Override
     public long countByRestaurant(Long restaurantId, Integer ratingFilter) {
         String jpql =
                 "SELECT COUNT(rr) " +

@@ -22,7 +22,7 @@ public class CuisineBean implements Serializable {
     private List<Cuisines> cuisines = new ArrayList<>();
     private String keyword;
 
-    // Form đang nhập (thêm / sửa)
+    // Current form (create / edit)
     private Cuisines currentCuisine = new Cuisines();
 
     @PostConstruct
@@ -51,7 +51,7 @@ public class CuisineBean implements Serializable {
         currentCuisine = new Cuisines();
     }
 
-    // copy để không bị “dính” list khi sửa
+    // Copy to avoid binding directly to the list row
     public void prepareEdit(Cuisines c) {
         Cuisines x = new Cuisines();
         x.setCuisineId(c.getCuisineId());
@@ -61,7 +61,7 @@ public class CuisineBean implements Serializable {
 
     public void save() {
         try {
-            // normalize name: trim + gộp khoảng trắng
+            // Normalize name: trim + collapse spaces
             String rawName = currentCuisine.getName();
             String name = normalizeName(rawName);
 
@@ -72,46 +72,46 @@ public class CuisineBean implements Serializable {
 
             currentCuisine.setName(name);
 
-            Integer excludeId = currentCuisine.getCuisineId(); // null nếu create
+            Integer excludeId = currentCuisine.getCuisineId(); // null if create
             boolean duplicated = cuisinesFacade.existsByName(name, excludeId);
 
             if (duplicated) {
                 addFieldError("editForm:name", "Cuisine name already exists. Please choose another name.");
-                return; // giữ form value, không reset
+                return; // keep form values
             }
 
             if (currentCuisine.getCuisineId() == null) {
                 cuisinesFacade.create(currentCuisine);
-                addInfo("Thành công", "Thêm loại ẩm thực thành công.");
+                addInfo("Success", "Cuisine created successfully.");
             } else {
                 cuisinesFacade.edit(currentCuisine);
-                addInfo("Thành công", "Cập nhật loại ẩm thực thành công.");
+                addInfo("Success", "Cuisine updated successfully.");
             }
 
-            // reset form + reload list
+            // Reset form + reload list
             currentCuisine = new Cuisines();
             loadCuisines();
 
         } catch (Exception e) {
             e.printStackTrace();
-            addError("Lỗi", "Có lỗi xảy ra khi lưu loại ẩm thực.");
+            addError("Error", "An error occurred while saving the cuisine.");
         }
     }
 
     public void delete(Cuisines c) {
         try {
             cuisinesFacade.remove(c);
-            addInfo("Thành công", "Xóa loại ẩm thực thành công.");
+            addInfo("Success", "Cuisine deleted successfully.");
             loadCuisines();
 
-            // nếu đang edit đúng item vừa xóa thì reset form
+            // If currently editing the deleted item => reset form
             if (currentCuisine != null && currentCuisine.getCuisineId() != null
                     && currentCuisine.getCuisineId().equals(c.getCuisineId())) {
                 currentCuisine = new Cuisines();
             }
         } catch (Exception e) {
             e.printStackTrace();
-            addError("Lỗi", "Không thể xóa loại ẩm thực (có thể đang được sử dụng).");
+            addError("Error", "Cannot delete this cuisine (it may be in use).");
         }
     }
 
@@ -119,7 +119,6 @@ public class CuisineBean implements Serializable {
 
     private String normalizeName(String s) {
         if (s == null) return null;
-        // trim + gộp nhiều khoảng trắng thành 1
         return s.trim().replaceAll("\\s+", " ");
     }
 

@@ -21,11 +21,11 @@
 
         <!-- FILTER AREA -->
         <div class="bg-white p-6 rounded-2xl shadow mb-8 border border-gray-200">
-            <h:form styleClass="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <h:form id="filterForm" styleClass="grid grid-cols-1 md:grid-cols-4 gap-4">
 
                 <h:inputText value="#{usersBean.keyword}"
                              styleClass="p-3 border rounded-xl w-full"
-                             pass:placeholder="Search name or email..." />
+                             pass:placeholder="Search by name or email..." />
 
                 <h:selectOneMenu value="#{usersBean.roleFilter}" styleClass="p-3 border rounded-xl w-full">
                     <f:selectItem itemValue="ALL" itemLabel="All Roles" />
@@ -42,17 +42,25 @@
 
                 <h:commandButton value="Filter"
                                  action="#{usersBean.applyFilter}"
-                                 styleClass="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700" />
+                                 styleClass="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700">
+                    <f:ajax execute="@form" render=":usersTable" />
+                </h:commandButton>
 
             </h:form>
         </div>
 
-
-        <!-- USER TABLE (AJAX render) -->
+        <!-- USER TABLE -->
         <h:panelGroup id="usersTable">
             <div class="bg-white p-6 rounded-3xl shadow border border-gray-200">
 
                 <h3 class="text-lg font-semibold mb-6">User List</h3>
+
+                <h:messages globalOnly="true"
+                            layout="list"
+                            styleClass="mb-4 text-sm"
+                            infoClass="p-3 rounded-xl bg-blue-50 text-blue-700 border border-blue-100"
+                            warnClass="p-3 rounded-xl bg-yellow-50 text-yellow-700 border border-yellow-100"
+                            errorClass="p-3 rounded-xl bg-red-50 text-red-700 border border-red-100" />
 
                 <table class="w-full text-sm">
                     <thead>
@@ -69,11 +77,8 @@
 
                     <tbody>
                         <ui:repeat value="#{usersBean.pageUsers}" var="u">
-
                             <tr class="border-b hover:bg-gray-50 transition">
-
                                 <td class="py-3">#{u.fullName}</td>
-
                                 <td>#{u.email}</td>
 
                                 <td>
@@ -93,7 +98,11 @@
 
                                 <td>#{u.cityId != null ? u.cityId.name : '—'}</td>
 
-                                <td>#{u.createdAt}</td>
+                                <td>
+                                    <h:outputText value="#{u.createdAt}">
+                                        <f:convertDateTime pattern="dd/MM/yyyy HH:mm" />
+                                    </h:outputText>
+                                </td>
 
                                 <td class="text-center">
                                     <button type="button"
@@ -103,7 +112,6 @@
                                     </button>
                                 </td>
                             </tr>
-
                         </ui:repeat>
                     </tbody>
                 </table>
@@ -114,7 +122,9 @@
                         <h:commandButton value="Prev"
                                          action="#{usersBean.prevPage}"
                                          disabled="#{usersBean.currentPage == 1}"
-                                         styleClass="px-4 py-2 bg-gray-200 rounded-lg"/>
+                                         styleClass="px-4 py-2 bg-gray-200 rounded-lg">
+                            <f:ajax execute="@form" render=":usersTable" />
+                        </h:commandButton>
                     </h:form>
 
                     <span class="py-2">Page #{usersBean.currentPage} / #{usersBean.totalPages}</span>
@@ -123,13 +133,14 @@
                         <h:commandButton value="Next"
                                          action="#{usersBean.nextPage}"
                                          disabled="#{usersBean.currentPage == usersBean.totalPages}"
-                                         styleClass="px-4 py-2 bg-gray-200 rounded-lg"/>
+                                         styleClass="px-4 py-2 bg-gray-200 rounded-lg">
+                            <f:ajax execute="@form" render=":usersTable" />
+                        </h:commandButton>
                     </h:form>
                 </div>
 
             </div>
         </h:panelGroup>
-
 
         <!-- POPUP BLOCK -->
         <dialog id="blockModal" class="rounded-xl p-6 w-[350px]">
@@ -146,59 +157,50 @@
 
                     <h:commandButton value="Confirm"
                                      action="#{usersBean.confirmBlock}"
-                                     styleClass="px-4 py-2 bg-red-600 text-white rounded-lg"/>
+                                     styleClass="px-4 py-2 bg-red-600 text-white rounded-lg">
+                        <f:ajax execute="@form" render=":usersTable" onevent="closeBlockModal" />
+                    </h:commandButton>
                 </div>
             </h:form>
         </dialog>
-
 
         <!-- POPUP ADD USER -->
         <dialog id="addUserModal" class="rounded-xl p-6 w-[420px]">
             <h2 class="text-lg font-semibold mb-5">Add User</h2>
 
-            <h:form id="addUserForm" styleClass="space-y-4">
+            <h:form id="addUserForm" prependId="false" styleClass="space-y-4">
 
-                <!-- Full name -->
                 <div>
                     <h:inputText id="fullName"
                                  value="#{usersBean.newUser.fullName}"
                                  pass:placeholder="Full Name"
                                  styleClass="p-3 border rounded-xl w-full" />
-                    <h:message for="fullName"
-                               styleClass="text-xs text-red-500 mt-1 block" />
+                    <h:message for="fullName" styleClass="text-xs text-red-500 mt-1 block" />
                 </div>
 
-                <!-- Email -->
                 <div>
                     <h:inputText id="email"
                                  value="#{usersBean.newUser.email}"
                                  pass:placeholder="Email"
                                  styleClass="p-3 border rounded-xl w-full" />
-                    <h:message for="email"
-                               styleClass="text-xs text-red-500 mt-1 block" />
+                    <h:message for="email" styleClass="text-xs text-red-500 mt-1 block" />
                 </div>
 
-                <!-- Password -->
                 <div>
                     <h:inputSecret id="password"
                                    value="#{usersBean.newPassword}"
                                    pass:placeholder="Password"
                                    styleClass="p-3 border rounded-xl w-full" />
-                    <h:message for="password"
-                               styleClass="text-xs text-red-500 mt-1 block" />
+                    <h:message for="password" styleClass="text-xs text-red-500 mt-1 block" />
                 </div>
 
-                <!-- Address (optional) -->
                 <div>
                     <h:inputText id="address"
                                  value="#{usersBean.newUser.address}"
-                                 pass:placeholder="Address"
+                                 pass:placeholder="Address (optional)"
                                  styleClass="p-3 border rounded-xl w-full" />
-                    <h:message for="address"
-                               styleClass="text-xs text-red-500 mt-1 block" />
                 </div>
 
-                <!-- City (optional, có thể cho required nếu bạn muốn) -->
                 <div>
                     <h:selectOneMenu id="city"
                                      value="#{usersBean.newCityId}"
@@ -207,11 +209,8 @@
                         <f:selectItems value="#{usersBean.cityList}" var="c"
                                        itemValue="#{c.cityId}" itemLabel="#{c.name}" />
                     </h:selectOneMenu>
-                    <h:message for="city"
-                               styleClass="text-xs text-red-500 mt-1 block" />
                 </div>
 
-                <!-- Role -->
                 <div>
                     <h:selectOneMenu id="role"
                                      value="#{usersBean.newUser.role}"
@@ -221,8 +220,7 @@
                         <f:selectItem itemValue="MANAGER" itemLabel="Manager"/>
                         <f:selectItem itemValue="ADMIN" itemLabel="Admin"/>
                     </h:selectOneMenu>
-                    <h:message for="role"
-                               styleClass="text-xs text-red-500 mt-1 block" />
+                    <h:message for="role" styleClass="text-xs text-red-500 mt-1 block" />
                 </div>
 
                 <div class="flex justify-end gap-3">
@@ -232,27 +230,22 @@
                         Cancel
                     </button>
 
-                    <!-- AJAX BUTTON: không reload full trang -->
                     <h:commandButton id="btnCreate"
                                      value="Create"
                                      action="#{usersBean.createUser}"
                                      styleClass="px-5 py-3 bg-blue-600 text-white rounded-xl">
-                        <f:ajax execute="@form" render="@form usersTable" />
+                        <f:ajax execute="@form" render="@form :usersTable" />
                     </h:commandButton>
                 </div>
 
-                <!-- Thông báo global (nếu cần) -->
-                <h:messages globalOnly="true"
-                            styleClass="text-xs text-red-500 mt-2 block"/>
+                <h:messages globalOnly="true" styleClass="text-xs text-red-500 mt-2 block"/>
             </h:form>
         </dialog>
 
         <!-- POPUP SUCCESS -->
         <dialog id="successModal" class="rounded-xl p-6 w-[350px]">
             <h2 class="text-lg font-semibold mb-3">Success</h2>
-            <p class="mb-4 text-sm text-gray-700">
-                User created successfully.
-            </p>
+            <p class="mb-4 text-sm text-gray-700">User created successfully.</p>
             <div class="flex justify-end">
                 <button type="button"
                         onclick="document.getElementById('successModal').close()"
@@ -263,18 +256,25 @@
         </dialog>
 
         <!-- JS -->
-        <script>
+        <script type="text/javascript">
+            //<![CDATA[
             function showBlockPopup(id, name, status) {
-                document.getElementById('blockMessage').innerText =
-                    (status === 'ACTIVE')
-                        ? `Block user ${name}?`
-                        : `Unblock user ${name}?`;
+                var msg = (status === 'ACTIVE')
+                    ? ('Block user ' + name + '?')
+                    : ('Unblock user ' + name + '?');
 
+                document.getElementById('blockMessage').innerText = msg;
                 document.getElementById('selectedId').value = id;
                 document.getElementById('blockModal').showModal();
             }
+
+            function closeBlockModal(data) {
+                if (data.status === 'success') {
+                    document.getElementById('blockModal').close();
+                }
+            }
+            //]]>
         </script>
 
     </ui:define>
-
 </ui:composition>

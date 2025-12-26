@@ -11,10 +11,12 @@ import jakarta.enterprise.context.SessionScoped;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.inject.Named;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 import org.mindrot.jbcrypt.BCrypt;
 
 @Named("usersBean")
@@ -52,9 +54,6 @@ public class UsersBean implements Serializable {
     private List<Users> pageUsers = new ArrayList<>();
     private List<Cities> cityList = new ArrayList<>();
 
-    // ===============================================
-    // INIT
-    // ===============================================
     @PostConstruct
     public void init() {
         loadCities();
@@ -74,18 +73,17 @@ public class UsersBean implements Serializable {
     // FILTERING
     // ===============================================
     public void applyFilter() {
-
         List<Users> filtered = new ArrayList<>();
+        String kw = (keyword == null) ? "" : keyword.trim().toLowerCase();
 
         for (Users u : usersFacade.findAll()) {
 
-            boolean matchKeyword = keyword == null || keyword.isEmpty()
-                    || (u.getFullName() != null && u.getFullName().toLowerCase().contains(keyword.toLowerCase()))
-                    || (u.getEmail() != null && u.getEmail().toLowerCase().contains(keyword.toLowerCase()));
+            boolean matchKeyword = kw.isEmpty()
+                    || (u.getFullName() != null && u.getFullName().toLowerCase().contains(kw))
+                    || (u.getEmail() != null && u.getEmail().toLowerCase().contains(kw));
 
-            boolean matchRole = roleFilter.equals("ALL") || roleFilter.equals(u.getRole());
-
-            boolean matchStatus = statusFilter.equals("ALL") || statusFilter.equals(u.getStatus());
+            boolean matchRole = "ALL".equals(roleFilter) || (u.getRole() != null && roleFilter.equals(u.getRole()));
+            boolean matchStatus = "ALL".equals(statusFilter) || (u.getStatus() != null && statusFilter.equals(u.getStatus()));
 
             if (matchKeyword && matchRole && matchStatus) {
                 filtered.add(u);
@@ -93,6 +91,7 @@ public class UsersBean implements Serializable {
         }
 
         allUsers = filtered;
+        currentPage = 1;
 
         calculatePagination();
         loadPage();
@@ -103,12 +102,8 @@ public class UsersBean implements Serializable {
     // ===============================================
     private void calculatePagination() {
         totalPages = (int) Math.ceil((double) allUsers.size() / pageSize);
-        if (totalPages < 1) {
-            totalPages = 1;
-        }
-        if (currentPage > totalPages) {
-            currentPage = totalPages;
-        }
+        if (totalPages < 1) totalPages = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
     }
 
     public void loadPage() {
@@ -137,7 +132,7 @@ public class UsersBean implements Serializable {
     }
 
     // ===============================================
-    // ADD USER (validation + duplicate email + success popup)
+    // ADD USER
     // ===============================================
     public void resetForm() {
         newUser = new Users();
@@ -146,7 +141,6 @@ public class UsersBean implements Serializable {
     }
 
     public String createUser() {
-
         FacesContext ctx = FacesContext.getCurrentInstance();
         boolean hasError = false;
 
@@ -155,80 +149,62 @@ public class UsersBean implements Serializable {
         String password = newPassword != null ? newPassword.trim() : "";
         String role = newUser.getRole() != null ? newUser.getRole().trim() : "";
 
-        // ===== FULL NAME REQUIRED =====
         if (fullName.isEmpty()) {
-            ctx.addMessage("addUserForm:fullName",
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                            "Full name is required", null));
+            ctx.addMessage("fullName",
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Full name is required.", null));
             hasError = true;
         }
 
-        // ===== EMAIL REQUIRED =====
         if (email.isEmpty()) {
-            ctx.addMessage("addUserForm:email",
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                            "Email is required", null));
+            ctx.addMessage("email",
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Email is required.", null));
             hasError = true;
         } else {
-            // ===== CHECK DUPLICATE EMAIL =====
             boolean emailExists = false;
             for (Users existing : usersFacade.findAll()) {
-                if (existing.getEmail() != null
-                        && existing.getEmail().equalsIgnoreCase(email)) {
+                if (existing.getEmail() != null && existing.getEmail().equalsIgnoreCase(email)) {
                     emailExists = true;
                     break;
                 }
             }
             if (emailExists) {
-                ctx.addMessage("addUserForm:email",
-                        new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                                "Email is already registered", null));
+                ctx.addMessage("email",
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Email is already registered.", null));
                 hasError = true;
             }
         }
 
-        // ===== PASSWORD REQUIRED + RULES =====
         if (password.isEmpty()) {
-            ctx.addMessage("addUserForm:password",
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                            "Password is required", null));
+            ctx.addMessage("password",
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Password is required.", null));
             hasError = true;
         } else {
-            // ≥6 ký tự, có chữ hoa, thường, số, ký tự đặc biệt
             String regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{6,}$";
             if (!password.matches(regex)) {
-                ctx.addMessage("addUserForm:password",
+                ctx.addMessage("password",
                         new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                                "Password must be ≥ 6 chars and contain upper, lower, number, special char.",
+                                "Password must be at least 6 characters and include upper, lower, number, and special character.",
                                 null));
                 hasError = true;
             }
         }
 
-        // ===== ROLE REQUIRED =====
         if (role.isEmpty()) {
-            ctx.addMessage("addUserForm:role",
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                            "Role is required", null));
+            ctx.addMessage("role",
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Please select a role.", null));
             hasError = true;
         }
 
-        // Có lỗi -> chỉ render lại form (AJAX), dialog vẫn mở
-        if (hasError) {
-            return null;
-        }
+        if (hasError) return null;
 
         try {
-            // HASH PASSWORD (BCrypt)
             String hashed = BCrypt.hashpw(password, BCrypt.gensalt(12));
             newUser.setPassword(hashed);
 
-            // Default fields
             newUser.setStatus("ACTIVE");
             newUser.setCreatedAt(new Date());
             newUser.setUpdatedAt(null);
 
-            // CITY (optional)
             if (newCityId != null && newCityId != 0) {
                 Cities c = citiesFacade.find(newCityId);
                 newUser.setCityId(c);
@@ -238,23 +214,19 @@ public class UsersBean implements Serializable {
 
             usersFacade.create(newUser);
 
-            // REFRESH DATA + phân trang
             loadUsers();
-
-            // Reset form
             resetForm();
 
-            // Đóng modal Add User + mở popup Success (AJAX script)
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, "User created successfully!", null));
             ctx.getPartialViewContext().getEvalScripts().add(
                     "document.getElementById('addUserModal').close();"
-                  + "document.getElementById('successModal').showModal();"
+                    + "document.getElementById('successModal').showModal();"
             );
 
         } catch (Exception e) {
             e.printStackTrace();
             ctx.addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                            "Error when creating user", null));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error while creating user.", null));
         }
 
         return null;
@@ -264,22 +236,22 @@ public class UsersBean implements Serializable {
     // BLOCK / UNBLOCK USER
     // ===============================================
     public void confirmBlock() {
-        if (selectedUserId == null) {
-            return;
-        }
+        if (selectedUserId == null) return;
 
+        FacesContext ctx = FacesContext.getCurrentInstance();
         Users u = usersFacade.find(selectedUserId);
 
         if (u != null) {
             if ("ACTIVE".equals(u.getStatus())) {
                 u.setStatus("BLOCKED");
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_WARN, "User has been blocked.", null));
             } else {
                 u.setStatus("ACTIVE");
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, "User has been unblocked.", null));
             }
 
             u.setUpdatedAt(new Date());
             usersFacade.edit(u);
-
             loadUsers();
         }
     }
@@ -287,75 +259,30 @@ public class UsersBean implements Serializable {
     // ===============================================
     // GETTERS & SETTERS
     // ===============================================
-    public String getKeyword() {
-        return keyword;
-    }
+    public String getKeyword() { return keyword; }
+    public void setKeyword(String keyword) { this.keyword = keyword; }
 
-    public void setKeyword(String keyword) {
-        this.keyword = keyword;
-    }
+    public String getRoleFilter() { return roleFilter; }
+    public void setRoleFilter(String roleFilter) { this.roleFilter = roleFilter; }
 
-    public String getRoleFilter() {
-        return roleFilter;
-    }
+    public String getStatusFilter() { return statusFilter; }
+    public void setStatusFilter(String statusFilter) { this.statusFilter = statusFilter; }
 
-    public void setRoleFilter(String roleFilter) {
-        this.roleFilter = roleFilter;
-    }
+    public int getCurrentPage() { return currentPage; }
+    public int getTotalPages() { return totalPages; }
+    public List<Users> getPageUsers() { return pageUsers; }
 
-    public String getStatusFilter() {
-        return statusFilter;
-    }
+    public Users getNewUser() { return newUser; }
+    public void setNewUser(Users newUser) { this.newUser = newUser; }
 
-    public void setStatusFilter(String statusFilter) {
-        this.statusFilter = statusFilter;
-    }
+    public String getNewPassword() { return newPassword; }
+    public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
 
-    public int getCurrentPage() {
-        return currentPage;
-    }
+    public Integer getNewCityId() { return newCityId; }
+    public void setNewCityId(Integer newCityId) { this.newCityId = newCityId; }
 
-    public int getTotalPages() {
-        return totalPages;
-    }
+    public Long getSelectedUserId() { return selectedUserId; }
+    public void setSelectedUserId(Long selectedUserId) { this.selectedUserId = selectedUserId; }
 
-    public List<Users> getPageUsers() {
-        return pageUsers;
-    }
-
-    public Users getNewUser() {
-        return newUser;
-    }
-
-    public void setNewUser(Users newUser) {
-        this.newUser = newUser;
-    }
-
-    public String getNewPassword() {
-        return newPassword;
-    }
-
-    public void setNewPassword(String newPassword) {
-        this.newPassword = newPassword;
-    }
-
-    public Integer getNewCityId() {
-        return newCityId;
-    }
-
-    public void setNewCityId(Integer newCityId) {
-        this.newCityId = newCityId;
-    }
-
-    public Long getSelectedUserId() {
-        return selectedUserId;
-    }
-
-    public void setSelectedUserId(Long selectedUserId) {
-        this.selectedUserId = selectedUserId;
-    }
-
-    public List<Cities> getCityList() {
-        return cityList;
-    }
+    public List<Cities> getCityList() { return cityList; }
 }

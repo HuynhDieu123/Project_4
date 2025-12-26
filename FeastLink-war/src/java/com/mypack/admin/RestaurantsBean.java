@@ -1,13 +1,13 @@
 package com.mypack.admin;
 
-import com.mypack.entity.Restaurants;
-import com.mypack.entity.Cities;
 import com.mypack.entity.Areas;
+import com.mypack.entity.Cities;
 import com.mypack.entity.RestaurantReviews;
-import com.mypack.sessionbean.RestaurantsFacadeLocal;
-import com.mypack.sessionbean.CitiesFacadeLocal;
+import com.mypack.entity.Restaurants;
 import com.mypack.sessionbean.AreasFacadeLocal;
+import com.mypack.sessionbean.CitiesFacadeLocal;
 import com.mypack.sessionbean.RestaurantReviewsFacadeLocal;
+import com.mypack.sessionbean.RestaurantsFacadeLocal;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
@@ -36,29 +36,28 @@ public class RestaurantsBean implements Serializable {
     @EJB private AreasFacadeLocal areasFacade;
     @EJB private RestaurantReviewsFacadeLocal reviewsFacade;
 
-    // ===== FILTERS (TOP) =====
+    // ===== FILTERS =====
     private String keyword = "";
     private String statusFilter = "ACTIVE";
-    private Integer cityFilterId;
+    private Integer cityFilterId = 0;
 
-    // NEW: lọc theo sao (avg rating)
-    // ALL | NO (no reviews) | 1_2 | 3 | 4 | 5
+    // ALL | NO | 1_2 | 3 | 4 | 5
     private String avgStarFilter = "ALL";
 
     // ===== PAGINATION =====
     private int currentPage = 1;
     private int pageSize = 10;
-    private int totalPages;
+    private int totalPages = 1;
 
     // ===== ADD RESTAURANT =====
     private Restaurants newRestaurant = new Restaurants();
-    private Integer newCityId;
-    private Integer newAreaId;
+    private Integer newCityId = 0;
+    private Integer newAreaId = 0;
 
     // ===== SELECTED =====
     private Long selectedRestaurantId;
 
-    // ===== VIEW MODAL DATA =====
+    // ===== VIEW MODAL =====
     private Restaurants viewRestaurant;
 
     // ===== DATA =====
@@ -67,11 +66,10 @@ public class RestaurantsBean implements Serializable {
     private List<Cities> cityList = new ArrayList<>();
     private List<Areas> areaList = new ArrayList<>();
 
-    // ===== REVIEW STATS (for list + view) =====
-    // map.get(restaurantId) = new Object[]{avgRating, totalReviews, badReviews}
+    // map.get(restaurantId) = new Object[]{avg(Double), total(Long), bad(Long)}
     private Map<Long, Object[]> statsMap = new HashMap<>();
 
-    // ===== VIEW REVIEWS (Explorer) =====
+    // ===== VIEW REVIEWS =====
     private List<RestaurantReviews> viewReviews = new ArrayList<>();
     private boolean reviewApprovedOnly = false;
     private String reviewRatingFilter = "BAD"; // ALL | BAD | 1..5
@@ -88,15 +86,18 @@ public class RestaurantsBean implements Serializable {
     }
 
     // =========================================================
-    // FILTER (TOP)
+    // FILTER
     // =========================================================
     public void applyFilter() {
         List<Restaurants> source = restaurantsFacade.findAll();
         List<Restaurants> filtered = new ArrayList<>();
 
         for (Restaurants r : source) {
+            if (r == null) continue;
+
             String rowStatus = r.getStatus();
 
+            // nếu bạn muốn giữ pending thì bỏ dòng này
             if ("PENDING_APPROVAL".equals(rowStatus)) continue;
 
             boolean matchKeyword = (keyword == null || keyword.trim().isEmpty());
@@ -109,9 +110,8 @@ public class RestaurantsBean implements Serializable {
                                 || (r.getContactPerson() != null && r.getContactPerson().toLowerCase().contains(kw));
             }
 
-            boolean matchStatus;
-            if (statusFilter == null || "ALL".equals(statusFilter)) matchStatus = true;
-            else matchStatus = (rowStatus != null && rowStatus.equals(statusFilter));
+            boolean matchStatus = (statusFilter == null || "ALL".equals(statusFilter))
+                    || (rowStatus != null && rowStatus.equals(statusFilter));
 
             boolean matchCity = (cityFilterId == null || cityFilterId == 0);
             if (!matchCity) {
@@ -124,10 +124,10 @@ public class RestaurantsBean implements Serializable {
             if (matchKeyword && matchStatus && matchCity) filtered.add(r);
         }
 
-        // 1) build statsMap for ALL filtered restaurants (để lọc theo sao + hiển thị)
+        // Build stats for list (✅ avg double)
         buildStatsMapForRestaurants(filtered);
 
-        // 2) apply avg star filter
+        // Apply avg star filter
         if (avgStarFilter != null && !"ALL".equals(avgStarFilter)) {
             List<Restaurants> byStar = new ArrayList<>();
             for (Restaurants r : filtered) {
@@ -140,8 +140,6 @@ public class RestaurantsBean implements Serializable {
         }
 
         allRestaurants = filtered;
-
-        // reset page
         currentPage = 1;
         calculatePagination();
         loadPage();
@@ -150,7 +148,7 @@ public class RestaurantsBean implements Serializable {
     public void resetFilter() {
         keyword = "";
         statusFilter = "ACTIVE";
-        cityFilterId = null;
+        cityFilterId = 0;
         avgStarFilter = "ALL";
         applyFilter();
     }
@@ -160,13 +158,13 @@ public class RestaurantsBean implements Serializable {
             case "NO":
                 return total == 0;
             case "1_2":
-                return total > 0 && avg < 2.5;                // ~ 1-2★
+                return total > 0 && avg < 2.5;
             case "3":
-                return total > 0 && avg >= 2.5 && avg < 3.5;  // ~ 3★
+                return total > 0 && avg >= 2.5 && avg < 3.5;
             case "4":
-                return total > 0 && avg >= 3.5 && avg < 4.5;  // ~ 4★
+                return total > 0 && avg >= 3.5 && avg < 4.5;
             case "5":
-                return total > 0 && avg >= 4.5;              // ~ 5★
+                return total > 0 && avg >= 4.5;
             default:
                 return true;
         }
@@ -176,7 +174,7 @@ public class RestaurantsBean implements Serializable {
     // PAGINATION
     // =========================================================
     private void calculatePagination() {
-        totalPages = (int) Math.ceil((double) allRestaurants.size() / pageSize);
+        totalPages = (int) Math.ceil(allRestaurants.size() / (double) pageSize);
         if (totalPages < 1) totalPages = 1;
         if (currentPage > totalPages) currentPage = totalPages;
         if (currentPage < 1) currentPage = 1;
@@ -204,18 +202,16 @@ public class RestaurantsBean implements Serializable {
     }
 
     // =========================================================
-    // BUILD STATS MAP (chunk-safe)
+    // STATS MAP
     // =========================================================
     private void buildStatsMapForRestaurants(List<Restaurants> list) {
         statsMap = new HashMap<>();
-
         List<Long> ids = new ArrayList<>();
         for (Restaurants r : list) {
             if (r != null && r.getRestaurantId() != null) ids.add(r.getRestaurantId());
         }
         if (ids.isEmpty()) return;
 
-        // tránh IN (...) quá dài
         int chunkSize = 400;
         for (int i = 0; i < ids.size(); i += chunkSize) {
             List<Long> sub = ids.subList(i, Math.min(i + chunkSize, ids.size()));
@@ -223,15 +219,12 @@ public class RestaurantsBean implements Serializable {
             if (part != null) statsMap.putAll(part);
         }
 
-        // default for missing stats
         for (Long id : ids) {
             statsMap.putIfAbsent(id, new Object[]{0.0, 0L, 0L});
         }
     }
 
-    // =========================================================
-    // REVIEW STATS HELPERS
-    // =========================================================
+    // ✅ Avg REAL
     public double avgRating(Long restaurantId) {
         Object[] s = statsMap.get(restaurantId);
         if (s == null || s[0] == null) return 0.0;
@@ -253,9 +246,23 @@ public class RestaurantsBean implements Serializable {
     public double badRatePercent(Long restaurantId) {
         long total = totalReviews(restaurantId);
         if (total <= 0) return 0.0;
-        return (badReviews(restaurantId) * 100.0) / (double) total;
+        return badReviews(restaurantId) * 100.0 / (double) total;
     }
 
+    // =========================================================
+    // AREA DISPLAY FIX (nếu dữ liệu dính " - City#1")
+    // =========================================================
+    public String displayAreaName(Areas area) {
+        if (area == null || area.getName() == null) return "—";
+        String n = area.getName().trim();
+        int idx = n.indexOf(" - ");
+        if (idx > 0) return n.substring(0, idx).trim();
+        return n;
+    }
+
+    // =========================================================
+    // QUALITY / AUTO-BLOCK
+    // =========================================================
     public boolean isAutoBlockCandidate(Long restaurantId) {
         long total = totalReviews(restaurantId);
         if (total < MIN_REVIEWS_TO_JUDGE) return false;
@@ -270,10 +277,8 @@ public class RestaurantsBean implements Serializable {
         long total = totalReviews(restaurantId);
         if (total < MIN_REVIEWS_TO_JUDGE) return "Not enough data";
         if (isAutoBlockCandidate(restaurantId)) return "Bad";
-
         double avg = avgRating(restaurantId);
         double badRate = badReviews(restaurantId) / (double) total;
-
         if (avg >= 4.2 && badRate <= 0.10) return "Excellent";
         return "Good";
     }
@@ -289,14 +294,23 @@ public class RestaurantsBean implements Serializable {
     }
 
     // =========================================================
-    // VIEW MODAL + REVIEWS EXPLORER (giữ nguyên như bạn đang dùng)
+    // VIEW MODAL
     // =========================================================
     public void openView() {
         if (selectedRestaurantId == null) return;
 
         viewRestaurant = restaurantsFacade.find(selectedRestaurantId);
 
-        // default show BAD reviews in modal
+        // đảm bảo stats có cho modal
+        if (viewRestaurant != null && viewRestaurant.getRestaurantId() != null
+                && !statsMap.containsKey(viewRestaurant.getRestaurantId())) {
+            Map<Long, Object[]> one = reviewsFacade.statsByRestaurantIds(
+                    Collections.singletonList(viewRestaurant.getRestaurantId()), BAD_THRESHOLD
+            );
+            if (one != null) statsMap.putAll(one);
+            statsMap.putIfAbsent(viewRestaurant.getRestaurantId(), new Object[]{0.0, 0L, 0L});
+        }
+
         reviewRatingFilter = "BAD";
         reviewApprovedOnly = false;
         reviewPage = 1;
@@ -307,6 +321,9 @@ public class RestaurantsBean implements Serializable {
         );
     }
 
+    // =========================================================
+    // REVIEWS EXPLORER (in-memory)
+    // =========================================================
     public void onReviewFilterChange() {
         reviewPage = 1;
         loadViewReviews();
@@ -317,8 +334,6 @@ public class RestaurantsBean implements Serializable {
         loadViewReviews();
     }
 
-    // NOTE: đang filter in-memory bằng reviewsFacade.findAll()
-    // (Nếu DB lớn, bạn nên nâng lên query theo rid/rating để nhanh hơn)
     public void loadViewReviews() {
         viewReviews = new ArrayList<>();
         reviewTotalCount = 0;
@@ -345,8 +360,8 @@ public class RestaurantsBean implements Serializable {
         }
 
         filtered.sort((a, b) -> {
-            Date d1 = a != null ? a.getCreatedAt() : null;
-            Date d2 = b != null ? b.getCreatedAt() : null;
+            Date d1 = (a != null) ? a.getCreatedAt() : null;
+            Date d2 = (b != null) ? b.getCreatedAt() : null;
             if (d1 == null && d2 == null) return 0;
             if (d1 == null) return 1;
             if (d2 == null) return -1;
@@ -362,8 +377,7 @@ public class RestaurantsBean implements Serializable {
         int start = (reviewPage - 1) * reviewPageSize;
         int end = (int) Math.min(start + reviewPageSize, reviewTotalCount);
 
-        if (start < end) viewReviews = filtered.subList(start, end);
-        else viewReviews = new ArrayList<>();
+        viewReviews = (start < end) ? filtered.subList(start, end) : new ArrayList<>();
     }
 
     private boolean matchReviewRatingFilter(int rating) {
@@ -452,9 +466,20 @@ public class RestaurantsBean implements Serializable {
                         null));
     }
 
-    // =========================================================
-    // UI HELPER
-    // =========================================================
+    public void confirmChangeStatus() {
+        if (selectedRestaurantId == null) return;
+
+        Restaurants r = restaurantsFacade.find(selectedRestaurantId);
+        if (r == null) return;
+
+        String status = r.getStatus() != null ? r.getStatus() : "";
+        r.setStatus("ACTIVE".equals(status) ? "INACTIVE" : "ACTIVE");
+        r.setUpdatedAt(new Date());
+        restaurantsFacade.edit(r);
+
+        applyFilter();
+    }
+
     public String statusCssClass(String status) {
         if ("ACTIVE".equals(status)) return "bg-green-100 text-green-700";
         if ("PENDING_APPROVAL".equals(status)) return "bg-yellow-100 text-yellow-700";
@@ -464,27 +489,17 @@ public class RestaurantsBean implements Serializable {
     }
 
     // =========================================================
-    // ADD RESTAURANT (giữ nguyên)
+    // ADD RESTAURANT (giữ core)
     // =========================================================
-    public void resetForm() {
-        newRestaurant = new Restaurants();
-        newCityId = null;
-        newAreaId = null;
-    }
-
-    public void onNewCityChange() {
-        newAreaId = null;
-    }
+    public void onNewCityChange() { newAreaId = 0; }
 
     public List<Areas> getAreaOptionsForNew() {
         if (newCityId == null || newCityId == 0) return areaList;
-        List<Areas> result = new ArrayList<>();
+        List<Areas> res = new ArrayList<>();
         for (Areas a : areaList) {
-            if (a.getCityId() != null && a.getCityId().getCityId().equals(newCityId)) {
-                result.add(a);
-            }
+            if (a.getCityId() != null && a.getCityId().getCityId().equals(newCityId)) res.add(a);
         }
-        return result;
+        return res;
     }
 
     public String createRestaurant() {
@@ -492,59 +507,30 @@ public class RestaurantsBean implements Serializable {
         boolean hasError = false;
 
         String name = newRestaurant.getName() != null ? newRestaurant.getName().trim() : "";
-        String email = newRestaurant.getEmail() != null ? newRestaurant.getEmail().trim() : "";
         String address = newRestaurant.getAddress() != null ? newRestaurant.getAddress().trim() : "";
+        String email = newRestaurant.getEmail() != null ? newRestaurant.getEmail().trim() : "";
 
-        if (name.isEmpty()) {
-            ctx.addMessage("addRestaurantForm:name",
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Name is required", null));
-            hasError = true;
-        }
-
-        if (newCityId == null || newCityId == 0) {
-            ctx.addMessage("addRestaurantForm:city",
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "City is required", null));
-            hasError = true;
-        }
-
-        if (newAreaId == null || newAreaId == 0) {
-            ctx.addMessage("addRestaurantForm:area",
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Area is required", null));
-            hasError = true;
-        }
-
-        if (address.isEmpty()) {
-            ctx.addMessage("addRestaurantForm:address",
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Address is required", null));
-            hasError = true;
-        }
+        if (name.isEmpty()) { ctx.addMessage("addRestaurantForm:name", new FacesMessage(FacesMessage.SEVERITY_ERROR, "Name is required", null)); hasError = true; }
+        if (newCityId == null || newCityId == 0) { ctx.addMessage("addRestaurantForm:city", new FacesMessage(FacesMessage.SEVERITY_ERROR, "City is required", null)); hasError = true; }
+        if (newAreaId == null || newAreaId == 0) { ctx.addMessage("addRestaurantForm:area", new FacesMessage(FacesMessage.SEVERITY_ERROR, "Area is required", null)); hasError = true; }
+        if (address.isEmpty()) { ctx.addMessage("addRestaurantForm:address", new FacesMessage(FacesMessage.SEVERITY_ERROR, "Address is required", null)); hasError = true; }
 
         if (!email.isEmpty()) {
-            boolean emailExists = false;
-            for (Restaurants existing : restaurantsFacade.findAll()) {
-                if (existing.getEmail() != null && existing.getEmail().equalsIgnoreCase(email)) {
-                    emailExists = true;
+            for (Restaurants ex : restaurantsFacade.findAll()) {
+                if (ex.getEmail() != null && ex.getEmail().equalsIgnoreCase(email)) {
+                    ctx.addMessage("addRestaurantForm:email",
+                            new FacesMessage(FacesMessage.SEVERITY_ERROR, "Email is already registered", null));
+                    hasError = true;
                     break;
                 }
             }
-            if (emailExists) {
-                ctx.addMessage("addRestaurantForm:email",
-                        new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                                "Email is already registered for another restaurant", null));
-                hasError = true;
-            }
-        }
-
-        if (newAreaId != null && newAreaId != 0) {
-            Areas area = areasFacade.find(newAreaId);
-            newRestaurant.setAreaId(area);
-        } else {
-            newRestaurant.setAreaId(null);
         }
 
         if (hasError) return null;
 
         try {
+            Areas area = areasFacade.find(newAreaId);
+            newRestaurant.setAreaId(area);
             if (newRestaurant.getStatus() == null || newRestaurant.getStatus().trim().isEmpty()) {
                 newRestaurant.setStatus("PENDING_APPROVAL");
             }
@@ -554,34 +540,19 @@ public class RestaurantsBean implements Serializable {
             restaurantsFacade.create(newRestaurant);
 
             applyFilter();
-            resetForm();
+            newRestaurant = new Restaurants();
+            newCityId = 0;
+            newAreaId = 0;
 
             ctx.getPartialViewContext().getEvalScripts().add(
                     "document.getElementById('addRestaurantModal').close();"
                             + "document.getElementById('successRestaurantModal').showModal();"
             );
-
         } catch (Exception e) {
             e.printStackTrace();
-            ctx.addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error when creating restaurant", null));
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error when creating restaurant", null));
         }
         return null;
-    }
-
-    public void confirmChangeStatus() {
-        if (selectedRestaurantId == null) return;
-
-        Restaurants r = restaurantsFacade.find(selectedRestaurantId);
-        if (r != null) {
-            String status = r.getStatus() != null ? r.getStatus() : "";
-            if ("ACTIVE".equals(status)) r.setStatus("INACTIVE");
-            else r.setStatus("ACTIVE");
-
-            r.setUpdatedAt(new Date());
-            restaurantsFacade.edit(r);
-            applyFilter();
-        }
     }
 
     // =========================================================
@@ -604,11 +575,8 @@ public class RestaurantsBean implements Serializable {
     public List<Restaurants> getPageRestaurants() { return pageRestaurants; }
 
     public Restaurants getNewRestaurant() { return newRestaurant; }
-    public void setNewRestaurant(Restaurants newRestaurant) { this.newRestaurant = newRestaurant; }
-
     public Integer getNewCityId() { return newCityId; }
     public void setNewCityId(Integer newCityId) { this.newCityId = newCityId; }
-
     public Integer getNewAreaId() { return newAreaId; }
     public void setNewAreaId(Integer newAreaId) { this.newAreaId = newAreaId; }
 
@@ -623,10 +591,8 @@ public class RestaurantsBean implements Serializable {
     public List<RestaurantReviews> getViewReviews() { return viewReviews; }
     public boolean isReviewApprovedOnly() { return reviewApprovedOnly; }
     public void setReviewApprovedOnly(boolean reviewApprovedOnly) { this.reviewApprovedOnly = reviewApprovedOnly; }
-
     public String getReviewRatingFilter() { return reviewRatingFilter; }
     public void setReviewRatingFilter(String reviewRatingFilter) { this.reviewRatingFilter = reviewRatingFilter; }
-
     public int getReviewPage() { return reviewPage; }
     public int getReviewTotalPages() { return reviewTotalPages; }
     public long getReviewTotalCount() { return reviewTotalCount; }
