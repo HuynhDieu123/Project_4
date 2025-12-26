@@ -9,10 +9,9 @@ import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.util.Date; 
 import java.util.List;
 
-// Thêm import BCrypt
 import org.mindrot.jbcrypt.BCrypt;
 
 @Named("registerBean")
@@ -48,9 +47,7 @@ public class RegisterBean implements Serializable {
     public String register() {
         FacesContext ctx = FacesContext.getCurrentInstance();
 
-        // Lưu ý: field rỗng đã bị chặn bởi required="true" trong xhtml
-
-        // 1. Full name >= 6 ký tự
+        // 1) Full name >= 6 ký tự
         String trimmedName = fullName != null ? fullName.trim() : "";
         if (trimmedName.length() < 6) {
             ctx.addMessage("registerForm:fullName", new FacesMessage(
@@ -61,9 +58,8 @@ public class RegisterBean implements Serializable {
             return null;
         }
 
-        // 2. Email đúng định dạng
+        // 2) Email đúng định dạng
         String trimmedEmail = email != null ? email.trim() : "";
-        // Regex email "đủ dùng" cho đăng ký (không quá phức tạp)
         String emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
         if (trimmedEmail.isEmpty() || !trimmedEmail.matches(emailPattern)) {
             ctx.addMessage("registerForm:email", new FacesMessage(
@@ -74,9 +70,9 @@ public class RegisterBean implements Serializable {
             return null;
         }
 
-        // 3. Phone = 10 số
-        String trimmedPhone = phone != null ? phone.trim() : "";
-        if (!trimmedPhone.matches("\\d{10}")) {
+        // 3) Phone = 10 số (sau khi normalize)
+        String phoneNorm = normalizePhone(phone);
+        if (!phoneNorm.matches("\\d{10}")) {
             ctx.addMessage("registerForm:phone", new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
                     "Invalid phone number",
@@ -85,7 +81,7 @@ public class RegisterBean implements Serializable {
             return null;
         }
 
-        // 4. Password mạnh: >=7, hoa + thường + số + ký tự đặc biệt
+        // 4) Password mạnh: >=7, hoa + thường + số + ký tự đặc biệt
         String passwordPattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{7,}$";
         if (password == null || !password.matches(passwordPattern)) {
             ctx.addMessage("registerForm:password", new FacesMessage(
@@ -96,7 +92,7 @@ public class RegisterBean implements Serializable {
             return null;
         }
 
-        // 5. Confirm password
+        // 5) Confirm password
         if (confirmPassword == null || !password.equals(confirmPassword)) {
             ctx.addMessage("registerForm:confirmPassword", new FacesMessage(
                     FacesMessage.SEVERITY_ERROR,
@@ -106,37 +102,49 @@ public class RegisterBean implements Serializable {
             return null;
         }
 
-        // 6. Check email trùng (tránh lỗi UNIQUE KEY)
+        // 6) Check trùng Email + trùng Phone (✅ phần bạn cần)
         List<Users> allUsers = usersFacade.findAll();
-        for (Users u : allUsers) {
-            if (u.getEmail() != null &&
-                trimmedEmail != null &&
-                trimmedEmail.equalsIgnoreCase(u.getEmail().trim())) {
 
-                ctx.addMessage(null, new FacesMessage(
+        for (Users u : allUsers) {
+            // --- check email duplicate ---
+            String dbEmail = (u.getEmail() == null) ? "" : u.getEmail().trim();
+            if (!dbEmail.isEmpty() && trimmedEmail.equalsIgnoreCase(dbEmail)) {
+                ctx.addMessage("registerForm:email", new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
                         "Email already registered",
                         "This email address is already in use. Please use another email or sign in."
                 ));
                 return null;
             }
+
+            // --- check phone duplicate (normalize cả 2 bên) ---
+            String dbPhoneRaw = extractUserPhone(u); // trong entity bạn có getPhone() rồi thì dùng luôn
+            String dbPhoneNorm = normalizePhone(dbPhoneRaw);
+
+            if (!dbPhoneNorm.isEmpty() && phoneNorm.equals(dbPhoneNorm)) {
+                ctx.addMessage("registerForm:phone", new FacesMessage(
+                        FacesMessage.SEVERITY_ERROR,
+                        "Phone number already registered",
+                        "This phone number is already in use. Please use another phone number."
+                ));
+                return null;
+            }
         }
 
-        // 7. Tạo user mới
+        // 7) Tạo user mới
         try {
-            // Hash password bằng BCrypt trước khi lưu
             String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
             Users user = new Users();
             user.setFullName(trimmedName);
             user.setEmail(trimmedEmail);
-            user.setPhone(trimmedPhone);
-            user.setPassword(hashedPassword);  // <-- dùng hashed password
+            user.setPhone(phoneNorm);              // ✅ lưu phone đã normalize (10 số)
+            user.setPassword(hashedPassword);
             user.setRole("CUSTOMER");
             user.setStatus("ACTIVE");
             user.setAvatarUrl(null);
             user.setAddress(null);
-            user.setCityId(null);          // nếu bạn có CityId thì sau này set sau
+            user.setCityId(null);
             user.setCreatedAt(new Date());
             user.setUpdatedAt(null);
             user.setLastLoginAt(null);
@@ -156,13 +164,12 @@ public class RegisterBean implements Serializable {
             ex.printStackTrace();
 
             String msg = ex.getMessage();
-            if (msg != null &&
-                (msg.contains("UNIQUE KEY") || msg.contains("duplicate key"))) {
-
+            if (msg != null && (msg.contains("UNIQUE KEY") || msg.contains("duplicate key"))) {
+                // Nếu DB có unique cho Email/Phone → vẫn bắt được ở đây
                 ctx.addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR,
-                        "Email already registered",
-                        "This email address is already in use. Please use another email or sign in."
+                        "Duplicate information",
+                        "Email or phone number already exists. Please use another one."
                 ));
             } else {
                 ctx.addMessage(null, new FacesMessage(
@@ -172,6 +179,36 @@ public class RegisterBean implements Serializable {
                 ));
             }
             return null;
+        }
+    }
+
+    // ================= Helpers =================
+
+    /**
+     * Chuẩn hóa SĐT:
+     * - bỏ mọi ký tự không phải số
+     * - +84 / 84xxxxxxxxx -> 0xxxxxxxxx
+     */
+    private String normalizePhone(String p) {
+        if (p == null) return "";
+        String digits = p.replaceAll("[^0-9]", "");
+        if (digits.startsWith("84") && digits.length() >= 11) {
+            digits = "0" + digits.substring(2);
+        }
+        return digits;
+    }
+
+    /**
+     * Nếu entity Users của bạn đã có getPhone() thì dùng luôn.
+     * Mình viết hàm này để chắc chắn không null và không lỗi.
+     */
+    private String extractUserPhone(Users u) {
+        try {
+            if (u == null) return "";
+            String p = u.getPhone(); // bạn đang dùng user.setPhone(...) nên entity chắc có getPhone()
+            return p != null ? p.trim() : "";
+        } catch (Exception e) {
+            return "";
         }
     }
 }
