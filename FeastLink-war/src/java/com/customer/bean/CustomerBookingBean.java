@@ -1217,6 +1217,17 @@ public class CustomerBookingBean implements Serializable {
         return null;
     }
 
+
+    // ========== Voucher apply (AJAX) ==========
+    public void applyVoucher() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (ctx == null) {
+            return;
+        }
+        Users currentUser = (Users) ctx.getExternalContext().getSessionMap().get("currentUser");
+        applyVoucherOnServerSilent(currentUser, ctx.getExternalContext().getRequestParameterMap());
+    }
+
     // ========== Voucher silent apply (NO FacesMessage, NO block) ==========
     private void applyVoucherOnServerSilent(Users currentUser, Map<String, String> params) {
         voucherDiscount = BigDecimal.ZERO;
@@ -1246,19 +1257,14 @@ public class CustomerBookingBean implements Serializable {
             return;
         }
 
-        if (currentUser == null || currentUser.getUserId() == null) {
-            clearVoucherOnly();
-            return;
-        }
-
         Vouchers v = findVoucherByCode(voucherCode);
         if (v == null || !isVoucherValidNow(v, new Date())) {
             clearVoucherOnly();
             return;
         }
 
-        UserVouchers uv = findUsableUserVoucher(currentUser, v);
-        if (uv == null) {
+        // If voucher is restaurant-scoped, ensure it matches current restaurant
+        if (!isVoucherScopeEligible(v)) {
             clearVoucherOnly();
             return;
         }
@@ -1277,7 +1283,7 @@ public class CustomerBookingBean implements Serializable {
 
         voucherDiscount = discount;
         appliedVoucherId = v.getVoucherId();
-        appliedUserVoucherId = uv.getUserVoucherId();
+        appliedUserVoucherId = null;
         appliedVoucherName = v.getName();
 
         totalAmount = baseTotal.subtract(discount);
@@ -1379,6 +1385,89 @@ public class CustomerBookingBean implements Serializable {
     }
 
     // ========== Voucher helpers ==========
+
+    private boolean isVoucherScopeEligible(Vouchers v) {
+    if (v == null) {
+        return false;
+    }
+
+    String scope = null;
+    try {
+        scope = v.getScope();
+    } catch (Exception ignored) {
+    }
+
+    if (scope == null || scope.isBlank()) {
+        return true; // default allow
+    }
+
+    String sc = scope.trim().toUpperCase();
+    if ("PLATFORM".equals(sc)) {
+        return true;
+    }
+
+    if ("RESTAURANT".equals(sc)) {
+        // If current booking restaurantId is not known yet, do NOT block apply
+        if (restaurantId == null) {
+            return true;
+        }
+
+        // Use reflection so we don't depend on a specific entity mapping.
+        try {
+            Long vRestaurantId = extractVoucherRestaurantId(v);
+            // If voucher doesn't carry restaurant info, don't block apply.
+            if (vRestaurantId == null) {
+                return true;
+            }
+            return vRestaurantId.equals(restaurantId);
+        } catch (Exception ignored) {
+            return true;
+        }
+    }
+
+    return true;
+}
+
+private Long extractVoucherRestaurantId(Vouchers v) {
+    if (v == null) {
+        return null;
+    }
+
+    String[] methodNames = new String[]{"getRestaurantId", "getRestaurant", "getRestaurants"};
+    for (String name : methodNames) {
+        try {
+            java.lang.reflect.Method m = v.getClass().getMethod(name);
+            Object obj = m.invoke(v);
+            if (obj == null) {
+                continue;
+            }
+            if (obj instanceof Long) {
+                return (Long) obj;
+            }
+            if (obj instanceof Number) {
+                return ((Number) obj).longValue();
+            }
+            try {
+                java.lang.reflect.Method m2 = obj.getClass().getMethod("getRestaurantId");
+                Object idObj = m2.invoke(obj);
+                if (idObj == null) {
+                    continue;
+                }
+                if (idObj instanceof Long) {
+                    return (Long) idObj;
+                }
+                if (idObj instanceof Number) {
+                    return ((Number) idObj).longValue();
+                }
+            } catch (Exception ignored2) {
+            }
+        } catch (Exception ignored) {
+        }
+    }
+    return null;
+}
+
+
     private Vouchers findVoucherByCode(String code) {
         if (!notBlank(code) || vouchersFacade == null) {
             return null;
@@ -1403,18 +1492,39 @@ public class CustomerBookingBean implements Serializable {
         if (v == null) {
             return false;
         }
+
         String st = v.getStatus();
         if (st != null && !"ACTIVE".equalsIgnoreCase(st.trim())) {
             return false;
         }
+
         Date start = v.getStartAt();
         Date end = v.getEndAt();
+
+        // StartAt: inclusive start
         if (start != null && now.before(start)) {
             return false;
         }
-        if (end != null && now.after(end)) {
-            return false;
+
+        // EndAt: treat date-only values (00:00:00) as inclusive end-of-day
+        if (end != null) {
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTime(end);
+            boolean midnight = cal.get(java.util.Calendar.HOUR_OF_DAY) == 0
+                    && cal.get(java.util.Calendar.MINUTE) == 0
+                    && cal.get(java.util.Calendar.SECOND) == 0;
+            if (midnight) {
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 23);
+                cal.set(java.util.Calendar.MINUTE, 59);
+                cal.set(java.util.Calendar.SECOND, 59);
+                cal.set(java.util.Calendar.MILLISECOND, 999);
+                end = cal.getTime();
+            }
+            if (now.after(end)) {
+                return false;
+            }
         }
+
         return true;
     }
 
@@ -1477,9 +1587,14 @@ public class CustomerBookingBean implements Serializable {
         BigDecimal max = safeBD(v.getMaxDiscount());
 
         BigDecimal discount = BigDecimal.ZERO;
-        if ("PERCENT".equals(type)) {
+
+        // Accept common naming variations
+        boolean isPercent = "PERCENT".equals(type) || "PERCENTAGE".equals(type) || "%".equals(type);
+        boolean isAmount = "AMOUNT".equals(type) || "FIXED".equals(type) || "MONEY".equals(type);
+
+        if (isPercent) {
             discount = base.multiply(val).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
-        } else if ("AMOUNT".equals(type)) {
+        } else if (isAmount) {
             discount = val;
         }
 

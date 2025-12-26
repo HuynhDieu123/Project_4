@@ -120,6 +120,16 @@
                            value="#{customerBookingBean.voucherDiscount}" />
 
 
+            <!-- Voucher AJAX apply (server validates voucher in Vouchers table) -->
+            <h:commandButton id="btn-apply-voucher-server"
+                             action="#{customerBookingBean.applyVoucher}"
+                             style="display:none">
+                <f:ajax execute="@form"
+                        render="hf-voucher-discount hf-total-amount hf-deposit-amount hf-remaining-amount"
+                        onevent="bookingOnVoucherAjaxEvent" />
+            </h:commandButton>
+
+
             <!-- NEW: giữ id combo & id các món custom menu giữa các request -->
             <h:inputHidden id="hf-combo-id"
                            value="#{customerBookingBean.selectedComboId}" />

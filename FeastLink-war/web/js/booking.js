@@ -1252,20 +1252,88 @@ const BookingUI = (function () {
         const voucherInput = document.getElementById('voucher-input');
         const voucherBtn = document.getElementById('btn-apply-voucher');
         const voucherSuccess = document.getElementById('voucher-success');
+
+        function ensureVoucherErrorBox() {
+            let el = document.getElementById('voucher-error');
+            if (!el && voucherSuccess && voucherSuccess.parentNode) {
+                el = document.createElement('div');
+                el.id = 'voucher-error';
+                el.className = 'hidden mt-3 rounded-lg text-sm flex items-center gap-2 border px-3 py-2';
+                el.style.borderColor = '#FCA5A5';
+                el.style.background = '#FEF2F2';
+                el.style.color = '#991B1B';
+                el.innerHTML = '<span>✕</span><span id="voucher-error-msg">Voucher is invalid, expired, or not eligible.</span>';
+                voucherSuccess.parentNode.appendChild(el);
+            }
+            return el;
+        }
+
+        function showVoucherError(msg) {
+            const err = ensureVoucherErrorBox();
+            const msgEl = err ? err.querySelector('#voucher-error-msg') : null;
+            if (msgEl && msg) msgEl.textContent = msg;
+            if (err) err.classList.remove('hidden');
+            if (voucherSuccess) voucherSuccess.classList.add('hidden');
+        }
+
+        function hideVoucherError() {
+            const err = document.getElementById('voucher-error');
+            if (err) err.classList.add('hidden');
+        }
+
+        // JSF AJAX callback from <f:ajax onevent="bookingOnVoucherAjaxEvent" />
+        window.bookingOnVoucherAjaxEvent = function (data) {
+            if (!data) return;
+            if (data.status === 'success') {
+                const discVal = parseFloat(document.getElementById('hf-voucher-discount')?.value || '0');
+                const disc = isNaN(discVal) ? 0 : Math.round(discVal);
+                state.discount = disc;
+
+                // Keep normalized voucher code in state
+                const code = (document.getElementById('hf-voucher-code')?.value || '').trim().toUpperCase();
+                if (code) state.voucherCode = code;
+
+                if (disc > 0) {
+                    hideVoucherError();
+                    if (voucherSuccess) voucherSuccess.classList.remove('hidden');
+                } else {
+                    showVoucherError('Voucher is invalid, expired, or not eligible.');
+                }
+                updateSummary();
+            }
+        };
+
+        function triggerVoucherApplyAjax() {
+            const cmd = document.getElementById('btn-apply-voucher-server');
+            if (cmd) {
+                // triggers JSF ajax submit defined by <f:ajax>
+                cmd.click();
+            } else {
+                // fallback: just keep discount = 0
+                showVoucherError('Voucher apply is not available.');
+            }
+        }
+
         if (voucherBtn && voucherInput) {
             voucherBtn.addEventListener('click', function () {
                 const code = voucherInput.value.trim().toUpperCase();
                 state.voucherCode = code;
-                if (code) {
-                    state.discount = 2000000; // demo
-                    if (voucherSuccess)
-                        voucherSuccess.classList.remove('hidden');
-                } else {
-                    state.discount = 0;
-                    if (voucherSuccess)
-                        voucherSuccess.classList.add('hidden');
+
+                // Reset discount until server validates
+                state.discount = 0;
+
+                if (!code) {
+                    hideVoucherError();
+                    if (voucherSuccess) voucherSuccess.classList.add('hidden');
+                    updateSummary();
+                    return;
                 }
+
+                // Sync hidden fields (base total + code) then ask server to compute discount from DB
+                if (voucherSuccess) voucherSuccess.classList.add('hidden');
+                hideVoucherError();
                 updateSummary();
+                triggerVoucherApplyAjax();
             });
         }
 
