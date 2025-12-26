@@ -113,17 +113,9 @@ public class CustomerMyBookingsBean implements Serializable {
         if (userObj instanceof Users) {
             Users currentUser = (Users) userObj;
 
-            List<Bookings> all = bookingsFacade.findAll();
-            if (all != null) {
-                for (Bookings b : all) {
-                    if (b == null || b.getCustomerId() == null) {
-                        continue;
-                    }
-                    if (b.getCustomerId().getUserId()
-                            .equals(currentUser.getUserId())) {
-                        myBookings.add(b);
-                    }
-                }
+            myBookings = bookingsFacade.findByCustomerIdWithDetails(currentUser.getUserId());
+            if (myBookings == null) {
+                myBookings = new ArrayList<>();
             }
 
             // *** Sort: CREATED_AT DESC (booking mới tạo nhất lên đầu) ***

@@ -2,6 +2,7 @@ package com.mypack.sessionbean;
 
 import com.mypack.entity.Bookings;
 import jakarta.ejb.Stateless;
+import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
@@ -55,6 +56,12 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
         return ((double) cancelled / total) * 100;
     }
 
+    // ✅ FIX: đừng throw nữa (dễ crash nếu ai đó gọi)
+    @Override
+    public double getCancelRate() {
+        return calculateCancelRate();
+    }
+
     @Override
     public long countPendingApprovals() {
         return em.createQuery(
@@ -68,11 +75,6 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
                 "SELECT b FROM Bookings b ORDER BY b.createdAt DESC", Bookings.class)
                 .setMaxResults(3)
                 .getResultList();
-    }
-
-    @Override
-    public double getCancelRate() {
-        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -102,16 +104,14 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
                 + "ORDER BY b.eventDate DESC",
                 Bookings.class
         ).setParameter("rid", restaurantId)
-                .setParameter("cid", customerId)
-                .getResultList();
+         .setParameter("cid", customerId)
+         .getResultList();
     }
 
     // ✅ NEW: gom theo ngày
     @Override
     public List<Object[]> aggregateForCalendar(Long restaurantId, Date fromInclusive, Date toExclusive) {
 
-        // ✅ TRIM để tránh lỗi dữ liệu có khoảng trắng
-        // ✅ bạn muốn tính PENDING luôn thì để như dưới
         String jpql
                 = "SELECT b.eventDate, SUM(b.guestCount), COUNT(b) "
                 + "FROM Bookings b "
@@ -125,5 +125,34 @@ public class BookingsFacade extends AbstractFacade<Bookings> implements Bookings
                 .setParameter("fromD", fromInclusive, TemporalType.DATE)
                 .setParameter("toD", toExclusive, TemporalType.DATE)
                 .getResultList();
+    }
+
+    // =========================================================
+    // ✅ FIX MyBookings: load đúng package/menu ngay sau booking
+    // =========================================================
+    @Override
+    public List<Bookings> findByCustomerIdWithDetails(Long customerId) {
+        return em.createQuery(
+                "SELECT DISTINCT b FROM Bookings b "
+                + "LEFT JOIN FETCH b.bookingCombosCollection bc "
+                + "LEFT JOIN FETCH bc.menuCombos "
+                + "LEFT JOIN FETCH b.bookingMenuItemsCollection bmi "
+                + "LEFT JOIN FETCH bmi.menuItems "
+                + "WHERE b.customerId.userId = :cid "
+                + "ORDER BY b.createdAt DESC",
+                Bookings.class
+        )
+        .setParameter("cid", customerId)
+        // bắt DB trả dữ liệu mới nhất, không lấy cache “cũ”
+        .setHint("jakarta.persistence.cache.storeMode", CacheStoreMode.REFRESH)
+        .getResultList();
+    }
+
+    // Optional: nếu bạn muốn gọi evict sau khi create booking
+    @Override
+    public void evictBookingsCache() {
+        try {
+            em.getEntityManagerFactory().getCache().evict(Bookings.class);
+        } catch (Exception ignore) {}
     }
 }

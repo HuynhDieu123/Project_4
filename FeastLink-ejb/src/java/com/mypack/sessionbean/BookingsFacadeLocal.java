@@ -20,19 +20,21 @@ public interface BookingsFacadeLocal {
 
     List<Bookings> findRange(int[] range);
 
+    int count();
+
+    // ===== Dashboard/Admin =====
     long countAllBookings();
 
     double calculateMonthlyRevenue();
-
-    double getCancelRate();
 
     long countPendingApprovals();
 
     double calculateCancelRate();
 
-    List<Bookings> findRecentBookings();
+    // ⚠️ trước bạn để throw ở Facade, giờ nên implement lại cho an toàn
+    double getCancelRate();
 
-    int count();
+    List<Bookings> findRecentBookings();
 
     long countByEventType(Integer eventTypeId);
 
@@ -41,4 +43,10 @@ public interface BookingsFacadeLocal {
     // ✅ NEW: gom booking theo ngày để vẽ chấm trên calendar
     // rows: [eventDate(Date), totalGuests(Number), bookingCount(Long)]
     List<Object[]> aggregateForCalendar(Long restaurantId, Date fromInclusive, Date toExclusive);
+
+    // ✅ NEW: Fix MyBookings bị thiếu package/menu do cache + lazy collection
+    List<Bookings> findByCustomerIdWithDetails(Long customerId);
+
+    // ✅ NEW: (optional) evict cache để khỏi dính dữ liệu cũ sau create
+    void evictBookingsCache();
 }
