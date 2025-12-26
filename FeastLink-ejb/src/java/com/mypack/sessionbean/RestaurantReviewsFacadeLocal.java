@@ -7,6 +7,7 @@ package com.mypack.sessionbean;
 import com.mypack.entity.RestaurantReviews;
 import jakarta.ejb.Local;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -38,6 +39,20 @@ public interface RestaurantReviewsFacadeLocal {
     List<Object[]> ratingBreakdownApproved(Long restaurantId); // each row: [rating, count]
 
     List<RestaurantReviews> findByRestaurantAndCustomer(Long restaurantId, Long customerId); // include pending (approved=false)
+     Map<Long, Object[]> statsByRestaurantIds(List<Long> restaurantIds, int badThreshold);
+     
+    long countByRestaurant(Long restaurantId, Integer ratingFilter);
+
+    List<RestaurantReviews> findByRestaurant(Long restaurantId,
+                                            boolean approvedOnly,
+                                            boolean includeDeleted,
+                                            int first,
+                                            int pageSize);
+
+    // NEW: count total reviews for paging
+    long countByRestaurant(Long restaurantId,
+                           boolean approvedOnly,
+                           boolean includeDeleted);
 
     long countPendingByRestaurant(Long restaurantId);
 

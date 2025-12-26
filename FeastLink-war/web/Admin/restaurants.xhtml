@@ -16,7 +16,7 @@
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Restaurant Management</h1>
                 <p class="text-sm text-gray-500">
-                    Manage restaurants for the OnlineCatering system.
+                    List shows essential info only. Click View for full details.
                 </p>
             </div>
 
@@ -30,12 +30,16 @@
         <!-- MAIN FORM -->
         <h:form id="restaurantMainForm">
 
+            <!-- GLOBAL MESSAGES -->
+            <h:messages globalOnly="true"
+                        styleClass="mb-4 text-sm"
+                        infoClass="p-3 rounded-xl bg-blue-50 text-blue-700 border border-blue-100"
+                        errorClass="p-3 rounded-xl bg-red-50 text-red-700 border border-red-100" />
+
             <!-- FILTER CARD -->
             <div class="bg-white p-5 rounded-2xl shadow border border-gray-200 mb-6">
-
                 <div class="flex flex-wrap gap-4 items-end justify-between">
 
-                    <!-- 3 field trong card nhỏ -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
 
                         <!-- Search -->
@@ -60,6 +64,7 @@
                                 <f:selectItem itemValue="ALL" itemLabel="All" />
                                 <f:selectItem itemValue="ACTIVE" itemLabel="Active" />
                                 <f:selectItem itemValue="INACTIVE" itemLabel="Inactive" />
+                                <f:selectItem itemValue="BLOCKED" itemLabel="Blocked" />
                             </h:selectOneMenu>
                         </div>
 
@@ -85,15 +90,19 @@
                     <div class="flex gap-3">
                         <h:commandButton value="Filter"
                                          action="#{restaurantsBean.applyFilter}"
-                                         styleClass="px-5 py-2 rounded-2xl bg-blue-600 text-white text-sm font-semibold
-                                         hover:bg-blue-700 shadow-sm">
+                                         styleClass="px-5 py-2 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shadow-sm">
                             <f:ajax execute="@form" render="@form" />
                         </h:commandButton>
 
                         <h:commandButton value="Reset"
                                          action="#{restaurantsBean.resetFilter}"
-                                         styleClass="px-4 py-2 rounded-2xl border border-gray-200 bg-gray-50
-                                         text-gray-700 text-sm font-medium hover:bg-gray-100">
+                                         styleClass="px-4 py-2 rounded-2xl border border-gray-200 bg-gray-50 text-gray-700 text-sm font-medium hover:bg-gray-100">
+                            <f:ajax execute="@form" render="@form" />
+                        </h:commandButton>
+
+                        <h:commandButton value="Auto block (page)"
+                                         action="#{restaurantsBean.autoBlockCurrentPage}"
+                                         styleClass="px-4 py-2 rounded-2xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 shadow-sm">
                             <f:ajax execute="@form" render="@form" />
                         </h:commandButton>
                     </div>
@@ -108,73 +117,64 @@
                     <thead>
                         <tr class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             <th class="px-4 py-3">Name</th>
-                            <th class="px-4 py-3">Address</th>
-                            <th class="px-4 py-3">Area</th>
-                            <th class="px-4 py-3">Contact</th>
-                            <th class="px-4 py-3">Email</th>
-                            <th class="px-4 py-3">Open – Close</th>
-                            <th class="px-4 py-3">Min Guests</th>
-                            <th class="px-4 py-3">Deposit</th>
+                            <th class="px-4 py-3">Area / City</th>
+                            <th class="px-4 py-3">Rating</th>
+                            <th class="px-4 py-3">Reviews</th>
+                            <th class="px-4 py-3">Bad %</th>
+                            <th class="px-4 py-3">Quality</th>
                             <th class="px-4 py-3">Status</th>
                             <th class="px-4 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
+
                     <tbody class="divide-y divide-gray-200">
 
-                        <!-- ROWS -->
                         <ui:repeat value="#{restaurantsBean.pageRestaurants}" var="r">
-
                             <tr class="bg-white hover:bg-gray-50">
 
                                 <!-- Name -->
                                 <td class="px-4 py-3">
-                                    <div class="font-semibold text-gray-900">
+                                    <div class="font-semibold text-gray-900 max-w-[220px] truncate">
                                         #{r.name}
                                     </div>
                                 </td>
 
-                                <!-- Address -->
+                                <!-- Area / City -->
                                 <td class="px-4 py-3 text-gray-700">
-                                    #{r.address}
-                                </td>
-
-                                <!-- Area -->
-                                <td class="px-4 py-3 text-gray-700">
-                                    #{r.areaId != null ? r.areaId.name : '—'}
-                                </td>
-
-                                <!-- Contact -->
-                                <td class="px-4 py-3">
-                                    <div class="flex flex-col">
-                                        <span>#{r.contactPerson}</span>
-                                        <span class="text-xs text-gray-500">#{r.phone}</span>
+                                    <div class="text-xs text-gray-500 max-w-[240px] truncate">
+                                        #{(r.areaId != null and r.areaId.cityId != null) ? r.areaId.cityId.name : '—'}
                                     </div>
                                 </td>
 
-                                <!-- Email -->
+                                <!-- Rating -->
                                 <td class="px-4 py-3 text-gray-700">
-                                    #{r.email}
+                                    <h:outputText value="#{restaurantsBean.avgRating(r.restaurantId)}">
+                                        <f:convertNumber maxFractionDigits="1" minFractionDigits="1" />
+                                    </h:outputText>
                                 </td>
 
-                                <!-- Open – Close -->
+                                <!-- Reviews -->
                                 <td class="px-4 py-3 text-gray-700">
-                                    #{r.openTime} – #{r.closeTime}
+                                    #{restaurantsBean.totalReviews(r.restaurantId)}
                                 </td>
 
-                                <!-- Min guests -->
+                                <!-- Bad% -->
                                 <td class="px-4 py-3 text-gray-700">
-                                    #{r.minGuestCount}
+                                    <h:outputText value="#{restaurantsBean.badRatePercent(r.restaurantId)}">
+                                        <f:convertNumber maxFractionDigits="0" />
+                                    </h:outputText>%
                                 </td>
 
-                                <!-- Deposit -->
-                                <td class="px-4 py-3 text-gray-700">
-                                    #{r.defaultDepositPercent != null ? r.defaultDepositPercent : 0}%
-                                </td>
-
-                                <!-- Status badge -->
+                                <!-- Quality -->
                                 <td class="px-4 py-3">
-                                    <span class="px-2 py-1 rounded-full text-xs font-medium
-                                          #{restaurantsBean.statusCssClass(r.status)}">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium #{restaurantsBean.qualityCssClass(r.restaurantId)}">
+                                        #{restaurantsBean.qualityLabel(r.restaurantId)}
+                                    </span>
+                                </td>
+
+                                <!-- Status -->
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium #{restaurantsBean.statusCssClass(r.status)}">
                                         #{r.status}
                                     </span>
                                 </td>
@@ -183,39 +183,41 @@
                                 <td class="px-4 py-3 text-right">
                                     <div class="flex justify-end gap-2">
 
-                                        <!-- View (sau này link qua trang detail) -->
-                                        <a href="#"
-                                           class="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-300
-                                           text-xs font-medium text-gray-700 hover:bg-gray-50">
-                                            View
-                                        </a>
-
-                                        <!-- Activate / Deactivate -->
-                                        <h:commandLink action="#{restaurantsBean.confirmChangeStatus}"
-                                                       styleClass="inline-flex items-center px-3 py-1.5 rounded-full border text-xs font-medium
-                                                       #{r.status eq 'ACTIVE' 
-                                                         ? 'border-red-300 text-red-700 hover:bg-red-50' 
-                                                         : 'border-green-300 text-green-700 hover:bg-green-50'}">
+                                        <!-- View (open modal) -->
+                                        <h:commandLink action="#{restaurantsBean.openView}"
+                                                       styleClass="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-300
+                                                       text-xs font-medium text-gray-700 hover:bg-gray-50">
                                             <f:setPropertyActionListener value="#{r.restaurantId}"
                                                                          target="#{restaurantsBean.selectedRestaurantId}" />
-                                            <f:ajax execute="@this" render=":restaurantMainForm" />
-                                            <span>
-                                                #{r.status eq 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                                            </span>
+                                            <f:ajax execute="@this"
+                                                    render=":restaurantMainForm:viewModalWrapper"
+                                                    onevent="keepModalOpen" />
+                                            View
                                         </h:commandLink>
+
+                                        <!-- Activate / Deactivate (hide if BLOCKED) -->
+                                        <ui:fragment rendered="#{r.status ne 'BLOCKED'}">
+                                            <h:commandLink action="#{restaurantsBean.confirmChangeStatus}"
+                                                           styleClass="inline-flex items-center px-3 py-1.5 rounded-full border text-xs font-medium
+                                                           #{r.status eq 'ACTIVE'
+                                                             ? 'border-red-300 text-red-700 hover:bg-red-50'
+                                                             : 'border-green-300 text-green-700 hover:bg-green-50'}">
+                                                <f:setPropertyActionListener value="#{r.restaurantId}"
+                                                                             target="#{restaurantsBean.selectedRestaurantId}" />
+                                                <f:ajax execute="@this" render=":restaurantMainForm" />
+                                                <span>#{r.status eq 'ACTIVE' ? 'Deactivate' : 'Activate'}</span>
+                                            </h:commandLink>
+                                        </ui:fragment>
 
                                     </div>
                                 </td>
 
                             </tr>
-
                         </ui:repeat>
 
-                        <!-- NO DATA ROW -->
                         <ui:fragment rendered="#{empty restaurantsBean.pageRestaurants}">
                             <tr>
-                                <td colspan="10"
-                                    class="px-4 py-6 text-center text-sm text-gray-500">
+                                <td colspan="8" class="px-4 py-6 text-center text-sm text-gray-500">
                                     No restaurants found.
                                 </td>
                             </tr>
@@ -244,33 +246,357 @@
                         <f:ajax execute="@form" render="@form" />
                     </h:commandButton>
                 </div>
-
             </div>
 
-        </h:form>
+<!-- VIEW MODAL WRAPPER -->
+<h:panelGroup id="viewModalWrapper" layout="block">
+    <dialog id="viewRestaurantModal" class="rounded-2xl shadow-xl w-full max-w-4xl">
+        <div class="p-6 space-y-5">
 
-        <!-- ADD RESTAURANT MODAL -->
-        <dialog id="addRestaurantModal"
-                class="rounded-2xl shadow-xl w-full max-w-2xl">
-
-            <h:form id="addRestaurantForm" styleClass="p-6 space-y-6">
-
-                <!-- Title -->
-                <div class="flex items-center justify-between">
+            <!-- HEADER -->
+            <div class="flex items-start justify-between gap-4">
+                <div>
                     <h2 class="text-xl font-semibold text-gray-900">
-                        Add Restaurant
+                        #{restaurantsBean.viewRestaurant != null ? restaurantsBean.viewRestaurant.name : 'Restaurant detail'}
                     </h2>
+
+                    <div class="mt-2 flex items-center gap-2">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                              #{restaurantsBean.viewRestaurant != null ? restaurantsBean.statusCssClass(restaurantsBean.viewRestaurant.status) : 'bg-gray-100 text-gray-700'}">
+                            #{restaurantsBean.viewRestaurant != null ? restaurantsBean.viewRestaurant.status : ''}
+                        </span>
+
+                        <ui:fragment rendered="#{restaurantsBean.viewRestaurant != null and restaurantsBean.isAutoBlockCandidate(restaurantsBean.viewRestaurant.restaurantId)}">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-600 text-white">
+                                Auto-block candidate
+                            </span>
+                        </ui:fragment>
+                    </div>
+                </div>
+
+                <button type="button"
+                        class="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                        onclick="document.getElementById('viewRestaurantModal').close()">
+                    ×
+                </button>
+            </div>
+
+            <ui:fragment rendered="#{restaurantsBean.viewRestaurant != null}">
+
+                <!-- QUICK STATS -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div class="rounded-xl border border-gray-200 p-3 bg-gray-50/70">
+                        <div class="text-xs text-gray-500">Avg rating</div>
+                        <div class="text-lg font-semibold text-gray-900">
+                            <h:outputText value="#{restaurantsBean.avgRating(restaurantsBean.viewRestaurant.restaurantId)}">
+                                <f:convertNumber maxFractionDigits="1" minFractionDigits="1" />
+                            </h:outputText>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-200 p-3 bg-gray-50/70">
+                        <div class="text-xs text-gray-500">Total reviews</div>
+                        <div class="text-lg font-semibold text-gray-900">
+                            #{restaurantsBean.totalReviews(restaurantsBean.viewRestaurant.restaurantId)}
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-200 p-3 bg-gray-50/70">
+                        <div class="text-xs text-gray-500">Bad reviews (≤2★)</div>
+                        <div class="text-lg font-semibold text-gray-900">
+                            #{restaurantsBean.badReviews(restaurantsBean.viewRestaurant.restaurantId)}
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-200 p-3 bg-gray-50/70">
+                        <div class="text-xs text-gray-500">Bad %</div>
+                        <div class="text-lg font-semibold text-gray-900">
+                            <h:outputText value="#{restaurantsBean.badRatePercent(restaurantsBean.viewRestaurant.restaurantId)}">
+                                <f:convertNumber maxFractionDigits="0" />
+                            </h:outputText>%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DETAILS GRID -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <!-- LOCATION -->
+                    <div class="rounded-2xl border border-gray-200 p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="text-sm font-semibold text-gray-900">Location</div>
+                        </div>
+
+                        <div class="text-sm text-gray-700">
+                            <div class="text-xs text-gray-500">Address</div>
+                            <div class="mt-1 whitespace-pre-line">
+                                #{restaurantsBean.viewRestaurant.address}
+                            </div>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <div class="text-xs text-gray-500">Area</div>
+                                <div class="mt-1 text-gray-800">
+                                    #{restaurantsBean.viewRestaurant.areaId != null ? restaurantsBean.viewRestaurant.areaId.name : '—'}
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500">City</div>
+                                <div class="mt-1 text-gray-800">
+                                    #{(restaurantsBean.viewRestaurant.areaId != null and restaurantsBean.viewRestaurant.areaId.cityId != null)
+                                      ? restaurantsBean.viewRestaurant.areaId.cityId.name : '—'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CONTACT -->
+                    <div class="rounded-2xl border border-gray-200 p-4">
+                        <div class="text-sm font-semibold text-gray-900 mb-3">Contact</div>
+
+                        <div class="grid grid-cols-1 gap-3 text-sm">
+                            <div>
+                                <div class="text-xs text-gray-500">Contact person</div>
+                                <div class="mt-1 text-gray-800">
+                                    #{empty restaurantsBean.viewRestaurant.contactPerson ? '—' : restaurantsBean.viewRestaurant.contactPerson}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="text-xs text-gray-500">Phone</div>
+                                <div class="mt-1 text-gray-800">
+                                    #{empty restaurantsBean.viewRestaurant.phone ? '—' : restaurantsBean.viewRestaurant.phone}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="text-xs text-gray-500">Email</div>
+                                <div class="mt-1 text-gray-800 break-all">
+                                    #{empty restaurantsBean.viewRestaurant.email ? '—' : restaurantsBean.viewRestaurant.email}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- OPERATIONS -->
+                <div class="rounded-2xl border border-gray-200 p-4">
+                    <div class="text-sm font-semibold text-gray-900 mb-3">Operations</div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div class="rounded-xl border border-gray-200 p-3 bg-gray-50/60">
+                            <div class="text-xs text-gray-500">Open time</div>
+                            <div class="mt-1 text-gray-800">
+                                <h:outputText value="#{restaurantsBean.viewRestaurant.openTime}">
+                                    <f:convertDateTime pattern="HH:mm" />
+                                </h:outputText>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-200 p-3 bg-gray-50/60">
+                            <div class="text-xs text-gray-500">Close time</div>
+                            <div class="mt-1 text-gray-800">
+                                <h:outputText value="#{restaurantsBean.viewRestaurant.closeTime}">
+                                    <f:convertDateTime pattern="HH:mm" />
+                                </h:outputText>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-200 p-3 bg-gray-50/60">
+                            <div class="text-xs text-gray-500">Min guests</div>
+                            <div class="mt-1 text-gray-800">
+                                #{restaurantsBean.viewRestaurant.minGuestCount}
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-200 p-3 bg-gray-50/60">
+                            <div class="text-xs text-gray-500">Deposit (%)</div>
+                            <div class="mt-1 text-gray-800">
+                                #{restaurantsBean.viewRestaurant.defaultDepositPercent != null ? restaurantsBean.viewRestaurant.defaultDepositPercent : 0}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REVIEWS EXPLORER -->
+                <div class="rounded-2xl border border-gray-200 p-4">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <div class="text-sm font-semibold text-gray-900">Reviews Explorer</div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-600">Approved only</span>
+                            <h:selectBooleanCheckbox value="#{restaurantsBean.reviewApprovedOnly}">
+                                <f:ajax listener="#{restaurantsBean.onReviewFilterChange}"
+                                        execute="@this"
+                                        render=":restaurantMainForm:viewModalWrapper"
+                                        onevent="keepModalOpen"/>
+                            </h:selectBooleanCheckbox>
+                        </div>
+                    </div>
+
+                    <!-- FILTER CHIPS -->
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <h:commandLink action="#{restaurantsBean.applyReviewFilter}"
+                                       styleClass="px-3 py-1.5 rounded-full text-xs font-medium border
+                                       #{restaurantsBean.reviewRatingFilter eq 'ALL'
+                                         ? 'bg-gray-900 text-white border-gray-900'
+                                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}">
+                            <f:setPropertyActionListener target="#{restaurantsBean.reviewRatingFilter}" value="ALL" />
+                            <f:ajax execute="@this" render=":restaurantMainForm:viewModalWrapper" onevent="keepModalOpen"/>
+                            All
+                        </h:commandLink>
+
+                        <h:commandLink action="#{restaurantsBean.applyReviewFilter}"
+                                       styleClass="px-3 py-1.5 rounded-full text-xs font-medium border
+                                       #{restaurantsBean.reviewRatingFilter eq 'BAD'
+                                         ? 'bg-red-600 text-white border-red-600'
+                                         : 'bg-white text-red-700 border-red-300 hover:bg-red-50'}">
+                            <f:setPropertyActionListener target="#{restaurantsBean.reviewRatingFilter}" value="BAD" />
+                            <f:ajax execute="@this" render=":restaurantMainForm:viewModalWrapper" onevent="keepModalOpen"/>
+                            Bad (1–2★)
+                        </h:commandLink>
+
+                        <ui:repeat value="#{['1','2','3','4','5']}" var="rt">
+                            <h:commandLink action="#{restaurantsBean.applyReviewFilter}"
+                                           styleClass="px-3 py-1.5 rounded-full text-xs font-medium border
+                                           #{restaurantsBean.reviewRatingFilter eq rt
+                                             ? 'bg-gray-900 text-white border-gray-900'
+                                             : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}">
+                                <f:setPropertyActionListener target="#{restaurantsBean.reviewRatingFilter}" value="#{rt}" />
+                                <f:ajax execute="@this" render=":restaurantMainForm:viewModalWrapper" onevent="keepModalOpen"/>
+                                #{rt}★
+                            </h:commandLink>
+                        </ui:repeat>
+                    </div>
+
+                    <!-- LIST -->
+                    <div class="mt-4 space-y-3">
+                        <ui:repeat value="#{restaurantsBean.viewReviews}" var="rv">
+                            <div class="rounded-xl border border-gray-200 p-3">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <div class="text-sm font-semibold text-gray-900">
+                                            #{rv.customerId != null ? rv.customerId.fullName : 'Customer'}
+                                        </div>
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            <h:outputText value="#{rv.createdAt}">
+                                                <f:convertDateTime pattern="dd/MM/yyyy HH:mm" />
+                                            </h:outputText>
+                                            <span class="mx-2">•</span>
+                                            Booking: #{rv.bookingId != null ? rv.bookingId.bookingId : '—'}
+                                            <span class="mx-2">•</span>
+                                            Approved: #{rv.isApproved eq true ? 'Yes' : 'No'}
+                                        </div>
+                                    </div>
+
+                                    <div class="text-sm font-semibold text-amber-600">
+                                        #{restaurantsBean.starText(rv.rating)}
+                                    </div>
+                                </div>
+
+                                <div class="mt-2 text-sm text-gray-700 whitespace-pre-line">
+                                    <h:outputText value="#{empty rv.comment ? '— No comment —' : rv.comment}" />
+                                </div>
+                            </div>
+                        </ui:repeat>
+
+                        <ui:fragment rendered="#{empty restaurantsBean.viewReviews}">
+                            <div class="py-6 text-center text-sm text-gray-500">
+                                No reviews found for this filter.
+                            </div>
+                        </ui:fragment>
+                    </div>
+
+                    <!-- REVIEWS PAGINATION -->
+                    <div class="flex items-center justify-between mt-4">
+                        <h:commandButton value="Previous"
+                                         action="#{restaurantsBean.prevReviewPage}"
+                                         disabled="#{restaurantsBean.reviewPage le 1}"
+                                         styleClass="px-3 py-1 rounded-xl border border-gray-300 text-xs text-gray-700 disabled:opacity-50">
+                            <f:ajax execute="@this" render=":restaurantMainForm:viewModalWrapper" onevent="keepModalOpen"/>
+                        </h:commandButton>
+
+                        <span class="text-xs text-gray-500">
+                            Page #{restaurantsBean.reviewPage} / #{restaurantsBean.reviewTotalPages}
+                            (#{restaurantsBean.reviewTotalCount} reviews)
+                        </span>
+
+                        <h:commandButton value="Next"
+                                         action="#{restaurantsBean.nextReviewPage}"
+                                         disabled="#{restaurantsBean.reviewPage ge restaurantsBean.reviewTotalPages}"
+                                         styleClass="px-3 py-1 rounded-xl border border-gray-300 text-xs text-gray-700 disabled:opacity-50">
+                            <f:ajax execute="@this" render=":restaurantMainForm:viewModalWrapper" onevent="keepModalOpen"/>
+                        </h:commandButton>
+                    </div>
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="flex justify-end gap-2 pt-2">
+                    <ui:fragment rendered="#{restaurantsBean.viewRestaurant.status ne 'BLOCKED'}">
+                        <h:commandButton value="Block"
+                                         action="#{restaurantsBean.blockSelected}"
+                                         styleClass="px-4 py-2 rounded-xl bg-red-600 text-white text-sm hover:bg-red-700">
+                            <f:ajax execute="@this"
+                                    render=":restaurantMainForm :restaurantMainForm:viewModalWrapper"
+                                    onevent="keepModalOpen"/>
+                        </h:commandButton>
+                    </ui:fragment>
+
+                    <ui:fragment rendered="#{restaurantsBean.viewRestaurant.status eq 'BLOCKED'}">
+                        <h:commandButton value="Unblock"
+                                         action="#{restaurantsBean.unblockSelected}"
+                                         styleClass="px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:bg-green-700">
+                            <f:ajax execute="@this"
+                                    render=":restaurantMainForm :restaurantMainForm:viewModalWrapper"
+                                    onevent="keepModalOpen"/>
+                        </h:commandButton>
+                    </ui:fragment>
+
                     <button type="button"
-                            class="text-gray-400 hover:text-gray-600 text-xl"
-                            onclick="document.getElementById('addRestaurantModal').close()">
-                        ×
+                            class="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 text-sm hover:bg-gray-200"
+                            onclick="document.getElementById('viewRestaurantModal').close()">
+                        Close
                     </button>
                 </div>
 
-                <!-- BASIC INFO -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            </ui:fragment>
 
-                    <!-- Name -->
+        </div>
+    </dialog>
+</h:panelGroup>
+
+        </h:form>
+
+        <!-- JS: keep dialog open after AJAX -->
+        <script>
+            function keepModalOpen(data) {
+                if (data.status === 'success') {
+                    var dlg = document.getElementById('viewRestaurantModal');
+                    if (dlg != null) {
+                        if (!dlg.open) {
+                            dlg.showModal();
+                        }
+                    }
+                }
+            }
+        </script>
+
+        <!-- ADD RESTAURANT MODAL (unchanged) -->
+        <dialog id="addRestaurantModal" class="rounded-2xl shadow-xl w-full max-w-2xl">
+            <h:form id="addRestaurantForm" styleClass="p-6 space-y-6">
+
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold text-gray-900">Add Restaurant</h2>
+                    <button type="button"
+                            class="text-gray-400 hover:text-gray-600 text-xl"
+                            onclick="document.getElementById('addRestaurantModal').close()">×</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="rounded-xl border border-gray-200 px-3 py-3 bg-gray-50/60">
                         <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
                             Name <span class="text-red-500">*</span>
@@ -280,63 +606,43 @@
                                      styleClass="w-full rounded-lg border border-gray-300 text-sm px-3 py-2
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                      pass:placeholder="Restaurant name" />
-                        <h:message for="name"
-                                   styleClass="mt-1 text-xs text-red-500" />
+                        <h:message for="name" styleClass="mt-1 text-xs text-red-500" />
                     </div>
 
-                    <!-- Email -->
                     <div class="rounded-xl border border-gray-200 px-3 py-3 bg-gray-50/60">
-                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                            Email
-                        </label>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
                         <h:inputText id="email"
                                      value="#{restaurantsBean.newRestaurant.email}"
                                      styleClass="w-full rounded-lg border border-gray-300 text-sm px-3 py-2
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                      pass:placeholder="contact@example.com" />
-                        <h:message for="email"
-                                   styleClass="mt-1 text-xs text-red-500" />
+                        <h:message for="email" styleClass="mt-1 text-xs text-red-500" />
                     </div>
-
                 </div>
 
-                <!-- CONTACT -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                    <!-- Phone -->
                     <div class="rounded-xl border border-gray-200 px-3 py-3 bg-gray-50/60">
-                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
-                            Phone
-                        </label>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                         <h:inputText id="phone"
                                      value="#{restaurantsBean.newRestaurant.phone}"
                                      styleClass="w-full rounded-lg border border-gray-300 text-sm px-3 py-2
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                      pass:placeholder="0987 654 321" />
-                        <h:message for="phone"
-                                   styleClass="mt-1 text-xs text-red-500" />
+                        <h:message for="phone" styleClass="mt-1 text-xs text-red-500" />
                     </div>
 
-                    <!-- Contact Person -->
                     <div class="rounded-xl border border-gray-200 px-3 py-3 bg-gray-50/60">
-                        <label for="contact" class="block text-sm font-medium text-gray-700 mb-2">
-                            Contact Person
-                        </label>
+                        <label for="contact" class="block text-sm font-medium text-gray-700 mb-2">Contact Person</label>
                         <h:inputText id="contact"
                                      value="#{restaurantsBean.newRestaurant.contactPerson}"
                                      styleClass="w-full rounded-lg border border-gray-300 text-sm px-3 py-2
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                      pass:placeholder="Manager name" />
-                        <h:message for="contact"
-                                   styleClass="mt-1 text-xs text-red-500" />
+                        <h:message for="contact" styleClass="mt-1 text-xs text-red-500" />
                     </div>
-
                 </div>
 
-                <!-- LOCATION: CITY + AREA -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                    <!-- City -->
                     <div class="rounded-xl border border-gray-200 px-3 py-3 bg-gray-50/60">
                         <label for="city" class="block text-sm font-medium text-gray-700 mb-2">
                             City <span class="text-red-500">*</span>
@@ -346,17 +652,13 @@
                                          styleClass="w-full rounded-lg border border-gray-300 text-sm px-3 py-2
                                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
                             <f:selectItem itemValue="#{null}" itemLabel="-- Select city --" noSelectionOption="true" />
-                            <f:selectItems value="#{restaurantsBean.cityList}"
-                                           var="c"
-                                           itemValue="#{c.cityId}"
-                                           itemLabel="#{c.name}" />
+                            <f:selectItems value="#{restaurantsBean.cityList}" var="c"
+                                           itemValue="#{c.cityId}" itemLabel="#{c.name}" />
                             <f:ajax listener="#{restaurantsBean.onNewCityChange}" render="area" />
                         </h:selectOneMenu>
-                        <h:message for="city"
-                                   styleClass="mt-1 text-xs text-red-500" />
+                        <h:message for="city" styleClass="mt-1 text-xs text-red-500" />
                     </div>
 
-                    <!-- Area -->
                     <div class="rounded-xl border border-gray-200 px-3 py-3 bg-gray-50/60">
                         <label for="area" class="block text-sm font-medium text-gray-700 mb-2">
                             Area <span class="text-red-500">*</span>
@@ -366,18 +668,13 @@
                                          styleClass="w-full rounded-lg border border-gray-300 text-sm px-3 py-2
                                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
                             <f:selectItem itemValue="#{null}" itemLabel="-- Select area --" noSelectionOption="true" />
-                            <f:selectItems value="#{restaurantsBean.areaOptionsForNew}"
-                                           var="a"
-                                           itemValue="#{a.areaId}"
-                                           itemLabel="#{a.name}" />
+                            <f:selectItems value="#{restaurantsBean.areaOptionsForNew}" var="a"
+                                           itemValue="#{a.areaId}" itemLabel="#{a.name}" />
                         </h:selectOneMenu>
-                        <h:message for="area"
-                                   styleClass="mt-1 text-xs text-red-500" />
+                        <h:message for="area" styleClass="mt-1 text-xs text-red-500" />
                     </div>
-
                 </div>
 
-                <!-- ADDRESS -->
                 <div class="rounded-xl border border-gray-200 px-3 py-3 bg-gray-50/60">
                     <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
                         Address <span class="text-red-500">*</span>
@@ -388,11 +685,9 @@
                                      styleClass="w-full rounded-lg border border-gray-300 text-sm px-3 py-2
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                      pass:placeholder="Full address" />
-                    <h:message for="address"
-                               styleClass="mt-1 text-xs text-red-500" />
+                    <h:message for="address" styleClass="mt-1 text-xs text-red-500" />
                 </div>
 
-                <!-- ACTION BUTTONS -->
                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
                     <button type="button"
                             class="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 text-sm hover:bg-gray-200"
@@ -403,8 +698,7 @@
                     <h:commandButton value="Create"
                                      action="#{restaurantsBean.createRestaurant}"
                                      styleClass="px-5 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700">
-                        <f:ajax execute="@form"
-                                render=":restaurantMainForm :addRestaurantForm" />
+                        <f:ajax execute="@form" render=":restaurantMainForm :addRestaurantForm" />
                     </h:commandButton>
                 </div>
 
@@ -412,15 +706,10 @@
         </dialog>
 
         <!-- SUCCESS POPUP -->
-        <dialog id="successRestaurantModal"
-                class="rounded-2xl shadow-xl w-full max-w-sm">
+        <dialog id="successRestaurantModal" class="rounded-2xl shadow-xl w-full max-w-sm">
             <div class="p-6 text-center space-y-4">
-                <h2 class="text-lg font-semibold text-gray-900">
-                    Restaurant created successfully
-                </h2>
-                <p class="text-sm text-gray-500">
-                    The restaurant has been added to the system.
-                </p>
+                <h2 class="text-lg font-semibold text-gray-900">Restaurant created successfully</h2>
+                <p class="text-sm text-gray-500">The restaurant has been added to the system.</p>
                 <button type="button"
                         class="mt-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700"
                         onclick="document.getElementById('successRestaurantModal').close()">
