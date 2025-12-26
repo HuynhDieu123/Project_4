@@ -123,6 +123,7 @@ public class Vouchers implements Serializable {
     private Date updatedAt;
     @OneToMany(mappedBy = "voucherId")
     private Collection<PointTransactions> pointTransactionsCollection;
+    
 
     public Vouchers() {
     }

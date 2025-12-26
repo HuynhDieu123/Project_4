@@ -183,9 +183,17 @@ public class CustomerOffersBean implements Serializable {
         }
     }
 
+    
     /**
-     * ✅ TÍNH LẠI ĐIỂM TỪ ĐẦU DỰA VÀO TẤT CẢ BOOKING PAID CỦA CUSTOMER
-     *    (KHÔNG DÙNG lastSync, nên chỉ cần sửa DB + F5 là điểm cập nhật).
+     * ✅ SYNC ĐIỂM:
+     * - EarnedPoints: tính từ tất cả Booking của Customer có PaymentStatus = 'PAID'
+     * - SpentPoints: tính từ lịch sử đổi Voucher (bảng UserVouchers) = SUM(quantity * voucher.pointCost)
+     *
+     * => CurrentPoints = max(0, EarnedPoints - SpentPoints)
+     *
+     * Lý do phải làm vậy:
+     * Trước đây bạn "set thẳng" CurrentPoints = EarnedPoints, nên khi user đổi voucher (đã trừ điểm)
+     * mà đi trang khác quay lại, init() chạy lại sẽ gọi syncPointsFromPaidBookings() và cộng lại như cũ.
      */
     private void syncPointsFromPaidBookings() {
         if (!loggedIn || currentUser == null) {
@@ -196,12 +204,43 @@ public class CustomerOffersBean implements Serializable {
             initWallet();
         }
 
-        // Nếu chưa cấu hình PointSettings hợp lệ thì không cộng
+        // Nếu chưa cấu hình PointSettings hợp lệ thì không sync
         if (amountPerPoint == null || amountPerPoint <= 0L
                 || pointsPerAmount == null || pointsPerAmount <= 0) {
             return;
         }
 
+        long earned = calcEarnedPointsFromPaidBookings();
+        long spent = calcSpentPointsFromRedeemedVouchers();
+
+        long newPoints = earned - spent;
+        if (newPoints < 0L) newPoints = 0L;
+
+        long oldPoints = safeWalletPoints(wallet);
+
+        // Chỉ update khi có thay đổi (tránh update DB liên tục mỗi lần load trang)
+        if (wallet != null && newPoints != oldPoints) {
+            wallet.setCurrentPoints(newPoints);
+            wallet.setUpdatedAt(new Date());
+            pointWalletsFacade.edit(wallet);
+        }
+    }
+
+    /**
+     * Safe getter for current points.
+     * Works whether PointWallets#getCurrentPoints() returns primitive long or boxed Long.
+     */
+    private long safeWalletPoints(PointWallets w) {
+        if (w == null) return 0L;
+        // If getCurrentPoints() returns primitive long, it will auto-box into Long here.
+        Long p = w.getCurrentPoints();
+        return (p == null) ? 0L : p.longValue();
+    }
+
+    /**
+     * Tính tổng điểm Earned dựa theo tất cả booking PAID của customer.
+     */
+    private long calcEarnedPointsFromPaidBookings() {
         long totalPoints = 0L;
 
         List<Bookings> allBookings;
@@ -209,67 +248,85 @@ public class CustomerOffersBean implements Serializable {
             allBookings = bookingsFacade.findAll();
         } catch (Exception ex) {
             ex.printStackTrace();
-            return;
+            return 0L;
         }
 
         if (allBookings == null || allBookings.isEmpty()) {
-            // không có booking nào, reset về 0
-            wallet.setCurrentPoints(0L);
-            wallet.setUpdatedAt(new Date());
-            pointWalletsFacade.edit(wallet);
-            return;
+            return 0L;
         }
 
         for (Bookings b : allBookings) {
             if (b == null) continue;
 
-            // chỉ lấy booking của currentUser
             if (b.getCustomerId() == null
                     || b.getCustomerId().getUserId() == null
                     || !b.getCustomerId().getUserId().equals(currentUser.getUserId())) {
                 continue;
             }
 
-            // chỉ cộng điểm khi PaymentStatus = 'PAID'
             String payStatus = b.getPaymentStatus();
             if (payStatus == null || !"PAID".equalsIgnoreCase(payStatus.trim())) {
                 continue;
             }
 
             BigDecimal totalAmount = b.getTotalAmount();
-            if (totalAmount == null) {
-                continue;
-            }
+            if (totalAmount == null) continue;
 
             long total = totalAmount.longValue();
 
             // tổng tiền phải >= amountPerPoint mới cộng
-            if (total < amountPerPoint) {
-                continue;
-            }
+            if (total < amountPerPoint) continue;
 
             long multiplier = total / amountPerPoint;
-            if (multiplier <= 0L) {
-                continue;
-            }
+            if (multiplier <= 0L) continue;
 
             long earned = multiplier * pointsPerAmount;
             totalPoints += earned;
         }
 
-        // Cập nhật ví: set thẳng tổng điểm mới tính được
-        long oldPoints = (wallet.getCurrentPoints() != 0L) ? wallet.getCurrentPoints() : 0L;
-        wallet.setCurrentPoints(totalPoints);
-        wallet.setUpdatedAt(new Date());
-        pointWalletsFacade.edit(wallet);
-
-        // Nếu muốn báo message khi điểm thay đổi:
-        if (totalPoints != oldPoints) {
-            addMessage(FacesMessage.SEVERITY_INFO,
-                    "Scores have been updated.",
-                    "Your current score: " + totalPoints + " pts.");
-        }
+        return totalPoints;
     }
+
+    /**
+     * Tính tổng điểm đã "Spent" dựa theo các voucher user đã đổi.
+     * SpentPoints = SUM(UserVouchers.quantity * Vouchers.pointCost)
+     */
+    private long calcSpentPointsFromRedeemedVouchers() {
+        long spent = 0L;
+
+        List<UserVouchers> all;
+        try {
+            all = userVouchersFacade.findAll();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return 0L;
+        }
+
+        if (all == null || all.isEmpty()) {
+            return 0L;
+        }
+
+        for (UserVouchers uv : all) {
+            if (uv == null) continue;
+            if (uv.getUserId() == null || uv.getVoucherId() == null) continue;
+            if (uv.getUserId().getUserId() == null) continue;
+
+            if (!uv.getUserId().getUserId().equals(currentUser.getUserId())) {
+                continue;
+            }
+
+            int qty = uv.getQuantity();
+            if (qty <= 0) continue;
+
+            Integer costObj = uv.getVoucherId().getPointCost();
+            if (costObj == null || costObj <= 0) continue;
+
+            spent += (long) qty * (long) costObj;
+        }
+
+        return spent;
+    }
+
 
     private void loadRedeemableOffers() {
         redeemableOffers = new ArrayList<>();
@@ -306,10 +363,13 @@ public class CustomerOffersBean implements Serializable {
         }
     }
 
+    
     // ✅ NEW: Lưu vào bảng UserVouchers (nếu đã có thì +quantity)
+    // IMPORTANT: Method này bây giờ là "nguồn sự thật" để tính SpentPoints,
+    // nên KHÔNG được nuốt lỗi âm thầm. Nếu lỗi thì redeem sẽ rollback best-effort.
     private void saveUserVoucherClaim(Users user, Vouchers voucher) {
         if (user == null || user.getUserId() == null || voucher == null || voucher.getVoucherId() == null) {
-            return;
+            throw new IllegalArgumentException("Invalid user/voucher for saving claim.");
         }
 
         try {
@@ -364,13 +424,12 @@ public class CustomerOffersBean implements Serializable {
 
                 userVouchersFacade.edit(existing);
             }
-
         } catch (Exception ex) {
-            ex.printStackTrace();
-            // không chặn luồng redeem (vì bạn đang nói phần này chỉ là lưu history)
+            throw new RuntimeException("Failed to save UserVouchers claim", ex);
         }
     }
 
+    
     public void redeemVoucher(Vouchers voucher) {
         lastRedeemedCode = null;
         lastRedeemedName = null;
@@ -386,9 +445,21 @@ public class CustomerOffersBean implements Serializable {
             return;
         }
 
+        boolean walletDeducted = false;
+        boolean voucherEdited = false;
+
+        long oldWalletPoints = 0L;
+        Integer oldTotalQty = null;
+        Integer oldPerLimit = null;
+
         try {
             if (wallet == null) {
                 initWallet();
+            }
+
+            if (wallet == null) {
+                addMessage(FacesMessage.SEVERITY_ERROR, "Error", "Cannot load your point wallet.");
+                return;
             }
 
             Vouchers managed = vouchersFacade.find(voucher.getVoucherId());
@@ -439,7 +510,8 @@ public class CustomerOffersBean implements Serializable {
                 return;
             }
 
-            long current = wallet.getCurrentPoints();
+            long current = safeWalletPoints(wallet);
+            oldWalletPoints = current;
 
             if (current < cost) {
                 addMessage(FacesMessage.SEVERITY_ERROR,
@@ -448,12 +520,16 @@ public class CustomerOffersBean implements Serializable {
                 return;
             }
 
-            // Trừ điểm
+            // === 1) Trừ điểm trong ví ===
             wallet.setCurrentPoints(current - cost);
             wallet.setUpdatedAt(new Date());
             pointWalletsFacade.edit(wallet);
+            walletDeducted = true;
 
-            // Giảm số lượng voucher
+            // === 2) Giảm số lượng voucher (best effort theo design hiện tại) ===
+            oldTotalQty = totalQty;
+            oldPerLimit = perLimit;
+
             if (totalQty != null) {
                 int newTotal = totalQty - 1;
                 if (newTotal < 0) newTotal = 0;
@@ -467,8 +543,9 @@ public class CustomerOffersBean implements Serializable {
 
             managed.setUpdatedAt(new Date());
             vouchersFacade.edit(managed);
+            voucherEdited = true;
 
-            // ✅ NEW: Lưu vào bảng UserVouchers
+            // === 3) Lưu lịch sử đổi voucher (dùng để tính điểm đã tiêu) ===
             saveUserVoucherClaim(currentUser, managed);
 
             lastRedeemedCode = managed.getCode();
@@ -478,12 +555,35 @@ public class CustomerOffersBean implements Serializable {
 
             addMessage(FacesMessage.SEVERITY_INFO,
                     "Voucher redemption successful.",
-                    "You have redeemed the voucher. " + managed.getCode()
+                    "You have redeemed the voucher " + managed.getCode()
                             + " with " + cost + " points. Remaining points: " + wallet.getCurrentPoints());
 
             loadRedeemableOffers();
 
         } catch (Exception ex) {
+            // rollback best-effort để tránh trạng thái "trừ điểm nhưng không lưu lịch sử"
+            try {
+                if (walletDeducted && wallet != null) {
+                    wallet.setCurrentPoints(oldWalletPoints);
+                    wallet.setUpdatedAt(new Date());
+                    pointWalletsFacade.edit(wallet);
+                }
+            } catch (Exception ignore) {
+            }
+
+            try {
+                if (voucherEdited) {
+                    Vouchers rollback = vouchersFacade.find(voucher.getVoucherId());
+                    if (rollback != null) {
+                        rollback.setTotalQuantity(oldTotalQty);
+                        rollback.setPerUserLimit(oldPerLimit);
+                        rollback.setUpdatedAt(new Date());
+                        vouchersFacade.edit(rollback);
+                    }
+                }
+            } catch (Exception ignore) {
+            }
+
             ex.printStackTrace();
             addMessage(FacesMessage.SEVERITY_ERROR,
                     "Error",
