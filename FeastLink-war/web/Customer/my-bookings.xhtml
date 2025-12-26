@@ -360,7 +360,10 @@
                                                     <i data-lucide="calendar" class="w-5 h-5 text-[#D4AF37] mt-0.5 flex-shrink-0"></i>
                                                     <div>
                                                         <p class="text-[#111827] font-medium">
-                                                            <h:outputText value="#{customerMyBookingsBean.formatDateShort(b.eventDate)}" />
+                                                            <h:outputText value="#{b.eventDate}">
+                                                                <f:convertDateTime type="date" pattern="EEE, MMM d, yyyy" timeZone="Asia/Ho_Chi_Minh"/>
+                                                            </h:outputText>
+
                                                         </p>
                                                     </div>
                                                 </div>
@@ -369,8 +372,14 @@
                                                     <i data-lucide="clock" class="w-5 h-5 text-[#D4AF37] mt-0.5 flex-shrink-0"></i>
                                                     <div>
                                                         <p class="text-[#111827] font-medium">
-                                                            <h:outputText value="#{customerMyBookingsBean.formatTime(b.startTime)}" /> –
-                                                            <h:outputText value="#{customerMyBookingsBean.formatTime(b.endTime)}" />
+                                                            <h:outputText value="#{b.startTime}">
+                                                                <f:convertDateTime type="time" pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
+                                                            </h:outputText>
+                                                            –
+                                                            <h:outputText value="#{b.endTime}">
+                                                                <f:convertDateTime type="time" pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
+                                                            </h:outputText>
+
                                                         </p>
                                                     </div>
                                                 </div>
@@ -629,11 +638,13 @@
                                             <h:inputText id="editEventDate"
                                                          value="#{customerMyBookingsBean.editEventDate}"
                                                          pass:type="date"
+                                                         pass:lang="vi-VN"
                                                          pass:min="#{customerMyBookingsBean.editMinDate}"
                                                          styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
                                                          focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
-                                                <f:convertDateTime pattern="yyyy-MM-dd"/>
+                                                <f:convertDateTime type="date" pattern="yyyy-MM-dd" timeZone="Asia/Ho_Chi_Minh"/>
                                             </h:inputText>
+
                                             <h:message for="editEventDate" styleClass="block mt-2 text-xs text-red-600"/>
                                         </div>
 
@@ -644,25 +655,29 @@
                                                 <h:inputText id="editStartTime"
                                                              value="#{customerMyBookingsBean.editStartTime}"
                                                              pass:type="time"
+                                                             pass:lang="vi-VN"
                                                              styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
                                                              focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
-                                                    <f:convertDateTime pattern="HH:mm"/>
+                                                    <f:convertDateTime type="time" pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
                                                 </h:inputText>
+
                                             </div>
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-600 mb-2">End time</label>
                                                 <h:inputText id="editEndTime"
                                                              value="#{customerMyBookingsBean.editEndTime}"
                                                              pass:type="time"
+                                                             pass:lang="vi-VN"
                                                              styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
                                                              focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
-                                                    <f:convertDateTime pattern="HH:mm"/>
+                                                    <f:convertDateTime type="time" pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
                                                 </h:inputText>
+
                                                 <h:message for="editEndTime" styleClass="block mt-2 text-xs text-red-600"/>
                                             </div>
                                         </div>
 
-                                        <!-- Guests -->
+<!--                                         Guests 
                                         <div>
                                             <label class="block text-xs font-medium text-gray-600 mb-2">Guest count</label>
                                             <h:inputText id="editGuestCount"
@@ -677,7 +692,7 @@
                                                 Allowed range: #{customerMyBookingsBean.editGuestMin} – #{customerMyBookingsBean.editGuestMax} guests.
                                             </p>
 
-                                        </div>
+                                        </div>-->
 
                                         <!-- Location -->
                                         <div>
