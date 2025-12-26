@@ -73,7 +73,9 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
 
     @PostConstruct
     public void init() {
-        if (currentMonth == null) currentMonth = YearMonth.now();
+        if (currentMonth == null) {
+            currentMonth = YearMonth.now();
+        }
     }
 
     // called by <f:viewAction>
@@ -87,7 +89,9 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
         }
         loaded = true;
 
-        if (currentMonth == null) currentMonth = YearMonth.now();
+        if (currentMonth == null) {
+            currentMonth = YearMonth.now();
+        }
 
         restaurant = resolveRestaurant();
         loadSettings();
@@ -101,7 +105,9 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
     }
 
     private Restaurants resolveRestaurant() {
-        if (restaurantId == null) return null;
+        if (restaurantId == null) {
+            return null;
+        }
         try {
             return restaurantsFacade.find(restaurantId);
         } catch (Exception ignore) {
@@ -175,11 +181,15 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
                 java.sql.Date.valueOf(last)
         );
 
-        if (rows == null) return;
+        if (rows == null) {
+            return;
+        }
 
         for (RestaurantDayCapacity d : rows) {
             LocalDate date = toLocalDate(d.getEventDate());
-            if (date == null) continue;
+            if (date == null) {
+                continue;
+            }
 
             Integer mg = d.getMaxGuests();
             Integer mb = d.getMaxBookings();
@@ -222,11 +232,15 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
                 to
         );
 
-        if (rows == null) return;
+        if (rows == null) {
+            return;
+        }
 
         for (Object[] r : rows) {
             LocalDate day = toLocalDate(r[0]);
-            if (day == null) continue;
+            if (day == null) {
+                continue;
+            }
 
             int totalGuests = numberToInt(r[1]);
             int bookingCount = numberToInt(r[2]);
@@ -279,16 +293,22 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
 
     // ===== MinDaysInAdvance overlay =====
     private int getMinDaysInAdvanceSafe() {
-        if (restaurant == null) return 0;
+        if (restaurant == null) {
+            return 0;
+        }
         Integer v = restaurant.getMinDaysInAdvance();
         return (v != null && v > 0) ? v : 0;
     }
 
     private boolean isTooSoon(LocalDate date) {
-        if (date == null) return false;
+        if (date == null) {
+            return false;
+        }
 
         int min = getMinDaysInAdvanceSafe();
-        if (min <= 0) return false;
+        if (min <= 0) {
+            return false;
+        }
 
         LocalDate today = LocalDate.now(ZoneId.systemDefault());
         LocalDate earliestAllowed = today.plusDays(min);
@@ -298,8 +318,12 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
     }
 
     private StatusType applyMinAdvanceOverlay(LocalDate date, StatusType base) {
-        if (!isTooSoon(date)) return base;
-        if (base == StatusType.BLOCKED || base == StatusType.FULL) return base;
+        if (!isTooSoon(date)) {
+            return base;
+        }
+        if (base == StatusType.BLOCKED || base == StatusType.FULL) {
+            return base;
+        }
         return StatusType.TOO_SOON;
     }
 
@@ -310,6 +334,9 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
         LocalDate firstOfMonth = currentMonth.atDay(1);
         int shift = firstOfMonth.getDayOfWeek().getValue() % 7;
         LocalDate start = firstOfMonth.minusDays(shift);
+
+        // ✅ THÊM: tính today 1 lần
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
 
         LocalDate selected = null;
         try {
@@ -328,7 +355,15 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
             StatusType base = dayStatusMap.getOrDefault(date, StatusType.NONE);
             StatusType effective = applyMinAdvanceOverlay(date, base);
 
-            boolean disabled = (!inMonth) ? true : (effective == StatusType.BLOCKED || effective == StatusType.FULL || effective == StatusType.TOO_SOON);
+            // ✅ THÊM: chặn ngày quá khứ
+            boolean past = date.isBefore(today);
+
+            // ✅ SỬA: disabled gồm cả past
+            boolean disabled = (!inMonth)
+                    || past
+                    || (effective == StatusType.BLOCKED
+                    || effective == StatusType.FULL
+                    || effective == StatusType.TOO_SOON);
 
             calendarDays.add(new CalendarDay(date, inMonth, effective, disabled, isSelected));
         }
@@ -353,7 +388,9 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
         canProceed = false;
         selectedStatusLabel = "--";
 
-        if (selectedDateIso == null || selectedDateIso.isBlank()) return;
+        if (selectedDateIso == null || selectedDateIso.isBlank()) {
+            return;
+        }
 
         LocalDate date;
         try {
@@ -378,18 +415,30 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
 
     // ===== status logic =====
     private StatusType computeStatus(int guestCount, int bookingCount, int maxGuests, int maxBookings) {
-        if (maxGuests <= 0) maxGuests = defaultMaxGuestsPerDay;
-        if (maxBookings <= 0) maxBookings = defaultMaxBookingsPerDay;
+        if (maxGuests <= 0) {
+            maxGuests = defaultMaxGuestsPerDay;
+        }
+        if (maxBookings <= 0) {
+            maxBookings = defaultMaxBookingsPerDay;
+        }
 
-        if (guestCount < 0) guestCount = 0;
-        if (bookingCount < 0) bookingCount = 0;
+        if (guestCount < 0) {
+            guestCount = 0;
+        }
+        if (bookingCount < 0) {
+            bookingCount = 0;
+        }
 
         double guestRatio = (maxGuests > 0) ? (double) guestCount / maxGuests : 0.0;
         double bookingRatio = (maxBookings > 0) ? (double) bookingCount / maxBookings : 0.0;
         double ratio = Math.max(guestRatio, bookingRatio);
 
-        if (ratio >= 1.0) return StatusType.FULL;
-        if (ratio >= 0.5) return StatusType.NEAR_FULL;
+        if (ratio >= 1.0) {
+            return StatusType.FULL;
+        }
+        if (ratio >= 0.5) {
+            return StatusType.NEAR_FULL;
+        }
         return StatusType.AVAILABLE;
     }
 
@@ -413,11 +462,19 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
 
     // ===== util =====
     private LocalDate toLocalDate(Object obj) {
-        if (obj == null) return null;
+        if (obj == null) {
+            return null;
+        }
 
-        if (obj instanceof LocalDate) return (LocalDate) obj;
-        if (obj instanceof java.sql.Date) return ((java.sql.Date) obj).toLocalDate();
-        if (obj instanceof Timestamp) return ((Timestamp) obj).toLocalDateTime().toLocalDate();
+        if (obj instanceof LocalDate) {
+            return (LocalDate) obj;
+        }
+        if (obj instanceof java.sql.Date) {
+            return ((java.sql.Date) obj).toLocalDate();
+        }
+        if (obj instanceof Timestamp) {
+            return ((Timestamp) obj).toLocalDateTime().toLocalDate();
+        }
         if (obj instanceof Date) {
             Date d = (Date) obj;
             return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -426,8 +483,12 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
     }
 
     private int numberToInt(Object o) {
-        if (o == null) return 0;
-        if (o instanceof Number) return ((Number) o).intValue();
+        if (o == null) {
+            return 0;
+        }
+        if (o instanceof Number) {
+            return ((Number) o).intValue();
+        }
         return 0;
     }
 
@@ -478,6 +539,7 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
     }
 
     private static class ManualOverride implements Serializable {
+
         int currentGuests;
         int currentBookings;
         int maxGuests;
@@ -492,6 +554,7 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
     }
 
     public static class CalendarDay implements Serializable {
+
         private static final long serialVersionUID = 1L;
 
         private final LocalDate date;
@@ -578,11 +641,19 @@ public class RestaurantPublicAvailabilityBean implements Serializable {
         }
 
         public String getTextCss() {
-            if (!inCurrentMonth) return "text-gray-300 text-sm font-semibold";
-            if (selected) return "text-white text-sm font-semibold";
+            if (!inCurrentMonth) {
+                return "text-gray-300 text-sm font-semibold";
+            }
+            if (selected) {
+                return "text-white text-sm font-semibold";
+            }
             if (disabled) {
-                if (status == StatusType.FULL || status == StatusType.TOO_SOON) return "text-[#DC2626] text-sm font-semibold";
-                if (status == StatusType.BLOCKED) return "text-gray-500 text-sm font-semibold";
+                if (status == StatusType.FULL || status == StatusType.TOO_SOON) {
+                    return "text-[#DC2626] text-sm font-semibold";
+                }
+                if (status == StatusType.BLOCKED) {
+                    return "text-gray-500 text-sm font-semibold";
+                }
                 return "text-gray-400 text-sm font-semibold";
             }
             return "text-[#111827] text-sm font-semibold";
