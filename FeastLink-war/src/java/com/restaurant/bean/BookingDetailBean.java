@@ -15,6 +15,7 @@ import jakarta.inject.Named;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -230,33 +231,184 @@ public class BookingDetailBean implements Serializable {
     }
 
     public BigDecimal getPackageSubtotal() {
-        return packageSubtotal;
+        if (!isHasGuestCount()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal perGuest = packageSubtotal != null ? packageSubtotal : BigDecimal.ZERO;
+        return perGuest.multiply(new BigDecimal(booking.getGuestCount()))
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getMenuSubtotal() {
-        return menuSubtotal;
+        BigDecimal total = menuSubtotal != null ? menuSubtotal : BigDecimal.ZERO;
+        return total.setScale(2, RoundingMode.HALF_UP);
     }
-    
-        // ====== Payment breakdown helpers ======
 
+    // ===== Guest count + base price per guest =====
+    public boolean isHasGuestCount() {
+        if (booking == null) {
+            return false;
+        }
+        Integer gc = booking.getGuestCount();
+        return gc != null && gc > 0;
+    }
+
+    public BigDecimal getPackagePerGuest() {
+        if (!isHasGuestCount()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal perGuest = packageSubtotal != null ? packageSubtotal : BigDecimal.ZERO;
+        return perGuest.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public BigDecimal getMenuPerGuest() {
+        if (!isHasGuestCount()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal total = menuSubtotal != null ? menuSubtotal : BigDecimal.ZERO;
+        return total.divide(new BigDecimal(booking.getGuestCount()), 2, RoundingMode.HALF_UP);
+    }
+
+    // ====== Service charge helpers (Package + Menu) * rate ======
+    public BigDecimal getFoodSubtotal() {
+        return getPackageSubtotal().add(getMenuSubtotal())
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public String getServiceTypeName() {
+        if (booking != null && booking.getServiceTypeId() != null
+                && booking.getServiceTypeId().getName() != null
+                && !booking.getServiceTypeId().getName().isBlank()) {
+            return booking.getServiceTypeId().getName();
+        }
+        return null; // không chọn thì null
+    }
+
+    public boolean isHasServiceType() {
+        return getServiceTypeName() != null && !getServiceTypeName().isBlank();
+    }
+
+    /**
+     * Map % theo UI của bro: Standard 3%, Premium 5%, VIP 8%, Exclusive 12%
+     */
+    public BigDecimal getServiceChargeRate() {
+        String name = getServiceTypeName();
+        if (name == null) {
+            return BigDecimal.ZERO;
+        }
+
+        String s = name.trim().toUpperCase();
+        switch (s) {
+            case "PREMIUM":
+                return new BigDecimal("0.05");
+            case "VIP":
+                return new BigDecimal("0.08");
+//            case "EXCLUSIVE":
+//                return new BigDecimal("0.12");
+            case "STANDARD":
+                return new BigDecimal("0.03");
+            default:
+                return BigDecimal.ZERO;
+        }
+    }
+
+    public String getServiceChargeRatePercent() {
+        BigDecimal rate = getServiceChargeRate();
+        if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
+            return "";
+        }
+        return rate.multiply(new BigDecimal("100"))
+                .setScale(0, RoundingMode.HALF_UP)
+                .toPlainString() + "%";
+    }
+
+    /**
+     * Fee theo công thức: (Package + Menu) * rate (để giải thích)
+     */
+    public BigDecimal getServiceChargeComputed() {
+        return getFoodSubtotal()
+                .multiply(getServiceChargeRate())
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public BigDecimal getServiceChargePerGuest() {
+        if (!isHasGuestCount()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal fee = getServiceChargeComputed();
+        return fee.divide(new BigDecimal(booking.getGuestCount()), 2, RoundingMode.HALF_UP);
+    }
+
+    public BigDecimal getMenuItemLineTotal(BookingMenuItems mi) {
+        if (mi == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal unit = mi.getUnitPrice() != null ? mi.getUnitPrice() : BigDecimal.ZERO;
+        Integer q = mi.getQuantity(); // nếu getQuantity() trả int thì Java auto-boxing
+        int qty = (q == null ? 0 : q);
+
+        BigDecimal line = unit.multiply(new BigDecimal(qty));
+
+        // nếu menu tính theo số khách (giống package)
+        if (isHasGuestCount()) {
+            line = line.multiply(new BigDecimal(booking.getGuestCount()));
+        }
+
+        return line.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    // ====== Payment breakdown helpers ======
     public BigDecimal getOtherCharges() {
         if (booking == null || booking.getTotalAmount() == null) {
             return BigDecimal.ZERO;
         }
-        BigDecimal total = booking.getTotalAmount();
-        BigDecimal pkg = packageSubtotal != null ? packageSubtotal : BigDecimal.ZERO;
-        BigDecimal menu = menuSubtotal != null ? menuSubtotal : BigDecimal.ZERO;
 
-        BigDecimal other = total.subtract(pkg.add(menu));
-        // Không cho âm, nếu lỡ tính lệch
+        // Nếu có service type => lấy đúng fee theo rate (khớp phần mô tả)
+        if (isHasServiceType() && getServiceChargeRate().compareTo(BigDecimal.ZERO) > 0) {
+            return getServiceChargeComputed();
+        }
+
+        // fallback: tính từ total - foodSubtotal
+        BigDecimal total = booking.getTotalAmount();
+        BigDecimal other = total.subtract(getFoodSubtotal());
         if (other.compareTo(BigDecimal.ZERO) < 0) {
             return BigDecimal.ZERO;
         }
-        return other;
+        return other.setScale(2, RoundingMode.HALF_UP);
     }
 
     public boolean isHasOtherCharges() {
         return getOtherCharges().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private String safe(String s) {
+        return s == null ? "" : s.trim();
+    }
+
+    public boolean isCancelled() {
+        return booking != null
+                && booking.getBookingStatus() != null
+                && "CANCELLED".equalsIgnoreCase(booking.getBookingStatus());
+    }
+
+    public String getCancelReasonDisplay() {
+        if (!isCancelled()) {
+            return "";
+        }
+
+        String r = safe(booking.getCancelReason());
+        if (r.isEmpty()) {
+            try {
+                r = safe(booking.getRejectReason());
+            } catch (Exception ignore) {
+            }
+        }
+        return r.isEmpty() ? "No reason was provided." : r;
+    }
+
+    public boolean isHasCancelTime() {
+        return booking != null && booking.getCancelTime() != null;
     }
 
 }

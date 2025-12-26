@@ -177,6 +177,16 @@
                                     </ui:repeat>
                                 </select>
                             </div>
+                            <!-- Clear Filters -->
+                            <div class="flex items-center">
+                                <button type="button"
+                                        id="clear-filters-btn"
+                                        class="px-4 py-2 rounded-full border border-[#E5E7EB] bg-white text-sm font-medium text-[#111827]
+                                        hover:border-[#E6C77F] hover:text-[#D4AF37] transition-all flex items-center gap-2">
+                                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                    Clear
+                                </button>
+                            </div>
 
 
                         </div>
@@ -509,6 +519,19 @@
                                                     </h:commandLink>
                                                 </h:panelGroup>
 
+                                                <!-- Delete quotation (only DRAFT + UNPAID) -->
+                                                <h:panelGroup rendered="#{customerMyBookingsBean.canDeleteQuotation(b)}">
+                                                    <h:commandLink
+                                                        actionListener="#{customerMyBookingsBean.prepareDeleteQuotation(b.bookingId)}"
+                                                        styleClass="px-6 py-3 bg-white hover:bg-[#FEF2F2] text-[#EF4444] border-2 border-[#EF4444]
+                                                        font-semibold rounded-xl transition-all duration-300 flex items-center gap-2">
+                                                        <f:ajax execute="@this"
+                                                                render=":myBookingsForm:deleteModal :myBookingsForm:msgs"
+                                                                onevent="feastlinkCustomerPrepareDeleteEvent"/>
+                                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                        <span>Delete</span>
+                                                    </h:commandLink>
+                                                </h:panelGroup>
 
                                                 <!-- View details: sang trang booking-details -->
                                                 <h:link outcome="/Customer/booking-details"
@@ -578,6 +601,186 @@
                                 </div>
                             </div>
                         </h:panelGroup>
+                        <!-- EDIT MODAL -->
+                        <h:panelGroup id="editModal">
+                            <!-- flag để JS biết save edit ok chưa -->
+                            <h:inputHidden id="editSaveOk" value="#{customerMyBookingsBean.editSaveSuccess}"/>
+                            <h:inputHidden id="editBookingId" value="#{customerMyBookingsBean.editBookingId}"/>
+
+                            <div id="customerEditModal" class="fixed inset-0 z-50 hidden">
+                                <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeCustomerEditModal()"></div>
+
+                                <div class="relative mx-auto mt-10 sm:mt-16 w-[92%] max-w-2xl rounded-3xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
+                                    <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                                        <div>
+                                            <p class="text-[11px] uppercase tracking-widest text-gray-500">Edit booking</p>
+                                            <p class="text-lg font-semibold text-[#0B1120]">Update your event details</p>
+                                        </div>
+                                        <button type="button"
+                                                class="w-10 h-10 rounded-2xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-700"
+                                                onclick="closeCustomerEditModal()">✕</button>
+                                    </div>
+
+                                    <div class="px-6 py-6 space-y-5">
+
+                                        <!-- Event date -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-2">Event date</label>
+                                            <h:inputText id="editEventDate"
+                                                         value="#{customerMyBookingsBean.editEventDate}"
+                                                         pass:type="date"
+                                                         pass:min="#{customerMyBookingsBean.editMinDate}"
+                                                         styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                         focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                                                <f:convertDateTime pattern="yyyy-MM-dd"/>
+                                            </h:inputText>
+                                            <h:message for="editEventDate" styleClass="block mt-2 text-xs text-red-600"/>
+                                        </div>
+
+                                        <!-- Time -->
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-2">Start time</label>
+                                                <h:inputText id="editStartTime"
+                                                             value="#{customerMyBookingsBean.editStartTime}"
+                                                             pass:type="time"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                                                    <f:convertDateTime pattern="HH:mm"/>
+                                                </h:inputText>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-2">End time</label>
+                                                <h:inputText id="editEndTime"
+                                                             value="#{customerMyBookingsBean.editEndTime}"
+                                                             pass:type="time"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                                                    <f:convertDateTime pattern="HH:mm"/>
+                                                </h:inputText>
+                                                <h:message for="editEndTime" styleClass="block mt-2 text-xs text-red-600"/>
+                                            </div>
+                                        </div>
+
+                                        <!-- Guests -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-2">Guest count</label>
+                                            <h:inputText id="editGuestCount"
+                                                         value="#{customerMyBookingsBean.editGuestCount}"
+                                                         pass:type="number"
+                                                         pass:min="#{customerMyBookingsBean.editGuestMin}"
+                                                         pass:max="#{customerMyBookingsBean.editGuestMax}"
+                                                         styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                         focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"/>
+                                            <h:message for="editGuestCount" styleClass="block mt-2 text-xs text-red-600"/>
+                                            <p class="mt-2 text-xs text-gray-500">
+                                                Allowed range: #{customerMyBookingsBean.editGuestMin} – #{customerMyBookingsBean.editGuestMax} guests.
+                                            </p>
+
+                                        </div>
+
+                                        <!-- Location -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-2">Location</label>
+                                            <h:selectOneMenu id="editLocationType"
+                                                             value="#{customerMyBookingsBean.editLocationType}"
+                                                             onchange="toggleEditOutside()"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                                                <f:selectItem itemValue="AT_RESTAURANT" itemLabel="At restaurant"/>
+                                                <f:selectItem itemValue="OUTSIDE" itemLabel="Outside"/>
+                                            </h:selectOneMenu>
+                                        </div>
+
+                                        <div id="editOutsideWrap" class="#{customerMyBookingsBean.editOutside ? '' : 'hidden'}">
+                                            <label class="block text-xs font-medium text-gray-600 mb-2">Outside address</label>
+                                            <h:inputText id="editOutsideAddress"
+                                                         value="#{customerMyBookingsBean.editOutsideAddress}"
+                                                         styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                         focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"/>
+                                            <h:message for="editOutsideAddress" styleClass="block mt-2 text-xs text-red-600"/>
+                                        </div>
+
+                                        <!-- Note -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-2">Note</label>
+                                            <h:inputTextarea id="editNote"
+                                                             value="#{customerMyBookingsBean.editNote}"
+                                                             rows="3"
+                                                             styleClass="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800
+                                                             focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"/>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="px-6 py-5 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50">
+                                        <button type="button"
+                                                class="px-4 py-2.5 rounded-2xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                                onclick="closeCustomerEditModal()">Back</button>
+
+                                        <h:commandButton value="Save changes"
+                                                         action="#{customerMyBookingsBean.saveEdit}"
+                                                         styleClass="px-5 py-2.5 rounded-2xl bg-[#D4AF37] text-[#111827] text-sm font-semibold hover:brightness-95 transition-all shadow-sm">
+                                            <f:ajax execute=":myBookingsForm:editBookingId
+                                                    :myBookingsForm:editEventDate
+                                                    :myBookingsForm:editStartTime
+                                                    :myBookingsForm:editEndTime
+                                                    :myBookingsForm:editGuestCount
+                                                    :myBookingsForm:editLocationType
+                                                    :myBookingsForm:editOutsideAddress
+                                                    :myBookingsForm:editNote"
+                                                    render=":myBookingsForm:editModal :myBookingsForm:msgs"
+                                                    onevent="feastlinkCustomerSaveEditEvent"/>
+                                        </h:commandButton>
+                                    </div>
+                                </div>
+                            </div>
+                        </h:panelGroup>
+                        <!-- DELETE MODAL -->
+                        <h:panelGroup id="deleteModal">
+                            <h:inputHidden id="deleteOk" value="#{customerMyBookingsBean.deleteSuccess}"/>
+                            <h:inputHidden id="deleteBookingId" value="#{customerMyBookingsBean.deleteBookingId}"/>
+
+                            <div id="customerDeleteModal" class="fixed inset-0 z-50 hidden">
+                                <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeCustomerDeleteModal()"></div>
+
+                                <div class="relative mx-auto mt-10 sm:mt-16 w-[92%] max-w-xl rounded-3xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
+                                    <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                                        <div>
+                                            <p class="text-[11px] uppercase tracking-widest text-gray-500">Delete quotation</p>
+                                            <p class="text-lg font-semibold text-[#0B1120]">Delete this draft booking?</p>
+                                            <p class="mt-2 text-sm text-gray-500">
+                                                This action cannot be undone.
+                                            </p>
+                                        </div>
+                                        <button type="button"
+                                                class="w-10 h-10 rounded-2xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-700"
+                                                onclick="closeCustomerDeleteModal()">✕</button>
+                                    </div>
+
+                                    <div class="px-6 py-6 space-y-3">
+                                        <p class="text-sm text-gray-700">
+                                            You are about to delete your saved quotation. If you want to book later, you can create a new booking again.
+                                        </p>
+                                    </div>
+
+                                    <div class="px-6 py-5 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50">
+                                        <button type="button"
+                                                class="px-4 py-2.5 rounded-2xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                                onclick="closeCustomerDeleteModal()">Back</button>
+
+                                        <h:commandButton value="Yes, delete"
+                                                         action="#{customerMyBookingsBean.confirmDeleteQuotation}"
+                                                         styleClass="px-5 py-2.5 rounded-2xl bg-[#EF4444] text-white text-sm font-semibold hover:bg-[#DC2626] transition-all shadow-sm">
+                                            <f:ajax execute=":myBookingsForm:deleteBookingId"
+                                                    render=":myBookingsForm:deleteModal :myBookingsForm:msgs"
+                                                    onevent="feastlinkCustomerConfirmDeleteEvent"/>
+                                        </h:commandButton>
+                                    </div>
+                                </div>
+                            </div>
+                        </h:panelGroup>
+
                         <!-- CANCEL MODAL -->
                         <h:panelGroup id="cancelModal">
                             <!-- flag để JS biết cancel ok chưa -->
@@ -596,6 +799,12 @@
                                             <p class="text-lg font-semibold text-[#0B1120]">
                                                 Provide a cancellation reason
                                             </p>
+                                            <h:panelGroup rendered="#{customerMyBookingsBean.cancelPolicyHint ne ''}">
+                                                <p class="mt-2 text-sm text-gray-500">
+                                                    #{customerMyBookingsBean.cancelPolicyHint}
+                                                </p>
+                                            </h:panelGroup>
+
                                         </div>
                                         <button type="button"
                                                 class="w-10 h-10 rounded-2xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-700"
@@ -656,39 +865,72 @@
                     window.lucide.createIcons();
                 }
 
+                // =========================
+                // FILTER STATE (PERSIST)
+                // =========================
+                var STORAGE_KEY = 'feastlink_mybookings_filters';
+
+                // Defaults
                 var statusFilter = 'all';
+                var searchRaw = '';
                 var searchQuery = '';
                 var sortOrder = 'newest';
                 var restaurantFilter = 'all';
 
-
-                var cards = Array.prototype.slice.call(
-                        document.querySelectorAll('[data-role="booking-card"]')
-                        );
-                var emptyFilter = document.getElementById('empty-filter-state');
-
-                var cards = Array.prototype.slice.call(
-                        document.querySelectorAll('[data-role="booking-card"]')
-                        );
+                // DOM refs
+                var cards = Array.prototype.slice.call(document.querySelectorAll('[data-role="booking-card"]'));
                 var emptyFilter = document.getElementById('empty-filter-state');
                 var listContainer = document.getElementById('bookings-list');
+
                 var sortSelect = document.getElementById('sort-select');
-
-                if (sortSelect) {
-                    sortSelect.addEventListener('change', function (e) {
-                        sortOrder = e.target.value || 'newest';
-                        sortCards();
-                        applyFilters();
-                    });
-                }
                 var restaurantSelect = document.getElementById('restaurant-select');
-                if (restaurantSelect) {
-                    restaurantSelect.addEventListener('change', function (e) {
-                        restaurantFilter = e.target.value || 'all';
-                        applyFilters();
-                    });
+                var searchInput = document.getElementById('search-input');
+                var clearBtn = document.getElementById('clear-filters-btn');
+
+                // =========================
+                // STORAGE HELPERS
+                // =========================
+                function saveFilters() {
+                    try {
+                        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+                            status: statusFilter,
+                            q: searchRaw || '',
+                            sort: sortOrder,
+                            restaurant: restaurantFilter
+                        }));
+                    } catch (e) {
+                    }
                 }
 
+                function loadFilters() {
+                    try {
+                        var raw = sessionStorage.getItem(STORAGE_KEY);
+                        if (!raw)
+                            return;
+                        var obj = JSON.parse(raw);
+
+                        statusFilter = obj.status || 'all';
+                        searchRaw = obj.q || '';
+                        searchQuery = (searchRaw || '').toLowerCase();
+                        sortOrder = obj.sort || 'newest';
+                        restaurantFilter = obj.restaurant || 'all';
+                    } catch (e) {
+                    }
+                }
+
+                function syncUIFromState() {
+                    if (searchInput)
+                        searchInput.value = searchRaw || '';
+                    if (sortSelect)
+                        sortSelect.value = sortOrder || 'newest';
+                    if (restaurantSelect)
+                        restaurantSelect.value = restaurantFilter || 'all';
+                    updateStatusTabs();
+                }
+
+                // =========================
+                // MATCHERS
+                // =========================
                 function matchesRestaurant(card) {
                     if (!restaurantFilter || restaurantFilter === 'all')
                         return true;
@@ -696,56 +938,24 @@
                     return rid === restaurantFilter;
                 }
 
-
-                function updateStatusTabs() {
-                    var activeClasses =
-                            'px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-all duration-300 bg-[#0B1120] text-white border-2 border-[#D4AF37] shadow-md shadow-[#D4AF37]/20';
-                    var inactiveClasses =
-                            'px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-all duration-300 bg-white text-[#4B5563] border-2 border-[#E5E7EB] hover:border-[#E6C77F] hover:text-[#D4AF37]';
-
-                    var tabs = document.querySelectorAll('[data-role="status-tab"]');
-                    tabs.forEach(function (btn) {
-                        var value = btn.getAttribute('data-filter-value');
-                        if (value === statusFilter) {
-                            btn.setAttribute('class', activeClasses);
-                        } else {
-                            btn.setAttribute('class', inactiveClasses);
-                        }
-                    });
-                }
-
                 function matchesStatus(card) {
                     var status = (card.getAttribute('data-booking-status') || '').toUpperCase();
-
                     if (statusFilter === 'all')
                         return true;
 
-                    // chỉ xem Pending
-                    if (statusFilter === 'pending') {
+                    if (statusFilter === 'pending')
                         return status === 'PENDING';
-                    }
-
-                    // chỉ xem Confirmed
-                    if (statusFilter === 'confirmed') {
+                    if (statusFilter === 'confirmed')
                         return status === 'CONFIRMED';
-                    }
-
-                    // Upcoming = Pending + Confirmed
-                    if (statusFilter === 'upcoming') {
+                    if (statusFilter === 'upcoming')
                         return status === 'PENDING' || status === 'CONFIRMED';
-                    }
-
-                    if (statusFilter === 'completed') {
+                    if (statusFilter === 'completed')
                         return status === 'COMPLETED';
-                    }
-
-                    if (statusFilter === 'cancelled') {
+                    if (statusFilter === 'cancelled')
                         return status === 'CANCELLED';
-                    }
 
                     return true;
                 }
-
 
                 function matchesSearch(card) {
                     if (!searchQuery)
@@ -755,6 +965,24 @@
                     return code.indexOf(searchQuery) !== -1 || name.indexOf(searchQuery) !== -1;
                 }
 
+                // =========================
+                // UI: STATUS TABS STYLE
+                // =========================
+                function updateStatusTabs() {
+                    var activeClasses =
+                            'px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-all duration-300 bg-[#0B1120] text-white border-2 border-[#D4AF37] shadow-md shadow-[#D4AF37]/20';
+                    var inactiveClasses =
+                            'px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-all duration-300 bg-white text-[#4B5563] border-2 border-[#E5E7EB] hover:border-[#E6C77F] hover:text-[#D4AF37]';
+
+                    document.querySelectorAll('[data-role="status-tab"]').forEach(function (btn) {
+                        var value = btn.getAttribute('data-filter-value');
+                        btn.setAttribute('class', (value === statusFilter) ? activeClasses : inactiveClasses);
+                    });
+                }
+
+                // =========================
+                // SORT + APPLY
+                // =========================
                 function sortCards() {
                     if (!listContainer)
                         return;
@@ -768,12 +996,9 @@
                         if (isNaN(bVal))
                             bVal = 0;
 
-                        if (sortOrder === 'oldest') {
-                            // Cũ nhất trước
-                            return aVal - bVal;
-                        }
-                        // Mặc định: mới nhất trước
-                        return bVal - aVal;
+                        if (sortOrder === 'oldest')
+                            return aVal - bVal;  // old -> new
+                        return bVal - aVal;                              // new -> old
                     });
 
                     // Re-append theo thứ tự mới
@@ -782,12 +1007,11 @@
                     });
                 }
 
-
                 function applyFilters() {
                     var visibleCount = 0;
+
                     cards.forEach(function (card) {
                         var ok = matchesStatus(card) && matchesSearch(card) && matchesRestaurant(card);
-
                         if (ok) {
                             card.classList.remove('hidden');
                             visibleCount++;
@@ -797,43 +1021,107 @@
                     });
 
                     if (emptyFilter) {
-                        if (visibleCount === 0) {
+                        if (visibleCount === 0)
                             emptyFilter.classList.remove('hidden');
-                        } else {
+                        else
                             emptyFilter.classList.add('hidden');
-                        }
                     }
                 }
 
+                // =========================
+                // EVENT BINDINGS
+                // =========================
                 // Tabs click
                 document.querySelectorAll('[data-role="status-tab"]').forEach(function (btn) {
                     btn.addEventListener('click', function () {
-                        var value = btn.getAttribute('data-filter-value');
-                        statusFilter = value || 'all';
+                        statusFilter = btn.getAttribute('data-filter-value') || 'all';
                         updateStatusTabs();
+                        saveFilters();
                         applyFilters();
                     });
                 });
 
                 // Search input
-                var searchInput = document.getElementById('search-input');
                 if (searchInput) {
                     searchInput.addEventListener('input', function (e) {
-                        searchQuery = (e.target.value || '').toLowerCase();
+                        searchRaw = (e.target.value || '');
+                        searchQuery = searchRaw.toLowerCase();
+                        saveFilters();
                         applyFilters();
                     });
                 }
 
-                updateStatusTabs();
-                sortCards();   // sort theo mặc định "newest"
-                applyFilters();
+                // Sort select
+                if (sortSelect) {
+                    sortSelect.addEventListener('change', function (e) {
+                        sortOrder = e.target.value || 'newest';
+                        saveFilters();
+                        sortCards();
+                        applyFilters();
+                    });
+                }
 
+                // Restaurant select
+                if (restaurantSelect) {
+                    restaurantSelect.addEventListener('change', function (e) {
+                        restaurantFilter = e.target.value || 'all';
+                        saveFilters();
+                        applyFilters();
+                    });
+                }
+
+                // Clear button
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', function () {
+                        statusFilter = 'all';
+                        searchRaw = '';
+                        searchQuery = '';
+                        sortOrder = 'newest';
+                        restaurantFilter = 'all';
+
+                        try {
+                            sessionStorage.removeItem(STORAGE_KEY);
+                        } catch (e) {
+                        }
+
+                        syncUIFromState();
+                        sortCards();
+                        applyFilters();
+
+                        if (window.lucide)
+                            window.lucide.createIcons();
+                    });
+                }
+
+                // =========================
+                // INIT
+                // =========================
+                loadFilters();
+                syncUIFromState();
+                sortCards();
+                applyFilters();
             });
+
+            // ====== MODAL / EDIT / CANCEL / DELETE (GIỮ NGUYÊN CỦA BRO) ======
             function openCustomerEditModal() {
                 var m = document.getElementById('customerEditModal');
                 if (m)
                     m.classList.remove('hidden');
             }
+
+            function toggleEditOutside() {
+                var sel = document.getElementById('myBookingsForm:editLocationType');
+                var wrap = document.getElementById('editOutsideWrap');
+                if (!sel || !wrap)
+                    return;
+
+                var v = (sel.value || '').toUpperCase();
+                if (v === 'OUTSIDE')
+                    wrap.classList.remove('hidden');
+                else
+                    wrap.classList.add('hidden');
+            }
+
             function closeCustomerEditModal() {
                 var m = document.getElementById('customerEditModal');
                 if (m)
@@ -844,12 +1132,12 @@
                 if (data.status === 'success') {
                     setTimeout(function () {
                         openCustomerEditModal();
+                        toggleEditOutside();
                         if (window.lucide)
                             window.lucide.createIcons();
                     }, 0);
                 }
             }
-
 
             function feastlinkCustomerSaveEditEvent(data) {
                 if (data.status !== 'success')
@@ -857,7 +1145,6 @@
                 var okEl = document.getElementById('myBookingsForm:editSaveOk');
                 var ok = okEl && (okEl.value === 'true' || okEl.value === 'True');
                 if (ok) {
-                    // reload để list + filter JS init lại sạch sẽ
                     window.location.reload();
                 } else {
                     openCustomerEditModal();
@@ -865,6 +1152,7 @@
                         window.lucide.createIcons();
                 }
             }
+
             function openCustomerCancelModal() {
                 var m = document.getElementById('customerCancelModal');
                 if (m)
@@ -880,7 +1168,6 @@
                 if (data.status !== 'success')
                     return;
 
-                // chỉ mở modal khi prepareCancel set được bookingId
                 var idEl = document.getElementById('myBookingsForm:cancelBookingId');
                 if (!idEl || !idEl.value)
                     return;
@@ -900,13 +1187,51 @@
                 if (ok) {
                     window.location.reload();
                 } else {
-                    // validate fail -> giữ modal để user nhập lại
                     openCustomerCancelModal();
                     if (window.lucide)
                         window.lucide.createIcons();
                 }
             }
 
+            function openCustomerDeleteModal() {
+                var m = document.getElementById('customerDeleteModal');
+                if (m)
+                    m.classList.remove('hidden');
+            }
+            function closeCustomerDeleteModal() {
+                var m = document.getElementById('customerDeleteModal');
+                if (m)
+                    m.classList.add('hidden');
+            }
+
+            function feastlinkCustomerPrepareDeleteEvent(data) {
+                if (data.status !== 'success')
+                    return;
+
+                var idEl = document.getElementById('myBookingsForm:deleteBookingId');
+                if (!idEl || !idEl.value)
+                    return;
+
+                openCustomerDeleteModal();
+                if (window.lucide)
+                    window.lucide.createIcons();
+            }
+
+            function feastlinkCustomerConfirmDeleteEvent(data) {
+                if (data.status !== 'success')
+                    return;
+
+                var okEl = document.getElementById('myBookingsForm:deleteOk');
+                var ok = okEl && (okEl.value === 'true' || okEl.value === 'True');
+
+                if (ok) {
+                    window.location.reload();
+                } else {
+                    openCustomerDeleteModal();
+                    if (window.lucide)
+                        window.lucide.createIcons();
+                }
+            }
             //]]>
         </script>
 

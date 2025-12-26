@@ -638,8 +638,9 @@ public class CustomerBookingBean implements Serializable {
                 eventTypeKey = params.get("hf-event-type");
             }
             if (!notBlank(serviceLevel)) {
-                serviceLevel = params.get("hf-service-level");
+                serviceLevel = getParam(params, "hf-service-level");
             }
+
             if (depositAmount == null) {
                 depositAmount = parseBigDecimalSafe(params.get("hf-deposit-amount"));
             }
@@ -993,8 +994,9 @@ public class CustomerBookingBean implements Serializable {
                 eventTypeKey = params.get("hf-event-type");
             }
             if (!notBlank(serviceLevel)) {
-                serviceLevel = params.get("hf-service-level");
+                serviceLevel = getParam(params, "hf-service-level");
             }
+
             if (depositAmount == null) {
                 depositAmount = parseBigDecimalSafe(params.get("hf-deposit-amount"));
             }
@@ -1191,6 +1193,28 @@ public class CustomerBookingBean implements Serializable {
             }
             return null;
         }
+    }
+
+    private String getParam(Map<String, String> params, String key) {
+        if (params == null || key == null) {
+            return null;
+        }
+
+        String v = params.get(key);
+        if (notBlank(v)) {
+            return v;
+        }
+
+        // handle JSF prependId: bookingForm:hf-service-level
+        for (Map.Entry<String, String> e : params.entrySet()) {
+            String k = e.getKey();
+            if (k != null && (k.equals(key) || k.endsWith(":" + key))) {
+                if (notBlank(e.getValue())) {
+                    return e.getValue();
+                }
+            }
+        }
+        return null;
     }
 
     // ========== Voucher silent apply (NO FacesMessage, NO block) ==========

@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core">
+
+<h:head>
+    <title>Restaurant Bank Wallet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b1120; color:#e5e7eb; }
+        .wrap { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+
+        .card { background: rgba(2,6,23,.85); border: 1px solid rgba(148,163,184,.16); border-radius: 18px; padding: 16px; box-shadow: 0 18px 50px rgba(0,0,0,.45); }
+
+        .top { display:flex; gap:12px; align-items:flex-end; justify-content:space-between; margin-bottom: 14px; }
+        .title { font-size: 20px; font-weight: 900; }
+        .sub { color:#9ca3af; font-size: 13px; margin-top: 4px; }
+
+        .grid2 { display:grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+        .col-8 { grid-column: span 8; }
+        .col-4 { grid-column: span 4; }
+
+        .stat { padding: 14px; border-radius: 16px; border: 1px solid rgba(148,163,184,.16); background: rgba(15,23,42,.45); }
+        .label2 { color:#94a3b8; font-size: 12px; }
+        .value2 { margin-top:6px; font-size: 22px; font-weight: 900; color:#D4AF37; }
+        .muted { color:#9ca3af; }
+
+        .badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid rgba(148,163,184,.16); background: rgba(15,23,42,.4); }
+        .ok { color:#34d399; }
+        .warn { color:#fbbf24; }
+
+        .table { width:100%; border-collapse: collapse; overflow:hidden; border-radius: 14px; border: 1px solid rgba(148,163,184,.16); }
+        .table th, .table td { padding: 10px; border-bottom: 1px solid rgba(148,163,184,.12); font-size: 13px; }
+        .table th { text-align:left; color:#cbd5e1; background: rgba(15,23,42,.55); }
+
+        /* ===== Transfer styles (y chang block bạn đưa) ===== */
+        .section-title { display:flex; align-items:baseline; justify-content:space-between; gap: 10px; margin-bottom: 12px; }
+        .section-title h3 { margin: 0; font-size: 16px; font-weight: 900; }
+        .hint { color:#9ca3af; font-size: 12px; }
+
+        .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .label { color:#cbd5e1; font-size: 12px; margin-bottom: 6px; }
+        .inp {
+            width:100%;
+            padding: 10px 1px;
+            border-radius: 12px;
+            border: 1px solid rgba(148,163,184,.18);
+            background: rgba(15,23,42,.35);
+            color:#e5e7eb;
+            outline: none;
+        }
+        .danger { color:#f87171; font-size: 12px; display:block; margin-top: 6px; }
+
+        .btn {
+            border: 0; padding: 10px 14px; border-radius: 14px;
+            background: linear-gradient(135deg, #D4AF37, #E6C77F);
+            color:#0b1120; font-weight: 900; cursor: pointer;
+        }
+        .btn:hover { filter: brightness(1.03); transform: translateY(-1px); transition: .15s; }
+
+        @media (max-width: 900px) {
+            .col-8, .col-4 { grid-column: span 12; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</h:head>
+
+<h:body>
+    
+<div class="wrap">    
+        <h:button value="← Back to Dashboard" styleClass="btn2" outcome="/Restaurant/dashboard.xhtml"/>
+    
+    <div class="top">
+        <div>
+            <div class="title">Restaurant Bank Wallet</div>
+            <div class="sub">
+               Wallet for receiving payments from bookings <span class="badge ok">PAID</span> + <span class="badge ok">COMPLETED</span>,
+               automatically sync <b>Wallets.CurrentBalance (NET = 98%)</b> and minus <span class="badge warn">2%</span>.
+            </div>
+        </div>
+
+        <h:form>
+            <h:commandButton value="Refresh" styleClass="btn" action="#{restaurantBankWalletBean.refresh}">
+                <f:ajax execute="@form" render="@all"/>
+            </h:commandButton>
+        </h:form>
+    </div>
+
+    <h:messages globalOnly="true" style="margin:10px 0;"/>
+
+    <!-- SUMMARY + TRANSFER -->
+    <div class="card" style="margin-bottom:14px;">
+        <div class="grid2">
+            <div class="col-8">
+                <div style="font-weight:900; font-size:16px;">
+                    <h:outputText value="#{restaurantBankWalletBean.restaurant != null ? restaurantBankWalletBean.restaurant.name : '—'}"/>
+                </div>
+
+                <div class="muted" style="margin-top:8px;">
+                    Manager:
+                    <b><h:outputText value="#{restaurantBankWalletBean.currentUser != null ? restaurantBankWalletBean.currentUser.fullName : '—'}"/></b>
+                    <span class="muted"> · </span>
+                    RestaurantId:
+                    <b><h:outputText value="#{restaurantBankWalletBean.restaurant != null ? restaurantBankWalletBean.restaurant.restaurantId : '—'}"/></b>
+                </div>
+
+                <div class="muted" style="margin-top:6px;">
+                    Address:
+                    <h:outputText value="#{restaurantBankWalletBean.restaurant != null ? restaurantBankWalletBean.restaurant.address : '—'}"/>
+                </div>
+
+                <div class="muted" style="margin-top:6px;">
+                    Account:
+                    <b><h:outputText value="#{restaurantBankWalletBean.account != null ? restaurantBankWalletBean.account.accountNumber : '—'}"/></b>
+                    <span class="muted"> · Bank:</span>
+                    <b><h:outputText value="#{restaurantBankWalletBean.account != null ? restaurantBankWalletBean.account.bankCode : '—'}"/></b>
+                </div>
+
+                <div class="muted" style="margin-top:6px;">
+                    Last synced income:
+                    <b><h:outputText value="#{restaurantBankWalletBean.lastSynced}"/></b> booking(s)
+                </div>
+            </div>
+
+            <div class="col-4">
+                <div class="stat">
+                    <div class="label2">Available balance (Wallets.CurrentBalance) — for transfers (NET)</div>
+                    <div class="value2">
+                        <h:outputText value="#{restaurantBankWalletBean.wallet != null ? restaurantBankWalletBean.wallet.balance : 0}">
+                            <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
+                        </h:outputText>
+                    </div>
+
+                    <div class="muted" style="margin-top:6px;">
+                        Net income (98%):
+                        <h:outputText value="#{restaurantBankWalletBean.netTotal}">
+                            <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
+                        </h:outputText>
+                    </div>
+
+                    <div class="muted" style="margin-top:6px;">
+                        Gross:
+                        <h:outputText value="#{restaurantBankWalletBean.grossTotal}">
+                            <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
+                        </h:outputText>
+                        <span class="muted"> · Fee(2%): </span>
+                        <h:outputText value="#{restaurantBankWalletBean.feeTotal}">
+                            <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
+                        </h:outputText>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transfer (y chang block bạn gửi) -->
+        <div class="card" style="margin-top:16px;">
+            <div class="section-title">
+                <h3>Transfer (Restaurant → Other AccountNumber)</h3>
+                <span class="hint">Debit Wallets + Insert BankTransfers + WalletTransactions</span>
+            </div>
+
+            <h:form id="transferForm">
+                <div class="grid">
+                    <div>
+                        <div class="label">Receiver Account Number</div>
+                        <h:inputText id="toAcc" styleClass="inp" value="#{restaurantBankWalletBean.toAccountNumber}" />
+                        <h:message for="toAcc" styleClass="danger"/>
+                    </div>
+
+                    <div>
+                        <div class="label">Amount</div>
+                        <h:inputText id="amt" styleClass="inp" value="#{restaurantBankWalletBean.transferAmount}">
+                            <f:convertNumber maxFractionDigits="2"/>
+                        </h:inputText>
+                        <h:message for="amt" styleClass="danger"/>
+                    </div>
+                </div>
+
+                <div style="margin-top:10px;">
+                    <div class="label">Message (optional)</div>
+                    <h:inputTextarea id="msg" styleClass="inp" rows="2" value="#{restaurantBankWalletBean.transferMessage}"/>
+                </div>
+
+                <div style="margin-top:12px;">
+                    <h:commandButton value="Send Transfer" styleClass="btn" action="#{restaurantBankWalletBean.doTransfer}">
+                        <f:ajax execute="@form" render="@all"/>
+                    </h:commandButton>
+                </div>
+            </h:form>
+        </div>
+    </div>
+
+    <!-- BOOKINGS TABLE -->
+    <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <div style="font-weight:900;">Eligible bookings</div>
+            <div class="muted">Count: <b><h:outputText value="#{restaurantBankWalletBean.rows.size()}"/></b></div>
+        </div>
+
+        <h:panelGroup rendered="#{empty restaurantBankWalletBean.rows}">
+            <div class="muted">No bookings have met the conditions (PAID + COMPLETED).</div>
+        </h:panelGroup>
+
+        <h:panelGroup rendered="#{not empty restaurantBankWalletBean.rows}">
+            <h:dataTable value="#{restaurantBankWalletBean.rows}" var="r" styleClass="table">
+                <h:column>
+                    <f:facet name="header">Booking Code</f:facet>
+                    <h:outputText value="#{r.bookingCode}"/>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Event Date</f:facet>
+                    <h:outputText value="#{r.eventDate}">
+                        <f:convertDateTime pattern="dd/MM/yyyy"/>
+                    </h:outputText>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Total</f:facet>
+                    <h:outputText value="#{r.totalAmount}">
+                        <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
+                    </h:outputText>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Fee (2%)</f:facet>
+                    <h:outputText value="#{r.feeAmount}">
+                        <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
+                    </h:outputText>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Net</f:facet>
+                    <h:outputText value="#{r.netAmount}">
+                        <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="0"/>
+                    </h:outputText>
+                </h:column>
+            </h:dataTable>
+        </h:panelGroup>
+    </div>
+
+</div>
+</h:body>
+</html>

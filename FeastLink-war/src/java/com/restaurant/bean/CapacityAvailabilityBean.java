@@ -16,6 +16,7 @@ import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
@@ -26,6 +27,8 @@ import java.util.*;
 @ViewScoped
 public class CapacityAvailabilityBean implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     @EJB
     private RestaurantsFacadeLocal restaurantsFacade;
 
@@ -35,7 +38,6 @@ public class CapacityAvailabilityBean implements Serializable {
     @EJB
     private RestaurantDayCapacityFacadeLocal dayCapacityFacade;
 
-    // ✅ NEW
     @EJB
     private BookingsFacadeLocal bookingsFacade;
 
@@ -51,9 +53,8 @@ public class CapacityAvailabilityBean implements Serializable {
 
     private YearMonth currentMonth;
     private List<CalendarDay> calendarDays;
-    private Map<LocalDate, StatusType> dayStatusMap = new HashMap<>();
 
-    // ✅ NEW: date -> [totalGuests, bookingCount]
+    private Map<LocalDate, StatusType> dayStatusMap = new HashMap<>();
     private Map<LocalDate, int[]> bookingAggMap = new HashMap<>();
 
     private LocalDate selectedDate;
@@ -62,6 +63,87 @@ public class CapacityAvailabilityBean implements Serializable {
     private Integer inputBookingCount;
     private String selectedSlot = "ALLDAY";
 
+    // ======================================================
+    // INIT (FAIL-SAFE)
+    // ======================================================
+    @PostConstruct
+    public void init() {
+        // ✅ Always init basic state first (so UI never breaks)
+        if (currentMonth == null) {
+            currentMonth = YearMonth.now();
+        }
+        if (selectedStatus == null) {
+            selectedStatus = "--";
+        }
+        if (inputGuestCount == null) {
+            inputGuestCount = 0;
+        }
+        if (inputBookingCount == null) {
+            inputBookingCount = 0;
+        }
+        if (selectedSlot == null || selectedSlot.isBlank()) {
+            selectedSlot = "ALLDAY";
+        }
+
+        try {
+            currentRestaurant = resolveCurrentRestaurant();
+
+            // ✅ If restaurant context missing -> still show an empty calendar instead of disappearing
+            if (currentRestaurant == null) {
+                dayStatusMap.clear();
+                bookingAggMap.clear();
+                buildCalendar(); // show blank calendar grid (no dots)
+                return;
+            }
+
+            loadSettingsFromDb();
+            loadCalendarFromDb();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            // ✅ Even if something crashes, keep UI visible
+            try {
+                dayStatusMap.clear();
+                bookingAggMap.clear();
+                buildCalendar();
+            } catch (Exception ignore) {
+            }
+        }
+    }
+
+    // ✅ Auto-heal if calendarDays is null/empty after reload
+    private void ensureCalendarReady() {
+        if (currentMonth == null) {
+            currentMonth = YearMonth.now();
+        }
+
+        if (calendarDays == null || calendarDays.isEmpty()) {
+            // try to rebuild properly
+            try {
+                if (currentRestaurant == null) {
+                    currentRestaurant = resolveCurrentRestaurant();
+                }
+                if (currentRestaurant != null) {
+                    loadSettingsFromDb();
+                    loadCalendarFromDb();
+                } else {
+                    dayStatusMap.clear();
+                    bookingAggMap.clear();
+                    buildCalendar();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                dayStatusMap.clear();
+                bookingAggMap.clear();
+                buildCalendar();
+            }
+        }
+    }
+
+    // ======================================================
+    // RESOLVE CURRENT RESTAURANT
+    // ======================================================
     private Restaurants resolveCurrentRestaurant() {
         FacesContext ctx = FacesContext.getCurrentInstance();
         if (ctx == null) {
@@ -85,30 +167,18 @@ public class CapacityAvailabilityBean implements Serializable {
         return null;
     }
 
-    @PostConstruct
-    public void init() {
-        try {
-            currentRestaurant = resolveCurrentRestaurant();
-            if (currentRestaurant == null) {
-                return;
-            }
-
-            currentMonth = YearMonth.now();
-            inputGuestCount = 0;
-            inputBookingCount = 0;
-            selectedStatus = "--";
-            selectedSlot = "ALLDAY";
-
-            loadSettingsFromDb();
-            loadCalendarFromDb();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
+    // ======================================================
+    // SETTINGS
+    // ======================================================
     private void loadSettingsFromDb() {
-        currentSettings = capacitySettingsFacade.findByRestaurant(currentRestaurant);
+        if (currentRestaurant == null) {
+            // fallback defaults
+            defaultMaxGuestsPerDay = 150;
+            defaultMaxBookingsPerDay = 10;
+            return;
+        }
 
+        currentSettings = capacitySettingsFacade.findByRestaurant(currentRestaurant);
         if (currentSettings != null) {
             defaultMaxGuestsPerDay = Optional.ofNullable(currentSettings.getMaxGuestsPerSlot()).orElse(150);
             defaultMaxBookingsPerDay = Optional.ofNullable(currentSettings.getMaxBookingsPerDay()).orElse(10);
@@ -118,7 +188,9 @@ public class CapacityAvailabilityBean implements Serializable {
         }
     }
 
-    // ✅ NEW: load booking agg cho đúng “grid 42 ô”
+    // ======================================================
+    // LOAD BOOKING AGG FOR GRID (42 CELLS)
+    // ======================================================
     private void loadBookingAggForCalendarGrid() {
         bookingAggMap.clear();
         if (currentRestaurant == null || currentRestaurant.getRestaurantId() == null) {
@@ -139,17 +211,17 @@ public class CapacityAvailabilityBean implements Serializable {
                 to
         );
 
-        System.out.println("[Capacity] rid=" + currentRestaurant.getRestaurantId()
-                + " gridStart=" + gridStart + " gridEndEx=" + gridEndExclusive
-                + " rows=" + (rows == null ? 0 : rows.size()));
-
         if (rows == null) {
             return;
         }
 
         for (Object[] r : rows) {
-            // r[0] = eventDate (java.util.Date)
-            LocalDate day = toLocalDate((Date) r[0]);
+            // ✅ robust date conversion (Date/Timestamp/LocalDate)
+            LocalDate day = toLocalDate(r[0]);
+            if (day == null) {
+                continue;
+            }
+
             int totalGuests = numberToInt(r[1]);
             int bookingCount = numberToInt(r[2]);
 
@@ -157,33 +229,48 @@ public class CapacityAvailabilityBean implements Serializable {
         }
     }
 
+    // ======================================================
+    // LOAD CALENDAR DATA
+    // ======================================================
     private void loadCalendarFromDb() {
+        if (currentRestaurant == null) {
+            dayStatusMap.clear();
+            bookingAggMap.clear();
+            buildCalendar();
+            return;
+        }
+
         dayStatusMap.clear();
 
         LocalDate first = currentMonth.atDay(1);
         LocalDate last = currentMonth.atEndOfMonth();
 
-        // 1) Manual / Block từ RestaurantDayCapacity (giữ y như cũ)
-        List<RestaurantDayCapacity> list
-                = dayCapacityFacade.findByRestaurantAndDateRange(
-                        currentRestaurant,
-                        java.sql.Date.valueOf(first),
-                        java.sql.Date.valueOf(last)
-                );
+        // 1) Manual/Blocked from RestaurantDayCapacity (month range)
+        List<RestaurantDayCapacity> list = dayCapacityFacade.findByRestaurantAndDateRange(
+                currentRestaurant,
+                java.sql.Date.valueOf(first),
+                java.sql.Date.valueOf(last)
+        );
 
-        for (RestaurantDayCapacity d : list) {
-            LocalDate date = toLocalDate(d.getEventDate());
-            StatusType st = computeStatusForRow(d);
+        if (list != null) {
+            for (RestaurantDayCapacity d : list) {
+                LocalDate date = toLocalDate(d.getEventDate());
+                if (date == null) {
+                    continue;
+                }
 
-            StatusType existing = dayStatusMap.getOrDefault(date, StatusType.NONE);
-            StatusType merged = maxStatus(existing, st);
+                StatusType st = computeStatusForRow(d);
 
-            if (merged != StatusType.NONE) {
-                dayStatusMap.put(date, merged);
+                StatusType existing = dayStatusMap.getOrDefault(date, StatusType.NONE);
+                StatusType merged = maxStatus(existing, st);
+
+                if (merged != StatusType.NONE) {
+                    dayStatusMap.put(date, merged);
+                }
             }
         }
 
-        // 2) ✅ AUTO từ Bookings: overlay lên dayStatusMap (nhưng không đè BLOCKED)
+        // 2) AUTO overlay from Bookings (do not override BLOCKED)
         loadBookingAggForCalendarGrid();
 
         for (Map.Entry<LocalDate, int[]> e : bookingAggMap.entrySet()) {
@@ -191,7 +278,6 @@ public class CapacityAvailabilityBean implements Serializable {
             int guests = e.getValue()[0];
             int bookings = e.getValue()[1];
 
-            // ✅ không có booking thì bỏ qua để khỏi hiện dot cho mọi ngày
             if (guests == 0 && bookings == 0) {
                 continue;
             }
@@ -201,20 +287,16 @@ public class CapacityAvailabilityBean implements Serializable {
                 continue;
             }
 
-            StatusType st = computeStatus(
-                    guests,
-                    bookings,
-                    defaultMaxGuestsPerDay,
-                    defaultMaxBookingsPerDay
-            );
-
+            StatusType st = computeStatus(guests, bookings, defaultMaxGuestsPerDay, defaultMaxBookingsPerDay);
             dayStatusMap.put(date, maxStatus(existing, st));
         }
 
         buildCalendar();
     }
 
-    // ===== MinDaysInAdvance giữ nguyên =====
+    // ======================================================
+    // MIN DAYS IN ADVANCE (unchanged)
+    // ======================================================
     private int getMinDaysInAdvanceSafe() {
         if (currentRestaurant == null) {
             return 0;
@@ -249,8 +331,18 @@ public class CapacityAvailabilityBean implements Serializable {
         return StatusType.TOO_SOON;
     }
 
+    // ======================================================
+    // BUILD CALENDAR (ALWAYS CREATE LIST)
+    // ======================================================
     private void buildCalendar() {
-        calendarDays = new ArrayList<>();
+        if (currentMonth == null) {
+            currentMonth = YearMonth.now();
+        }
+        if (dayStatusMap == null) {
+            dayStatusMap = new HashMap<>();
+        }
+
+        calendarDays = new ArrayList<>(42);
 
         LocalDate firstOfMonth = currentMonth.atDay(1);
         int shift = firstOfMonth.getDayOfWeek().getValue() % 7;
@@ -258,7 +350,8 @@ public class CapacityAvailabilityBean implements Serializable {
 
         for (int i = 0; i < 42; i++) {
             LocalDate date = start.plusDays(i);
-            boolean inMonth = date.getMonthValue() == currentMonth.getMonthValue();
+
+            boolean inMonth = YearMonth.from(date).equals(currentMonth);
             boolean isSelected = (selectedDate != null && selectedDate.equals(date));
 
             StatusType baseStatus = dayStatusMap.getOrDefault(date, StatusType.NONE);
@@ -269,13 +362,16 @@ public class CapacityAvailabilityBean implements Serializable {
         }
     }
 
+    // ======================================================
+    // NAVIGATION
+    // ======================================================
     public void nextMonth() {
-        currentMonth = currentMonth.plusMonths(1);
+        currentMonth = (currentMonth == null) ? YearMonth.now().plusMonths(1) : currentMonth.plusMonths(1);
         loadCalendarFromDb();
     }
 
     public void previousMonth() {
-        currentMonth = currentMonth.minusMonths(1);
+        currentMonth = (currentMonth == null) ? YearMonth.now().minusMonths(1) : currentMonth.minusMonths(1);
         loadCalendarFromDb();
     }
 
@@ -302,7 +398,9 @@ public class CapacityAvailabilityBean implements Serializable {
         loadSelectedDayData();
     }
 
-    // ✅ update: nếu không có manual row thì lấy số liệu từ bookingAggMap
+    // ======================================================
+    // SELECTED DAY DATA
+    // ======================================================
     private void loadSelectedDayData() {
         if (currentRestaurant == null || selectedDate == null) {
             inputGuestCount = 0;
@@ -318,12 +416,13 @@ public class CapacityAvailabilityBean implements Serializable {
             Integer cb = row.getCurrentBookingCount();
             inputGuestCount = (cg != null) ? cg : 0;
             inputBookingCount = (cb != null) ? cb : 0;
+
             StatusType st = computeStatusForRow(row);
             selectedStatus = translateStatus(st);
             return;
         }
 
-        // AUTO from bookings (ALLDAY hoặc slot nào cũng xem như tổng ngày)
+        // AUTO from bookings
         int[] agg = bookingAggMap.getOrDefault(selectedDate, new int[]{0, 0});
         inputGuestCount = agg[0];
         inputBookingCount = agg[1];
@@ -339,11 +438,9 @@ public class CapacityAvailabilityBean implements Serializable {
         }
 
         java.sql.Date sqlDate = java.sql.Date.valueOf(date);
-        List<RestaurantDayCapacity> list
-                = dayCapacityFacade.findByRestaurantAndDateRange(
-                        currentRestaurant,
-                        sqlDate,
-                        sqlDate);
+        List<RestaurantDayCapacity> list = dayCapacityFacade.findByRestaurantAndDateRange(
+                currentRestaurant, sqlDate, sqlDate
+        );
 
         if (list == null || list.isEmpty()) {
             return null;
@@ -370,8 +467,16 @@ public class CapacityAvailabilityBean implements Serializable {
         return null;
     }
 
+    // ======================================================
+    // SAVE LIMITS (unchanged, but safe reload)
+    // ======================================================
     public void saveLimits() {
         try {
+            if (currentRestaurant == null) {
+                buildCalendar();
+                return;
+            }
+
             if (currentSettings == null) {
                 currentSettings = new RestaurantCapacitySettings();
                 currentSettings.setRestaurantId(currentRestaurant);
@@ -388,15 +493,17 @@ public class CapacityAvailabilityBean implements Serializable {
                 capacitySettingsFacade.edit(currentSettings);
             }
 
-            // ✅ đổi limit => reload calendar để auto status đổi theo
             loadCalendarFromDb();
 
         } catch (Exception e) {
             e.printStackTrace();
+            buildCalendar();
         }
     }
 
-    // ✅ MANUAL giữ nguyên (bạn đang dùng button Save day capacity)
+    // ======================================================
+    // APPLY MANUAL STATUS (unchanged)
+    // ======================================================
     public void applyStatusToSelectedDay() {
         FacesContext ctx = FacesContext.getCurrentInstance();
 
@@ -420,6 +527,40 @@ public class CapacityAvailabilityBean implements Serializable {
             inputBookingCount = 0;
         }
 
+        // ✅ CASE 1: user set 0/0 => coi như RESET (clear override)
+        if (inputGuestCount == 0 && inputBookingCount == 0) {
+
+            RestaurantDayCapacity row = findCapacityRow(selectedDate, selectedSlot);
+
+            if (row != null) {
+                Integer mg = row.getMaxGuests();
+                Integer mb = row.getMaxBookings();
+                boolean isBlockedRow = (mg != null && mb != null && mg == 0 && mb == 0);
+
+                // Nếu row là BLOCKED thì không reset ở đây (dùng tab Block/Unblock)
+                if (isBlockedRow) {
+                    ctx.addMessage("dayStatusForm",
+                            new FacesMessage(FacesMessage.SEVERITY_WARN,
+                                    "Ngày này đang bị Block. Hãy dùng tab 'Block dates' để Unblock.", null));
+                    return;
+                }
+
+                // ✅ Xóa override thủ công
+                dayCapacityFacade.remove(row);
+            }
+
+            // ✅ Reload lại tất cả để status không bị “kẹt”
+            loadCalendarFromDb();
+            loadSelectedDayData(); // lấy lại từ bookingAggMap hoặc 0/0
+
+            ctx.addMessage("dayStatusForm",
+                    new FacesMessage(FacesMessage.SEVERITY_INFO,
+                            "Đã reset day status cho ngày " + getSelectedDateLabel()
+                            + " (" + selectedSlot + ")", null));
+            return;
+        }
+
+        // ✅ CASE 2: validate vượt limit
         boolean hasError = false;
 
         if (defaultMaxGuestsPerDay > 0 && inputGuestCount > defaultMaxGuestsPerDay) {
@@ -434,11 +575,11 @@ public class CapacityAvailabilityBean implements Serializable {
                             "Số booking không được lớn hơn " + defaultMaxBookingsPerDay, null));
             hasError = true;
         }
-
         if (hasError) {
             return;
         }
 
+        // ✅ CASE 3: lưu override thủ công (upsert)
         RestaurantDayCapacity row = findCapacityRow(selectedDate, selectedSlot);
 
         if (row == null) {
@@ -470,11 +611,9 @@ public class CapacityAvailabilityBean implements Serializable {
             dayCapacityFacade.edit(row);
         }
 
-        selectedStatus = translateStatus(st);
-
-        StatusType existing = dayStatusMap.getOrDefault(selectedDate, StatusType.NONE);
-        dayStatusMap.put(selectedDate, maxStatus(existing, st));
-        buildCalendar();
+        // ✅ QUAN TRỌNG: reload lại thay vì maxStatus (để có thể “hạ” trạng thái)
+        loadCalendarFromDb();
+        loadSelectedDayData();
 
         ctx.addMessage("dayStatusForm",
                 new FacesMessage(FacesMessage.SEVERITY_INFO,
@@ -482,9 +621,13 @@ public class CapacityAvailabilityBean implements Serializable {
                         + " (" + selectedSlot + ")", null));
     }
 
+    // ======================================================
+    // BLOCK / UNBLOCK (unchanged, but safe)
+    // ======================================================
     public void blockDates() {
         try {
             if (currentRestaurant == null) {
+                buildCalendar();
                 return;
             }
             if (blockStartDate == null || blockStartDate.isBlank()
@@ -533,6 +676,7 @@ public class CapacityAvailabilityBean implements Serializable {
             buildCalendar();
         } catch (Exception e) {
             e.printStackTrace();
+            buildCalendar();
         }
     }
 
@@ -541,6 +685,7 @@ public class CapacityAvailabilityBean implements Serializable {
 
         try {
             if (currentRestaurant == null) {
+                buildCalendar();
                 return;
             }
             if (blockStartDate == null || blockStartDate.isBlank()
@@ -551,7 +696,6 @@ public class CapacityAvailabilityBean implements Serializable {
             LocalDate start = LocalDate.parse(blockStartDate);
             LocalDate end = LocalDate.parse(blockEndDate);
 
-            // if user selects reversed range
             if (end.isBefore(start)) {
                 LocalDate tmp = start;
                 start = end;
@@ -560,26 +704,20 @@ public class CapacityAvailabilityBean implements Serializable {
 
             LocalDate d = start;
             while (!d.isAfter(end)) {
-
-                // Only remove the row that represents BLOCKED (ALLDAY, max=0,0)
                 RestaurantDayCapacity row = findCapacityRow(d, "ALLDAY");
                 if (row != null) {
                     Integer mg = row.getMaxGuests();
                     Integer mb = row.getMaxBookings();
                     boolean isBlockedRow = (mg != null && mb != null && mg == 0 && mb == 0);
-
                     if (isBlockedRow) {
-                        dayCapacityFacade.remove(row); // ✅ remove from DB
+                        dayCapacityFacade.remove(row);
                     }
                 }
-
                 d = d.plusDays(1);
             }
 
-            // Reload everything (manual + booking overlay)
             loadCalendarFromDb();
 
-            // Refresh right panel if selected date is inside that range
             if (selectedDate != null && !selectedDate.isBefore(start) && !selectedDate.isAfter(end)) {
                 loadSelectedDayData();
                 buildCalendar();
@@ -596,12 +734,32 @@ public class CapacityAvailabilityBean implements Serializable {
                         new FacesMessage(FacesMessage.SEVERITY_ERROR,
                                 "Unblock failed.", e.getMessage()));
             }
+            buildCalendar();
         }
     }
 
-    // ===== UTIL =====
-    private LocalDate toLocalDate(Date date) {
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    // ======================================================
+    // UTIL (ROBUST DATE CONVERSION)
+    // ======================================================
+    private LocalDate toLocalDate(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof LocalDate) {
+            return (LocalDate) obj;
+        }
+        if (obj instanceof java.sql.Date) {
+            return ((java.sql.Date) obj).toLocalDate();
+        }
+        if (obj instanceof Timestamp) {
+            return ((Timestamp) obj).toLocalDateTime().toLocalDate();
+        }
+        if (obj instanceof Date) {
+            Date d = (Date) obj;
+            return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        }
+        return null;
     }
 
     private int numberToInt(Object o) {
@@ -655,7 +813,6 @@ public class CapacityAvailabilityBean implements Serializable {
 
         double guestRatio = (maxGuests != null && maxGuests > 0) ? (double) guestCount / maxGuests : 0.0;
         double bookingRatio = (maxBookings != null && maxBookings > 0) ? (double) bookingCount / maxBookings : 0.0;
-
         double ratio = Math.max(guestRatio, bookingRatio);
 
         if (ratio >= 1.0) {
@@ -691,10 +848,7 @@ public class CapacityAvailabilityBean implements Serializable {
         if (b == null) {
             b = StatusType.NONE;
         }
-
-        int wa = weight(a);
-        int wb = weight(b);
-        return (wb > wa) ? b : a;
+        return (weight(b) > weight(a)) ? b : a;
     }
 
     private int weight(StatusType st) {
@@ -723,7 +877,9 @@ public class CapacityAvailabilityBean implements Serializable {
         return selectedDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
-    // ===== GET/SET (giữ nguyên như bạn) =====
+    // ======================================================
+    // GETTERS / SETTERS
+    // ======================================================
     public int getDefaultMaxGuestsPerDay() {
         return defaultMaxGuestsPerDay;
     }
@@ -793,10 +949,12 @@ public class CapacityAvailabilityBean implements Serializable {
     }
 
     public List<CalendarDay> getCalendarDays() {
+        ensureCalendarReady();
         return calendarDays;
     }
 
     public String getCurrentMonthLabel() {
+        ensureCalendarReady();
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
         return currentMonth.format(fmt);
     }
@@ -809,11 +967,16 @@ public class CapacityAvailabilityBean implements Serializable {
         this.selectedSlot = v;
     }
 
+    // ======================================================
+    // ENUM + DTO
+    // ======================================================
     public enum StatusType {
         NONE, AVAILABLE, NEAR_FULL, FULL, BLOCKED, TOO_SOON
     }
 
     public static class CalendarDay implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private final LocalDate date;
         private final boolean inCurrentMonth;

@@ -438,7 +438,7 @@
 
         <div class="fl-feedback-body">
 
-           
+
 
             <h:form id="feedbackForm">
 
@@ -446,13 +446,13 @@
 
                     <!-- HEADER -->
                     <header class="fl-feedback-header">
-                     
+
                         <h1 class="fl-feedback-title">
                           SYSTEM FEEDBACK TO ADMIN FEASTLINK
                         </h1>
                         <p class="fl-feedback-subtitle">
                            Admin FeastLink receives feedback, system errors, and complaints.
-                            
+
                         </p>
                     </header>
 
@@ -504,31 +504,41 @@
                                     <label class="fl-label">Restaurant/Related Location</label>
                                     <h:selectOneMenu value="#{customerFeedbackBean.selectedRestaurantId}"
                                                      styleClass="fl-select">
-                                        <f:selectItem itemLabel="Chọn nhà hàng..." itemValue="#{null}" />
+                                        <f:selectItem itemLabel="Choose restaurant..." itemValue="#{null}" />
                                         <f:selectItems value="#{customerFeedbackBean.restaurants}"
                                                        var="r"
                                                        itemLabel="#{r.name}"
                                                        itemValue="#{r.restaurantId}" />
+
+                                        <!-- ✅ CHỈ THÊM AJAX ĐỒNG BỘ -->
+                                        <f:ajax event="change"
+                                                listener="#{customerFeedbackBean.onRestaurantChange}"
+                                                render="bookingWrap" />
                                     </h:selectOneMenu>
                                     <small class="fl-help-text">
                                         Select if the feedback relates to a specific venue.
                                     </small>
                                 </div>
 
-                                <div class="fl-field">
-                                    <label class="fl-label">Related bookings (if any)</label>
-                                    <h:selectOneMenu value="#{customerFeedbackBean.selectedBookingId}"
-                                                     styleClass="fl-select">
-                                        <f:selectItem itemLabel="Chọn mã booking..." itemValue="#{null}" />
-                                        <f:selectItems value="#{customerFeedbackBean.userBookings}"
-                                                       var="b"
-                                                       itemLabel="#{b.bookingCode}"
-                                                       itemValue="#{b.bookingId}" />
-                                    </h:selectOneMenu>
-                                    <small class="fl-help-text">
-                                        Only load bookings that belong to your account.
-                                    </small>
-                                </div>
+                                <!-- ✅ CHỈ THAY BOOKING: CHỈ HIỆN KHI NHÀ HÀNG CÓ BOOKING -->
+                                <h:panelGroup id="bookingWrap" layout="block">
+                                    <h:panelGroup rendered="#{not empty customerFeedbackBean.bookingsForSelectedRestaurant}">
+                                        <div class="fl-field">
+                                            <label class="fl-label">Related bookings (if any)</label>
+                                            <h:selectOneMenu value="#{customerFeedbackBean.selectedBookingId}"
+                                                             styleClass="fl-select">
+                                                <f:selectItem itemLabel="Choose code booking..." itemValue="#{null}" />
+                                                <f:selectItems value="#{customerFeedbackBean.bookingsForSelectedRestaurant}"
+                                                               var="b"
+                                                               itemLabel="#{b.bookingCode}"
+                                                               itemValue="#{b.bookingId}" />
+                                            </h:selectOneMenu>
+                                            <small class="fl-help-text">
+                                                Only load bookings that belong to your account.
+                                            </small>
+                                        </div>
+                                    </h:panelGroup>
+                                </h:panelGroup>
                             </div>
 
                             <!-- TITLE -->
@@ -557,11 +567,11 @@
 
                             <!-- ACTION BUTTONS -->
                             <div class="fl-actions">
-                                <h:commandButton value="Huỷ"
+                                <h:commandButton value="Cancel"
                                                  type="reset"
                                                  styleClass="fl-btn fl-btn-ghost" />
 
-                                <h:commandButton value="Gửi feedback cho Admin FeastLink"
+                                <h:commandButton value="Send feedback For Admin FeastLink"
                                                  action="#{customerFeedbackBean.submitFeedback}"
                                                  styleClass="fl-btn fl-btn-primary"
                                                  disabled="#{customerFeedbackBean.currentUser == null}" />
