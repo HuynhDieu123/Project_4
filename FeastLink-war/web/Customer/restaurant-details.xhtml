@@ -1045,14 +1045,14 @@
                                                 </button>
 
                                                 <div class="flex gap-3">
-<!--                                                     Compare 
-                                                    <button
-                                                        type="button"
-                                                        data-role="compare-package"
-                                                        class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-[#E5E7EB] text-xs font-medium text-[#4B5563] hover:border-[#D4AF37] hover:text-[#111827]">
-                                                        <i data-lucide="git-compare" class="w-4 h-4"></i>
-                                                        Compare
-                                                    </button>-->
+                                                    <!--                                                     Compare 
+                                                                                                        <button
+                                                                                                            type="button"
+                                                                                                            data-role="compare-package"
+                                                                                                            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-[#E5E7EB] text-xs font-medium text-[#4B5563] hover:border-[#D4AF37] hover:text-[#111827]">
+                                                                                                            <i data-lucide="git-compare" class="w-4 h-4"></i>
+                                                                                                            Compare
+                                                                                                        </button>-->
 
                                                     <!-- Select / Selected -->
                                                     <button
@@ -1731,6 +1731,15 @@
                             <div class="bg-white rounded-3xl p-8 border border-[#E5E7EB]">
 
                                 <h:form id="availabilityForm">
+                                    <h:inputHidden id="selectedDate" value="#{publicAvailabilityBean.selectedDateIso}" />
+
+                                    <h:commandButton id="selectDateBtn"
+                                                     action="#{publicAvailabilityBean.selectSelectedDate}"
+                                                     style="display:none">
+                                        <f:ajax execute="selectedDate"
+                                                render="calendarPanel :timeSlotsPanel"
+                                                onevent="refreshLucideAfterAjax" />
+                                    </h:commandButton>
 
                                     <!-- chỉ render panel này khi đổi tháng/chọn ngày -->
                                     <h:panelGroup id="calendarPanel" layout="block">
@@ -2362,6 +2371,21 @@
             </div>
 
         </main>
+
+        <script type="text/javascript">
+            window.FEASTLINK_RD_selectDate = function (btn) {
+                if (!btn)
+                    return;
+                var iso = btn.getAttribute("data-date-iso");
+                var hidden = document.getElementById("availabilityForm:selectedDate");
+                var submit = document.getElementById("availabilityForm:selectDateBtn");
+                if (!hidden || !submit)
+                    return;
+                hidden.value = iso;
+                submit.click(); // triggers f:ajax
+            };
+        </script>
+
         <!-- Script JS giữ nguyên -->
         <script type="text/javascript">
 
@@ -2451,7 +2475,5 @@
                 </div>
             </div>
         </div>
-
-
     </h:body>
 </html>
