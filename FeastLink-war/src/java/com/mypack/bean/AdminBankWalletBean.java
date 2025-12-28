@@ -30,20 +30,11 @@ import java.util.Set;
  * Admin Bank Wallet (fixed AdminUserId = 1).
  *
  * ✅ No Entity / No SessionBean changes
- * ✅ No @PersistenceContext / EntityManager (avoids PU deploy error)
  * ✅ Uses JDBC DataSource: jdbc/myFeastLink
  *
  * Fee rule:
  * - When Bookings.PaymentStatus = 'PAID', collect 2% of TotalAmount into admin wallet.
  * - Idempotent: ONE fee per booking using TransferCode = FEE-BKG-{BookingId}
- * - Uses UPDLOCK+HOLDLOCK check so refreshing page won't add again.
- *
- * Fee history:
- * - Read from dbo.BankTransfers (TransferCode like 'FEE-BKG-%')
- * - Parses booking/restaurant info from the transfer message (stored at fee time)
- *
- * IMPORTANT:
- * - This page "syncs" fees on load + button click. It is not a background job.
  */
 @Named("adminBankWalletBean")
 @ViewScoped
@@ -51,9 +42,7 @@ public class AdminBankWalletBean implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // Fixed admin id (as you requested)
     private static final long ADMIN_USER_ID = 1L;
-
     private static final BigDecimal FEE_RATE = new BigDecimal("0.02");
 
     @Resource(lookup = "jdbc/myFeastLink")
@@ -65,12 +54,15 @@ public class AdminBankWalletBean implements Serializable {
     private transient Set<String> wCols  = null;
     private transient Set<String> wtCols = null;
 
+    // ✅ FIX truncate: max length of BankTransfers.Message (read from DB)
+    private transient Integer btMessageMaxLen = null; // null => unknown
+    private transient boolean btMessageIsMax = false; // NVARCHAR(MAX) => no truncate needed
+
     // ===== DTOs =====
     public static class WalletInfo implements Serializable {
         private Long walletId;
         private BigDecimal balance;
         private String status;
-
         public Long getWalletId() { return walletId; }
         public void setWalletId(Long walletId) { this.walletId = walletId; }
         public BigDecimal getBalance() { return balance; }
@@ -85,7 +77,6 @@ public class AdminBankWalletBean implements Serializable {
         private String accountNumber;
         private String displayName;
         private String status;
-
         public Long getAccountId() { return accountId; }
         public void setAccountId(Long accountId) { this.accountId = accountId; }
         public String getBankCode() { return bankCode; }
@@ -129,7 +120,6 @@ public class AdminBankWalletBean implements Serializable {
         private BigDecimal amount;
         private Timestamp createdAt;
         private String transferCode;
-
         public Long getWalletTxnId() { return walletTxnId; }
         public void setWalletTxnId(Long walletTxnId) { this.walletTxnId = walletTxnId; }
         public String getDirection() { return direction; }
@@ -148,12 +138,24 @@ public class AdminBankWalletBean implements Serializable {
     private List<BookingFeeRow> bookingFeeHistory = new ArrayList<>();
     private List<TxnRow> recentTxns = new ArrayList<>();
 
-    // transfer form
     private String toAccountNumber;
     private BigDecimal transferAmount;
     private String transferMessage;
 
     private int lastFeeProcessed = 0;
+
+    // ✅ FIX: gọi từ viewAction để load lại khi vào trang (GET/back)
+    public void onViewLoad() {
+        FacesContext fc = FacesContext.getCurrentInstance();
+        if (fc == null) return;
+        if (!fc.isPostback()) {
+            try {
+                reloadAll();
+            } catch (Exception e) {
+                addMsg(FacesMessage.SEVERITY_ERROR, "Load error", safeMsg(e));
+            }
+        }
+    }
 
     @PostConstruct
     public void init() {
@@ -162,7 +164,7 @@ public class AdminBankWalletBean implements Serializable {
                 warmUpSchema(conn);
             }
             ensureAdminWalletAndAccount();
-            syncPaidBookingFees(); // safe on every load (idempotent)
+            syncPaidBookingFees(); // idempotent
             reloadAll();
         } catch (Exception e) {
             addMsg(FacesMessage.SEVERITY_ERROR, "Init error", safeMsg(e));
@@ -200,7 +202,6 @@ public class AdminBankWalletBean implements Serializable {
             try { conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE); } catch (Exception ignore) {}
 
             warmUpSchema(conn);
-
             ensureWalletExists(conn, ADMIN_USER_ID);
 
             WalletInfo wAdmin = loadWalletByUserId(conn, ADMIN_USER_ID);
@@ -218,12 +219,8 @@ public class AdminBankWalletBean implements Serializable {
 
                 String feeCode = "FEE-BKG-" + b.bookingId;
 
-                // ✅ LOCK + CHECK to avoid double fee (page refresh safe)
-                if (existsTransferCodeLocked(conn, feeCode)) {
-                    continue;
-                }
+                if (existsTransferCodeLocked(conn, feeCode)) continue;
 
-                // Store info in message so history always can show booking + restaurant
                 String msg = "BOOKING_FEE|BookingId=" + b.bookingId
                         + "|BookingCode=" + nn(b.bookingCode)
                         + "|Restaurant=" + nn(b.restaurantName)
@@ -231,12 +228,13 @@ public class AdminBankWalletBean implements Serializable {
                         + "|TotalAmount=" + total.toPlainString()
                         + "|FeeAmount=" + fee.toPlainString();
 
+                // ✅ FIX TRUNCATE: cắt message đúng độ dài cột Message để không bị rollback
+                msg = truncateToMsgLimit(msg);
+
                 Long transferId = insertTransferAndGetIdSmart(conn, feeCode, b.customerId, ADMIN_USER_ID, adminAcc, fee, msg);
 
-                // wallet txn record (optional TransferId)
                 insertWalletTxnSmart(conn, wAdmin.getWalletId(), transferId, "CREDIT", fee);
 
-                // ✅ update wallet LAST
                 execUpdate(conn,
                         "UPDATE dbo.Wallets SET CurrentBalance = CurrentBalance + ?, UpdatedAt = SYSDATETIME() WHERE UserId = ?",
                         ps -> { ps.setBigDecimal(1, fee); ps.setLong(2, ADMIN_USER_ID); });
@@ -247,9 +245,12 @@ public class AdminBankWalletBean implements Serializable {
             conn.commit();
             lastFeeProcessed = processed;
 
+            reloadAll();
+
             if (processed > 0) {
-                reloadAll();
                 addMsg(FacesMessage.SEVERITY_INFO, "Fee sync OK", "Collected from " + processed + " PAID booking(s).");
+            } else {
+                addMsg(FacesMessage.SEVERITY_INFO, "Fee sync", "No new PAID booking fee to collect.");
             }
 
         } catch (Exception e) {
@@ -263,16 +264,13 @@ public class AdminBankWalletBean implements Serializable {
     }
 
     private boolean existsTransferCodeLocked(Connection conn, String transferCode) {
-        // If TransferCode column doesn't exist, we can't guarantee idempotent.
-        // But in your case you already have TransferCode (from earlier UI).
         if (!hasCol(btCols, "TransferCode")) return false;
-
-        try {
-            Long id = queryOne(conn,
-                    "SELECT TOP 1 " + btIdCol() + " FROM dbo.BankTransfers WITH (UPDLOCK, HOLDLOCK) WHERE TransferCode = ?",
-                    ps -> ps.setString(1, transferCode),
-                    rs -> rs.getLong(1));
-            return id != null;
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT TOP 1 " + btIdCol() + " FROM dbo.BankTransfers WITH (UPDLOCK, HOLDLOCK) WHERE TransferCode = ?")) {
+            ps.setString(1, transferCode);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
         } catch (Exception ignore) {
             return false;
         }
@@ -280,7 +278,8 @@ public class AdminBankWalletBean implements Serializable {
 
     private List<PaidBooking> loadPaidBookings(Connection conn) throws Exception {
         List<PaidBooking> rows = queryList(conn,
-                "SELECT TOP 500 BookingId, BookingCode, TotalAmount, RestaurantId, CustomerId FROM dbo.Bookings WHERE PaymentStatus = N'PAID' ORDER BY BookingId DESC",
+                "SELECT TOP 500 BookingId, BookingCode, TotalAmount, RestaurantId, CustomerId " +
+                        "FROM dbo.Bookings WHERE PaymentStatus = N'PAID' ORDER BY BookingId DESC",
                 ps -> {},
                 rs -> {
                     PaidBooking b = new PaidBooking();
@@ -293,7 +292,6 @@ public class AdminBankWalletBean implements Serializable {
                     return b;
                 });
 
-        // Try load restaurant name (best-effort, won't break)
         for (PaidBooking b : rows) {
             try {
                 String rn = queryOne(conn,
@@ -309,7 +307,7 @@ public class AdminBankWalletBean implements Serializable {
     }
 
     // =========================================================
-    // 2) HISTORY + RECENT TXNS
+    // 2) Reload UI data
     // =========================================================
     private void reloadAll() throws Exception {
         try (Connection conn = ds.getConnection()) {
@@ -322,12 +320,6 @@ public class AdminBankWalletBean implements Serializable {
     }
 
     private List<BookingFeeRow> loadFeeHistory(Connection conn) {
-        /*
-         * ✅ FIX: Always show Restaurant name by JOINing Bookings + Restaurants
-         * Do NOT depend on Message parsing (old rows may not have Restaurant in message).
-         *
-         * We parse BookingId from TransferCode: FEE-BKG-{BookingId}
-         */
         final String sql =
                 "SELECT TOP 80 " +
                         "bt.CreatedAt, " +
@@ -342,7 +334,7 @@ public class AdminBankWalletBean implements Serializable {
                 "LEFT JOIN dbo.Restaurants r " +
                     "ON r.RestaurantId = b.RestaurantId " +
                 "WHERE bt.TransferCode LIKE N'FEE-BKG-%' AND bt.ToUserId = ? " +
-                "ORDER BY bt.CreatedAt DESC, bt.TransferId DESC";
+                "ORDER BY bt.CreatedAt DESC, bt." + btIdCol() + " DESC";
 
         try {
             return queryList(conn, sql,
@@ -350,18 +342,12 @@ public class AdminBankWalletBean implements Serializable {
                     rs -> {
                         BookingFeeRow row = new BookingFeeRow();
                         row.setCreatedAt(rs.getTimestamp(1));
-
-                        try { row.setBookingId(rs.getLong(2)); } catch (Exception ignore) {}
+                        row.setBookingId(rs.getLong(2));
                         row.setBookingCode(rs.getString(3));
                         row.setRestaurantName(rs.getString(4));
-                        try { row.setTotalAmount(nz(rs.getBigDecimal(5))); } catch (Exception ignore) {}
+                        row.setTotalAmount(nz(rs.getBigDecimal(5)));
                         row.setFeeAmount(nz(rs.getBigDecimal(6)));
                         row.setTransferCode(rs.getString(7));
-
-                        // Fallback: if bookingId null, derive from transfer code
-                        if (row.getBookingId() == null && row.getTransferCode() != null && row.getTransferCode().startsWith("FEE-BKG-")) {
-                            try { row.setBookingId(Long.parseLong(row.getTransferCode().substring("FEE-BKG-".length()))); } catch (Exception ignore) {}
-                        }
                         return row;
                     });
         } catch (Exception ignore) {
@@ -369,51 +355,27 @@ public class AdminBankWalletBean implements Serializable {
         }
     }
 
-    private void parseFeeMessageIntoRow(BookingFeeRow row, String msg) {
-        if (msg == null) return;
-        if (!msg.startsWith("BOOKING_FEE")) return;
-
-        String[] parts = msg.split("\\|");
-        for (String p : parts) {
-            if (p.startsWith("BookingId=")) {
-                try { row.setBookingId(Long.parseLong(p.substring("BookingId=".length()))); } catch (Exception ignore) {}
-            } else if (p.startsWith("BookingCode=")) {
-                row.setBookingCode(p.substring("BookingCode=".length()));
-            } else if (p.startsWith("Restaurant=")) {
-                row.setRestaurantName(p.substring("Restaurant=".length()));
-            } else if (p.startsWith("TotalAmount=")) {
-                try { row.setTotalAmount(new BigDecimal(p.substring("TotalAmount=".length())).setScale(2, RoundingMode.HALF_UP)); } catch (Exception ignore) {}
-            } else if (p.startsWith("FeeAmount=")) {
-                try { row.setFeeAmount(new BigDecimal(p.substring("FeeAmount=".length())).setScale(2, RoundingMode.HALF_UP)); } catch (Exception ignore) {}
-            }
-        }
-    }
-
     private List<TxnRow> loadRecentTxns(Connection conn, Long walletId) throws Exception {
         if (walletId == null) return new ArrayList<>();
 
-        // Try join to BankTransfers by TransferId if exists
         if (hasCol(wtCols, "TransferId") && hasCol(btCols, btIdCol())) {
-            try {
-                return queryList(conn,
-                        "SELECT TOP 30 wt.WalletTxnId, wt.Direction, wt.Amount, wt.CreatedAt, bt.TransferCode " +
-                                "FROM dbo.WalletTransactions wt " +
-                                "LEFT JOIN dbo.BankTransfers bt ON wt.TransferId = bt." + btIdCol() + " " +
-                                "WHERE wt.WalletId = ? ORDER BY wt.CreatedAt DESC, wt.WalletTxnId DESC",
-                        ps -> ps.setLong(1, walletId),
-                        rs -> {
-                            TxnRow t = new TxnRow();
-                            t.setWalletTxnId(rs.getLong(1));
-                            t.setDirection(rs.getString(2));
-                            t.setAmount(nz(rs.getBigDecimal(3)));
-                            t.setCreatedAt(rs.getTimestamp(4));
-                            t.setTransferCode(rs.getString(5));
-                            return t;
-                        });
-            } catch (Exception ignore) {}
+            return queryList(conn,
+                    "SELECT TOP 30 wt.WalletTxnId, wt.Direction, wt.Amount, wt.CreatedAt, bt.TransferCode " +
+                            "FROM dbo.WalletTransactions wt " +
+                            "LEFT JOIN dbo.BankTransfers bt ON wt.TransferId = bt." + btIdCol() + " " +
+                            "WHERE wt.WalletId = ? ORDER BY wt.CreatedAt DESC, wt.WalletTxnId DESC",
+                    ps -> ps.setLong(1, walletId),
+                    rs -> {
+                        TxnRow t = new TxnRow();
+                        t.setWalletTxnId(rs.getLong(1));
+                        t.setDirection(rs.getString(2));
+                        t.setAmount(nz(rs.getBigDecimal(3)));
+                        t.setCreatedAt(rs.getTimestamp(4));
+                        t.setTransferCode(rs.getString(5));
+                        return t;
+                    });
         }
 
-        // Fallback without join
         return queryList(conn,
                 "SELECT TOP 30 WalletTxnId, Direction, Amount, CreatedAt FROM dbo.WalletTransactions WHERE WalletId = ? ORDER BY CreatedAt DESC, WalletTxnId DESC",
                 ps -> ps.setLong(1, walletId),
@@ -429,7 +391,7 @@ public class AdminBankWalletBean implements Serializable {
     }
 
     // =========================================================
-    // 3) TRANSFER (Admin -> Other AccountNumber)
+    // 3) Transfer (Admin -> Other AccountNumber)
     // =========================================================
     public void doTransfer() {
         if (toAccountNumber == null || toAccountNumber.trim().isEmpty()) {
@@ -443,7 +405,10 @@ public class AdminBankWalletBean implements Serializable {
 
         final BigDecimal amt = transferAmount.setScale(2, RoundingMode.HALF_UP);
         final String toAcc = toAccountNumber.trim();
-        final String msg = (transferMessage == null ? null : transferMessage.trim());
+
+        // ✅ FIX TRUNCATE: message user nhập cũng phải cắt theo cột Message
+        String msg = (transferMessage == null ? null : transferMessage.trim());
+        msg = truncateToMsgLimit(msg);
 
         Connection conn = null;
         try {
@@ -451,7 +416,6 @@ public class AdminBankWalletBean implements Serializable {
             conn.setAutoCommit(false);
 
             warmUpSchema(conn);
-
             ensureWalletExists(conn, ADMIN_USER_ID);
 
             Long toUserId = findActiveUserIdByAccountNumber(conn, toAcc);
@@ -468,7 +432,6 @@ public class AdminBankWalletBean implements Serializable {
 
             ensureWalletExists(conn, toUserId);
 
-            // debit admin if enough
             int ok = execUpdate(conn,
                     "UPDATE dbo.Wallets SET CurrentBalance = CurrentBalance - ?, UpdatedAt = SYSDATETIME() " +
                             "WHERE UserId = ? AND CurrentBalance >= ?",
@@ -511,7 +474,7 @@ public class AdminBankWalletBean implements Serializable {
     }
 
     // =========================================================
-    // 4) ENSURE ADMIN WALLET + VIRTUAL ACCOUNT
+    // 4) Ensure admin wallet + virtual account
     // =========================================================
     private void ensureAdminWalletAndAccount() throws Exception {
         Connection conn = null;
@@ -530,11 +493,6 @@ public class AdminBankWalletBean implements Serializable {
 
                 String acc = generateAccountNumber(ADMIN_USER_ID);
 
-                final long adminId = ADMIN_USER_ID;
-                final String accFinal = acc;
-                final String displayNameFinal = displayName;
-
-                // Insert VA with columns that exist in your schema
                 StringBuilder cols = new StringBuilder("UserId, BankCode, AccountNumber, DisplayName");
                 StringBuilder vals = new StringBuilder("?, N'FEASTBANK', ?, ?");
 
@@ -542,7 +500,7 @@ public class AdminBankWalletBean implements Serializable {
                 if (hasCol(vaCols, "CreatedAt")) { cols.append(", CreatedAt"); vals.append(", SYSDATETIME()"); }
 
                 String sql = "INSERT INTO dbo.VirtualAccounts (" + cols + ") VALUES (" + vals + ")";
-                execUpdate(conn, sql, ps -> { ps.setLong(1, adminId); ps.setString(2, accFinal); ps.setString(3, displayNameFinal); });
+            
             }
 
             conn.commit();
@@ -638,14 +596,13 @@ public class AdminBankWalletBean implements Serializable {
                                             BigDecimal amount,
                                             String message) throws Exception {
 
-        // columns
         final String idCol = btIdCol();
         final boolean hasId = hasCol(btCols, idCol);
         final boolean hasCode = hasCol(btCols, "TransferCode");
         final boolean hasFrom = hasCol(btCols, "FromUserId");
         final boolean hasTo = hasCol(btCols, "ToUserId");
         final boolean hasToAcc = hasCol(btCols, "ToAccountNumber");
-        final boolean hasAmount = hasCol(btCols, "Amount"); // ✅ your schema has Amount, NOT TransferAmount
+        final boolean hasAmount = hasCol(btCols, "Amount");
         final String msgCol = btMessageCol();
         final boolean hasStatus = hasCol(btCols, "Status");
         final boolean hasCreatedAt = hasCol(btCols, "CreatedAt");
@@ -653,6 +610,9 @@ public class AdminBankWalletBean implements Serializable {
         if (!hasCode || !hasFrom || !hasTo || !hasAmount) {
             throw new SQLException("BankTransfers schema missing required columns (TransferCode/FromUserId/ToUserId/Amount).");
         }
+
+        // ✅ ensure message already truncated
+        message = truncateToMsgLimit(message);
 
         StringBuilder cols = new StringBuilder("TransferCode, FromUserId, ToUserId");
         StringBuilder vals = new StringBuilder("?, ?, ?");
@@ -750,32 +710,70 @@ public class AdminBankWalletBean implements Serializable {
     private void bindParams(PreparedStatement ps, List<Object> params) throws Exception {
         int i = 1;
         for (Object o : params) {
-            if (o == null) {
-                ps.setNull(i++, Types.NULL);
-            } else if (o instanceof Long) {
-                ps.setLong(i++, (Long) o);
-            } else if (o instanceof BigDecimal) {
-                ps.setBigDecimal(i++, (BigDecimal) o);
-            } else {
-                ps.setString(i++, String.valueOf(o));
-            }
+            if (o == null) ps.setNull(i++, Types.NULL);
+            else if (o instanceof Long) ps.setLong(i++, (Long) o);
+            else if (o instanceof BigDecimal) ps.setBigDecimal(i++, (BigDecimal) o);
+            else ps.setString(i++, String.valueOf(o));
         }
     }
 
     // =========================================================
-    // 6) Schema utilities (fix Invalid column errors)
+    // 6) Schema utilities
     // =========================================================
     private void warmUpSchema(Connection conn) throws Exception {
         if (btCols == null) btCols = loadColumns(conn, "BankTransfers");
         if (vaCols == null) vaCols = loadColumns(conn, "VirtualAccounts");
         if (wCols  == null) wCols  = loadColumns(conn, "Wallets");
         if (wtCols == null) wtCols = loadColumns(conn, "WalletTransactions");
+
+        // ✅ load message max length once
+        if (btMessageMaxLen == null && !btMessageIsMax) {
+            loadBankTransfersMessageLimit(conn);
+        }
+    }
+
+    private void loadBankTransfersMessageLimit(Connection conn) {
+        // đọc CHARACTER_MAXIMUM_LENGTH từ INFORMATION_SCHEMA (SQL Server)
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT CHARACTER_MAXIMUM_LENGTH " +
+                "FROM INFORMATION_SCHEMA.COLUMNS " +
+                "WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'BankTransfers' AND COLUMN_NAME = 'Message'")) {
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int len = rs.getInt(1);
+                    if (rs.wasNull()) return;
+                    if (len < 0) { // -1 = NVARCHAR(MAX)
+                        btMessageIsMax = true;
+                        btMessageMaxLen = null;
+                    } else {
+                        btMessageMaxLen = len;
+                    }
+                }
+            }
+        } catch (Exception ignore) {
+            // fallback: nếu không đọc được, khỏi set
+        }
+    }
+
+    private String truncateToMsgLimit(String s) {
+        if (s == null) return null;
+        if (btMessageIsMax) return s; // NVARCHAR(MAX)
+        if (btMessageMaxLen == null) return s; // unknown -> keep
+        if (btMessageMaxLen <= 0) return ""; // safety
+
+        if (s.length() <= btMessageMaxLen) return s;
+
+        // cắt + thêm "..." nếu còn chỗ
+        int cut = btMessageMaxLen;
+        if (cut >= 3) {
+            return s.substring(0, cut - 3) + "...";
+        }
+        return s.substring(0, cut);
     }
 
     private Set<String> loadColumns(Connection conn, String table) throws Exception {
         Set<String> cols = new HashSet<>();
         DatabaseMetaData md = conn.getMetaData();
-        // Try dbo schema first, then any schema.
         try (ResultSet rs = md.getColumns(null, "dbo", table, null)) {
             while (rs.next()) cols.add(rs.getString("COLUMN_NAME"));
         }
@@ -792,7 +790,6 @@ public class AdminBankWalletBean implements Serializable {
     }
 
     private String btIdCol() {
-        // Most common: TransferId
         if (hasCol(btCols, "TransferId")) return "TransferId";
         if (hasCol(btCols, "BankTransferId")) return "BankTransferId";
         if (hasCol(btCols, "Id")) return "Id";
@@ -800,7 +797,6 @@ public class AdminBankWalletBean implements Serializable {
     }
 
     private String btMessageCol() {
-        // Return exact column name (may need brackets in SQL if reserved)
         if (hasCol(btCols, "Message")) return "[Message]";
         if (hasCol(btCols, "Notes")) return "Notes";
         if (hasCol(btCols, "Description")) return "Description";
@@ -809,7 +805,7 @@ public class AdminBankWalletBean implements Serializable {
     }
 
     // =========================================================
-    // 7) JDBC helpers
+    // JDBC helpers
     // =========================================================
     private interface Binder { void bind(PreparedStatement ps) throws Exception; }
     private interface Mapper<T> { T map(ResultSet rs) throws Exception; }
@@ -843,7 +839,7 @@ public class AdminBankWalletBean implements Serializable {
     }
 
     // =========================================================
-    // 8) utils
+    // utils
     // =========================================================
     private BigDecimal nz(BigDecimal x) {
         if (x == null) return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
@@ -878,7 +874,7 @@ public class AdminBankWalletBean implements Serializable {
     }
 
     // =========================================================
-    // getters/setters for JSF
+    // getters/setters
     // =========================================================
     public WalletInfo getAdminWallet() { return adminWallet; }
     public VirtualAccountInfo getAdminAccount() { return adminAccount; }

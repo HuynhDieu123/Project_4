@@ -494,7 +494,9 @@ public class BookingManagementBean implements Serializable {
             String paymentStatus = (b.getPaymentStatus() != null)
                     ? b.getPaymentStatus().trim().toUpperCase()
                     : "";
-            if (!"PAID_IN_FULL".equals(paymentStatus)) {
+
+// ✅ fully paid = PAID_IN_FULL hoặc PAID
+            if (!("PAID_IN_FULL".equals(paymentStatus) || "PAID".equals(paymentStatus))) {
                 continue;
             }
 

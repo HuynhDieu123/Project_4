@@ -4,9 +4,28 @@
       xmlns:h="jakarta.faces.html"
       xmlns:f="jakarta.faces.core">
 
+<!-- ✅ FIX: mỗi lần vào trang (GET) sẽ gọi onViewLoad() để refresh dữ liệu -->
+<f:metadata>
+    <f:viewAction action="#{restaurantBankWalletBean.onViewLoad}" onPostback="false"/>
+</f:metadata>
+
 <h:head>
     <title>Restaurant Bank Wallet</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <!-- ✅ FIX: chặn cache để tránh back/forward hiển thị dữ liệu cũ -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+
+    <script type="text/javascript">
+        // ✅ FIX: nếu user quay lại trang bằng Back (bfcache), bắt reload thật để lấy DB mới
+        window.addEventListener("pageshow", function (e) {
+            if (e.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
 
     <style>
         body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b1120; color:#e5e7eb; }
@@ -35,7 +54,6 @@
         .table th, .table td { padding: 10px; border-bottom: 1px solid rgba(148,163,184,.12); font-size: 13px; }
         .table th { text-align:left; color:#cbd5e1; background: rgba(15,23,42,.55); }
 
-        /* ===== Transfer styles (y chang block bạn đưa) ===== */
         .section-title { display:flex; align-items:baseline; justify-content:space-between; gap: 10px; margin-bottom: 12px; }
         .section-title h3 { margin: 0; font-size: 16px; font-weight: 900; }
         .hint { color:#9ca3af; font-size: 12px; }
@@ -60,6 +78,22 @@
         }
         .btn:hover { filter: brightness(1.03); transform: translateY(-1px); transition: .15s; }
 
+        .btn2{
+            display:inline-block;
+            text-decoration:none;
+            margin-bottom: 12px;
+            border: 1px solid rgba(148,163,184,.18);
+            background: rgba(15,23,42,.35);
+            color:#e5e7eb;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-weight: 800;
+        }
+
+        .msgwrap { margin: 10px 0; }
+        .msgwrap ul { margin:0; padding-left: 18px; }
+        .msgwrap li { margin: 6px 0; }
+
         @media (max-width: 900px) {
             .col-8, .col-4 { grid-column: span 12; }
             .grid { grid-template-columns: 1fr; }
@@ -68,16 +102,16 @@
 </h:head>
 
 <h:body>
-    
-<div class="wrap">    
-        <h:button value="← Back to Dashboard" styleClass="btn2" outcome="/Restaurant/dashboard.xhtml"/>
-    
+
+<div class="wrap">
+    <h:button value="← Back to Dashboard" styleClass="btn2" outcome="/Restaurant/dashboard.xhtml"/>
+
     <div class="top">
         <div>
             <div class="title">Restaurant Bank Wallet</div>
             <div class="sub">
-               Wallet for receiving payments from bookings <span class="badge ok">PAID</span> + <span class="badge ok">COMPLETED</span>,
-               automatically sync <b>Wallets.CurrentBalance (NET = 98%)</b> and minus <span class="badge warn">2%</span>.
+                Wallet for receiving payments from bookings <span class="badge ok">PAID</span> + <span class="badge ok">COMPLETED</span>,
+                automatically sync <b>Wallets.CurrentBalance (NET = 98%)</b> and minus <span class="badge warn">2%</span>.
             </div>
         </div>
 
@@ -88,7 +122,24 @@
         </h:form>
     </div>
 
-    <h:messages globalOnly="true" style="margin:10px 0;"/>
+    <!-- ✅ AUTO REFRESH (polling) để khi người khác chuyển tiền vào thì balance + incoming list tự lên -->
+    <h:form id="autoForm">
+        <h:commandButton id="autoBtn" value="auto" style="display:none" action="#{restaurantBankWalletBean.refresh}">
+            <f:ajax execute="@this" render="@all"/>
+        </h:commandButton>
+    </h:form>
+
+    <script type="text/javascript">
+        // poll mỗi 8s
+        window.setInterval(function () {
+            var btn = document.getElementById("autoForm:autoBtn");
+            if (btn) btn.click();
+        }, 8000);
+    </script>
+
+    <div class="msgwrap">
+        <h:messages globalOnly="true"/>
+    </div>
 
     <!-- SUMMARY + TRANSFER -->
     <div class="card" style="margin-bottom:14px;">
@@ -154,7 +205,7 @@
             </div>
         </div>
 
-        <!-- Transfer (y chang block bạn gửi) -->
+        <!-- Transfer -->
         <div class="card" style="margin-top:16px;">
             <div class="section-title">
                 <h3>Transfer (Restaurant → Other AccountNumber)</h3>
@@ -165,7 +216,7 @@
                 <div class="grid">
                     <div>
                         <div class="label">Receiver Account Number</div>
-                        <h:inputText id="toAcc" styleClass="inp" value="#{restaurantBankWalletBean.toAccountNumber}" />
+                        <h:inputText id="toAcc" styleClass="inp" value="#{restaurantBankWalletBean.toAccountNumber}"/>
                         <h:message for="toAcc" styleClass="danger"/>
                     </div>
 
@@ -190,6 +241,55 @@
                 </div>
             </h:form>
         </div>
+    </div>
+
+    <!-- ✅ INCOMING TRANSFERS (NEW) -->
+    <div class="card" style="margin-bottom:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <div style="font-weight:900;">Incoming transfers (to your Wallet)</div>
+            <div class="muted">Count: <b><h:outputText value="#{restaurantBankWalletBean.incomingTransfers.size()}"/></b></div>
+        </div>
+
+        <h:panelGroup rendered="#{empty restaurantBankWalletBean.incomingTransfers}">
+            <div class="muted">No incoming transfers yet.</div>
+        </h:panelGroup>
+
+        <h:panelGroup rendered="#{not empty restaurantBankWalletBean.incomingTransfers}">
+            <h:dataTable value="#{restaurantBankWalletBean.incomingTransfers}" var="t" styleClass="table">
+                <h:column>
+                    <f:facet name="header">Time</f:facet>
+                    <h:outputText value="#{t.createdAt}">
+                        <f:convertDateTime pattern="dd/MM/yyyy HH:mm"/>
+                    </h:outputText>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">From</f:facet>
+                    <h:outputText value="#{t.fromName}"/>
+                    <span class="muted"> · </span>
+                    <span class="muted">
+                        <h:outputText value="#{t.fromAccountNumber}"/>
+                    </span>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Amount</f:facet>
+                    <h:outputText value="#{t.amount}">
+                        <f:convertNumber type="currency" currencySymbol="$" maxFractionDigits="2"/>
+                    </h:outputText>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Message</f:facet>
+                    <h:outputText value="#{t.message}"/>
+                </h:column>
+
+                <h:column>
+                    <f:facet name="header">Transfer Code</f:facet>
+                    <h:outputText value="#{t.transferCode}"/>
+                </h:column>
+            </h:dataTable>
+        </h:panelGroup>
     </div>
 
     <!-- BOOKINGS TABLE -->
