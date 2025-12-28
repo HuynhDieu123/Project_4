@@ -45,11 +45,9 @@ public class CustomerOffersBean implements Serializable {
     @EJB
     private BookingsFacadeLocal bookingsFacade;
 
-    // ✅ NEW: lưu voucher user đã đổi
     @EJB
     private UserVouchersFacadeLocal userVouchersFacade;
 
-    // ✅ NEW (an toàn): lấy Users managed theo id
     @EJB
     private UsersFacadeLocal usersFacade;
 
@@ -57,21 +55,15 @@ public class CustomerOffersBean implements Serializable {
     private Users currentUser;
     private boolean loggedIn;
 
-    // point wallet
     private PointWallets wallet;
-
-    // list of vouchers that can be redeemed
     private List<Vouchers> redeemableOffers;
 
-    // rule from PointSettings
     private Long amountPerPoint;     // USD
     private Integer pointsPerAmount; // points
 
-    // last redeemed voucher (for "Voucher unlocked" block in xhtml)
     private String lastRedeemedCode;
     private String lastRedeemedName;
 
-    // đếm số voucher đã đổi (trong phiên xem trang này)
     private int redeemedVoucherCount;
 
     // =====================================================
@@ -85,7 +77,6 @@ public class CustomerOffersBean implements Serializable {
             }
         }
 
-        // chỉ coi là loggedIn nếu có currentUser và role = CUSTOMER
         loggedIn = (currentUser != null
                 && currentUser.getRole() != null
                 && "CUSTOMER".equalsIgnoreCase(currentUser.getRole().trim()));
@@ -97,17 +88,18 @@ public class CustomerOffersBean implements Serializable {
             return;
         }
 
-        // ĐÃ LOGIN CUSTOMER
-        loadPointRule();              // đọc cấu hình điểm từ PointSettings
-        initWallet();                 // lấy / tạo ví theo UserId
-        // syncPointsFromPaidBookings(); // (DISABLED) tránh ghi đè điểm sau khi đổi voucher
-loadRedeemableOffers();       // load list voucher có thể đổi
+        loadPointRule();
+        initWallet();
+
+        // ✅ BẬT SYNC để điểm tự lên theo booking PAID
+        syncPointsFromPaidBookings();
+
+        loadRedeemableOffers();
         redeemedVoucherCount = 0;
     }
 
     // =====================================================
     private void loadPointRule() {
-        // default nếu chưa cấu hình (100 USD => 1 point)
         amountPerPoint = 100L;
         pointsPerAmount = 1;
 
@@ -115,7 +107,6 @@ loadRedeemableOffers();       // load list voucher có thể đổi
             List<PointSettings> list = pointSettingsFacade.findAll();
             if (list != null && !list.isEmpty()) {
                 PointSettings ps = list.get(0);
-
                 if (ps != null) {
                     Long amountObj = ps.getAmountPerPoint();
                     Integer pointsObj = ps.getPointsPerAmount();
@@ -132,12 +123,6 @@ loadRedeemableOffers();       // load list voucher có thể đổi
         }
     }
 
-    /**
-     * LẤY VÍ ĐIỂM CỦA CUSTOMER ĐANG ĐĂNG NHẬP
-     * - Duyệt pointWalletsFacade.findAll()
-     * - Tìm wallet có UserId trùng với currentUser.userId
-     * - Nếu chưa có thì tạo mới với 0 điểm
-     */
     private void initWallet() {
         if (!loggedIn || currentUser == null) {
             wallet = null;
@@ -146,8 +131,7 @@ loadRedeemableOffers();       // load list voucher có thể đổi
 
         try {
             wallet = null;
-
-            Long currentUid = currentUser.getUserId(); // userId của user đang login
+            Long currentUid = currentUser.getUserId();
 
             List<PointWallets> all = pointWalletsFacade.findAll();
             if (all != null && !all.isEmpty() && currentUid != null) {
@@ -156,53 +140,49 @@ loadRedeemableOffers();       // load list voucher có thể đổi
                     if (w.getUserId() == null) continue;
 
                     if (currentUid.equals(w.getUserId())) {
-                        wallet = w; // tìm được ví của current user
+                        wallet = w;
                         break;
                     }
                 }
             }
 
-            // Nếu không tìm thấy ví cho user hiện tại -> tạo mới
             if (wallet == null) {
                 wallet = new PointWallets();
-                wallet.setUserId(currentUid);  // gắn đúng UserId đang login
-                wallet.setCurrentPoints(0L);
+                wallet.setUserId(currentUid);
+                wallet.setCurrentPoints(0L); // OK dù field là long
                 wallet.setUpdatedAt(new Date());
                 pointWalletsFacade.create(wallet);
             }
 
+            // ✅ FIX: Không check null vì getter là primitive long
+
         } catch (Exception ex) {
             ex.printStackTrace();
 
-            if (wallet == null) {
-                wallet = new PointWallets();
-                wallet.setUserId(currentUser.getUserId());
-                wallet.setCurrentPoints(0L);
-                wallet.setUpdatedAt(new Date());
-            }
+            wallet = new PointWallets();
+            wallet.setUserId(currentUser.getUserId());
+            wallet.setCurrentPoints(0L);
+            wallet.setUpdatedAt(new Date());
         }
     }
 
     /**
-     * ✅ TÍNH LẠI ĐIỂM TỪ ĐẦU DỰA VÀO TẤT CẢ BOOKING PAID CỦA CUSTOMER
-     *    (KHÔNG DÙNG lastSync, nên chỉ cần sửa DB + F5 là điểm cập nhật).
+     * Earned = điểm từ booking PAID
+     * Spent  = điểm đã đổi voucher (UserVouchers) nếu có
+     * Net    = max(0, Earned - Spent)
      */
     private void syncPointsFromPaidBookings() {
-        if (!loggedIn || currentUser == null) {
-            return;
-        }
+        if (!loggedIn || currentUser == null) return;
 
-        if (wallet == null) {
-            initWallet();
-        }
+        if (wallet == null) initWallet();
+        if (wallet == null) return;
 
-        // Nếu chưa cấu hình PointSettings hợp lệ thì không cộng
         if (amountPerPoint == null || amountPerPoint <= 0L
                 || pointsPerAmount == null || pointsPerAmount <= 0) {
             return;
         }
 
-        long totalPoints = 0L;
+        long earnedPoints = 0L;
 
         List<Bookings> allBookings;
         try {
@@ -212,71 +192,97 @@ loadRedeemableOffers();       // load list voucher có thể đổi
             return;
         }
 
-        if (allBookings == null || allBookings.isEmpty()) {
-            // không có booking nào, reset về 0
-            wallet.setCurrentPoints(0L);
-            wallet.setUpdatedAt(new Date());
-            pointWalletsFacade.edit(wallet);
-            return;
+        if (allBookings != null) {
+            for (Bookings b : allBookings) {
+                if (b == null) continue;
+
+                if (b.getCustomerId() == null
+                        || b.getCustomerId().getUserId() == null
+                        || !b.getCustomerId().getUserId().equals(currentUser.getUserId())) {
+                    continue;
+                }
+
+                String payStatus = b.getPaymentStatus();
+                if (payStatus == null || !"PAID".equalsIgnoreCase(payStatus.trim())) {
+                    continue;
+                }
+
+                BigDecimal totalAmount = b.getTotalAmount();
+                if (totalAmount == null) continue;
+
+                long total = totalAmount.longValue(); // giữ logic của bạn
+
+                if (total < amountPerPoint) continue;
+
+                long multiplier = total / amountPerPoint;
+                if (multiplier <= 0L) continue;
+
+                earnedPoints += (multiplier * pointsPerAmount);
+            }
         }
 
-        for (Bookings b : allBookings) {
-            if (b == null) continue;
+        long spentPoints = calcSpentPointsFromUserVouchersSafe();
 
-            // chỉ lấy booking của currentUser
-            if (b.getCustomerId() == null
-                    || b.getCustomerId().getUserId() == null
-                    || !b.getCustomerId().getUserId().equals(currentUser.getUserId())) {
-                continue;
-            }
+        long netPoints = earnedPoints - spentPoints;
+        if (netPoints < 0L) netPoints = 0L;
 
-            // chỉ cộng điểm khi PaymentStatus = 'PAID'
-            String payStatus = b.getPaymentStatus();
-            if (payStatus == null || !"PAID".equalsIgnoreCase(payStatus.trim())) {
-                continue;
-            }
+        long oldPoints = wallet.getCurrentPoints(); // ✅ primitive long
 
-            BigDecimal totalAmount = b.getTotalAmount();
-            if (totalAmount == null) {
-                continue;
-            }
-
-            long total = totalAmount.longValue();
-
-            // tổng tiền phải >= amountPerPoint mới cộng
-            if (total < amountPerPoint) {
-                continue;
-            }
-
-            long multiplier = total / amountPerPoint;
-            if (multiplier <= 0L) {
-                continue;
-            }
-
-            long earned = multiplier * pointsPerAmount;
-            totalPoints += earned;
-        }
-
-        // Cập nhật ví: set thẳng tổng điểm mới tính được
-        long oldPoints = (wallet.getCurrentPoints() != 0L) ? wallet.getCurrentPoints() : 0L;
-        wallet.setCurrentPoints(totalPoints);
+        wallet.setCurrentPoints(netPoints);
         wallet.setUpdatedAt(new Date());
-        pointWalletsFacade.edit(wallet);
 
-        // Nếu muốn báo message khi điểm thay đổi:
-        if (totalPoints != oldPoints) {
+        try {
+            pointWalletsFacade.edit(wallet);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        if (netPoints != oldPoints) {
             addMessage(FacesMessage.SEVERITY_INFO,
-                    "Scores have been updated.",
-                    "Your current score: " + totalPoints + " pts.");
+                    "Points updated.",
+                    "Current points: " + netPoints + " pts.");
+        }
+    }
+
+    private long calcSpentPointsFromUserVouchersSafe() {
+        try {
+            if (userVouchersFacade == null || currentUser == null || currentUser.getUserId() == null) return 0L;
+
+            List<UserVouchers> all = userVouchersFacade.findAll();
+            if (all == null || all.isEmpty()) return 0L;
+
+            long spent = 0L;
+
+            for (UserVouchers uv : all) {
+                if (uv == null) continue;
+                if (uv.getUserId() == null || uv.getVoucherId() == null) continue;
+                if (uv.getUserId().getUserId() == null) continue;
+
+                if (!uv.getUserId().getUserId().equals(currentUser.getUserId())) continue;
+
+                // ✅ FIX: quantity là primitive int -> không null
+                int qty = uv.getQuantity();
+                if (qty <= 0) continue;
+
+                // pointCost thường là Integer, để safe vẫn check null
+                Integer costObj = uv.getVoucherId().getPointCost();
+                int cost = (costObj == null) ? 0 : costObj;
+                if (cost <= 0) continue;
+
+                spent += (long) qty * (long) cost;
+            }
+
+            return spent;
+        } catch (Exception ex) {
+            // DB thiếu bảng UserVouchers / lỗi mapping -> bỏ qua
+            return 0L;
         }
     }
 
     private void loadRedeemableOffers() {
         redeemableOffers = new ArrayList<>();
         List<Vouchers> all = vouchersFacade.findAll();
-        if (all == null) {
-            return;
-        }
+        if (all == null) return;
 
         for (Vouchers v : all) {
             if (v == null) continue;
@@ -289,12 +295,8 @@ loadRedeemableOffers();       // load list voucher có thể đổi
             Integer perLimit = v.getPerUserLimit();
 
             boolean stillHasQuantity = true;
-            if (totalQty != null && totalQty <= 0) {
-                stillHasQuantity = false;
-            }
-            if (perLimit != null && perLimit <= 0) {
-                stillHasQuantity = false;
-            }
+            if (totalQty != null && totalQty <= 0) stillHasQuantity = false;
+            if (perLimit != null && perLimit <= 0) stillHasQuantity = false;
 
             if (Boolean.TRUE.equals(pointRedeemable)
                     && status != null
@@ -306,7 +308,6 @@ loadRedeemableOffers();       // load list voucher có thể đổi
         }
     }
 
-    // ✅ NEW: Lưu vào bảng UserVouchers (nếu đã có thì +quantity)
     private void saveUserVoucherClaim(Users user, Vouchers voucher) {
         if (user == null || user.getUserId() == null || voucher == null || voucher.getVoucherId() == null) {
             return;
@@ -317,8 +318,7 @@ loadRedeemableOffers();       // load list voucher có thể đổi
             try {
                 Users tmp = usersFacade.find(user.getUserId());
                 if (tmp != null) managedUser = tmp;
-            } catch (Exception ignore) {
-            }
+            } catch (Exception ignore) {}
 
             UserVouchers existing = null;
             List<UserVouchers> all = userVouchersFacade.findAll();
@@ -353,7 +353,7 @@ loadRedeemableOffers();       // load list voucher có thể đổi
 
                 userVouchersFacade.create(uv);
             } else {
-                int q = existing.getQuantity();
+                int q = existing.getQuantity(); // primitive int
                 if (q < 0) q = 0;
                 existing.setQuantity(q + 1);
 
@@ -366,8 +366,7 @@ loadRedeemableOffers();       // load list voucher có thể đổi
             }
 
         } catch (Exception ex) {
-            ex.printStackTrace();
-            // không chặn luồng redeem (vì bạn đang nói phần này chỉ là lưu history)
+            // nếu DB thiếu bảng UserVouchers -> bỏ qua, không chặn redeem
         }
     }
 
@@ -382,14 +381,10 @@ loadRedeemableOffers();       // load list voucher có thể đổi
             return;
         }
 
-        if (voucher == null || voucher.getVoucherId() == null) {
-            return;
-        }
+        if (voucher == null || voucher.getVoucherId() == null) return;
 
         try {
-            if (wallet == null) {
-                initWallet();
-            }
+            if (wallet == null) initWallet();
 
             Vouchers managed = vouchersFacade.find(voucher.getVoucherId());
             if (managed == null) {
@@ -439,7 +434,7 @@ loadRedeemableOffers();       // load list voucher có thể đổi
                 return;
             }
 
-            long current = wallet.getCurrentPoints();
+            long current = wallet.getCurrentPoints(); // ✅ primitive long
 
             if (current < cost) {
                 addMessage(FacesMessage.SEVERITY_ERROR,
@@ -448,12 +443,10 @@ loadRedeemableOffers();       // load list voucher có thể đổi
                 return;
             }
 
-            // Trừ điểm
             wallet.setCurrentPoints(current - cost);
             wallet.setUpdatedAt(new Date());
             pointWalletsFacade.edit(wallet);
 
-            // Giảm số lượng voucher
             if (totalQty != null) {
                 int newTotal = totalQty - 1;
                 if (newTotal < 0) newTotal = 0;
@@ -468,8 +461,9 @@ loadRedeemableOffers();       // load list voucher có thể đổi
             managed.setUpdatedAt(new Date());
             vouchersFacade.edit(managed);
 
-            // ✅ NEW: Lưu vào bảng UserVouchers
-            // saveUserVoucherClaim(currentUser, managed); // (DISABLED) tránh lỗi DB thiếu bảng UserVouchers
+            // ✅ Lưu claim (nếu bảng tồn tại)
+            saveUserVoucherClaim(currentUser, managed);
+
             lastRedeemedCode = managed.getCode();
             lastRedeemedName = managed.getName();
 
@@ -490,46 +484,19 @@ loadRedeemableOffers();       // load list voucher có thể đổi
         }
     }
 
-    // =====================================================
     private void addMessage(FacesMessage.Severity severity, String summary, String detail) {
         FacesContext.getCurrentInstance()
                 .addMessage(null, new FacesMessage(severity, summary, detail));
     }
 
-    // =============== GET / SET ===============
-    public PointWallets getWallet() {
-        return wallet;
-    }
-
-    public List<Vouchers> getRedeemableOffers() {
-        return redeemableOffers;
-    }
-
-    public Long getAmountPerPoint() {
-        return amountPerPoint;
-    }
-
-    public Integer getPointsPerAmount() {
-        return pointsPerAmount;
-    }
-
-    public String getLastRedeemedCode() {
-        return lastRedeemedCode;
-    }
-
-    public String getLastRedeemedName() {
-        return lastRedeemedName;
-    }
-
-    public int getRedeemedVoucherCount() {
-        return redeemedVoucherCount;
-    }
-
-    public Users getCurrentUser() {
-        return currentUser;
-    }
-
-    public boolean isLoggedIn() {
-        return loggedIn;
-    }
+    // ===== GETTERS =====
+    public PointWallets getWallet() { return wallet; }
+    public List<Vouchers> getRedeemableOffers() { return redeemableOffers; }
+    public Long getAmountPerPoint() { return amountPerPoint; }
+    public Integer getPointsPerAmount() { return pointsPerAmount; }
+    public String getLastRedeemedCode() { return lastRedeemedCode; }
+    public String getLastRedeemedName() { return lastRedeemedName; }
+    public int getRedeemedVoucherCount() { return redeemedVoucherCount; }
+    public Users getCurrentUser() { return currentUser; }
+    public boolean isLoggedIn() { return loggedIn; }
 }
