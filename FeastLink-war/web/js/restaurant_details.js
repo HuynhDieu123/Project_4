@@ -1137,6 +1137,70 @@ document.addEventListener('DOMContentLoaded', function () {
     let selectedPackageId = null;
     let selectedPackagePricePerPerson = null;
     const packagesSection = qs('#packages');
+    // ================== VEGETARIAN FRIENDLY FILTER (Packages + Menu) ==================
+// Behavior:
+// - Tick "Vegetarian-friendly" ->
+//      (1) Packages: only show combos that contain at least 1 vegetarian dish
+//      (2) Menu: only show vegetarian dishes (data-menu-veg=true)
+// - Untick -> show all back
+    const vegToggle = qs('#veg-only-toggle');
+
+// helper: compute hasVeg from hidden combo menu (always sourced from DB)
+    function comboHasVeg(card) {
+        if (!card)
+            return false;
+
+        // Prefer precomputed attribute from XHTML (RestaurantDetailsBean.comboHasVegetarian)
+        const attr = (card.getAttribute('data-has-veg') || '').toLowerCase();
+        if (attr === 'true')
+            return true;
+        if (attr === 'false')
+            return false;
+
+        // Fallback: scan hidden combo items
+        const src = card.querySelector('[data-combo-menu-source="true"]');
+        if (!src)
+            return false;
+        return Array.from(src.querySelectorAll('.combo-menu-item')).some(el => {
+            return (el.getAttribute('data-veg') || '').toLowerCase() === 'true';
+        });
+    }
+
+    function applyVegetarianFilter() {
+        if (!vegToggle)
+            return;
+        const vegOnly = !!vegToggle.checked;
+
+        // (1) Packages filter
+        const packageCards = qsa('#packages [data-combo-id][data-price-total]');
+        packageCards.forEach(card => {
+            const show = !vegOnly || comboHasVeg(card);
+            card.style.display = show ? '' : 'none';
+        });
+
+        // (2) Menu filter
+        const menuCards = qsa('[data-menu-card]');
+        menuCards.forEach(card => {
+            const isVeg = (card.getAttribute('data-menu-veg') || '').toLowerCase() === 'true';
+            const show = !vegOnly || isVeg;
+            card.style.display = show ? '' : 'none';
+        });
+
+        // Hide empty menu categories when vegOnly
+        // ONLY accordion category blocks use data-menu-category="cat-..."
+        const menuCategories = qsa('[data-menu-category^="cat-"]');
+        menuCategories.forEach(block => {
+            const cards = qsa('[data-menu-card]', block);
+            const anyVisible = cards.some(c => c.style.display !== 'none');
+            block.style.display = (!vegOnly || anyVisible) ? '' : 'none';
+        });
+    }
+
+    if (vegToggle) {
+        vegToggle.addEventListener('change', applyVegetarianFilter);
+        applyVegetarianFilter(); // initial
+    }
+
 
     function getPackageIdFromCard(card) {
         if (!card)
@@ -1800,5 +1864,87 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+// ================== FILTER + SORT (Packages) ==================
+    (function setupPackageFilters() {
+        const container = document.getElementById('flPackageCards');
+        if (!container)
+            return;
+
+        const cards = Array.from(container.querySelectorAll('[data-combo-id]'));
+        if (!cards.length)
+            return;
+
+        // keep original order for "Recommended"
+        cards.forEach((c, i) => c.dataset.originalIndex = String(i));
+
+        const selEvent = document.getElementById('flEventType');
+        const selGuests = document.getElementById('flGuestsRange');
+        const selSort = document.getElementById('flSort');
+
+        function parseRange(val) {
+            if (!val || val === 'all')
+                return null;
+            const parts = val.split('-');
+            const min = parseInt(parts[0], 10);
+            const max = parseInt(parts[1], 10);
+            if (Number.isNaN(min) || Number.isNaN(max))
+                return null;
+            return {min, max};
+        }
+
+        function applyFilters() {
+            const ev = selEvent ? (selEvent.value || 'all') : 'all';
+            const range = selGuests ? parseRange(selGuests.value) : null;
+            const sort = selSort ? (selSort.value || 'recommended') : 'recommended';
+
+            // filter
+            cards.forEach(card => {
+                let show = true;
+
+                // Event type: match keyword in combo name/desc (từ DB)
+                if (ev !== 'all') {
+                    const txt = ((card.dataset.comboName || '') + ' ' + (card.dataset.comboDesc || '')).toLowerCase();
+                    show = txt.includes(ev.toLowerCase());
+                }
+
+                // Guests range: dùng data-min-guests (từ DB)
+                if (show && range) {
+                    const mg = parseInt(card.dataset.minGuests || '0', 10);
+                    if (!Number.isNaN(mg) && mg > 0) {
+                        show = (mg >= range.min && mg <= range.max);
+                    }
+                }
+
+                card.style.display = show ? '' : 'none';
+            });
+
+            // sort visible cards
+            const visible = cards.filter(c => c.style.display !== 'none');
+            const hidden = cards.filter(c => c.style.display === 'none');
+
+            let sorted = visible.slice();
+            if (sort === 'priceAsc' || sort === 'priceDesc') {
+                sorted.sort((a, b) => {
+                    const pa = parseFloat(a.dataset.priceTotal || '0');
+                    const pb = parseFloat(b.dataset.priceTotal || '0');
+                    return sort === 'priceAsc' ? (pa - pb) : (pb - pa);
+                });
+            } else {
+                sorted.sort((a, b) => {
+                    return parseInt(a.dataset.originalIndex, 10) - parseInt(b.dataset.originalIndex, 10);
+                });
+            }
+
+            // re-append: visible first, hidden at end
+            sorted.concat(hidden).forEach(el => container.appendChild(el));
+        }
+
+        [selEvent, selGuests, selSort].forEach(sel => {
+            if (sel)
+                sel.addEventListener('change', applyFilters);
+        });
+
+        applyFilters();
+    })();
 
 });

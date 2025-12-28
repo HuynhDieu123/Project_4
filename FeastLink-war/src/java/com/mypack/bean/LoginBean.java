@@ -36,7 +36,7 @@ public class LoginBean implements Serializable {
 
     // ✅ MUST match Google Console exactly
     private static final String GOOGLE_REDIRECT_URI =
-            "http://localhost:8080/FeastLink-war/google-oauth-callback";
+            "http://localhost:8082/FeastLink-war/google-oauth-callback";
 
     // ====== GET/SET ======
     public String getIdentifier() { return identifier; }
