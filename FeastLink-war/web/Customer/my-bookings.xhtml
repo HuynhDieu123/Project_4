@@ -411,40 +411,6 @@
                                                 </h4>
 
                                                 <div class="space-y-3">
-
-                                                    <!-- Package subtotal -->
-                                                    <h:panelGroup rendered="#{customerMyBookingsBean.hasPackage(b)}">
-                                                        <div class="flex justify-between items-center">
-                                                            <span class="text-[#4B5563] text-sm">Package subtotal</span>
-                                                            <span class="font-medium">
-                                                                <h:outputText
-                                                                    value="#{customerMyBookingsBean.formatMoney(customerMyBookingsBean.packageSubtotal(b))}" />
-                                                            </span>
-                                                        </div>
-                                                    </h:panelGroup>
-
-                                                    <!-- Custom menu subtotal -->
-                                                    <h:panelGroup rendered="#{customerMyBookingsBean.hasMenuItems(b)}">
-                                                        <div class="flex justify-between items-center">
-                                                            <span class="text-[#4B5563] text-sm">Custom menu subtotal</span>
-                                                            <span class="font-medium">
-                                                                <h:outputText
-                                                                    value="#{customerMyBookingsBean.formatMoney(customerMyBookingsBean.menuSubtotal(b))}" />
-                                                            </span>
-                                                        </div>
-                                                    </h:panelGroup>
-
-                                                    <!-- Other charges -->
-                                                    <h:panelGroup rendered="#{customerMyBookingsBean.otherCharges(b) gt 0}">
-                                                        <div class="flex justify-between items-center pb-3 border-b border-[#E5E7EB]">
-                                                            <span class="text-[#4B5563] text-sm">Other charges</span>
-                                                            <span class="font-medium">
-                                                                <h:outputText
-                                                                    value="#{customerMyBookingsBean.formatMoney(customerMyBookingsBean.otherCharges(b))}" />
-                                                            </span>
-                                                        </div>
-                                                    </h:panelGroup>
-
                                                     <!-- Deposit -->
                                                     <div class="flex justify-between items-center">
                                                         <span class="text-[#4B5563] text-sm">Deposit paid</span>
