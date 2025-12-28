@@ -26,10 +26,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -79,8 +82,7 @@ public class MenuItemFormBean implements Serializable {
     // session context
     private Users currentUser;
 
-    public MenuItemFormBean() {
-    }
+    public MenuItemFormBean() { }
 
     // ===== Helper: lấy currentUser =====
     private Users resolveCurrentUser() {
@@ -98,9 +100,8 @@ public class MenuItemFormBean implements Serializable {
 
         Map<String, Object> session = ctx.getExternalContext().getSessionMap();
         Users u = (Users) session.get("currentUser");
-        if (u == null || u.getEmail() == null) {
-            return null;
-        }
+        if (u == null || u.getEmail() == null) return null;
+
         String email = u.getEmail();
 
         // Tạm thời map qua email: Users.Email == Restaurants.Email
@@ -118,16 +119,17 @@ public class MenuItemFormBean implements Serializable {
     // ======================================================
     @PostConstruct
     public void init() {
-        // load list cho dropdown
-        cuisines = cuisinesFacade.findAll();
-        categories = menuCategoriesFacade.findAll();
-
         currentUser = resolveCurrentUser();
+
+        // cuisines là master data chung -> vẫn load all
+        cuisines = cuisinesFacade.findAll();
 
         // đọc itemId từ query string (?itemId=...)
         Map<String, String> params = FacesContext.getCurrentInstance()
                 .getExternalContext().getRequestParameterMap();
         String idStr = params.get("itemId");
+
+        Restaurants restaurantCtx = resolveCurrentRestaurant();
 
         if (idStr != null && !idStr.isBlank()) {
             // ---- EDIT MODE ----
@@ -136,6 +138,11 @@ public class MenuItemFormBean implements Serializable {
             editMode = true;
 
             if (newItem != null) {
+                // lấy restaurant theo item (đúng nhất khi edit)
+                if (newItem.getRestaurantId() != null) {
+                    restaurantCtx = newItem.getRestaurantId();
+                }
+
                 if (newItem.getCuisineId() != null) {
                     cuisineId = newItem.getCuisineId().getCuisineId();
                 }
@@ -152,9 +159,95 @@ public class MenuItemFormBean implements Serializable {
             newItem.setIsDeleted(false);
 
             // Gán nhà hàng theo user đang login
-            Restaurants r = resolveCurrentRestaurant();
-            newItem.setRestaurantId(r);
+            newItem.setRestaurantId(restaurantCtx);
         }
+
+        // ✅ Load categories: đúng restaurant + chỉ Active (và nếu có IsDeleted thì loại luôn)
+        MenuCategories keepSelected = (editMode && newItem != null) ? newItem.getCategoryId() : null;
+        categories = loadCategoriesForRestaurant(restaurantCtx, keepSelected);
+    }
+
+    /**
+     * Lấy categories theo restaurant + chỉ lấy active.
+     * Nếu editMode mà category đang chọn bị inactive -> vẫn giữ lại để tránh JSF "Value is not valid".
+     */
+    private List<MenuCategories> loadCategoriesForRestaurant(Restaurants r, MenuCategories keepIfSelected) {
+        List<MenuCategories> result = new ArrayList<>();
+
+        if (r == null || r.getRestaurantId() == null) {
+            return result;
+        }
+        Long rid = r.getRestaurantId();
+
+        List<MenuCategories> all = menuCategoriesFacade.findAll();
+        if (all == null) return result;
+
+        for (MenuCategories c : all) {
+            if (c == null) continue;
+
+            // match restaurant
+            if (c.getRestaurantId() == null || c.getRestaurantId().getRestaurantId() == null) continue;
+            if (!rid.equals(c.getRestaurantId().getRestaurantId())) continue;
+
+            // chỉ lấy active + không deleted
+            if (!isSelectableCategory(c)) continue;
+
+            result.add(c);
+        }
+
+        // sort: SortOrder ASC, rồi Name
+        result.sort(
+                Comparator.comparing(MenuCategories::getSortOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(MenuCategories::getName, Comparator.nullsLast(String::compareToIgnoreCase))
+        );
+
+        // nếu đang edit mà category hiện tại không nằm trong list (do inactive) -> add vào đầu để không lỗi JSF
+        if (keepIfSelected != null && keepIfSelected.getCategoryId() != null) {
+            boolean exists = false;
+            for (MenuCategories c : result) {
+                if (keepIfSelected.getCategoryId().equals(c.getCategoryId())) {
+                    exists = true;
+                    break;
+                }
+            }
+            // chỉ add nếu nó thuộc đúng restaurant
+            if (!exists
+                    && keepIfSelected.getRestaurantId() != null
+                    && keepIfSelected.getRestaurantId().getRestaurantId() != null
+                    && rid.equals(keepIfSelected.getRestaurantId().getRestaurantId())) {
+                result.add(0, keepIfSelected);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Lọc theo IsActive (và IsDeleted nếu có).
+     * Dùng reflection để không phụ thuộc tên getter (getIsActive / isIsActive / getIsDeleted...).
+     */
+    private boolean isSelectableCategory(MenuCategories cat) {
+        // IsActive: nếu có và = false -> loại
+        Boolean isActive = readBooleanProperty(cat, "getIsActive", "isIsActive", "isActive", "getActive", "isActive");
+        if (isActive != null && !isActive) return false;
+
+        // IsDeleted: nếu có và = true -> loại
+        Boolean isDeleted = readBooleanProperty(cat, "getIsDeleted", "isIsDeleted", "isDeleted");
+        if (isDeleted != null && isDeleted) return false;
+
+        return true;
+    }
+
+    private Boolean readBooleanProperty(Object obj, String... methodNames) {
+        if (obj == null) return null;
+        for (String name : methodNames) {
+            try {
+                Method m = obj.getClass().getMethod(name);
+                Object v = m.invoke(obj);
+                if (v instanceof Boolean) return (Boolean) v;
+            } catch (Exception ignore) { }
+        }
+        return null;
     }
 
     // ======================================================
@@ -167,9 +260,7 @@ public class MenuItemFormBean implements Serializable {
         Restaurants r = (newItem != null) ? newItem.getRestaurantId() : null;
         if (r == null) {
             r = resolveCurrentRestaurant();
-            if (newItem != null) {
-                newItem.setRestaurantId(r);
-            }
+            if (newItem != null) newItem.setRestaurantId(r);
         }
         if (r == null) {
             ctx.addMessage(null, new FacesMessage(
@@ -188,9 +279,22 @@ public class MenuItemFormBean implements Serializable {
             newItem.setCuisineId(null);
         }
 
-        // gán Category từ id
+        // gán Category từ id + validate thuộc restaurant + active
         if (categoryId != null) {
             MenuCategories cat = menuCategoriesFacade.find(categoryId);
+            if (cat == null
+                    || cat.getRestaurantId() == null
+                    || cat.getRestaurantId().getRestaurantId() == null
+                    || !r.getRestaurantId().equals(cat.getRestaurantId().getRestaurantId())
+                    || !isSelectableCategory(cat)) {
+
+                ctx.addMessage("newItemForm:category", new FacesMessage(
+                        FacesMessage.SEVERITY_ERROR,
+                        "Category không hợp lệ (không thuộc nhà hàng hoặc đã bị vô hiệu hóa).",
+                        null
+                ));
+                return null;
+            }
             newItem.setCategoryId(cat);
         } else {
             newItem.setCategoryId(null);
@@ -210,7 +314,6 @@ public class MenuItemFormBean implements Serializable {
 
             String url = uploadToCloudinary(ctx, imageFile, r.getRestaurantId());
             if (url == null) {
-                // uploadToCloudinary already added FacesMessage
                 return null;
             }
 
@@ -270,11 +373,11 @@ public class MenuItemFormBean implements Serializable {
     }
 
     // ======================================================
-    // CLOUDINARY UPLOAD (same style as your RestaurantImagesBean)
+    // CLOUDINARY UPLOAD
     // ======================================================
     private String uploadToCloudinary(FacesContext ctx, Part filePart, Long restaurantId) {
         try {
-            // ---- DEV ONLY: disable SSL verify (same as your existing beans) ----
+            // ---- DEV ONLY: disable SSL verify ----
             TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
                     @Override public void checkClientTrusted(X509Certificate[] chain, String authType) { }
@@ -459,59 +562,24 @@ public class MenuItemFormBean implements Serializable {
     }
 
     // ========== GET / SET ==========
-    public MenuItems getNewItem() {
-        return newItem;
-    }
+    public MenuItems getNewItem() { return newItem; }
+    public void setNewItem(MenuItems newItem) { this.newItem = newItem; }
 
-    public void setNewItem(MenuItems newItem) {
-        this.newItem = newItem;
-    }
+    public boolean isEditMode() { return editMode; }
+    public void setEditMode(boolean editMode) { this.editMode = editMode; }
 
-    public boolean isEditMode() {
-        return editMode;
-    }
+    public Integer getCuisineId() { return cuisineId; }
+    public void setCuisineId(Integer cuisineId) { this.cuisineId = cuisineId; }
 
-    public void setEditMode(boolean editMode) {
-        this.editMode = editMode;
-    }
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
 
-    public Integer getCuisineId() {
-        return cuisineId;
-    }
+    public List<Cuisines> getCuisines() { return cuisines; }
+    public void setCuisines(List<Cuisines> cuisines) { this.cuisines = cuisines; }
 
-    public void setCuisineId(Integer cuisineId) {
-        this.cuisineId = cuisineId;
-    }
+    public List<MenuCategories> getCategories() { return categories; }
+    public void setCategories(List<MenuCategories> categories) { this.categories = categories; }
 
-    public Long getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(Long categoryId) {
-        this.categoryId = categoryId;
-    }
-
-    public List<Cuisines> getCuisines() {
-        return cuisines;
-    }
-
-    public void setCuisines(List<Cuisines> cuisines) {
-        this.cuisines = cuisines;
-    }
-
-    public List<MenuCategories> getCategories() {
-        return categories;
-    }
-
-    public void setCategories(List<MenuCategories> categories) {
-        this.categories = categories;
-    }
-
-    public Part getImageFile() {
-        return imageFile;
-    }
-
-    public void setImageFile(Part imageFile) {
-        this.imageFile = imageFile;
-    }
+    public Part getImageFile() { return imageFile; }
+    public void setImageFile(Part imageFile) { this.imageFile = imageFile; }
 }

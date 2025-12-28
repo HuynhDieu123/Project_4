@@ -829,13 +829,11 @@ public class CapacityAvailabilityBean implements Serializable {
             case AVAILABLE:
                 return "Available (0% - <50%)";
             case NEAR_FULL:
-                return "Gần đầy (≥50%)";
+                return "Almost Full (≥50%)";
             case FULL:
-                return "Đã đầy (100%)";
+                return "Full (100%)";
             case BLOCKED:
-                return "Bị chặn";
-            case TOO_SOON:
-                return "Chưa đủ ngày đặt trước";
+                return "Blocked";
             default:
                 return "--";
         }
