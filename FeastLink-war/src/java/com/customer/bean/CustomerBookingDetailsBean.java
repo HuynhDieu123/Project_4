@@ -1,26 +1,26 @@
 package com.customer.bean;
 
-import com.mypack.entity.Bookings;
-import com.mypack.entity.Users;
 import com.mypack.entity.BookingCombos;
 import com.mypack.entity.BookingMenuItems;
-import java.math.BigDecimal;
-import java.util.Collection;
-
+import com.mypack.entity.Bookings;
+import com.mypack.entity.Users;
 import com.mypack.sessionbean.BookingsFacadeLocal;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.inject.Named;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
@@ -36,6 +36,7 @@ public class CustomerBookingDetailsBean implements Serializable {
     private Bookings booking;
 
     private final Locale locale = Locale.US;
+
     private final SimpleDateFormat fullDateFmt
             = new SimpleDateFormat("EEEE, dd MMMM yyyy", locale);
     private final SimpleDateFormat timeFmt
@@ -47,9 +48,13 @@ public class CustomerBookingDetailsBean implements Serializable {
 
     private final NumberFormat currencyFmt
             = NumberFormat.getCurrencyInstance(locale);
-    // ====== Payment breakdown subtotals ======
-    private BigDecimal packageSubtotal = BigDecimal.ZERO;
+
+    // ====== Payment breakdown (aligned to Manager view) ======
+    // packagePerGuest: base $/guest (sum of BookingCombos.totalPrice)
+    // menuSubtotal: total $ of menu items (sum of BookingMenuItems.totalPrice)
+    private BigDecimal packagePerGuest = BigDecimal.ZERO;
     private BigDecimal menuSubtotal = BigDecimal.ZERO;
+
     private String idParam;
     private boolean notFound;
 
@@ -60,29 +65,27 @@ public class CustomerBookingDetailsBean implements Serializable {
             return;
         }
 
-        Map<String, String> params
-                = ctx.getExternalContext().getRequestParameterMap();
+        Map<String, String> params = ctx.getExternalContext().getRequestParameterMap();
 
-        // Ưu tiên ?bookingId= trên URL
-        String idParam = params.get("bookingId");
-        if (idParam != null && !idParam.isBlank()) {
+        // 1) ưu tiên URL ?bookingId=
+        String urlId = params.get("bookingId");
+        if (urlId != null && !urlId.isBlank()) {
             try {
-                bookingId = Long.parseLong(idParam);
+                bookingId = Long.parseLong(urlId.trim());
             } catch (NumberFormatException ignored) {
             }
         }
 
-        // Nếu chưa có thì lấy từ session "selectedBookingId"
+        // 2) fallback session selectedBookingId
         if (bookingId == null) {
-            Object obj = ctx.getExternalContext()
-                    .getSessionMap().get("selectedBookingId");
+            Object obj = ctx.getExternalContext().getSessionMap().get("selectedBookingId");
             if (obj instanceof Long) {
                 bookingId = (Long) obj;
             } else if (obj instanceof Integer) {
                 bookingId = ((Integer) obj).longValue();
             } else if (obj instanceof String) {
                 try {
-                    bookingId = Long.parseLong((String) obj);
+                    bookingId = Long.parseLong(((String) obj).trim());
                 } catch (NumberFormatException ignored) {
                 }
             }
@@ -90,14 +93,38 @@ public class CustomerBookingDetailsBean implements Serializable {
 
         if (bookingId != null) {
             booking = bookingsFacade.find(bookingId);
+            if (booking != null) {
+                calculatePriceBreakdown();
+            }
         }
     }
 
+    // ===================== GETTERS BASIC =====================
     public Bookings getBooking() {
         return booking;
     }
 
-    // ========= FORMATTER =========
+    public Long getBookingId() {
+        return bookingId;
+    }
+
+    public void setBookingId(Long bookingId) {
+        this.bookingId = bookingId;
+    }
+
+    public String getIdParam() {
+        return idParam;
+    }
+
+    public void setIdParam(String idParam) {
+        this.idParam = idParam;
+    }
+
+    public boolean isNotFound() {
+        return notFound;
+    }
+
+    // ===================== FORMATTER =====================
     public String formatDate() {
         if (booking == null || booking.getEventDate() == null) {
             return "";
@@ -109,12 +136,8 @@ public class CustomerBookingDetailsBean implements Serializable {
         if (booking == null) {
             return "";
         }
-        String start = (booking.getStartTime() != null)
-                ? timeFmt.format(booking.getStartTime())
-                : "";
-        String end = (booking.getEndTime() != null)
-                ? timeFmt.format(booking.getEndTime())
-                : "";
+        String start = (booking.getStartTime() != null) ? timeFmt.format(booking.getStartTime()) : "";
+        String end = (booking.getEndTime() != null) ? timeFmt.format(booking.getEndTime()) : "";
         if (!start.isEmpty() && !end.isEmpty()) {
             return start + " – " + end;
         }
@@ -135,7 +158,7 @@ public class CustomerBookingDetailsBean implements Serializable {
         return currencyFmt.format(value);
     }
 
-    // ========= LABELS =========
+    // ===================== LABELS =====================
     public String getBookingStatusLabel() {
         if (booking == null || booking.getBookingStatus() == null) {
             return "";
@@ -172,17 +195,20 @@ public class CustomerBookingDetailsBean implements Serializable {
         }
     }
 
+    // ===================== LOCATION / POLICY =====================
     public String getLocationDisplay() {
         if (booking == null) {
             return "";
         }
         String locType = safe(booking.getLocationType());
+
         if ("AT_RESTAURANT".equalsIgnoreCase(locType)) {
             if (booking.getRestaurantId() != null) {
                 return "At " + safe(booking.getRestaurantId().getName());
             }
             return "At restaurant";
         }
+
         String outside = safe(booking.getOutsideAddress());
         return outside.isEmpty() ? "Outside catering" : outside;
     }
@@ -192,63 +218,58 @@ public class CustomerBookingDetailsBean implements Serializable {
             return "Please contact the venue directly for detailed cancellation policy.";
         }
 
-        // eventDate hiện là java.sql.Date -> không dùng toInstant() trực tiếp
         Date eventDate = booking.getEventDate();
         LocalDate event;
 
         if (eventDate instanceof java.sql.Date) {
             event = ((java.sql.Date) eventDate).toLocalDate();
         } else {
-            event = eventDate.toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
+            event = eventDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         }
 
         LocalDate deadline = event.minusDays(3);
-
-        Date deadlineDate = Date.from(
-                deadline.atStartOfDay(ZoneId.systemDefault()).toInstant()
-        );
-
+        Date deadlineDate = Date.from(deadline.atStartOfDay(ZoneId.systemDefault()).toInstant());
         String deadlineStr = shortDateFmt.format(deadlineDate);
+
         return "Free cancellation is available until " + deadlineStr
-                + ". After this date, your deposit may become non-refundable "
-                + "based on the venue's policy.";
+                + ". After this date, your deposit may become non-refundable based on the venue's policy.";
     }
 
+    // ===================== NOTES / CANCEL =====================
     public boolean hasCustomerNote() {
-        return booking != null && booking.getNote() != null
-                && !booking.getNote().trim().isEmpty();
+        return booking != null && booking.getNote() != null && !booking.getNote().trim().isEmpty();
     }
 
     public boolean hasCancelInfo() {
-        return booking != null && booking.getCancelReason() != null
-                && !booking.getCancelReason().trim().isEmpty();
+        return booking != null && booking.getCancelReason() != null && !booking.getCancelReason().trim().isEmpty();
     }
-    
+
     public boolean isCancelled() {
-    return booking != null
-            && booking.getBookingStatus() != null
-            && "CANCELLED".equalsIgnoreCase(booking.getBookingStatus());
-}
-
-public String getCancelReasonDisplay() {
-    if (!isCancelled()) return "";
-
-    String r = safe(booking.getCancelReason());
-    if (r.isEmpty()) {
-        // fallback nếu DB đang lưu ở rejectReason
-        try { r = safe(booking.getRejectReason()); } catch (Exception ignore) {}
+        return booking != null
+                && booking.getBookingStatus() != null
+                && "CANCELLED".equalsIgnoreCase(booking.getBookingStatus());
     }
-    return r.isEmpty() ? "No reason was provided." : r;
-}
 
-public boolean isHasCancelTime() {
-    return booking != null && booking.getCancelTime() != null;
-}
+    public String getCancelReasonDisplay() {
+        if (!isCancelled()) {
+            return "";
+        }
 
+        String r = safe(booking.getCancelReason());
+        if (r.isEmpty()) {
+            try {
+                r = safe(booking.getRejectReason());
+            } catch (Exception ignore) {
+            }
+        }
+        return r.isEmpty() ? "No reason was provided." : r;
+    }
 
-    // ========= CONTACT INFO =========
+    public boolean isHasCancelTime() {
+        return booking != null && booking.getCancelTime() != null;
+    }
+
+    // ===================== CONTACT INFO =====================
     private Users getCustomer() {
         return booking != null ? booking.getCustomerId() : null;
     }
@@ -258,13 +279,11 @@ public boolean isHasCancelTime() {
             return "";
         }
 
-        // ƯU TIÊN: tên liên hệ mà user nhập khi booking
         String name = safe(booking.getContactFullName());
         if (!name.isEmpty()) {
             return name;
         }
 
-        // Fallback: tên trong account
         Users u = getCustomer();
         return u != null ? safe(u.getFullName()) : "";
     }
@@ -298,12 +317,10 @@ public boolean isHasCancelTime() {
     }
 
     public String getCompanyName() {
-        // Chưa có cột Company riêng -> để trống
         return "";
     }
 
     public String getCompanyTaxId() {
-        // Chưa có cột Tax ID -> để trống
         return "";
     }
 
@@ -312,16 +329,13 @@ public boolean isHasCancelTime() {
         return u != null ? safe(u.getAddress()) : "";
     }
 
-    // ========= SPECIAL REQUESTS & PAYMENT TYPE =========
+    // ===================== SPECIAL REQUESTS / PAYMENT TYPE =====================
     public String getSpecialRequests() {
         if (booking == null) {
             return "";
         }
         String note = safe(booking.getNote());
-        if (note.isEmpty()) {
-            return "No additional notes were provided for this booking.";
-        }
-        return note;
+        return note.isEmpty() ? "No additional notes were provided for this booking." : note;
     }
 
     public String getPaymentTypeLabel() {
@@ -335,10 +349,11 @@ public boolean isHasCancelTime() {
         return "Pay full amount now";
     }
 
+    // Optional: load by idParam (nếu bạn dùng ở chỗ khác)
     public void loadFromParam() {
         notFound = false;
 
-        Long id = null;
+        Long id;
         try {
             if (idParam == null || idParam.trim().isEmpty()) {
                 notFound = true;
@@ -356,7 +371,6 @@ public boolean isHasCancelTime() {
             return;
         }
 
-        // check owner (customer đang login)
         Object u = FacesContext.getCurrentInstance().getExternalContext().getSessionMap().get("currentUser");
         if (u instanceof Users) {
             Users user = (Users) u;
@@ -366,33 +380,32 @@ public boolean isHasCancelTime() {
             }
         }
 
-        // ✅ gán vào biến booking hiện tại của trang details
-        // đổi tên biến này cho đúng bean của bro (vd: selectedBooking / booking / currentBooking)
         this.booking = b;
+        calculatePriceBreakdown();
     }
 
-    // =========================================
-    //  PRICE BREAKDOWN: PACKAGE / MENU / OTHER
-    // =========================================
+    // =========================================================
+    //  PAYMENT SUMMARY (MATCH MANAGER)
+    // =========================================================
     private void calculatePriceBreakdown() {
-        packageSubtotal = BigDecimal.ZERO;
-        menuSubtotal = BigDecimal.ZERO;
+        packagePerGuest = BigDecimal.ZERO; // base $/guest
+        menuSubtotal = BigDecimal.ZERO;    // total $ menu (all guests)
 
         if (booking == null) {
             return;
         }
 
-        // Tính subtotal cho package từ BookingCombos.TotalPrice
+        // Package base per guest: sum BookingCombos.totalPrice
         Collection<BookingCombos> comboColl = booking.getBookingCombosCollection();
         if (comboColl != null) {
             for (BookingCombos bc : comboColl) {
                 if (bc != null && bc.getTotalPrice() != null) {
-                    packageSubtotal = packageSubtotal.add(bc.getTotalPrice());
+                    packagePerGuest = packagePerGuest.add(bc.getTotalPrice());
                 }
             }
         }
 
-        // Tính subtotal cho custom menu từ BookingMenuItems.TotalPrice
+        // Menu subtotal (all guests): sum BookingMenuItems.totalPrice
         Collection<BookingMenuItems> menuColl = booking.getBookingMenuItemsCollection();
         if (menuColl != null) {
             for (BookingMenuItems bmi : menuColl) {
@@ -401,66 +414,168 @@ public boolean isHasCancelTime() {
                 }
             }
         }
+
+        packagePerGuest = money(packagePerGuest);
+        menuSubtotal = money(menuSubtotal);
     }
 
-    public BigDecimal getPackageSubtotal() {
-        return packageSubtotal != null ? packageSubtotal : BigDecimal.ZERO;
-    }
-
-    public BigDecimal getMenuSubtotal() {
-        return menuSubtotal != null ? menuSubtotal : BigDecimal.ZERO;
-    }
-
-    public BigDecimal getOtherCharges() {
-        if (booking == null || booking.getTotalAmount() == null) {
-            return BigDecimal.ZERO;
+    public boolean isHasGuestCount() {
+        if (booking == null) {
+            return false;
         }
-        BigDecimal total = booking.getTotalAmount();
-        BigDecimal pkg = getPackageSubtotal();
-        BigDecimal menu = getMenuSubtotal();
-
-        BigDecimal other = total.subtract(pkg.add(menu));
-        if (other.compareTo(BigDecimal.ZERO) < 0) {
-            return BigDecimal.ZERO;
-        }
-        return other;
+        Integer gc = booking.getGuestCount();
+        return gc != null && gc > 0;
     }
 
     public boolean isHasPackage() {
-        return getPackageSubtotal().compareTo(BigDecimal.ZERO) > 0;
+        return getPackagePerGuest().compareTo(BigDecimal.ZERO) > 0;
     }
 
     public boolean isHasMenuItems() {
         return getMenuSubtotal().compareTo(BigDecimal.ZERO) > 0;
     }
 
+    // ---- Package
+    public BigDecimal getPackagePerGuest() {
+        return packagePerGuest != null ? money(packagePerGuest) : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getPackageSubtotal() {
+        if (!isHasGuestCount()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal perGuest = getPackagePerGuest();
+        return money(perGuest.multiply(new BigDecimal(booking.getGuestCount())));
+    }
+
+    // ---- Menu
+    public BigDecimal getMenuSubtotal() {
+        return menuSubtotal != null ? money(menuSubtotal) : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getMenuPerGuest() {
+        if (!isHasGuestCount()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal total = getMenuSubtotal();
+        return money(total.divide(new BigDecimal(booking.getGuestCount()), 2, RoundingMode.HALF_UP));
+    }
+
+    // ---- Food subtotal
+    public BigDecimal getFoodSubtotal() {
+        return money(getPackageSubtotal().add(getMenuSubtotal()));
+    }
+
+    // ---- Service Type (nếu có)
+    public String getServiceTypeName() {
+        try {
+            if (booking != null && booking.getServiceTypeId() != null) {
+                String n = booking.getServiceTypeId().getName();
+                n = safe(n);
+                return n.isEmpty() ? null : n;
+            }
+        } catch (Exception ignore) {
+        }
+        return null;
+    }
+
+    public boolean isHasServiceType() {
+        String n = getServiceTypeName();
+        return n != null && !n.isBlank();
+    }
+
+    public BigDecimal getServiceChargeRate() {
+        String name = getServiceTypeName();
+        if (name == null) {
+            return BigDecimal.ZERO;
+        }
+
+        String s = name.trim().toUpperCase();
+        switch (s) {
+            case "STANDARD":
+                return new BigDecimal("0.03");
+            case "PREMIUM":
+                return new BigDecimal("0.05");
+            case "VIP":
+                return new BigDecimal("0.08");
+            default:
+                return BigDecimal.ZERO;
+        }
+    }
+
+    public String getServiceChargeRatePercent() {
+        BigDecimal rate = getServiceChargeRate();
+        if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
+            return "";
+        }
+        return rate.multiply(new BigDecimal("100"))
+                .setScale(0, RoundingMode.HALF_UP).toPlainString() + "%";
+    }
+
+    public BigDecimal getServiceChargeComputed() {
+        BigDecimal rate = getServiceChargeRate();
+        if (rate.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return money(getFoodSubtotal().multiply(rate));
+    }
+
+    public BigDecimal getServiceChargePerGuest() {
+        if (!isHasGuestCount()) {
+            return BigDecimal.ZERO;
+        }
+        return money(getServiceChargeComputed()
+                .divide(new BigDecimal(booking.getGuestCount()), 2, RoundingMode.HALF_UP));
+    }
+
+    // ---- Other charges shown in summary
+    public BigDecimal getOtherCharges() {
+        if (booking == null || booking.getTotalAmount() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        // If service type selected => show computed service charge
+        if (isHasServiceType() && getServiceChargeRate().compareTo(BigDecimal.ZERO) > 0) {
+            return getServiceChargeComputed();
+        }
+
+        // Otherwise fallback = total - food subtotal
+        BigDecimal total = booking.getTotalAmount();
+        BigDecimal other = total.subtract(getFoodSubtotal());
+        if (other.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO;
+        }
+        return money(other);
+    }
+
     public boolean isHasOtherCharges() {
         return getOtherCharges().compareTo(BigDecimal.ZERO) > 0;
     }
 
-    // ========= HELPERS =========
+    // ===================== HELPERS =====================
     private String safe(String s) {
         return (s == null) ? "" : s.trim();
     }
 
-    public Long getBookingId() {
-        return bookingId;
+    private BigDecimal money(BigDecimal v) {
+        if (v == null) {
+            return BigDecimal.ZERO;
+        }
+        return v.setScale(2, RoundingMode.HALF_UP);
     }
 
-    public void setBookingId(Long bookingId) {
-        this.bookingId = bookingId;
+    // Extra: avoid NPE for repeat
+    public Collection<BookingCombos> getBookingCombos() {
+        if (booking == null || booking.getBookingCombosCollection() == null) {
+            return Collections.emptyList();
+        }
+        return booking.getBookingCombosCollection();
     }
 
-    public String getIdParam() {
-        return idParam;
+    public Collection<BookingMenuItems> getBookingMenuItems() {
+        if (booking == null || booking.getBookingMenuItemsCollection() == null) {
+            return Collections.emptyList();
+        }
+        return booking.getBookingMenuItemsCollection();
     }
-
-    public void setIdParam(String idParam) {
-        this.idParam = idParam;
-    }
-
-    public boolean isNotFound() {
-        return notFound;
-    }
-
 }

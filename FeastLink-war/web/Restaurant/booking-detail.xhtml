@@ -155,16 +155,16 @@
                                     </div>
 
                                     <div>
-                                        <p class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
+<!--                                        <p class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
                                             Service type
-                                        </p>
+                                        </p>-->
                                         <p>
                                             <ui:fragment rendered="#{not empty bookingDetailBean.booking.serviceTypeId}">
                                                 #{bookingDetailBean.booking.serviceTypeId.name}
                                             </ui:fragment>
-                                            <ui:fragment rendered="#{empty bookingDetailBean.booking.serviceTypeId}">
+<!--                                            <ui:fragment rendered="#{empty bookingDetailBean.booking.serviceTypeId}">
                                                 Not selected
-                                            </ui:fragment>
+                                            </ui:fragment>-->
                                         </p>
                                     </div>
 
@@ -267,7 +267,7 @@
                                                         </span>
                                                     </ui:fragment>
                                                     <ui:fragment rendered="#{not bookingDetailBean.hasServiceType}">
-                                                        <span class="text-white/35">(Not selected)</span>
+<!--                                                        <span class="text-white/35">(Not selected)</span>-->
                                                     </ui:fragment>
                                                 </span>
 
@@ -316,7 +316,7 @@
 
                                             <ui:fragment rendered="#{not bookingDetailBean.hasServiceType}">
                                                 <div class="mt-1 text-[11px] text-white/35 leading-snug">
-                                                    Service type not selected. Fee is shown from the booking total.
+                                                    Fee is shown from the booking total.
                                                 </div>
                                             </ui:fragment>
 

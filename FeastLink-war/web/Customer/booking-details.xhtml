@@ -176,12 +176,12 @@
                                     </div>
 
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
+<!--                                        <div>
                                             <p class="text-sm text-[#4B5563] mb-1">Service package</p>
                                             <p class="text-[#111827] font-semibold">
                                                 <h:outputText value="#{customerBookingDetailsBean.booking.serviceTypeId.name}" />
                                             </p>
-                                        </div>
+                                        </div>-->
                                         <div>
                                             <p class="text-sm text-[#4B5563] mb-1">Location</p>
                                             <p class="text-[#111827] font-semibold">
@@ -323,98 +323,183 @@
                                 </div>
                             </section>
 
-                            <!-- ===== Section 2: Payment breakdown ===== -->
-                            <section>
-                                <h3 class="text-lg font-bold text-[#0B1120] mb-4 flex items-center gap-2">
-                                    <i data-lucide="dollar-sign" class="w-5 h-5 text-[#D4AF37]"></i>
-                                    Payment breakdown
+                            <!-- ===== Section 2: Payment summary (match Manager booking detail) ===== -->
+                            <section class="bg-[#020617] rounded-2xl border border-slate-800 p-4 md:p-5 text-sm text-white space-y-3">
+                                <h3 class="text-xs font-semibold tracking-wide uppercase text-white/70 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-base text-[#facc6b]">payments</span>
+                                    Payment summary
                                 </h3>
 
-                                <div class="bg-gradient-to-br from-[#F9FAFB] to-white border-2 border-[#E5E7EB] rounded-2xl p-6">
-                                    <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-white/60">
+                                        Payment status
+                                    </p>
+                                    <p class="text-xs font-semibold">
+                                        #{customerBookingDetailsBean.paymentStatusLabel}
+                                    </p>
+                                </div>
 
-                                        <!-- PACKAGE SUBTOTAL -->
-                                        <h:panelGroup rendered="#{customerBookingDetailsBean.hasPackage}">
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-[#4B5563]">Package subtotal</span>
+                                <div class="space-y-3 text-xs">
+
+                                    <!-- PACKAGE -->
+                                    <ui:fragment rendered="#{customerBookingDetailsBean.hasPackage}">
+                                        <div class="flex flex-col gap-0.5">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-white/60">
+                                                    Package (#{customerBookingDetailsBean.booking.guestCount} guests)
+                                                </span>
                                                 <span class="font-medium">
-                                                    <h:outputText
-                                                        value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.packageSubtotal)}" />
+                                                    <h:outputText value="#{customerBookingDetailsBean.packageSubtotal}">
+                                                        <f:convertNumber type="currency" currencySymbol="$"
+                                                                         groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+                                                    </h:outputText>
                                                 </span>
                                             </div>
-                                        </h:panelGroup>
 
-                                        <!-- CUSTOM MENU SUBTOTAL -->
-                                        <h:panelGroup rendered="#{customerBookingDetailsBean.hasMenuItems}">
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-[#4B5563]">Custom menu subtotal</span>
-                                                <span class="font-medium">
-                                                    <h:outputText
-                                                        value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.menuSubtotal)}" />
-                                                </span>
-                                            </div>
-                                        </h:panelGroup>
-
-                                        <!-- OTHER CHARGES -->
-                                        <h:panelGroup rendered="#{customerBookingDetailsBean.hasOtherCharges}">
-                                            <div class="flex flex-col gap-0.5">
-                                                <div class="flex justify-between items-center">
-                                                    <span class="text-[#4B5563]">Other charges</span>
-                                                    <span class="font-medium">
-                                                        <h:outputText
-                                                            value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.otherCharges)}" />
-                                                    </span>
+                                            <ui:fragment rendered="#{customerBookingDetailsBean.hasGuestCount}">
+                                                <div class="text-[11px] text-white/35 leading-snug">
+                                                    Base
+                                                    <strong class="font-semibold text-white/55">
+                                                        <h:outputText value="#{customerBookingDetailsBean.packagePerGuest}">
+                                                            <f:convertNumber type="currency" currencySymbol="$"
+                                                                             groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+                                                        </h:outputText>
+                                                    </strong>
+                                                    /guest × #{customerBookingDetailsBean.booking.guestCount}
                                                 </div>
-                                                <p class="text-[11px] text-[#6B7280]">
-                                                    Includes venue fee, service charge and taxes.
-                                                </p>
+                                            </ui:fragment>
+                                        </div>
+                                    </ui:fragment>
+
+                                    <!-- CUSTOM MENU -->
+                                    <ui:fragment rendered="#{customerBookingDetailsBean.hasMenuItems}">
+                                        <div class="flex flex-col gap-0.5">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-white/60">
+                                                    Custom menu dishes (#{customerBookingDetailsBean.booking.guestCount} guests)
+                                                </span>
+                                                <span class="font-medium">
+                                                    <h:outputText value="#{customerBookingDetailsBean.menuSubtotal}">
+                                                        <f:convertNumber type="currency" currencySymbol="$"
+                                                                         groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+                                                    </h:outputText>
+                                                </span>
                                             </div>
-                                        </h:panelGroup>
 
-                                        <div class="border-t border-[#E5E7EB] my-3"></div>
-
-                                        <!-- DEPOSIT -->
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-[#4B5563]">Deposit amount</span>
-                                            <span class="text-xl font-semibold text-[#22C55E]">
-                                                <h:outputText
-                                                    value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.booking.depositAmount)}" />
-                                            </span>
+                                            <ui:fragment rendered="#{customerBookingDetailsBean.hasGuestCount}">
+                                                <div class="text-[11px] text-white/35 leading-snug">
+                                                    Base
+                                                    <strong class="font-semibold text-white/55">
+                                                        <h:outputText value="#{customerBookingDetailsBean.menuPerGuest}">
+                                                            <f:convertNumber type="currency" currencySymbol="$"
+                                                                             groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+                                                        </h:outputText>
+                                                    </strong>
+                                                    /guest × #{customerBookingDetailsBean.booking.guestCount}
+                                                </div>
+                                            </ui:fragment>
                                         </div>
+                                    </ui:fragment>
 
-                                        <!-- REMAINING -->
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-[#4B5563]">Remaining balance</span>
-                                            <span class="text-xl font-bold">
-                                                <h:outputText
-                                                    value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.booking.remainingAmount)}" />
-                                            </span>
+                                    <!-- SERVICE CHARGE / OTHER CHARGES -->
+                                    <ui:fragment rendered="#{customerBookingDetailsBean.hasOtherCharges}">
+                                        <div class="flex flex-col gap-0.5">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-white/60">
+                                                    Service charge
+                                                    <ui:fragment rendered="#{customerBookingDetailsBean.hasServiceType}">
+                                                        <span class="text-white/35">
+                                                            (#{customerBookingDetailsBean.serviceTypeName} • #{customerBookingDetailsBean.serviceChargeRatePercent})
+                                                        </span>
+                                                    </ui:fragment>
+<!--                                                    <ui:fragment rendered="#{not customerBookingDetailsBean.hasServiceType}">
+                                                        <span class="text-white/35">(Not selected)</span>
+                                                    </ui:fragment>-->
+                                                </span>
+
+                                                <span class="font-medium">
+                                                    <h:outputText value="#{customerBookingDetailsBean.otherCharges}">
+                                                        <f:convertNumber type="currency" currencySymbol="$"
+                                                                         groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+                                                    </h:outputText>
+                                                </span>
+                                            </div>
+
+                                            <ui:fragment rendered="#{customerBookingDetailsBean.hasServiceType}">
+                                                <div class="mt-1 text-[11px] text-white/35 leading-snug">
+                                                    Based on food subtotal
+                                                    <strong class="font-semibold text-white/55">
+                                                        <h:outputText value="#{customerBookingDetailsBean.foodSubtotal}">
+                                                            <f:convertNumber type="currency" currencySymbol="$"
+                                                                             groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+                                                        </h:outputText>
+                                                    </strong>
+                                                    × #{customerBookingDetailsBean.serviceChargeRatePercent}
+                                                </div>
+
+                                                <div class="mt-1 text-[11px] text-white/35 leading-snug">
+                                                    Per guest
+                                                    <strong class="font-semibold text-white/55">
+                                                        <h:outputText value="#{customerBookingDetailsBean.serviceChargePerGuest}">
+                                                            <f:convertNumber type="currency" currencySymbol="$"
+                                                                             groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+                                                        </h:outputText>
+                                                    </strong>
+                                                    /guest × #{customerBookingDetailsBean.booking.guestCount}
+                                                </div>
+                                            </ui:fragment>
+
+                                            <ui:fragment rendered="#{not customerBookingDetailsBean.hasServiceType}">
+                                                <div class="mt-1 text-[11px] text-white/35 leading-snug">
+                                                    Fee is shown from the booking total.
+                                                </div>
+                                            </ui:fragment>
+
                                         </div>
+                                    </ui:fragment>
 
-                                        <div class="border-t border-[#E5E7EB] my-3"></div>
+                                    <div class="border-t border-white/10 my-2"></div>
 
-                                        <!-- TOTAL AMOUNT (ở cuối, nổi bật hơn) -->
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-xs font-semibold uppercase tracking-wide text-[#4B5563]">
-                                                Total amount
-                                            </span>
-                                            <span class="text-3xl font-bold text-[#0B1120]">
-                                                <h:outputText
-                                                    value="#{customerBookingDetailsBean.formatMoney(customerBookingDetailsBean.booking.totalAmount)}" />
-                                            </span>
-                                        </div>
+                                    <!-- DEPOSIT -->
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-white/60">Deposit paid</span>
+                                        <span class="text-sm font-semibold text-emerald-300">
+                                            <h:outputText value="#{customerBookingDetailsBean.booking.depositAmount}">
+                                                <f:convertNumber type="currency" currencySymbol="$"
+                                                                 groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+                                            </h:outputText>
+                                        </span>
+                                    </div>
 
-                                        <!-- PAYMENT TYPE -->
-                                        <div class="flex justify-between items-center pt-2">
-                                            <span class="text-[#4B5563]">Payment type</span>
-                                            <span class="text-sm font-semibold text-[#111827]">
-                                                <h:outputText value="#{customerBookingDetailsBean.paymentTypeLabel}" />
-                                            </span>
-                                        </div>
+                                    <!-- REMAINING -->
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-white/60">Remaining to pay</span>
+                                        <span class="text-sm font-semibold text-[#f97316]">
+                                            <h:outputText value="#{customerBookingDetailsBean.booking.remainingAmount}">
+                                                <f:convertNumber type="currency" currencySymbol="$"
+                                                                 groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+                                            </h:outputText>
+                                        </span>
+                                    </div>
+
+                                    <div class="border-t border-white/10 my-2"></div>
+
+                                    <!-- TOTAL -->
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[11px] font-semibold uppercase tracking-wide text-white/70">
+                                            TOTAL AMOUNT
+                                        </span>
+                                        <span class="text-base font-semibold text-[#facc6b]">
+                                            <h:outputText value="#{customerBookingDetailsBean.booking.totalAmount}">
+                                                <f:convertNumber type="currency" currencySymbol="$"
+                                                                 groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+                                            </h:outputText>
+                                        </span>
                                     </div>
 
                                 </div>
                             </section>
+
 
                             <!-- ===== Section 3: Cancellation policy ===== -->
                             <section>
