@@ -56,7 +56,7 @@
     <!-- Nếu bạn muốn cố định returnUrl (khuyên dùng khi deploy thật) -->
     <context-param>
         <param-name>vnpay.returnUrl</param-name>
-        <param-value>http://localhost:8080/FeastLink-war/faces/vnpay_return.xhtml</param-value>
+        <param-value>http://localhost:8082/FeastLink-war/faces/vnpay_return.xhtml</param-value>
     </context-param>
     
 

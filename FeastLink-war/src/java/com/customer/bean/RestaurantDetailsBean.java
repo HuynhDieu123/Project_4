@@ -75,6 +75,24 @@ public class RestaurantDetailsBean implements Serializable {
         return list != null ? list : Collections.emptyList();
     }
 
+    public boolean comboHasVegetarian(Long comboId) {
+        if (comboId == null) {
+            return false;
+        }
+
+        List<ComboMenuItem> items = comboItemsFor(comboId);
+        if (items == null || items.isEmpty()) {
+            return false;
+        }
+
+        for (ComboMenuItem it : items) {
+            if (it != null && it.isVegetarian()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @PostConstruct
     public void init() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -335,11 +353,7 @@ public class RestaurantDetailsBean implements Serializable {
             }
         } catch (Exception ignored) {
         }
-        if (typeSet.isEmpty()) {
-            typeSet.add("Wedding");
-            typeSet.add("Corporate");
-        }
-        eventTypes = new ArrayList<>(typeSet);
+        eventTypes = typeSet.isEmpty() ? new ArrayList<>() : new ArrayList<>(typeSet);
 
         // ==== Custom menu (MenuCategories + MenuItems) ====
         loadMenuSections();

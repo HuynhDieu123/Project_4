@@ -30,7 +30,7 @@ public class GoogleOAuth2CallbackServlet extends HttpServlet {
 
     // ✅ MUST match Google Console redirect URI exactly
     private static final String REDIRECT_URI =
-            "http://localhost:8080/FeastLink-war/google-oauth-callback";
+            "http://localhost:8082/FeastLink-war/google-oauth-callback";
 
     @EJB
     private UsersFacadeLocal usersFacade;

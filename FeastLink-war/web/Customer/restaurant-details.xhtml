@@ -761,7 +761,7 @@
                     <!-- LEFT -->
                     <div class="lg:col-span-2 space-y-16">
 
-                        <!-- OVERVIEW -->
+                        <!-- OVERVIEW (DB-driven) -->
                         <section id="overview" class="scroll-mt-32">
                             <div class="mb-4">
                                 <h2 class="text-2xl font-bold text-[#111827] mb-2">Overview</h2>
@@ -769,141 +769,156 @@
                             </div>
 
                             <div class="space-y-6">
-                                <div class="space-y-4">
-                                    <p class="text-[#4B5563] leading-relaxed">
-                                        Perched atop one of Ho Chi Minh City's most prestigious addresses,
-                                        The Grand Sapphire Ballroom redefines luxury event experiences. With
-                                        panoramic views of the glittering cityscape and an interior adorned
-                                        with hand-crafted crystal chandeliers, this venue has become the
-                                        premier choice for discerning hosts seeking an unforgettable celebration.
-                                    </p>
-                                    <p class="text-[#4B5563] leading-relaxed">
-                                        Our 3,500-square-meter pillarless ballroom seamlessly accommodates intimate
-                                        gatherings of 100 to grand celebrations of 500 guests. Each event is orchestrated
-                                        by our dedicated team of event specialists, ensuring every detail reflects your
-                                        vision with precision and elegance.
-                                    </p>
-                                    <p class="text-[#4B5563] leading-relaxed">
-                                        From royal weddings to prestigious corporate galas, The Grand Sapphire Ballroom
-                                        has hosted the city's most celebrated occasions, earning accolades for exceptional
-                                        cuisine, impeccable service, and an ambiance that transforms moments into
-                                        lasting memories.
-                                    </p>
-                                </div>
 
-                                <!-- Highlights -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <!-- 6 highlight cards -->
-                                    <div class="flex items-center gap-3 p-4 bg-white rounded-xl border border-[#E5E7EB]">
-                                        <div
-                                            class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#D4AF37]/10 to-[#E6C77F]/10 rounded-lg flex items-center justify-center">
-                                            <i data-lucide="sparkles" class="w-5 h-5 text-[#D4AF37]"></i>
-                                        </div>
-                                        <span class="text-sm text-[#111827]">Hand-crafted crystal chandeliers</span>
+                                <!-- Description from DB: Restaurants.Description -->
+                                <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant and not empty restaurantDetailsBean.restaurant.description}">
+                                    <div class="space-y-4">
+                                        <h:outputText
+                                            value="#{restaurantDetailsBean.restaurant.description}"
+                                            escape="true"
+                                            styleClass="text-[#4B5563] leading-relaxed whitespace-pre-line" />
                                     </div>
-                                    <div class="flex items-center gap-3 p-4 bg-white rounded-xl border border-[#E5E7EB]">
-                                        <div
-                                            class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#D4AF37]/10 to-[#E6C77F]/10 rounded-lg flex items-center justify-center">
-                                            <i data-lucide="crown" class="w-5 h-5 text-[#D4AF37]"></i>
-                                        </div>
-                                        <span class="text-sm text-[#111827]">Dedicated bridal suite &amp; styling room</span>
-                                    </div>
-                                    <div class="flex items-center gap-3 p-4 bg-white rounded-xl border border-[#E5E7EB]">
-                                        <div
-                                            class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#D4AF37]/10 to-[#E6C77F]/10 rounded-lg flex items-center justify-center">
-                                            <i data-lucide="award" class="w-5 h-5 text-[#D4AF37]"></i>
-                                        </div>
-                                        <span class="text-sm text-[#111827]">Professional AV &amp; LED wall system</span>
-                                    </div>
-                                    <div class="flex items-center gap-3 p-4 bg-white rounded-xl border border-[#E5E7EB]">
-                                        <div
-                                            class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#D4AF37]/10 to-[#E6C77F]/10 rounded-lg flex items-center justify-center">
-                                            <i data-lucide="users" class="w-5 h-5 text-[#D4AF37]"></i>
-                                        </div>
-                                        <span class="text-sm text-[#111827]">In-house event planning team</span>
-                                    </div>
-                                    <div class="flex items-center gap-3 p-4 bg-white rounded-xl border border-[#E5E7EB]">
-                                        <div
-                                            class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#D4AF37]/10 to-[#E6C77F]/10 rounded-lg flex items-center justify-center">
-                                            <i data-lucide="camera" class="w-5 h-5 text-[#D4AF37]"></i>
-                                        </div>
-                                        <span class="text-sm text-[#111827]">Panoramic city &amp; river views</span>
-                                    </div>
-                                    <div class="flex items-center gap-3 p-4 bg-white rounded-xl border border-[#E5E7EB]">
-                                        <div
-                                            class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#D4AF37]/10 to-[#E6C77F]/10 rounded-lg flex items-center justify-center">
-                                            <i data-lucide="trending-up" class="w-5 h-5 text-[#D4AF37]"></i>
-                                        </div>
-                                        <span class="text-sm text-[#111827]">Pillarless ballroom design</span>
-                                    </div>
-                                </div>
+                                </ui:fragment>
 
-                                <!-- Facts grid -->
+                                <!-- Facts grid (ONLY fields that exist in DB) -->
                                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div
-                                        class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <i data-lucide="map-pin" class="w-4 h-4 text-[#D4AF37]"></i>
-                                            <span class="text-xs text-[#4B5563] font-medium">Location</span>
-                                        </div>
-                                        <p class="text-sm font-semibold text-[#111827]">District 1, HCMC</p>
-                                    </div>
-                                    <div
-                                        class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <i data-lucide="users" class="w-4 h-4 text-[#D4AF37]"></i>
-                                            <span class="text-xs text-[#4B5563] font-medium">Capacity</span>
-                                        </div>
-                                        <p class="text-sm font-semibold text-[#111827]">100–500 guests</p>
-                                    </div>
-                                    <div
-                                        class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
-                                        <span class="text-xs text-[#4B5563] font-medium">Parking</span>
-                                        <p class="text-sm font-semibold text-[#111827]">100 cars</p>
-                                    </div>
-                                    <div
-                                        class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <i data-lucide="calendar" class="w-4 h-4 text-[#D4AF37]"></i>
-                                            <span class="text-xs text-[#4B5563] font-medium">Min. Booking</span>
-                                        </div>
-                                        <p class="text-sm font-semibold text-[#111827]">30 days advance</p>
-                                    </div>
-                                    <div
-                                        class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
-                                        <span class="text-xs text-[#4B5563] font-medium">Deposit</span>
-                                        <p class="text-sm font-semibold text-[#111827]">30% of total</p>
-                                    </div>
-                                    <div
-                                        class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <i data-lucide="check" class="w-4 h-4 text-[#D4AF37]"></i>
-                                            <span class="text-xs text-[#4B5563] font-medium">Cancellation</span>
-                                        </div>
-                                        <p class="text-sm font-semibold text-[#111827]">Free up to 14 days</p>
-                                    </div>
-                                </div>
 
-                                <!-- Tips -->
-                                <div
-                                    class="p-6 bg-gradient-to-r from-[#0B1120] to-[#020617] rounded-2xl border-2 border-[#D4AF37]/20">
-                                    <div class="flex items-start gap-3">
-                                        <div
-                                            class="flex-shrink-0 w-10 h-10 bg-[#D4AF37]/20 rounded-full flex items-center justify-center">
-                                            <i data-lucide="sparkles" class="w-5 h-5 text-[#D4AF37]"></i>
-                                        </div>
-                                        <div>
-                                            <h3 class="text-white font-semibold mb-1">Tips from FeastLink</h3>
-                                            <p class="text-[#E5E7EB] text-sm">
-                                                Book weekend evenings at least 2 months in advance for best packages and
-                                                prime time slots.
-                                                Our VIP packages include complimentary coordination services.
+                                    <!-- Location: Address + Area + City -->
+                                    <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant and (not empty restaurantDetailsBean.restaurant.address or not empty restaurantDetailsBean.areaName or not empty restaurantDetailsBean.cityName)}">
+                                        <div class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <i data-lucide="map-pin" class="w-4 h-4 text-[#D4AF37]"></i>
+                                                <span class="text-xs text-[#4B5563] font-medium">Location</span>
+                                            </div>
+
+                                            <p class="text-sm font-semibold text-[#111827]">
+                                                <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant.address}">
+                                                    #{restaurantDetailsBean.restaurant.address}
+                                                </ui:fragment>
+
+                                                <ui:fragment rendered="#{(not empty restaurantDetailsBean.restaurant.address) and (not empty restaurantDetailsBean.areaName or not empty restaurantDetailsBean.cityName)}">
+                                                    , 
+                                                </ui:fragment>
+
+                                                <ui:fragment rendered="#{not empty restaurantDetailsBean.areaName}">
+                                                    #{restaurantDetailsBean.areaName}
+                                                </ui:fragment>
+
+                                                <ui:fragment rendered="#{(not empty restaurantDetailsBean.areaName) and (not empty restaurantDetailsBean.cityName)}">
+                                                    , 
+                                                </ui:fragment>
+
+                                                <ui:fragment rendered="#{not empty restaurantDetailsBean.cityName}">
+                                                    #{restaurantDetailsBean.cityName}
+                                                </ui:fragment>
                                             </p>
                                         </div>
-                                    </div>
+                                    </ui:fragment>
+
+                                    <!-- Capacity: MinGuestCount + MaxGuestsPerSlot (from RestaurantCapacitySettings) -->
+                                    <ui:fragment rendered="#{restaurantDetailsBean.capacityMin gt 0 or restaurantDetailsBean.capacityMax gt 0}">
+                                        <div class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <i data-lucide="users" class="w-4 h-4 text-[#D4AF37]"></i>
+                                                <span class="text-xs text-[#4B5563] font-medium">Capacity</span>
+                                            </div>
+                                            <p class="text-sm font-semibold text-[#111827]">
+                                                #{restaurantDetailsBean.capacityMin}
+                                                <ui:fragment rendered="#{restaurantDetailsBean.capacityMax gt restaurantDetailsBean.capacityMin}">
+                                                    –#{restaurantDetailsBean.capacityMax}
+                                                </ui:fragment>
+                                                guests
+                                            </p>
+                                        </div>
+                                    </ui:fragment>
+
+                                    <!-- Business hours: OpenTime - CloseTime (compact HH:mm) -->
+                                    <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant and (not empty restaurantDetailsBean.restaurant.openTime or not empty restaurantDetailsBean.restaurant.closeTime)}">
+                                        <div class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <i data-lucide="clock" class="w-4 h-4 text-[#D4AF37]"></i>
+                                                <span class="text-xs text-[#4B5563] font-medium">Hours</span>
+                                            </div>
+
+                                            <p class="text-sm font-semibold text-[#111827]">
+                                                <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant.openTime}">
+                                                    <h:outputText value="#{restaurantDetailsBean.restaurant.openTime}">
+                                                        <f:convertDateTime type="time" pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
+                                                    </h:outputText>
+                                                </ui:fragment>
+
+                                                <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant.openTime and not empty restaurantDetailsBean.restaurant.closeTime}">
+                                                    &nbsp;–&nbsp;
+                                                </ui:fragment>
+
+                                                <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant.closeTime}">
+                                                    <h:outputText value="#{restaurantDetailsBean.restaurant.closeTime}">
+                                                        <f:convertDateTime type="time" pattern="HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
+                                                    </h:outputText>
+                                                </ui:fragment>
+                                            </p>
+                                        </div>
+                                    </ui:fragment>
+
+
+
+                                    <!-- Min booking: MinDaysInAdvance -->
+                                    <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant and not empty restaurantDetailsBean.restaurant.minDaysInAdvance}">
+                                        <div class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <i data-lucide="calendar" class="w-4 h-4 text-[#D4AF37]"></i>
+                                                <span class="text-xs text-[#4B5563] font-medium">Min. Booking</span>
+                                            </div>
+                                            <p class="text-sm font-semibold text-[#111827]">
+                                                #{restaurantDetailsBean.restaurant.minDaysInAdvance} days in advance
+                                            </p>
+                                        </div>
+                                    </ui:fragment>
+
+                                    <!-- Deposit: DefaultDepositPercent -->
+                                    <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant and not empty restaurantDetailsBean.restaurant.defaultDepositPercent}">
+                                        <div class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <i data-lucide="credit-card" class="w-4 h-4 text-[#D4AF37]"></i>
+                                                <span class="text-xs text-[#4B5563] font-medium">Deposit</span>
+                                            </div>
+                                            <p class="text-sm font-semibold text-[#111827]">
+                                                <h:outputText value="#{restaurantDetailsBean.restaurant.defaultDepositPercent}">
+                                                    <f:convertNumber maxFractionDigits="0" />
+                                                </h:outputText>%
+                                                <span class="text-xs font-medium text-[#6B7280]">of total</span>
+                                            </p>
+                                        </div>
+                                    </ui:fragment>
+
+                                    <!-- Cancellation: CancelFullRefundDays + CancelPartialRefundDays -->
+                                    <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant and (not empty restaurantDetailsBean.restaurant.cancelFullRefundDays or not empty restaurantDetailsBean.restaurant.cancelPartialRefundDays)}">
+                                        <div class="p-4 bg-white rounded-2xl border border-[#E5E7EB] hover:border-[#D4AF37] transition-all">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <i data-lucide="check" class="w-4 h-4 text-[#D4AF37]"></i>
+                                                <span class="text-xs text-[#4B5563] font-medium">Cancellation</span>
+                                            </div>
+
+                                            <p class="text-sm font-semibold text-[#111827]">
+                                                <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant.cancelFullRefundDays}">
+                                                    100% up to #{restaurantDetailsBean.restaurant.cancelFullRefundDays} days
+                                                </ui:fragment>
+
+                                                <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant.cancelFullRefundDays and not empty restaurantDetailsBean.restaurant.cancelPartialRefundDays}">
+                                                    ; 
+                                                </ui:fragment>
+
+                                                <ui:fragment rendered="#{not empty restaurantDetailsBean.restaurant.cancelPartialRefundDays}">
+                                                    50% up to #{restaurantDetailsBean.restaurant.cancelPartialRefundDays} days
+                                                </ui:fragment>
+                                            </p>
+                                        </div>
+                                    </ui:fragment>
+
                                 </div>
                             </div>
                         </section>
+
 
                         <!-- PACKAGES -->
                         <section id="packages" class="scroll-mt-32">
@@ -912,44 +927,73 @@
                                 <div class="w-16 h-1 bg-gradient-to-r from-[#D4AF37] to-[#E6C77F] rounded-full"></div>
                             </div>
 
-                            <!-- Filter bar -->
-                            <div class="mb-6 p-4 bg-white rounded-2xl border border-[#E5E7EB]">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+
+                                <!-- LEFT group -->
                                 <div class="flex flex-wrap items-center gap-3">
-                                    <select
-                                        class="px-4 py-2 border border-[#E5E7EB] rounded-xl text-sm text-[#4B5563] focus:outline-none focus:border-[#D4AF37]">
-                                        <option>Event type</option>
-                                        <option>Wedding</option>
-                                        <option>Corporate</option>
-                                        <option>Gala</option>
-                                    </select>
-                                    <select
-                                        class="px-4 py-2 border border-[#E5E7EB] rounded-xl text-sm text-[#4B5563] focus:outline-none focus:border-[#D4AF37]">
-                                        <option>Guests range</option>
-                                        <option>&lt;50 guests</option>
-                                        <option>50–150 guests</option>
-                                        <option>150–300 guests</option>
-                                        <option>300+ guests</option>
-                                    </select>
-                                    <label
-                                        class="flex items-center gap-2 px-4 py-2 border border-[#E5E7EB] rounded-xl text-sm text-[#4B5563] cursor-pointer hover:border-[#D4AF37]">
-                                        <input type="checkbox" class="w-4 h-4 rounded text-[#D4AF37]" />
-                                        <i data-lucide="leaf" class="w-4 h-4 text-[#22C55E]"></i>
-                                        <span>Vegetarian-friendly</span>
-                                    </label>
-                                    <div class="ml-auto flex items-center gap-2">
-                                        <i data-lucide="filter" class="w-4 h-4 text-[#4B5563]"></i>
-                                        <select
-                                            class="px-4 py-2 border border-[#E5E7EB] rounded-xl text-sm text-[#4B5563] focus:outline-none focus:border-[#D4AF37]">
-                                            <option>Recommended</option>
-                                            <option>Price (low–high)</option>
-                                            <option>Price (high–low)</option>
+
+                                    <!-- Shared classes -->
+                                    <ui:param name="flCtrl"
+                                              value="h-11 px-4 border border-[#E5E7EB] rounded-xl text-sm text-[#4B5563] bg-white focus:outline-none focus:border-[#D4AF37]" />
+                                    <ui:param name="flPill"
+                                              value="h-11 px-4 border border-[#E5E7EB] rounded-xl text-sm text-[#4B5563] bg-white flex items-center gap-2 cursor-pointer hover:border-[#D4AF37] select-none" />
+
+                                    <!-- Event type -->
+                                    <ui:fragment rendered="#{not empty restaurantDetailsBean.eventTypes}">
+                                        <select id="flEventType" class="#{flCtrl}">
+                                            <option value="all">Event type (All)</option>
+                                            <ui:repeat value="#{restaurantDetailsBean.eventTypes}" var="t">
+                                                <option value="#{t}">#{t}</option>
+                                            </ui:repeat>
                                         </select>
-                                    </div>
+                                    </ui:fragment>
+
+                                    <!-- Guests range -->
+                                    <ui:fragment rendered="#{restaurantDetailsBean.capacityMax gt 0}">
+                                        <select id="flGuestsRange" class="#{flCtrl}">
+                                            <option value="all">Guests range (All)</option>
+                                            <ui:fragment rendered="#{restaurantDetailsBean.capacityMax ge 1}">
+                                                <option value="0-49">&lt;50 guests</option>
+                                            </ui:fragment>
+                                            <ui:fragment rendered="#{restaurantDetailsBean.capacityMax ge 50}">
+                                                <option value="50-150">50–150 guests</option>
+                                            </ui:fragment>
+                                            <ui:fragment rendered="#{restaurantDetailsBean.capacityMax ge 150}">
+                                                <option value="150-300">150–300 guests</option>
+                                            </ui:fragment>
+                                            <ui:fragment rendered="#{restaurantDetailsBean.capacityMax gt 300}">
+                                                <option value="301-999999">300+ guests</option>
+                                            </ui:fragment>
+                                        </select>
+                                    </ui:fragment>
+
+                                    <!-- Vegetarian-friendly -->
+                                    <label class="#{flPill}">
+                                        <input id="veg-only-toggle" type="checkbox"
+                                               class="w-4 h-4 rounded border-[#D1D5DB] text-[#D4AF37] focus:ring-0 focus:outline-none" />
+                                        <i data-lucide="leaf" class="w-4 h-4 text-[#22C55E]"></i>
+                                        <span class="leading-none">Vegetarian-friendly</span>
+                                    </label>
+
                                 </div>
+
+                                <!-- RIGHT group (Sort) -->
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="filter" class="w-4 h-4 text-[#4B5563]"></i>
+                                    <select id="flSort" class="#{flCtrl}">
+                                        <option value="recommended">Recommended</option>
+                                        <option value="priceAsc">Price (low–high)</option>
+                                        <option value="priceDesc">Price (high–low)</option>
+                                    </select>
+                                </div>
+
                             </div>
 
+
+
+
                             <!-- Package cards (expanded từ PackageCard) -->
-                            <div class="space-y-6">
+                            <div id="flPackageCards" class="space-y-6">
                                 <!-- LIST PACKAGES TỪ DB -->
                                 <ui:repeat value="#{restaurantDetailsBean.combos}" var="c" varStatus="st">
 
@@ -957,7 +1001,12 @@
                                         class="group relative bg... hover:-translate-y-1 transition-all duration-500"
                                         data-combo-id="#{c.comboId}"
                                         data-price-total="#{c.priceTotal}"
-                                        data-min-guests="#{c.minGuests}">
+                                        data-min-guests="#{c.minGuests}"
+                                        data-combo-name="#{c.name}"
+                                        data-combo-desc="#{c.description}"
+                                        data-has-veg="#{restaurantDetailsBean.comboHasVegetarian(c.comboId)}"
+                                        >
+
                                         <!-- Ribbon VIP nếu combo vip -->
                                         <ui:fragment rendered="#{c.vip}">
                                             <div
@@ -1224,7 +1273,8 @@
                                                      data-menu-item-index="#{itemStatus.index}"
                                                      data-menu-name="#{item.name}"
                                                      data-menu-category="#{section.category.name}"
-                                                     data-menu-price="#{item.pricePerPerson}">
+                                                     data-menu-price="#{item.pricePerPerson}"
+                                                     data-menu-veg="#{item.isVegetarian}">
 
                                                     <div class="flex gap-4">
                                                         <!-- Left: text + price -->
@@ -1943,21 +1993,22 @@
                                     <div class="space-y-2">
                                         <div class="flex items-center gap-2">
                                             <i data-lucide="check" class="w-4 h-4 text-[#22C55E]"></i>
-                                            <span class="text-sm text-[#4B5563]">Panoramic city views</span>
+                                            <span class="text-sm text-[#4B5563]">Flexible venue setup for different event styles</span>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <i data-lucide="check" class="w-4 h-4 text-[#22C55E]"></i>
-                                            <span class="text-sm text-[#4B5563]">Free parking (100 cars)</span>
+                                            <span class="text-sm text-[#4B5563]">Curated menu packages and customizable options</span>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <i data-lucide="check" class="w-4 h-4 text-[#22C55E]"></i>
-                                            <span class="text-sm text-[#4B5563]">Professional AV system</span>
+                                            <span class="text-sm text-[#4B5563]">Professional service staff for on-site support</span>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <i data-lucide="check" class="w-4 h-4 text-[#22C55E]"></i>
-                                            <span class="text-sm text-[#4B5563]">In-house event planning</span>
+                                            <span class="text-sm text-[#4B5563]">Suitable for weddings, parties, and corporate events</span>
                                         </div>
                                     </div>
+
 
                                     <!-- Simplified booking panel: no date / time / guests form -->
                                     <div class="mt-8 space-y-4">
