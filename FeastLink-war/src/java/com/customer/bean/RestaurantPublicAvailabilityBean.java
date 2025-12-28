@@ -1,4 +1,4 @@
-package com.mypack.customer.bean;
+package com.customer.bean;
 
 import com.mypack.entity.RestaurantCapacitySettings;
 import com.mypack.entity.RestaurantDayCapacity;

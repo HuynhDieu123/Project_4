@@ -17,8 +17,11 @@ import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Collection;
 import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Restaurant Bank Wallet (per Manager account = per restaurant wallet)
@@ -31,7 +34,7 @@ import java.util.Date;
  *
  * IMPORTANT:
  * - No entity/sessionbean modifications required
- * - Uses JDBC DataSource: jdbc/myFeastLink (same style as your AdminBankWalletBean)
+ * - Uses JDBC DataSource: jdbc/myFeastLink
  */
 @Named("restaurantBankWalletBean")
 @ViewScoped
@@ -58,12 +61,30 @@ public class RestaurantBankWalletBean implements Serializable {
 
     private int lastSynced = 0;
 
-    private List<BookingRow> rows = new ArrayList<>();
+    private final List<BookingRow> rows = new ArrayList<>();
+
+    // ✅ NEW: Incoming transfers (người khác chuyển vào wallet này)
+    private final List<IncomingTransferRow> incomingTransfers = new ArrayList<>();
+    private long lastSeenIncomingTransferId = 0;
 
     // transfer form
     private String toAccountNumber;
     private BigDecimal transferAmount;
     private String transferMessage;
+
+    // ✅ FIX: tránh trường hợp ViewScoped giữ view cũ, ta có viewAction gọi mỗi lần GET
+    public void onViewLoad() {
+        FacesContext fc = FacesContext.getCurrentInstance();
+        if (fc == null) return;
+
+        // chỉ chạy khi GET / vào trang; postback (ajax) đã có action riêng
+        if (!fc.isPostback()) {
+            // nếu init chưa resolve xong thì thôi
+            if (currentUser != null && restaurant != null) {
+                refresh();
+            }
+        }
+    }
 
     // ===== DTOs =====
     public static class WalletInfo implements Serializable {
@@ -124,20 +145,54 @@ public class RestaurantBankWalletBean implements Serializable {
         public BigDecimal getNetAmount() { return netAmount; }
     }
 
+    // ✅ NEW: Incoming Transfer Row
+    public static class IncomingTransferRow implements Serializable {
+        private final long transferId;
+        private final String transferCode;
+        private final Date createdAt;
+        private final String fromName;
+        private final String fromAccountNumber;
+        private final BigDecimal amount;
+        private final String message;
+
+        public IncomingTransferRow(long transferId, String transferCode, Date createdAt,
+                                   String fromName, String fromAccountNumber,
+                                   BigDecimal amount, String message) {
+            this.transferId = transferId;
+            this.transferCode = transferCode;
+            this.createdAt = createdAt;
+            this.fromName = fromName;
+            this.fromAccountNumber = fromAccountNumber;
+            this.amount = amount;
+            this.message = message;
+        }
+
+        public long getTransferId() { return transferId; }
+        public String getTransferCode() { return transferCode; }
+        public Date getCreatedAt() { return createdAt; }
+        public String getFromName() { return fromName; }
+        public String getFromAccountNumber() { return fromAccountNumber; }
+        public BigDecimal getAmount() { return amount; }
+        public String getMessage() { return message; }
+    }
+
     @PostConstruct
     public void init() {
         currentUser = resolveLoggedInUser();
         if (currentUser == null) {
-            addMsg(FacesMessage.SEVERITY_ERROR, "Not logged in", "You need to log in to your Manager account to view your wallet.");
+            addMsg(FacesMessage.SEVERITY_ERROR, "Not logged in",
+                    "You need to log in to your Manager account to view your wallet.");
             return;
         }
 
         restaurant = resolveRestaurantFromUser(currentUser);
         if (restaurant == null || restaurant.getRestaurantId() == null) {
-            addMsg(FacesMessage.SEVERITY_ERROR, "No restaurant found.", "This account has not yet been assigned as a manager for any restaurant.");
+            addMsg(FacesMessage.SEVERITY_ERROR, "No restaurant found.",
+                    "This account has not yet been assigned as a manager for any restaurant.");
             return;
         }
 
+        // ✅ vẫn refresh ở lần đầu create view (logic y như bạn)
         refresh();
     }
 
@@ -168,6 +223,11 @@ public class RestaurantBankWalletBean implements Serializable {
             wallet  = loadWalletByUserId(c2, currentUser.getUserId());
             account = loadVirtualAccountByUserId(c2, currentUser.getUserId());
             loadEligibleBookingsForView(c2);
+
+            // ✅ NEW: load incoming transfers + notify if new
+            loadIncomingTransfersForView(c2);
+            notifyIfHasNewIncomingTransfer();
+
         } catch (Exception e) {
             addMsg(FacesMessage.SEVERITY_ERROR, "Load error", safeMsg(e));
         }
@@ -210,6 +270,69 @@ public class RestaurantBankWalletBean implements Serializable {
     }
 
     // =========================================================
+    // ✅ NEW) VIEW: Incoming transfers to this user wallet
+    // =========================================================
+    private void loadIncomingTransfersForView(Connection conn) throws Exception {
+        incomingTransfers.clear();
+
+        String sql =
+                "SELECT TOP 20 bt.TransferId, bt.TransferCode, bt.CreatedAt, " +
+                "       u.FullName AS FromName, va.AccountNumber AS FromAccount, " +
+                "       bt.Amount, bt.[Message] " +
+                "FROM dbo.BankTransfers bt " +
+                "JOIN dbo.Users u ON u.UserId = bt.FromUserId " +
+                "LEFT JOIN dbo.VirtualAccounts va ON va.UserId = bt.FromUserId " +
+                "WHERE bt.ToUserId = ? AND bt.[Status] = N'SUCCESS' " +
+                "ORDER BY bt.TransferId DESC";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, currentUser.getUserId());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long transferId = rs.getLong(1);
+                    String transferCode = rs.getString(2);
+                    Date createdAt = rs.getTimestamp(3);
+                    String fromName = rs.getString(4);
+                    String fromAcc = rs.getString(5);
+                    BigDecimal amount = money(nz(rs.getBigDecimal(6)));
+                    String msg = rs.getString(7);
+
+                    incomingTransfers.add(new IncomingTransferRow(
+                            transferId,
+                            transferCode,
+                            createdAt,
+                            (fromName == null ? "—" : fromName),
+                            (fromAcc == null ? "—" : fromAcc),
+                            amount,
+                            (msg == null ? "" : msg)
+                    ));
+                }
+            }
+        }
+    }
+
+    // ✅ NEW: chỉ thông báo khi có incoming transfer mới
+    private void notifyIfHasNewIncomingTransfer() {
+        if (incomingTransfers.isEmpty()) return;
+
+        long newestId = incomingTransfers.get(0).getTransferId();
+
+        // lần đầu vào trang: set mốc, không spam
+        if (lastSeenIncomingTransferId == 0) {
+            lastSeenIncomingTransferId = newestId;
+            return;
+        }
+
+        if (newestId > lastSeenIncomingTransferId) {
+            IncomingTransferRow t = incomingTransfers.get(0);
+            addMsg(FacesMessage.SEVERITY_INFO,
+                    "New incoming transfer",
+                    (t.getFromName() + " sent " + t.getAmount() + " (Code: " + t.getTransferCode() + ")"));
+            lastSeenIncomingTransferId = newestId;
+        }
+    }
+
+    // =========================================================
     // B) SYNC: credit NET income to Wallets once per booking
     //    TransferCode: INC-BKG-{BookingId}
     // =========================================================
@@ -238,10 +361,8 @@ public class RestaurantBankWalletBean implements Serializable {
 
                     String code = "INC-BKG-" + bookingId;
 
-                    // lock-check idempotent
                     if (existsTransferCodeLocked(conn, code)) continue;
 
-                    // insert BankTransfers (must include FromUserId / ToUserId to avoid NULL error)
                     Long transferId = insertBankTransferSmart(
                             conn,
                             code,
@@ -254,11 +375,9 @@ public class RestaurantBankWalletBean implements Serializable {
                             "SUCCESS"
                     );
 
-                    // insert WalletTransactions CREDIT
                     WalletInfo remindWallet = loadWalletByUserId(conn, currentUser.getUserId());
                     insertWalletTxnSmart(conn, remindWallet.getWalletId(), transferId, "CREDIT", net);
 
-                    // update wallet balance +net
                     updateWalletBalance(conn, currentUser.getUserId(), net, true);
 
                     synced++;
@@ -277,13 +396,12 @@ public class RestaurantBankWalletBean implements Serializable {
                 return rs.next();
             }
         } catch (Exception e) {
-            // if anything weird, don't block sync (but normally schema has TransferCode)
             return false;
         }
     }
 
     // =========================================================
-    // C) TRANSFER: from Restaurant wallet (NET = Wallets.CurrentBalance)
+    // C) TRANSFER
     // =========================================================
     public void doTransfer() {
         FacesContext fc = FacesContext.getCurrentInstance();
@@ -296,12 +414,14 @@ public class RestaurantBankWalletBean implements Serializable {
 
         String toAcc = (toAccountNumber == null ? "" : toAccountNumber.trim());
         if (toAcc.isEmpty()) {
-            fc.addMessage("transferForm:toAcc", new FacesMessage(FacesMessage.SEVERITY_ERROR, "Receiver account required.", null));
+            fc.addMessage("transferForm:toAcc",
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Receiver account required.", null));
             return;
         }
 
         if (transferAmount == null || transferAmount.compareTo(new BigDecimal("0.01")) < 0) {
-            fc.addMessage("transferForm:amt", new FacesMessage(FacesMessage.SEVERITY_ERROR, "Amount must be > 0.", null));
+            fc.addMessage("transferForm:amt",
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Amount must be > 0.", null));
             return;
         }
 
@@ -313,37 +433,36 @@ public class RestaurantBankWalletBean implements Serializable {
             conn = ds.getConnection();
             conn.setAutoCommit(false);
 
-            // ensure wallets/accounts exist
             ensureWalletExists(conn, currentUser.getUserId());
             ensureVirtualAccountExists(conn, currentUser.getUserId(), currentUser.getFullName());
 
             Long toUserId = findUserIdByAccountNumber(conn, toAcc);
             if (toUserId == null) {
                 conn.rollback();
-                fc.addMessage("transferForm:toAcc", new FacesMessage(FacesMessage.SEVERITY_ERROR, "Account not found/ACTIVE.", null));
+                fc.addMessage("transferForm:toAcc",
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Account not found/ACTIVE.", null));
                 return;
             }
 
             if (toUserId.equals(currentUser.getUserId())) {
                 conn.rollback();
-                fc.addMessage("transferForm:toAcc", new FacesMessage(FacesMessage.SEVERITY_ERROR, "Cannot transfer to yourself.", null));
+                fc.addMessage("transferForm:toAcc",
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Cannot transfer to yourself.", null));
                 return;
             }
 
             ensureWalletExists(conn, toUserId);
 
-            // debit sender if enough balance
             int ok = debitIfEnough(conn, currentUser.getUserId(), amt);
             if (ok == 0) {
                 conn.rollback();
-                fc.addMessage("transferForm:amt", new FacesMessage(FacesMessage.SEVERITY_ERROR, "Insufficient balance.", null));
+                fc.addMessage("transferForm:amt",
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Insufficient balance.", null));
                 return;
             }
 
-            // credit receiver
             updateWalletBalance(conn, toUserId, amt, true);
 
-            // create transfer
             String transferCode = generateTransferCode();
 
             Long transferId = insertBankTransferSmart(
@@ -358,7 +477,6 @@ public class RestaurantBankWalletBean implements Serializable {
                     "SUCCESS"
             );
 
-            // txns
             WalletInfo wFrom = loadWalletByUserId(conn, currentUser.getUserId());
             WalletInfo wTo   = loadWalletByUserId(conn, toUserId);
 
@@ -367,7 +485,6 @@ public class RestaurantBankWalletBean implements Serializable {
 
             conn.commit();
 
-            // clear form
             toAccountNumber = "";
             transferAmount = null;
             transferMessage = "";
@@ -381,12 +498,10 @@ public class RestaurantBankWalletBean implements Serializable {
             if (conn != null) try { conn.close(); } catch (Exception ignore) {}
         }
 
-        // reload UI
         refresh();
     }
 
     private int debitIfEnough(Connection conn, Long userId, BigDecimal amt) throws Exception {
-        // Wallets table in your DB has UserId (even if entity doesn't)
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dbo.Wallets SET CurrentBalance = CurrentBalance - ?, UpdatedAt = SYSDATETIME() " +
                 "WHERE UserId = ? AND CurrentBalance >= ?")) {
@@ -398,13 +513,12 @@ public class RestaurantBankWalletBean implements Serializable {
     }
 
     // =========================================================
-    // D) Ensure Wallet / Virtual Account (DB schema)
+    // D) Ensure Wallet / Virtual Account
     // =========================================================
     private void ensureWalletExists(Connection conn, Long userId) throws Exception {
         WalletInfo w = loadWalletByUserId(conn, userId);
         if (w != null) return;
 
-        // Wallets: (UserId, CurrentBalance, Status, CreatedAt, UpdatedAt?)
         String sql =
                 "INSERT INTO dbo.Wallets (UserId, CurrentBalance, [Status], CreatedAt) " +
                 "VALUES (?, 0, N'ACTIVE', SYSDATETIME())";
@@ -431,7 +545,8 @@ public class RestaurantBankWalletBean implements Serializable {
     }
 
     private void updateWalletBalance(Connection conn, Long userId, BigDecimal amount, boolean plus) throws Exception {
-        String sql = "UPDATE dbo.Wallets SET CurrentBalance = CurrentBalance " + (plus ? "+" : "-") + " ?, UpdatedAt = SYSDATETIME() WHERE UserId = ?";
+        String sql = "UPDATE dbo.Wallets SET CurrentBalance = CurrentBalance " + (plus ? "+" : "-") +
+                " ?, UpdatedAt = SYSDATETIME() WHERE UserId = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setBigDecimal(1, amount);
             ps.setLong(2, userId);
@@ -499,7 +614,7 @@ public class RestaurantBankWalletBean implements Serializable {
     }
 
     // =========================================================
-    // E) Insert BankTransfers / WalletTransactions (JDBC)
+    // E) Insert BankTransfers / WalletTransactions
     // =========================================================
     private Long insertBankTransferSmart(Connection conn,
                                          String transferCode,
@@ -511,7 +626,6 @@ public class RestaurantBankWalletBean implements Serializable {
                                          String message,
                                          String status) throws Exception {
 
-        // Your DB requires FromUserId NOT NULL -> must set.
         String sql =
                 "INSERT INTO dbo.BankTransfers (TransferCode, FromUserId, ToUserId, ToAccountNumber, Amount, FeeAmount, [Message], [Status], FailReason, CreatedAt, ConfirmedAt, CompletedAt) " +
                 "OUTPUT INSERTED.TransferId " +
@@ -555,7 +669,7 @@ public class RestaurantBankWalletBean implements Serializable {
     }
 
     // =========================================================
-    // F) Resolve logged-in + restaurant mapping (keep your logic)
+    // F) Resolve logged-in + restaurant mapping
     // =========================================================
     private Users resolveLoggedInUser() {
         FacesContext fc = FacesContext.getCurrentInstance();
@@ -601,9 +715,7 @@ public class RestaurantBankWalletBean implements Serializable {
     // =========================================================
     // utils
     // =========================================================
-    private BigDecimal nz(BigDecimal x) {
-        return x == null ? BigDecimal.ZERO : x;
-    }
+    private BigDecimal nz(BigDecimal x) { return x == null ? BigDecimal.ZERO : x; }
 
     private BigDecimal money(BigDecimal x) {
         if (x == null) x = BigDecimal.ZERO;
@@ -622,10 +734,6 @@ public class RestaurantBankWalletBean implements Serializable {
         return (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
     }
 
-    /**
-     * Fix lỗi bạn gặp ở generateTransferCode:
-     * - phải có import java.text.SimpleDateFormat;
-     */
     private String generateTransferCode() {
         String alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         SecureRandom rnd = new SecureRandom();
@@ -636,17 +744,13 @@ public class RestaurantBankWalletBean implements Serializable {
         return sb.toString();
     }
 
-    /**
-     * Giống kiểu bạn đang có: FB1000000002...
-     * -> FB + (1_000_000_000 + userId)
-     */
     private String generateRestaurantAccountNumber(Long userId) {
         long base = 1_000_000_000L + (userId == null ? 0L : userId);
         return "FB" + base;
     }
 
     // =========================================================
-    // getters/setters for XHTML
+    // getters/setters
     // =========================================================
     public Users getCurrentUser() { return currentUser; }
     public Restaurants getRestaurant() { return restaurant; }
@@ -661,6 +765,9 @@ public class RestaurantBankWalletBean implements Serializable {
     public int getLastSynced() { return lastSynced; }
 
     public List<BookingRow> getRows() { return rows; }
+
+    // ✅ NEW getter
+    public List<IncomingTransferRow> getIncomingTransfers() { return incomingTransfers; }
 
     public String getToAccountNumber() { return toAccountNumber; }
     public void setToAccountNumber(String toAccountNumber) { this.toAccountNumber = toAccountNumber; }
