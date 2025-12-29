@@ -551,6 +551,27 @@ public class CustomerBookingDetailsBean implements Serializable {
     public boolean isHasOtherCharges() {
         return getOtherCharges().compareTo(BigDecimal.ZERO) > 0;
     }
+    
+    public boolean isHasDiscount() {
+    return getDiscountAmount().compareTo(BigDecimal.ZERO) > 0;
+}
+
+public BigDecimal getDiscountAmount() {
+    if (booking == null || booking.getTotalAmount() == null) return BigDecimal.ZERO;
+
+    // Không có service type => không suy ra được tổng trước giảm chuẩn
+    if (!isHasServiceType() || getServiceChargeRate().compareTo(BigDecimal.ZERO) <= 0) {
+        return BigDecimal.ZERO;
+    }
+
+    BigDecimal beforeDiscount = money(getFoodSubtotal().add(getServiceChargeComputed())); // tổng trước giảm
+    BigDecimal afterDiscount  = money(booking.getTotalAmount());                         // tổng sau giảm
+
+    BigDecimal discount = beforeDiscount.subtract(afterDiscount);
+    if (discount.compareTo(BigDecimal.ZERO) <= 0) return BigDecimal.ZERO;
+
+    return money(discount);
+}
 
     // ===================== HELPERS =====================
     private String safe(String s) {

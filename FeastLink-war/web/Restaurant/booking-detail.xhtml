@@ -155,9 +155,9 @@
                                     </div>
 
                                     <div>
-<!--                                        <p class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
-                                            Service type
-                                        </p>-->
+                                        <!--                                        <p class="text-[11px] font-semibold text-text-secondary-light uppercase tracking-wide">
+                                                                                    Service type
+                                                                                </p>-->
                                         <p>
                                             <ui:fragment rendered="#{not empty bookingDetailBean.booking.serviceTypeId}">
                                                 #{bookingDetailBean.booking.serviceTypeId.name}
@@ -267,7 +267,7 @@
                                                         </span>
                                                     </ui:fragment>
                                                     <ui:fragment rendered="#{not bookingDetailBean.hasServiceType}">
-<!--                                                        <span class="text-white/35">(Not selected)</span>-->
+                                                        <!--                                                        <span class="text-white/35">(Not selected)</span>-->
                                                     </ui:fragment>
                                                 </span>
 
@@ -323,6 +323,22 @@
 
                                         </div>
                                     </ui:fragment>
+
+                                    <!-- DISCOUNT (voucher) - Total already reduced, show amount only -->
+                                    <ui:fragment rendered="#{bookingDetailBean.hasDiscount}">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-white/60">Discount</span>
+                                            <span class="text-sm font-semibold text-emerald-300">
+                                                -
+                                                <h:outputText value="#{bookingDetailBean.discountAmount}">
+                                                    <f:convertNumber type="currency" currencySymbol="$"
+                                                                     groupingUsed="true"
+                                                                     minFractionDigits="2" maxFractionDigits="2" />
+                                                </h:outputText>
+                                            </span>
+                                        </div>
+                                    </ui:fragment>
+
 
                                     <!-- đường kẻ ngăn phần breakdown với phần thanh toán -->
                                     <div class="border-t border-white/10 my-2"></div>

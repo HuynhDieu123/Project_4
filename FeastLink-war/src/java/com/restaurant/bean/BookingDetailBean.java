@@ -382,6 +382,36 @@ public class BookingDetailBean implements Serializable {
         return getOtherCharges().compareTo(BigDecimal.ZERO) > 0;
     }
 
+    // ===================== DISCOUNT (voucher) =====================
+// TotalAmount là số sau giảm => tính ngược số giảm nếu có service type (có rate).
+    public boolean isHasDiscount() {
+        return getDiscountAmount().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        if (booking == null || booking.getTotalAmount() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        // Không có service type => không suy ra tổng trước giảm chuẩn
+        if (!isHasServiceType() || getServiceChargeRate().compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal beforeDiscount = getFoodSubtotal().add(getServiceChargeComputed())
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal afterDiscount = booking.getTotalAmount()
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal discount = beforeDiscount.subtract(afterDiscount);
+        if (discount.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return discount.setScale(2, RoundingMode.HALF_UP);
+    }
+
     private String safe(String s) {
         return s == null ? "" : s.trim();
     }

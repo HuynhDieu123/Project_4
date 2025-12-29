@@ -457,6 +457,21 @@
 
                                         </div>
                                     </ui:fragment>
+                                    
+                                    <!-- DISCOUNT (voucher) - Total already reduced, show amount only -->
+<ui:fragment rendered="#{customerBookingDetailsBean.hasDiscount}">
+    <div class="flex items-center justify-between">
+        <span class="text-white/60">Discount</span>
+        <span class="text-sm font-semibold text-emerald-300">
+            -
+            <h:outputText value="#{customerBookingDetailsBean.discountAmount}">
+                <f:convertNumber type="currency" currencySymbol="$"
+                                 groupingUsed="true" minFractionDigits="2" maxFractionDigits="2"/>
+            </h:outputText>
+        </span>
+    </div>
+</ui:fragment>
+
 
                                     <div class="border-t border-white/10 my-2"></div>
 
